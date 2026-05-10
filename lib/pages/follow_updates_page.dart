@@ -466,7 +466,11 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
 
     int updated = 0;
 
-    await for (var progress in updateFolder(folder!, true)) {
+    await for (var progress in updateFolder(
+      folder!,
+      true,
+      onUpdated: updateFollowUpdatesUI,
+    )) {
       if (isCanceled) {
         return;
       }
@@ -530,7 +534,11 @@ abstract class FollowUpdatesService {
 
     int updated = 0;
     try {
-      await for (var progress in updateFolder(folder, false)) {
+      await for (var progress in updateFolder(
+        folder,
+        false,
+        onUpdated: updateFollowUpdatesUI,
+      )) {
         if (isCanceled) {
           return;
         }

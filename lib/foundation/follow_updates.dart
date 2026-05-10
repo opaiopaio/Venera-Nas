@@ -94,8 +94,9 @@ class UpdateProgress {
 void updateFolderBase(
   String folder,
   StreamController<UpdateProgress> stream,
-  bool ignoreCheckTime,
-) async {
+  bool ignoreCheckTime, {
+  void Function()? onUpdated,
+}) async {
   var comics = LocalFavoritesManager().getComicsWithUpdatesInfo(folder);
   int total = comics.length;
   int current = 0;
@@ -156,6 +157,7 @@ void updateFolderBase(
         current++;
         if (result.updated) {
           updated++;
+          onUpdated?.call();
         }
         if (result.errorMessage != null) {
           errors++;
@@ -184,9 +186,13 @@ void updateFolderBase(
   stream.close();
 }
 
-Stream<UpdateProgress> updateFolder(String folder, bool ignoreCheckTime) {
+Stream<UpdateProgress> updateFolder(
+  String folder,
+  bool ignoreCheckTime, {
+  void Function()? onUpdated,
+}) {
   var stream = StreamController<UpdateProgress>();
-  updateFolderBase(folder, stream, ignoreCheckTime);
+  updateFolderBase(folder, stream, ignoreCheckTime, onUpdated: onUpdated);
   return stream.stream;
 }
 
