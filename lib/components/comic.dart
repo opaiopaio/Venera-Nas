@@ -256,6 +256,7 @@ class ComicTile extends StatelessWidget {
                       painter: _ReadingHistoryPainter(
                         history.page,
                         history.maxPage,
+                        history.ep,
                       ),
                     ),
                   ),
@@ -731,12 +732,31 @@ class _ComicDescription extends StatelessWidget {
 class _ReadingHistoryPainter extends CustomPainter {
   final int page;
   final int? maxPage;
+  final int ep;
 
-  const _ReadingHistoryPainter(this.page, this.maxPage);
+  const _ReadingHistoryPainter(this.page, this.maxPage, this.ep);
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (maxPage == null) {
+    if (ep > 1) {
+      // 多章漫画：显示当前阅读到的章节
+      final text = '$ep';
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: text,
+          style: TextStyle(fontSize: size.height * 0.7, color: Colors.white),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+      textPainter.paint(
+        canvas,
+        Offset(
+          (size.width - textPainter.width) / 2,
+          (size.height - textPainter.height) / 2,
+        ),
+      );
+    } else if (maxPage == null) {
       // 在中央绘制page
       final textPainter = TextPainter(
         text: TextSpan(
@@ -802,7 +822,8 @@ class _ReadingHistoryPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     return oldDelegate is! _ReadingHistoryPainter ||
         oldDelegate.page != page ||
-        oldDelegate.maxPage != maxPage;
+        oldDelegate.maxPage != maxPage ||
+        oldDelegate.ep != ep;
   }
 }
 
