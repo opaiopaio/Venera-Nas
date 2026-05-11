@@ -109,6 +109,7 @@ Future<void> importAppData(
           jsonDecode(content) as Map<String, dynamic>; // throws if invalid JSON
       var version = appdataContent["settings"]?["dataVersion"];
       if (!skipDataVersionCheck &&
+          !isLocalRestore &&
           version is int &&
           version <= appdata.settings["dataVersion"]) {
         return;
