@@ -91,6 +91,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  path_provider_platform_interface: any
   flutter_to_arch: ^1.0.1
   flutter_to_debian: 
     git:

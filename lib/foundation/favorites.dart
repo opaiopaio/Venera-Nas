@@ -1331,15 +1331,17 @@ class LocalFavoritesManager with ChangeNotifier {
     ComicType type,
     String updateTime,
   ) {
-    var oldTime = _db
+    var old = _db
         .select(
           """
-      select last_update_time from "$folder"
+      select last_update_time, has_new_update from "$folder"
       where id == ? and type == ?;
     """,
           [id, type.value],
         )
-        .first['last_update_time'];
+        .first;
+    var oldTime = old['last_update_time'];
+    var oldHasNewUpdate = old['has_new_update'] == 1;
     var hasNewUpdate = oldTime != updateTime;
     _db.execute(
       """
@@ -1355,6 +1357,9 @@ class LocalFavoritesManager with ChangeNotifier {
         type.value,
       ],
     );
+    if (oldTime != updateTime || oldHasNewUpdate != hasNewUpdate) {
+      notifyChanges();
+    }
   }
 
   void updateCheckTime(String folder, String id, ComicType type) {
@@ -1419,6 +1424,16 @@ class LocalFavoritesManager with ChangeNotifier {
     if (folder == null || !existsFolder(folder)) {
       return;
     }
+    var old = _db.select(
+      """
+      select has_new_update from "$folder"
+      where id == ? and type == ?;
+    """,
+      [id, type.value],
+    );
+    if (old.isEmpty || old.first['has_new_update'] != 1) {
+      return;
+    }
     _db.execute(
       """
       update "$folder"
@@ -1427,6 +1442,7 @@ class LocalFavoritesManager with ChangeNotifier {
     """,
       [id, type.value],
     );
+    notifyChanges();
   }
 
   void close() {
