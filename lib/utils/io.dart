@@ -164,6 +164,9 @@ String sanitizeFileName(String fileName, {String? dir, int? maxLength}) {
 
 /// Copy the **contents** of the source directory to the destination directory.
 Future<void> copyDirectory(Directory source, Directory destination) async {
+  if (!destination.existsSync()) {
+    destination.createSync();
+  }
   List<FileSystemEntity> contents = source.listSync();
   for (FileSystemEntity content in contents) {
     String newPath = FilePath.join(destination.path, content.name);
@@ -337,7 +340,8 @@ Future<String?> selectDirectoryIOS() async {
   return IOSDirectoryPicker.selectDirectory();
 }
 
-Future<void> saveFile({
+/// Returns `true` if the file was saved, `false` if the user cancelled.
+Future<bool> saveFile({
   Uint8List? data,
   required String filename,
   File? file,
@@ -361,7 +365,8 @@ Future<void> saveFile({
         sourceFilePath: file!.path,
         fileName: App.isIOS ? filename : null,
       );
-      await FlutterFileDialog.saveFile(params: params);
+      final result = await FlutterFileDialog.saveFile(params: params);
+      return result != null;
     } else {
       final result = await file_selector.getSaveLocation(
         suggestedName: filename,
@@ -369,7 +374,9 @@ Future<void> saveFile({
       if (result != null) {
         var xFile = file_selector.XFile(file!.path);
         await xFile.saveTo(result.path);
+        return true;
       }
+      return false;
     }
   } finally {
     Future.delayed(const Duration(milliseconds: 100), () {

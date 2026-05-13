@@ -6,6 +6,8 @@ import 'package:venera/foundation/comic_type.dart';
 import 'package:venera/foundation/local.dart';
 import 'package:venera/foundation/log.dart';
 import 'package:venera/pages/comic_details_page/comic_page.dart';
+import 'package:venera/pages/local_comics/export_dialog.dart';
+import 'package:venera/pages/local_comics/import_dialog.dart';
 import 'package:venera/pages/downloading_page.dart';
 import 'package:venera/pages/favorites/favorites_page.dart';
 import 'package:venera/utils/cbz.dart';
@@ -160,6 +162,19 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
           ),
         if (selectedComics.isNotEmpty)
           ...exportActions(selectedComics.keys.toList()),
+        if (selectedComics.isNotEmpty)
+          MenuEntry(
+            icon: Icons.upload,
+            text: "Migrate Comics".tl,
+            onClick: () {
+              showDialog(
+                context: context,
+                builder: (context) => ExportComicsDialog(
+                  selectedComics: selectedComics.keys.toList(),
+                ),
+              );
+            },
+          ),
       ],
     );
   }
@@ -187,6 +202,39 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
 
   @override
   Widget build(BuildContext context) {
+    void showExportImportMenu() {
+      showDialog(
+        context: context,
+        builder: (context) => ExportComicsDialog(
+          selectedComics: selectedComics.isNotEmpty
+              ? selectedComics.keys.toList()
+              : null,
+        ),
+      );
+    }
+
+    void showImportDialog() {
+      showDialog(
+        context: context,
+        builder: (context) => const ImportComicsDialog(),
+      );
+    }
+
+    final exportImportMenu = MenuButton(
+      entries: [
+        MenuEntry(
+          icon: Icons.upload,
+          text: "Migrate Comics".tl,
+          onClick: showExportImportMenu,
+        ),
+        MenuEntry(
+          icon: Icons.file_download,
+          text: "Import Migrated Comics".tl,
+          onClick: showImportDialog,
+        ),
+      ],
+    );
+
     List<Widget> selectActions = [
       IconButton(
         icon: const Icon(Icons.select_all),
@@ -231,6 +279,7 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
           },
         ),
       ),
+      exportImportMenu,
     ];
 
     var body = Scaffold(
