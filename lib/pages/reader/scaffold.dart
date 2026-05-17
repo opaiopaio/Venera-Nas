@@ -196,9 +196,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
   }
 
   Widget buildTop() {
-    final epName = context.reader.widget.chapters?.titles.elementAtOrNull(
-      context.reader.chapter - 1,
-    );
+    final epName = context.reader.chapterTitle;
 
     return BlurEffect(
       child: Container(
@@ -304,11 +302,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
       List<String> tags = context.reader.widget.tags;
       String author = context.reader.widget.author;
 
-      var epName =
-          context.reader.widget.chapters?.titles.elementAtOrNull(
-            context.reader.chapter - 1,
-          ) ??
-          "E${context.reader.chapter}";
+      var epName = context.reader.chapterDisplayName;
       var translatedTags = tags.map((e) => e.translateTagsToCN).toList();
 
       if (isLiked()) {
@@ -413,7 +407,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
   Widget buildBottom() {
     // Use maxPage for display (excluding chapter comments page)
     final displayPage = context.reader.page.clamp(1, context.reader.maxPage);
-    var text = "E${context.reader.chapter} : P$displayPage";
+    var text = "${context.reader.chapterDisplayName} : P$displayPage";
     if (context.reader.widget.chapters == null) {
       text = "P$displayPage";
     }
@@ -619,11 +613,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
   }
 
   Widget buildPageInfoText() {
-    var epName =
-        context.reader.widget.chapters?.titles.elementAtOrNull(
-          context.reader.chapter - 1,
-        ) ??
-        "E${context.reader.chapter}";
+    var epName = context.reader.chapterDisplayName;
     if (epName.length > 8) {
       epName = "${epName.substring(0, 8)}...";
     }
@@ -680,6 +670,16 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
     );
   }
 
+  /// Build export filename: {ComicName}_EP{Chapter}_P{Page}.{ext}
+  String _exportFilename(int page, String ext) {
+    var raw =
+        "${context.reader.widget.name}_EP${context.reader.chapterDisplayName}_P$page$ext";
+    return sanitizeFileName(
+      raw,
+      maxLength: maxSanitizedFileNameLength + ext.length + 30,
+    );
+  }
+
   void saveCurrentImage() async {
     var result = await selectImageToData();
     if (result == null) {
@@ -688,10 +688,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
     if (!mounted) return;
     var (imageIndex, data) = result;
     var fileType = detectFileType(data);
-    // Save file name: ComicName_EP{chapter}_P{page}.{ext} to avoid conflict.
-    // The chapter index of different group is continuous, so we use chapter number is enough.
-    var filename =
-        "${context.reader.widget.name}_EP${context.reader.chapter}_P${imageIndex + 1}${fileType.ext}";
+    var filename = _exportFilename(imageIndex + 1, fileType.ext);
     saveFile(data: data, filename: filename);
   }
 
@@ -703,8 +700,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
     if (!mounted) return;
     var (imageIndex, data) = result;
     var fileType = detectFileType(data);
-    var filename =
-        "${context.reader.widget.name}_EP${context.reader.chapter}_P${imageIndex + 1}${fileType.ext}";
+    var filename = _exportFilename(imageIndex + 1, fileType.ext);
     Share.shareFile(data: data, filename: filename, mime: fileType.mime);
   }
 
