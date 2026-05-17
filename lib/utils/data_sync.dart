@@ -27,6 +27,8 @@ class DataSync with ChangeNotifier {
     }
     LocalFavoritesManager().addListener(onDataChanged);
     ComicSourceManager().addListener(onDataChanged);
+    HistoryManager().addListener(onDataChanged);
+    ReadLaterManager().addListener(onDataChanged);
     if (App.isDesktop) {
       Future.delayed(const Duration(seconds: 1), () {
         if (!App.rootContext.mounted) return;
@@ -420,6 +422,7 @@ class DataSync with ChangeNotifier {
       }
     } finally {
       _isDownloading = false;
+      _uploadDebounce?.cancel();
       _releaseLock();
       notifyListeners();
     }
