@@ -252,11 +252,19 @@ class ComicTile extends StatelessWidget {
                     color: Colors.blue.toOpacity(0.9),
                     constraints: const BoxConstraints(minWidth: 24),
                     padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: CustomPaint(
-                      painter: _ReadingHistoryPainter(
-                        history.page,
-                        history.maxPage,
-                        history.ep,
+                    child: Center(
+                      child: Text(
+                        _buildHistoryProgressText(
+                          history.page,
+                          history.maxPage,
+                          history.ep,
+                        ),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          height: 1,
+                        ),
                       ),
                     ),
                   ),
@@ -729,101 +737,25 @@ class _ComicDescription extends StatelessWidget {
   }
 }
 
-class _ReadingHistoryPainter extends CustomPainter {
-  final int page;
-  final int? maxPage;
-  final int ep;
-
-  const _ReadingHistoryPainter(this.page, this.maxPage, this.ep);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (ep > 1) {
-      // 多章漫画：显示当前阅读到的章节
-      final text = '$ep';
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: text,
-          style: TextStyle(fontSize: size.height * 0.7, color: Colors.white),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout();
-      textPainter.paint(
-        canvas,
-        Offset(
-          (size.width - textPainter.width) / 2,
-          (size.height - textPainter.height) / 2,
-        ),
-      );
-    } else if (maxPage == null) {
-      // 在中央绘制page
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: "$page",
-          style: TextStyle(fontSize: size.width * 0.8, color: Colors.white),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout();
-      textPainter.paint(
-        canvas,
-        Offset(
-          (size.width - textPainter.width) / 2,
-          (size.height - textPainter.height) / 2,
-        ),
-      );
-    } else if (page == maxPage) {
-      // 在中央绘制勾
-      final paint = Paint()
-        ..color = Colors.white
-        ..strokeWidth = 2
-        ..style = PaintingStyle.stroke;
-      canvas.drawLine(
-        Offset(size.width * 0.2, size.height * 0.5),
-        Offset(size.width * 0.45, size.height * 0.75),
-        paint,
-      );
-      canvas.drawLine(
-        Offset(size.width * 0.45, size.height * 0.75),
-        Offset(size.width * 0.85, size.height * 0.3),
-        paint,
-      );
+String _buildHistoryProgressText(int page, int? maxPage, int ep) {
+  if (ep > 1) {
+    // 多章漫画：同时显示章节和页数
+    if (maxPage != null && page == maxPage) {
+      return '$ep - ✓';
+    } else if (maxPage != null) {
+      return '$ep - $page/$maxPage';
     } else {
-      // 在左上角绘制page, 在右下角绘制maxPage
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: "$page",
-          style: TextStyle(fontSize: size.width * 0.8, color: Colors.white),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout();
-      textPainter.paint(canvas, const Offset(0, 0));
-      final textPainter2 = TextPainter(
-        text: TextSpan(
-          text: "/$maxPage",
-          style: TextStyle(fontSize: size.width * 0.5, color: Colors.white),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      textPainter2.layout();
-      textPainter2.paint(
-        canvas,
-        Offset(
-          size.width - textPainter2.width,
-          size.height - textPainter2.height,
-        ),
-      );
+      return '$ep - $page';
     }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return oldDelegate is! _ReadingHistoryPainter ||
-        oldDelegate.page != page ||
-        oldDelegate.maxPage != maxPage ||
-        oldDelegate.ep != ep;
+  } else {
+    // 单章/第一章
+    if (maxPage != null && page == maxPage) {
+      return '✓';
+    } else if (maxPage != null) {
+      return '$page/$maxPage';
+    } else {
+      return '$page';
+    }
   }
 }
 
