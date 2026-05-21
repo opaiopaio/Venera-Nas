@@ -71,6 +71,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
     }
     if (folder != null &&
         !isNetwork &&
+        folder != _localAllFolderLabel &&
         !LocalFavoritesManager().existsFolder(folder!)) {
       folder = null;
     }
