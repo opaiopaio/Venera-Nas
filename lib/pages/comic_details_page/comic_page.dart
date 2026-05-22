@@ -364,9 +364,9 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
     return SliverLazyToBoxAdapter(
       child: Column(
         children: [
-          ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+          Wrap(
+            spacing: 0,
+            runSpacing: 0,
             children: [
               if (hasHistory && !isMobile)
                 _ActionButton(
@@ -447,7 +447,7 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
                 iconColor: context.useTextColor(Colors.blue),
               ),
             ],
-          ).fixHeight(48),
+          ).paddingHorizontal(8).fixWidth(double.infinity),
           if (isMobile)
             Row(
               children: [
@@ -846,6 +846,7 @@ class _ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: 36,
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
