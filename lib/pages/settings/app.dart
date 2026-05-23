@@ -375,7 +375,6 @@ class _WebdavSettingState extends State<_WebdavSetting> {
   bool autoSync = true;
 
   bool isTesting = false;
-  bool upload = true;
 
   @override
   void initState() {
@@ -443,24 +442,6 @@ class _WebdavSettingState extends State<_WebdavSetting> {
               contentPadding: EdgeInsets.zero,
               trailing: Switch(value: autoSync, onChanged: onAutoSyncChanged),
             ),
-            const SizedBox(height: 12),
-            RadioGroup<bool>(
-              groupValue: upload,
-              onChanged: (value) {
-                setState(() {
-                  upload = value ?? upload;
-                });
-              },
-              child: Row(
-                children: [
-                  Text("Operation".tl),
-                  Radio<bool>(value: true),
-                  Text("Upload".tl),
-                  Radio<bool>(value: false),
-                  Text("Download".tl),
-                ],
-              ),
-            ),
             const SizedBox(height: 16),
             AnimatedSize(
               duration: const Duration(milliseconds: 200),
@@ -487,66 +468,99 @@ class _WebdavSettingState extends State<_WebdavSetting> {
                   : const SizedBox.shrink(),
             ),
             const SizedBox(height: 16),
-            Center(
-              child: Button.filled(
-                isLoading: isTesting,
-                onPressed: () async {
-                  var oldConfig = appdata.settings['webdav'];
-                  var oldAutoSync = appdata.implicitData['webdavAutoSync'];
+            Row(
+              children: [
+                Expanded(
+                  child: Button.outlined(
+                    isLoading: isTesting,
+                    onPressed: testConnection,
+                    child: Text("Test Connection".tl),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Button.filled(
+                    isLoading: isTesting,
+                    onPressed: () async {
+                      if (isTesting) return;
+                      var oldConfig = appdata.settings['webdav'];
+                      var oldAutoSync = appdata.implicitData['webdavAutoSync'];
 
-                  if (url.trim().isEmpty &&
-                      user.trim().isEmpty &&
-                      pass.trim().isEmpty) {
-                    appdata.settings['webdav'] = [];
-                    appdata.implicitData['webdavAutoSync'] = false;
-                    appdata.writeImplicitData();
-                    appdata.saveData();
-                    context.showMessage(message: "Saved".tl);
-                    App.rootPop();
-                    return;
-                  }
+                      if (url.trim().isEmpty &&
+                          user.trim().isEmpty &&
+                          pass.trim().isEmpty) {
+                        appdata.settings['webdav'] = [];
+                        appdata.implicitData['webdavAutoSync'] = false;
+                        appdata.writeImplicitData();
+                        appdata.saveData();
+                        context.showMessage(message: "Saved".tl);
+                        App.rootPop();
+                        return;
+                      }
 
-                  appdata.settings['webdav'] = [url, user, pass];
-                  appdata.implicitData['webdavAutoSync'] = autoSync;
-                  appdata.writeImplicitData();
+                      appdata.settings['webdav'] = [url, user, pass];
+                      appdata.implicitData['webdavAutoSync'] = autoSync;
+                      appdata.writeImplicitData();
 
-                  if (!autoSync) {
-                    appdata.saveData();
-                    context.showMessage(message: "Saved".tl);
-                    App.rootPop();
-                    return;
-                  }
+                      if (!autoSync) {
+                        appdata.saveData();
+                        context.showMessage(message: "Saved".tl);
+                        App.rootPop();
+                        return;
+                      }
 
-                  setState(() {
-                    isTesting = true;
-                  });
-                  var testResult = upload
-                      ? await DataSync().uploadData()
-                      : await DataSync().downloadData();
-                  if (testResult.error) {
-                    setState(() {
-                      isTesting = false;
-                    });
-                    appdata.settings['webdav'] = oldConfig;
-                    appdata.implicitData['webdavAutoSync'] = oldAutoSync;
-                    appdata.writeImplicitData();
-                    appdata.saveData();
-                    if (!context.mounted) return;
-                    context.showMessage(message: testResult.errorMessage!);
-                    context.showMessage(message: "Saved Failed".tl);
-                  } else {
-                    appdata.saveData();
-                    if (!context.mounted) return;
-                    context.showMessage(message: "Saved".tl);
-                    App.rootPop();
-                  }
-                },
-                child: Text("Continue".tl),
-              ),
+                      setState(() {
+                        isTesting = true;
+                      });
+                      var testResult = await DataSync().testConnection();
+                      if (!mounted) return;
+                      setState(() {
+                        isTesting = false;
+                      });
+                      if (testResult.error) {
+                        appdata.settings['webdav'] = oldConfig;
+                        appdata.implicitData['webdavAutoSync'] = oldAutoSync;
+                        appdata.writeImplicitData();
+                        appdata.saveData();
+                        if (!context.mounted) return;
+                        context.showMessage(message: testResult.errorMessage!);
+                        context.showMessage(message: "Saved Failed".tl);
+                      } else {
+                        appdata.saveData();
+                        if (!context.mounted) return;
+                        context.showMessage(message: "Saved".tl);
+                        App.rootPop();
+                      }
+                    },
+                    child: Text("Continue".tl),
+                  ),
+                ),
+              ],
             ),
           ],
         ).paddingHorizontal(16),
       ),
     );
+  }
+
+  Future<void> testConnection() async {
+    if (isTesting) return;
+    setState(() {
+      isTesting = true;
+    });
+    final result = await DataSync().testConnection([url, user, pass]);
+    if (!mounted) return;
+    setState(() {
+      isTesting = false;
+    });
+    if (result.error) {
+      context.showMessage(message: result.errorMessage!);
+    } else {
+      context.showMessage(message: "Connection successful".tl);
+    }
   }
 }
