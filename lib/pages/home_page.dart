@@ -150,6 +150,75 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
           ),
         ),
       );
+    } else if (App.isMobile) {
+      child = SliverToBoxAdapter(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                const Icon(Icons.sync),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(syncStatus.title.tl, style: ts.s16),
+                      buildSyncStatusSubtitle(syncStatus),
+                    ],
+                  ),
+                ),
+                if (syncStatus.lastError != null)
+                  InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      showDialogMessage(
+                        App.rootContext,
+                        "Error".tl,
+                        syncStatus.lastError!,
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: context.colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(
+                        Icons.error_outline,
+                        color: Colors.red,
+                        size: 18,
+                      ),
+                    ),
+                  ).paddingRight(4),
+                IconButton(
+                  icon: const Icon(Icons.cloud_upload_outlined),
+                  onPressed: () async {
+                    DataSync().uploadData();
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.cloud_download_outlined),
+                  onPressed: () async {
+                    DataSync().downloadData();
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     } else {
       child = SliverToBoxAdapter(
         child: Container(
