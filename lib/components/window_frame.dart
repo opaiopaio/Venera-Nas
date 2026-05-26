@@ -17,6 +17,9 @@ class WindowFrameController extends InheritedWidget {
   /// Sets the visibility of the window frame.
   final void Function(bool) setWindowFrame;
 
+  /// Sets whether the window frame background is transparent.
+  final void Function(bool) setWindowFrameBackgroundTransparent;
+
   /// Adds a listener that will be called when close button is clicked.
   /// The listener should return `true` to allow the window to be closed.
   final void Function(WindowCloseListener listener) addCloseListener;
@@ -27,6 +30,7 @@ class WindowFrameController extends InheritedWidget {
   const WindowFrameController._create({
     required this.isWindowFrameHidden,
     required this.setWindowFrame,
+    required this.setWindowFrameBackgroundTransparent,
     required this.addCloseListener,
     required this.removeCloseListener,
     required super.child,
@@ -55,13 +59,23 @@ typedef WindowCloseListener = bool Function();
 
 class _WindowFrameState extends State<WindowFrame> {
   bool isWindowFrameHidden = false;
+  bool isWindowFrameBackgroundTransparent = false;
   bool useDarkTheme = false;
   var closeListeners = <WindowCloseListener>[];
 
   /// Sets the visibility of the window frame.
   void setWindowFrame(bool show) {
+    if (!mounted || isWindowFrameHidden == !show) return;
     setState(() {
       isWindowFrameHidden = !show;
+    });
+  }
+
+  /// Sets whether the window frame background is transparent.
+  void setWindowFrameBackgroundTransparent(bool transparent) {
+    if (!mounted || isWindowFrameBackgroundTransparent == transparent) return;
+    setState(() {
+      isWindowFrameBackgroundTransparent = transparent;
     });
   }
 
@@ -107,6 +121,9 @@ class _WindowFrameState extends State<WindowFrame> {
             left: 0,
             right: 0,
             child: Material(
+              color: isWindowFrameBackgroundTransparent
+                  ? Colors.transparent
+                  : null,
               child: Theme(
                 data: Theme.of(
                   context,
@@ -169,6 +186,7 @@ class _WindowFrameState extends State<WindowFrame> {
     return WindowFrameController._create(
       isWindowFrameHidden: isWindowFrameHidden,
       setWindowFrame: setWindowFrame,
+      setWindowFrameBackgroundTransparent: setWindowFrameBackgroundTransparent,
       addCloseListener: addCloseListener,
       removeCloseListener: removeCloseListener,
       child: body,

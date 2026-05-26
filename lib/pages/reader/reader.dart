@@ -747,7 +747,9 @@ abstract mixin class _ReaderLocation {
   }
 }
 
-mixin class _ReaderWindow {
+abstract mixin class _ReaderWindow {
+  bool get mounted;
+
   bool isFullscreen = false;
 
   late WindowFrameController windowFrame;
@@ -759,6 +761,10 @@ mixin class _ReaderWindow {
     windowFrame = WindowFrame.of(App.rootContext);
     windowFrame.addCloseListener(onWindowClose);
     _isInit = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      windowFrame.setWindowFrameBackgroundTransparent(true);
+    });
   }
 
   void fullscreen() async {
@@ -783,6 +789,9 @@ mixin class _ReaderWindow {
   void disposeReaderWindow() {
     if (!App.isDesktop) return;
     windowFrame.removeCloseListener(onWindowClose);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      windowFrame.setWindowFrameBackgroundTransparent(false);
+    });
   }
 }
 
