@@ -18,7 +18,9 @@ class _ReaderImagesState extends State<_ReaderImages> {
     try {
       var data = utf8.encode(jsonEncode(images));
       await CacheManager().writeCache(key, data);
-    } catch (_) {}
+    } catch (e) {
+      Log.warning("Reader", "Failed to save pages cache: $e");
+    }
   }
 
   @override

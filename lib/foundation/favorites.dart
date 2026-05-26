@@ -721,31 +721,18 @@ class LocalFavoritesManager with ChangeNotifier {
       comic.time,
       translatedTags,
     ];
-    if (order != null) {
-      _db.execute(
-        """
+    final displayOrder =
+        order ??
+        (appdata.settings['newFavoriteAddTo'] == "end"
+            ? maxValue(folder) + 1
+            : minValue(folder) - 1);
+    _db.execute(
+      """
         insert into "$folder" (id, name, author, type, tags, cover_path, time, translated_tags, display_order)
         values (?, ?, ?, ?, ?, ?, ?, ?, ?);
       """,
-        [...params, order],
-      );
-    } else if (appdata.settings['newFavoriteAddTo'] == "end") {
-      _db.execute(
-        """
-        insert into "$folder" (id, name, author, type, tags, cover_path, time, translated_tags, display_order)
-        values (?, ?, ?, ?, ?, ?, ?, ?, ?);
-      """,
-        [...params, maxValue(folder) + 1],
-      );
-    } else {
-      _db.execute(
-        """
-        insert into "$folder" (id, name, author, type, tags, cover_path, time, translated_tags, display_order)
-        values (?, ?, ?, ?, ?, ?, ?, ?, ?);
-      """,
-        [...params, minValue(folder) - 1],
-      );
-    }
+      [...params, displayOrder],
+    );
     if (updateTime != null) {
       var columns = _db.select("""
       pragma table_info("$folder");

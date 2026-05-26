@@ -185,7 +185,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           },
         );
       }
-    } catch (_) {}
+    } catch (e) {
+      Log.warning("App", "Failed to handle clipboard link: $e");
+    }
   }
 
   bool _isViewingComic(String id, String sourceKey) {

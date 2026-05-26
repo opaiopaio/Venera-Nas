@@ -4,6 +4,7 @@ import 'package:venera/foundation/app.dart';
 import 'package:venera/foundation/comic_source/comic_source.dart';
 import 'package:venera/foundation/comic_type.dart';
 import 'package:venera/foundation/local.dart';
+import 'package:venera/foundation/log.dart';
 import 'package:venera/utils/ext.dart';
 import 'package:venera/utils/file_type.dart';
 import 'package:venera/utils/io.dart';
@@ -98,7 +99,9 @@ abstract class CBZ {
         metaData = ComicMetaData.fromJson(
           jsonDecode(metaDataFile.readAsStringSync()),
         );
-      } catch (_) {}
+      } catch (e) {
+        Log.warning("CBZ", "Failed to parse metadata: $e");
+      }
     }
     metaData ??= ComicMetaData(
       title: file.name.substring(0, file.name.lastIndexOf('.')),
