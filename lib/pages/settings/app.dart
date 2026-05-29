@@ -375,6 +375,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
   bool autoSync = true;
 
   bool isTesting = false;
+  bool upload = true;
 
   @override
   void initState() {
@@ -441,6 +442,24 @@ class _WebdavSettingState extends State<_WebdavSetting> {
               title: Text("Auto Sync Data".tl),
               contentPadding: EdgeInsets.zero,
               trailing: Switch(value: autoSync, onChanged: onAutoSyncChanged),
+            ),
+            const SizedBox(height: 12),
+            RadioGroup<bool>(
+              groupValue: upload,
+              onChanged: (value) {
+                setState(() {
+                  upload = value ?? upload;
+                });
+              },
+              child: Row(
+                children: [
+                  Text("Operation".tl),
+                  Radio<bool>(value: true),
+                  Text("Upload".tl),
+                  Radio<bool>(value: false),
+                  Text("Download".tl),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
             AnimatedSize(
@@ -516,7 +535,9 @@ class _WebdavSettingState extends State<_WebdavSetting> {
                       setState(() {
                         isTesting = true;
                       });
-                      var testResult = await DataSync().testConnection();
+                      var testResult = upload
+                          ? await DataSync().uploadData()
+                          : await DataSync().downloadData();
                       if (!mounted) return;
                       setState(() {
                         isTesting = false;
