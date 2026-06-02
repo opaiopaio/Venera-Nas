@@ -2,8 +2,9 @@ name: Build ALL
 run-name: Build ALL
 on:
   workflow_dispatch: {}
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
@@ -179,7 +180,7 @@ jobs:
   Release:
     runs-on: ubuntu-22.04
     needs: [Build_MacOS, Build_IOS, Build_Android, Build_Windows, Build_Linux, Build_Linux_ARM64]
-    if: github.event_name == 'release'  # 仅在 push 事件时执行
+    if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -212,6 +213,7 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
           files: |
             outputs/*.ipa
             outputs/*.dmg
