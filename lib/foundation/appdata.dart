@@ -119,6 +119,7 @@ class Appdata with Init {
     "disableSyncFields",
     "deviceId",
     "lastSyncTime",
+    "imageFavoritesDisplayType",
   ];
 
   static const _archiveSyncFields = ["backupWebdav", "backupWebdavPath"];
@@ -283,6 +284,7 @@ class Settings with ChangeNotifier {
     'showChapterCommentsAtEnd':
         false, // show chapter comments at end of chapter
     'autoFavoriteCover': true, // auto favorite cover when adding favorite
+    'imageFavoritesDisplayType': 0, // 0=Tags, 1=Authors, 2=Comics
   };
 
   operator [](String key) {

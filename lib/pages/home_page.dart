@@ -3,6 +3,7 @@ import 'package:sliver_tools/sliver_tools.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:venera/components/components.dart';
 import 'package:venera/foundation/app.dart';
+import 'package:venera/foundation/appdata.dart';
 import 'package:venera/foundation/app_theme.dart';
 import 'package:venera/foundation/comic_source/comic_source.dart';
 import 'package:venera/foundation/comic_type.dart';
@@ -915,7 +916,7 @@ class ImageFavorites extends StatefulWidget {
 class _ImageFavoritesState extends State<ImageFavorites> {
   ImageFavoritesComputed? imageFavoritesCompute;
 
-  int displayType = 0;
+  int displayType = appdata.settings['imageFavoritesDisplayType'] as int;
 
   void refreshImageFavorites() async {
     try {
@@ -990,6 +991,8 @@ class _ImageFavoritesState extends State<ImageFavorites> {
         setState(() {
           displayType = type;
         });
+        appdata.settings['imageFavoritesDisplayType'] = type;
+        appdata.saveData();
         await Future.delayed(const Duration(milliseconds: 20));
         if (!mounted) return;
         var scrollController = ScrollState.of(context).controller;
