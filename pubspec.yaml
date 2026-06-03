@@ -29,7 +29,7 @@ dependencies:
   photo_view:
     git:
       url: https://github.com/haukuen/photo_view
-      ref: main
+      ref: 09ca164b66beeb3834e02e3f73179d7b76c26f30
   mime: ^2.0.0
   share_plus: ^12.0.1
   scrollable_positioned_list:

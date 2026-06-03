@@ -774,8 +774,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: main
-      resolved-ref: cd8017aa35c3c2f637720b720a0464450292d390
+      ref: "09ca164b66beeb3834e02e3f73179d7b76c26f30"
+      resolved-ref: "09ca164b66beeb3834e02e3f73179d7b76c26f30"
       url: "https://github.com/haukuen/photo_view"
     source: git
     version: "0.14.0"
