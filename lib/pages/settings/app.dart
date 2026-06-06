@@ -88,6 +88,21 @@ class _AppSettingsState extends State<AppSettings> {
             CacheManager().setLimitSize(appdata.settings['cacheSize']);
           },
         ).toSliver(),
+        _SliderSetting(
+          title: "Auto Clear History".tl,
+          subtitle: "0 means disabled".tl,
+          settingsIndex: "historyRetentionDays",
+          interval: 7,
+          min: 0,
+          max: 182,
+          onChangeEnd: () {
+            final retentionDays =
+                (appdata.settings['historyRetentionDays'] as num).round();
+            if (retentionDays > 0) {
+              HistoryManager().clearExpiredHistory(retentionDays);
+            }
+          },
+        ).toSliver(),
         _CallbackSetting(
           title: "Export App Data".tl,
           callback: () async {

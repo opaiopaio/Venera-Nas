@@ -381,6 +381,7 @@ class _SliderSetting extends StatefulWidget {
     required this.min,
     required this.max,
     this.onChanged,
+    this.onChangeEnd,
     this.subtitle,
     this.comicId,
     this.comicSource,
@@ -399,6 +400,8 @@ class _SliderSetting extends StatefulWidget {
 
   final VoidCallback? onChanged;
 
+  final VoidCallback? onChangeEnd;
+
   final String? subtitle;
 
   final String? comicId;
@@ -412,22 +415,48 @@ class _SliderSetting extends StatefulWidget {
 }
 
 class _SliderSettingState extends State<_SliderSetting> {
+  double _normalizeValue(double value) {
+    final steps = ((value - widget.min) / widget.interval).round();
+    final normalized = widget.min + steps * widget.interval;
+    return normalized.clamp(widget.min, widget.max).toDouble();
+  }
+
+  dynamic _valueForSettings(double value) {
+    final normalized = _normalizeValue(value);
+    if (normalized.roundToDouble() == normalized) {
+      return normalized.round();
+    }
+    return normalized;
+  }
+
+  String _displayValue(double value) {
+    final normalized = _normalizeValue(value);
+    if (normalized.roundToDouble() == normalized) {
+      return normalized.round().toString();
+    }
+    return normalized
+        .toStringAsFixed(2)
+        .replaceFirst(RegExp(r'0+$'), '')
+        .replaceFirst(RegExp(r'\.$'), '');
+  }
+
   void _setValue(double value) {
-    if (value.toInt() == value) {
+    final normalizedValue = _valueForSettings(value);
+    if (normalizedValue is int) {
       if (widget.comicId != null) {
         appdata.settings.setReaderSetting(
           widget.comicId!,
           widget.comicSource!,
           widget.settingsIndex,
-          value.toInt(),
+          normalizedValue,
         );
       } else if (widget.useDeviceSettings) {
         appdata.settings.setDeviceReaderSetting(
           widget.settingsIndex,
-          value.toInt(),
+          normalizedValue,
         );
       } else {
-        appdata.settings[widget.settingsIndex] = value.toInt();
+        appdata.settings[widget.settingsIndex] = normalizedValue;
       }
     } else {
       if (widget.comicId != null) {
@@ -435,12 +464,15 @@ class _SliderSettingState extends State<_SliderSetting> {
           widget.comicId!,
           widget.comicSource!,
           widget.settingsIndex,
-          value,
+          normalizedValue,
         );
       } else if (widget.useDeviceSettings) {
-        appdata.settings.setDeviceReaderSetting(widget.settingsIndex, value);
+        appdata.settings.setDeviceReaderSetting(
+          widget.settingsIndex,
+          normalizedValue,
+        );
       } else {
-        appdata.settings[widget.settingsIndex] = value;
+        appdata.settings[widget.settingsIndex] = normalizedValue;
       }
     }
   }
@@ -458,9 +490,10 @@ class _SliderSettingState extends State<_SliderSetting> {
                 ? appdata.settings.getDeviceReaderSetting(widget.settingsIndex)
                 : appdata.settings[widget.settingsIndex])
             .toDouble();
+    value = _normalizeValue(value);
     return ListTile(
       title: Text(widget.title, softWrap: true, maxLines: 2),
-      trailing: Text(value.toString(), style: ts.s12),
+      trailing: Text(_displayValue(value), style: ts.s12),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -474,7 +507,9 @@ class _SliderSettingState extends State<_SliderSetting> {
               widget.onChanged?.call();
             },
             onChangeEnd: (value) {
+              _setValue(value);
               appdata.saveData();
+              widget.onChangeEnd?.call();
             },
             divisions: ((widget.max - widget.min) / widget.interval).toInt(),
             min: widget.min,
