@@ -825,12 +825,14 @@ class _SliverGridComicsState extends State<SliverGridComics> {
     }
     generateHeroID();
     HistoryManager().addListener(update);
+    LocalFavoritesManager().addListener(update);
     super.initState();
   }
 
   @override
   void dispose() {
     HistoryManager().removeListener(update);
+    LocalFavoritesManager().removeListener(update);
     super.dispose();
   }
 
