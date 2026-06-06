@@ -858,7 +858,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
                 if (showFloatingButtonValue == 1) {
                   context.reader.toNextChapter();
                 } else if (showFloatingButtonValue == -1) {
-                  context.reader.toPrevChapter();
+                  context.reader.toPrevChapter(toLastPage: true);
                 }
                 setFloatingButton(0);
               },
