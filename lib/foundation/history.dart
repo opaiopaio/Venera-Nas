@@ -18,6 +18,7 @@ import 'package:venera/utils/ext.dart';
 import 'package:venera/utils/translations.dart';
 
 import 'app.dart';
+import 'appdata.dart';
 import 'consts.dart';
 
 part "image_favorites.dart";
@@ -257,6 +258,9 @@ class HistoryManager with ChangeNotifier {
       _db.execute("ALTER TABLE history_new RENAME TO history;");
     }
 
+    clearExpiredHistory(
+      (appdata.settings['historyRetentionDays'] as num).round(),
+    );
     notifyListeners();
     ImageFavoriteManager().init();
     isInitialized = true;
@@ -344,6 +348,24 @@ class HistoryManager with ChangeNotifier {
 
   void clearHistory() {
     _db.execute("delete from history;");
+    updateCache();
+    notifyListeners();
+  }
+
+  void clearExpiredHistory(int retentionDays) {
+    if (retentionDays <= 0) {
+      return;
+    }
+    final cutoff = DateTime.now()
+        .subtract(Duration(days: retentionDays))
+        .millisecondsSinceEpoch;
+    _db.execute(
+      """
+      delete from history
+      where time < ?;
+    """,
+      [cutoff],
+    );
     updateCache();
     notifyListeners();
   }

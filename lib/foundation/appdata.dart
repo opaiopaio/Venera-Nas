@@ -226,6 +226,7 @@ class Settings with ChangeNotifier {
     'searchSources': null,
     'showFavoriteStatusOnTile': true,
     'showHistoryStatusOnTile': false,
+    'historyRetentionDays': 0, // 0 means disabled; 7-182 days
     'blockedWords': [],
     'blockedCommentWords': [],
     'defaultSearchTarget': null,
