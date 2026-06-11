@@ -545,18 +545,16 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
             actions: [
               MenuButton(
                 entries: [
-                  if (!isAllFolder)
-                    MenuEntry(
-                      icon: Icons.drive_file_move,
-                      text: "Move to folder".tl,
-                      onClick: () => favoriteOption('move'),
-                    ),
-                  if (!isAllFolder)
-                    MenuEntry(
-                      icon: Icons.copy,
-                      text: "Copy to folder".tl,
-                      onClick: () => favoriteOption('add'),
-                    ),
+                  MenuEntry(
+                    icon: Icons.drive_file_move,
+                    text: "Move to folder".tl,
+                    onClick: () => favoriteOption('move'),
+                  ),
+                  MenuEntry(
+                    icon: Icons.copy,
+                    text: "Copy to folder".tl,
+                    onClick: () => favoriteOption('add'),
+                  ),
                   MenuEntry(
                     icon: Icons.select_all,
                     text: "Select All".tl,
@@ -833,7 +831,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
       StatefulBuilder(
         builder: (context, setState) {
           return PopUpWidgetScaffold(
-            title: favPage.folder ?? "Unselected".tl,
+            title: isAllFolder ? "All".tl : (favPage.folder ?? "Unselected".tl),
             body: Padding(
               padding: EdgeInsets.only(bottom: context.padding.bottom + 16),
               child: Container(
@@ -917,7 +915,39 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                           if (selectedLocalFolders.isEmpty) {
                             return;
                           }
-                          if (option == 'move') {
+                          try {
+                            if (isAllFolder) {
+                            // Group by source folder; each FavoriteItem is
+                            // actually FavoriteItemWithFolderInfo in All view.
+                            var byFolder = <String, List<FavoriteItem>>{};
+                            for (var entry in selectedComics.entries) {
+                              var comic = entry.key as FavoriteItemWithFolderInfo;
+                              byFolder
+                                  .putIfAbsent(comic.folder, () => [])
+                                  .add(comic);
+                            }
+                            for (var target in selectedLocalFolders) {
+                              for (var srcGroup in byFolder.entries) {
+                                if (option == 'move' &&
+                                    srcGroup.key == target) {
+                                  continue;
+                                }
+                                if (option == 'move') {
+                                  LocalFavoritesManager().batchMoveFavorites(
+                                    srcGroup.key,
+                                    target,
+                                    srcGroup.value,
+                                  );
+                                } else {
+                                  LocalFavoritesManager().batchCopyFavorites(
+                                    srcGroup.key,
+                                    target,
+                                    srcGroup.value,
+                                  );
+                                }
+                              }
+                            }
+                          } else if (option == 'move') {
                             var comics = selectedComics.keys
                                 .map((e) => e as FavoriteItem)
                                 .toList();
@@ -939,6 +969,12 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                                 comics,
                               );
                             }
+                          }
+                          } catch (e) {
+                            context.showMessage(
+                              message: "Operation failed: $e",
+                            );
+                            return;
                           }
                           App.rootContext.pop();
                           updateComics();
