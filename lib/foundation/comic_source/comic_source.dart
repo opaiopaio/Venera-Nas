@@ -253,6 +253,10 @@ class ComicSource {
           if (e.key is! String) {
             continue;
           }
+          if (e.value is! Map) {
+            Log.warning("ComicSource", "Setting '${e.key}' has non-Map value (${e.value.runtimeType}), skipping");
+            continue;
+          }
           var v = <String, dynamic>{};
           for (var e2 in e.value.entries) {
             if (e2.key is! String) {

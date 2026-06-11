@@ -809,6 +809,7 @@ class _SliverComicSource extends StatefulWidget {
 
 class _SliverComicSourceState extends State<_SliverComicSource> {
   ComicSource get source => widget.source;
+  bool _isExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -821,8 +822,14 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
         SliverPadding(padding: const EdgeInsets.only(top: 16)),
         SliverToBoxAdapter(
           child: ListTile(
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
             title: Row(
               children: [
+                Icon(
+                  _isExpanded ? Icons.expand_less : Icons.expand_more,
+                  size: 20,
+                ),
+                const SizedBox(width: 4),
                 Text(source.name, style: ts.s18),
                 const SizedBox(width: 6),
                 Container(
@@ -901,9 +908,20 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
           ),
         ),
         SliverToBoxAdapter(
-          child: Column(children: buildSourceSettings().toList()),
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: Column(
+              children: [
+                if (_isExpanded) ...[
+                  ...buildSourceSettings(),
+                  ..._buildAccount(),
+                ],
+              ],
+            ),
+          ),
         ),
-        SliverToBoxAdapter(child: Column(children: _buildAccount().toList())),
       ],
     );
   }
