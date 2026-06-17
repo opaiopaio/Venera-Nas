@@ -338,7 +338,7 @@ class _CommentTileState extends State<_CommentTile> {
                 if (widget.comment.time != null)
                   Text(widget.comment.time!, style: ts.s12),
                 const SizedBox(height: 4),
-                _CommentContent(text: widget.comment.content),
+                CommentContent(text: widget.comment.content),
                 buildActions(),
               ],
             ),
@@ -559,20 +559,5 @@ class _CommentTileState extends State<_CommentTile> {
         ],
       ),
     );
-  }
-}
-
-class _CommentContent extends StatelessWidget {
-  const _CommentContent({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!text.contains('<') && !text.contains('http')) {
-      return SelectableText(text);
-    } else {
-      return RichCommentContent(text: text);
-    }
   }
 }

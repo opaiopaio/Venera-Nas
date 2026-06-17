@@ -120,6 +120,7 @@ class Appdata with Init {
     "deviceId",
     "lastSyncTime",
     "imageFavoritesDisplayType",
+    "commentFontSize",
   ];
 
   static const _archiveSyncFields = ["backupWebdav", "backupWebdavPath"];
@@ -284,6 +285,7 @@ class Settings with ChangeNotifier {
     'showChapterComments': true, // show chapter comments in reader
     'showChapterCommentsAtEnd':
         false, // show chapter comments at end of chapter
+    'commentFontSize': 16.0, // comment text font size, 12.0 - 24.0
     'autoFavoriteCover': true, // auto favorite cover when adding favorite
     'imageFavoritesDisplayType': 0, // 0=Tags, 1=Authors, 2=Comics
   };

@@ -444,6 +444,14 @@ class _ReaderSettingsState extends State<ReaderSettings> {
           ),
         ),
         if (comicId == null)
+          _SliderSetting(
+            title: "Comment font size".tl,
+            settingsIndex: "commentFontSize",
+            interval: 1,
+            min: 12,
+            max: 24,
+          ).toSliver(),
+        if (comicId == null)
           _SwitchSetting(
             title: "Reverse default chapter order".tl,
             settingKey: "reverseChapterOrder",

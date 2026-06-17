@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:venera/foundation/app.dart';
+import 'package:venera/foundation/appdata.dart';
 import 'package:venera/foundation/image_provider/cached_image.dart';
 import 'package:venera/utils/app_links.dart';
 import 'package:venera/utils/ext.dart';
@@ -13,16 +14,26 @@ import 'package:venera/utils/ext.dart';
 /// This widget intelligently decides whether to use simple text or rich formatting
 /// based on the content. It supports HTML tags and auto-linking of URLs.
 class CommentContent extends StatelessWidget {
-  const CommentContent({super.key, required this.text});
+  const CommentContent({super.key, required this.text, this.fontSize});
 
   final String text;
+
+  /// Font size for the comment text. When null, falls back to the
+  /// user-configurable `commentFontSize` setting.
+  final double? fontSize;
+
+  double get _effectiveFontSize =>
+      fontSize ?? (appdata.settings['commentFontSize'] as num).toDouble();
 
   @override
   Widget build(BuildContext context) {
     if (!text.contains('<') && !text.contains('http')) {
-      return SelectableText(text);
+      return SelectableText(
+        text,
+        style: TextStyle(fontSize: _effectiveFontSize),
+      );
     } else {
-      return RichCommentContent(text: text);
+      return RichCommentContent(text: text, fontSize: _effectiveFontSize);
     }
   }
 }
@@ -125,11 +136,16 @@ class RichCommentContent extends StatefulWidget {
     super.key,
     required this.text,
     this.showImages = true,
+    this.fontSize,
   });
 
   final String text;
 
   final bool showImages;
+
+  /// Font size for the comment text. When null, falls back to the
+  /// user-configurable `commentFontSize` setting.
+  final double? fontSize;
 
   @override
   State<RichCommentContent> createState() => _RichCommentContentState();
@@ -280,8 +296,16 @@ class _RichCommentContentState extends State<RichCommentContent> {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveFontSize =
+        widget.fontSize ??
+        (appdata.settings['commentFontSize'] as num).toDouble();
     Widget content = SelectableText.rich(
-      TextSpan(style: DefaultTextStyle.of(context).style, children: textSpan),
+      TextSpan(
+        style: DefaultTextStyle.of(
+          context,
+        ).style.copyWith(fontSize: effectiveFontSize),
+        children: textSpan,
+      ),
     );
     if (images.isNotEmpty && widget.showImages) {
       content = Column(
