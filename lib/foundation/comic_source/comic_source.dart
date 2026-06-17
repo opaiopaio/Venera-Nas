@@ -254,7 +254,10 @@ class ComicSource {
             continue;
           }
           if (e.value is! Map) {
-            Log.warning("ComicSource", "Setting '${e.key}' has non-Map value (${e.value.runtimeType}), skipping");
+            Log.warning(
+              "ComicSource",
+              "Setting '${e.key}' has non-Map value (${e.value.runtimeType}), skipping",
+            );
             continue;
           }
           var v = <String, dynamic>{};

@@ -917,59 +917,60 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                           }
                           try {
                             if (isAllFolder) {
-                            // Group by source folder; each FavoriteItem is
-                            // actually FavoriteItemWithFolderInfo in All view.
-                            var byFolder = <String, List<FavoriteItem>>{};
-                            for (var entry in selectedComics.entries) {
-                              var comic = entry.key as FavoriteItemWithFolderInfo;
-                              byFolder
-                                  .putIfAbsent(comic.folder, () => [])
-                                  .add(comic);
-                            }
-                            for (var target in selectedLocalFolders) {
-                              for (var srcGroup in byFolder.entries) {
-                                if (option == 'move' &&
-                                    srcGroup.key == target) {
-                                  continue;
-                                }
-                                if (option == 'move') {
-                                  LocalFavoritesManager().batchMoveFavorites(
-                                    srcGroup.key,
-                                    target,
-                                    srcGroup.value,
-                                  );
-                                } else {
-                                  LocalFavoritesManager().batchCopyFavorites(
-                                    srcGroup.key,
-                                    target,
-                                    srcGroup.value,
-                                  );
+                              // Group by source folder; each FavoriteItem is
+                              // actually FavoriteItemWithFolderInfo in All view.
+                              var byFolder = <String, List<FavoriteItem>>{};
+                              for (var entry in selectedComics.entries) {
+                                var comic =
+                                    entry.key as FavoriteItemWithFolderInfo;
+                                byFolder
+                                    .putIfAbsent(comic.folder, () => [])
+                                    .add(comic);
+                              }
+                              for (var target in selectedLocalFolders) {
+                                for (var srcGroup in byFolder.entries) {
+                                  if (option == 'move' &&
+                                      srcGroup.key == target) {
+                                    continue;
+                                  }
+                                  if (option == 'move') {
+                                    LocalFavoritesManager().batchMoveFavorites(
+                                      srcGroup.key,
+                                      target,
+                                      srcGroup.value,
+                                    );
+                                  } else {
+                                    LocalFavoritesManager().batchCopyFavorites(
+                                      srcGroup.key,
+                                      target,
+                                      srcGroup.value,
+                                    );
+                                  }
                                 }
                               }
+                            } else if (option == 'move') {
+                              var comics = selectedComics.keys
+                                  .map((e) => e as FavoriteItem)
+                                  .toList();
+                              for (var f in selectedLocalFolders) {
+                                LocalFavoritesManager().batchMoveFavorites(
+                                  favPage.folder as String,
+                                  f,
+                                  comics,
+                                );
+                              }
+                            } else {
+                              var comics = selectedComics.keys
+                                  .map((e) => e as FavoriteItem)
+                                  .toList();
+                              for (var f in selectedLocalFolders) {
+                                LocalFavoritesManager().batchCopyFavorites(
+                                  favPage.folder as String,
+                                  f,
+                                  comics,
+                                );
+                              }
                             }
-                          } else if (option == 'move') {
-                            var comics = selectedComics.keys
-                                .map((e) => e as FavoriteItem)
-                                .toList();
-                            for (var f in selectedLocalFolders) {
-                              LocalFavoritesManager().batchMoveFavorites(
-                                favPage.folder as String,
-                                f,
-                                comics,
-                              );
-                            }
-                          } else {
-                            var comics = selectedComics.keys
-                                .map((e) => e as FavoriteItem)
-                                .toList();
-                            for (var f in selectedLocalFolders) {
-                              LocalFavoritesManager().batchCopyFavorites(
-                                favPage.folder as String,
-                                f,
-                                comics,
-                              );
-                            }
-                          }
                           } catch (e) {
                             context.showMessage(
                               message: "Operation failed: $e",
