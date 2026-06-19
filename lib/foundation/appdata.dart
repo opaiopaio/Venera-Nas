@@ -288,6 +288,8 @@ class Settings with ChangeNotifier {
     'commentFontSize': 16.0, // comment text font size, 12.0 - 24.0
     'autoFavoriteCover': true, // auto favorite cover when adding favorite
     'imageFavoritesDisplayType': 0, // 0=Tags, 1=Authors, 2=Comics
+    'showImageFavoritesChart':
+        true, // show chart in image favorites card on home page
   };
 
   operator [](String key) {

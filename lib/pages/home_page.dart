@@ -918,6 +918,9 @@ class _ImageFavoritesState extends State<ImageFavorites> {
 
   int displayType = appdata.settings['imageFavoritesDisplayType'] as int;
 
+  bool get _showChart =>
+      appdata.settings['showImageFavoritesChart'] as bool? ?? true;
+
   void refreshImageFavorites() async {
     try {
       imageFavoritesCompute =
@@ -934,13 +937,21 @@ class _ImageFavoritesState extends State<ImageFavorites> {
   void initState() {
     refreshImageFavorites();
     ImageFavoriteManager().addListener(refreshImageFavorites);
+    appdata.settings.addListener(_onSettingsChanged);
     super.initState();
   }
 
   @override
   void dispose() {
     ImageFavoriteManager().removeListener(refreshImageFavorites);
+    appdata.settings.removeListener(_onSettingsChanged);
     super.dispose();
+  }
+
+  void _onSettingsChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -954,7 +965,7 @@ class _ImageFavoritesState extends State<ImageFavorites> {
         onTap: () {
           context.to(() => const ImageFavoritesPage());
         },
-        content: hasData
+        content: (hasData && _showChart)
             ? Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [

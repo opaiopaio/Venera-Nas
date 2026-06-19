@@ -37,6 +37,10 @@ class _ExploreSettingsState extends State<ExploreSettings> {
           title: "Show history on comic tile".tl,
           settingKey: "showHistoryStatusOnTile",
         ).toSliver(),
+        _SwitchSetting(
+          title: "Show image favorites statistics".tl,
+          settingKey: "showImageFavoritesChart",
+        ).toSliver(),
         _PopupWindowSetting(
           title: "Keyword blocking".tl,
           builder: () => const _ManageBlockingWordView(),
