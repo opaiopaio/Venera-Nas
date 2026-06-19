@@ -32,6 +32,13 @@ set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE}")
 # Use Unicode for all projects.
 add_definitions(-DUNICODE -D_UNICODE)
 
+# Silence MSVC 14.51+ hard error STL1011 caused by <experimental/coroutine>
+# (deprecated by Microsoft, superseded by C++20 <coroutine>). The macro turns
+# the static_assert hard error back into a warning so legacy plugins
+# (e.g. flutter_inappwebview_windows via WebView2/cppwinrt) keep compiling.
+# Microsoft-recognized escape hatch. Safe for both old (pre-14.51) and new MSVC.
+add_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+
 # Compilation settings that should be applied to most targets.
 #
 # Be cautious about adding new options here, as plugins use this function by
