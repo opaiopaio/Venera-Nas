@@ -420,5 +420,15 @@ async function processImage(image, cid, eid, page, sourceKey) {
 }
 ''';
 
-const _defaultSourceListUrl =
-    "https://cdn.jsdelivr.net/gh/venera-app/venera-configs@main/index.json";
+const defaultSourceListUrl =
+    "https://cdn.jsdelivr.net/gh/haukuen/venera-configs@main/index.json";
+
+/// 保留私有别名以保持向后兼容。
+const _defaultSourceListUrl = defaultSourceListUrl;
+
+/// 需要迁移到 [_defaultSourceListUrl] 的旧版漫画源列表 URL 集合。
+/// 由 init.dart 在启动时用于迁移旧版本安装。集合中的任何值都会在
+/// 应用启动时被覆盖。用户自定义的 URL(不在集合中)将被保留。
+const legacySourceListUrls = <String>{
+  "https://cdn.jsdelivr.net/gh/venera-app/venera-configs@main/index.json",
+};
