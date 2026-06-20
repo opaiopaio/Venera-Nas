@@ -22,7 +22,12 @@ class ComicSourcePage extends StatelessWidget {
     ComicSource source, [
     bool showLoading = true,
   ]) async {
-    if (!source.url.isURL) {
+    // 优先使用从当前漫画源列表解析出的下载地址，
+    // 这样在源列表 URL 迁移后仍能正确更新。
+    // 回退到源 js 文件中写死的 url 以保持向后兼容。
+    var downloadUrl =
+        ComicSourceManager().updateUrlFor(source.key) ?? source.url;
+    if (!downloadUrl.isURL) {
       if (showLoading) {
         App.rootContext.showMessage(message: "Invalid url config");
         return;
@@ -42,7 +47,7 @@ class ComicSourcePage extends StatelessWidget {
     }
     try {
       var res = await AppDio().get<String>(
-        source.url,
+        downloadUrl,
         options: Options(
           responseType: ResponseType.plain,
           headers: {"cache-time": "no"},
@@ -52,9 +57,7 @@ class ComicSourcePage extends StatelessWidget {
       controller?.close();
       await ComicSourceParser().parse(res.data!, source.filePath);
       await io.File(source.filePath).writeAsString(res.data!);
-      if (ComicSourceManager().availableUpdates.containsKey(source.key)) {
-        ComicSourceManager().availableUpdates.remove(source.key);
-      }
+      ComicSourceManager().removeAvailableUpdate(source.key);
     } catch (e) {
       if (cancel) return;
       if (showLoading) {
@@ -81,8 +84,29 @@ class ComicSourcePage extends StatelessWidget {
     }
     var list = jsonDecode(res.data!) as List;
     var versions = <String, String>{};
+    var listUrl = appdata.settings['comicSourceListUrl'] as String;
     for (var source in list) {
-      versions[source['key']] = source['version'];
+      // 防御性解析：单条畸形条目不应让整个检查流程失败，
+      // 尤其是用户指向陌生新仓库时数据可能不可信。
+      try {
+        var key = source['key'] as String?;
+        var version = source['version'] as String?;
+        if (key == null || version == null) {
+          continue;
+        }
+        versions[key] = version;
+        // 与"添加源"走相同的逻辑解析该条目的下载地址，并缓存供 [update] 使用。
+        var downloadUrl = _resolveSourceDownloadUrl(
+          url: source['url'] as String?,
+          fileName: source['fileName'] as String?,
+          listUrl: listUrl,
+        );
+        if (downloadUrl != null) {
+          ComicSourceManager().setUpdateUrl(key, downloadUrl);
+        }
+      } catch (e) {
+        Log.warning("ComicSourcePage", "跳过畸形源条目: $e");
+      }
     }
     var shouldUpdate = <String>[];
     for (var source in ComicSource.all()) {
@@ -483,21 +507,17 @@ class _ComicSourceListState extends State<_ComicSourceList> {
             : Button.filled(
                 child: Text("Add".tl),
                 onPressed: () async {
-                  var fileName = json![index]["fileName"];
-                  var url = json![index]["url"];
-                  if (url == null || !(url.toString()).isURL) {
-                    var listUrl =
-                        appdata.settings['comicSourceListUrl'] as String;
-                    if (listUrl
-                        .replaceFirst("https://", "")
-                        .replaceFirst("http://", "")
-                        .contains("/")) {
-                      url =
-                          listUrl.substring(0, listUrl.lastIndexOf("/") + 1) +
-                          fileName;
-                    } else {
-                      url = '$listUrl/$fileName';
-                    }
+                  var listUrl =
+                      appdata.settings['comicSourceListUrl'] as String;
+                  var url = _resolveSourceDownloadUrl(
+                    url: json![index]["url"] as String?,
+                    fileName: json![index]["fileName"] as String?,
+                    listUrl: listUrl,
+                  );
+                  if (url == null) {
+                    if (!mounted) return;
+                    context.showMessage(message: "Invalid url config");
+                    return;
                   }
                   await widget.onAdd(url);
                   setState(() {});
@@ -560,6 +580,40 @@ void _validatePages() {
   appdata.settings['favorites'] = networkFavorites.toSet().toList();
 
   appdata.saveData();
+}
+
+/// 解析漫画源列表条目的下载地址。
+///
+/// - 若 [url] 是合法的绝对 URL，直接使用。
+/// - 否则，当提供 [fileName] 时，与 [listUrl] 拼接：
+///   - 当 [listUrl] 含路径分隔符时，用 [fileName] 替换其最后一段路径
+///     （如 `https://x/repo/index.json` + `a.js` -> `https://x/repo/a.js`）。
+///   - 否则把 [fileName] 作为新的一段追加到 [listUrl] 之后。
+/// - 无法生成合法 URL 时返回 null。
+///
+/// "从列表添加源"和"检查更新"共用此逻辑，确保两条路径解析出相同的下载地址。
+String? _resolveSourceDownloadUrl({
+  String? url,
+  String? fileName,
+  required String listUrl,
+}) {
+  if (url != null && url.isURL) {
+    return url;
+  }
+  if (fileName == null) {
+    return null;
+  }
+  String? resolved;
+  // 去掉 scheme 后判断 listUrl 在主机名之外是否还有路径。
+  var withoutScheme = listUrl
+      .replaceFirst("https://", "")
+      .replaceFirst("http://", "");
+  if (withoutScheme.contains("/")) {
+    resolved = listUrl.substring(0, listUrl.lastIndexOf("/") + 1) + fileName;
+  } else {
+    resolved = '$listUrl/$fileName';
+  }
+  return resolved.isURL ? resolved : null;
 }
 
 void _addAllPagesWithComicSource(ComicSource source) {

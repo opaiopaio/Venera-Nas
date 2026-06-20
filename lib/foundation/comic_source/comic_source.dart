@@ -87,6 +87,9 @@ class ComicSourceManager with ChangeNotifier, Init {
 
   void remove(String key) {
     _sources.removeWhere((element) => element.key == key);
+    // 清理缓存的更新状态，避免同 key 源重装后仍显示旧版本徽章或误用旧 url。
+    _availableUpdates.remove(key);
+    _updateUrls.remove(key);
     notifyListeners();
   }
 
@@ -95,9 +98,27 @@ class ComicSourceManager with ChangeNotifier, Init {
   /// Key is the source key, value is the version.
   final _availableUpdates = <String, String>{};
 
+  /// key 为源 key，value 为从当前漫画源列表解析出的下载地址。
+  ///
+  /// 供 [ComicSourcePage.update] 使用，确保更新时从当前列表 URL 下载，
+  /// 而不是使用源 js 文件中可能已过期的 `url`
+
+  final _updateUrls = <String, String>{};
+
   void updateAvailableUpdates(Map<String, String> updates) {
     _availableUpdates.addAll(updates);
     notifyListeners();
+  }
+
+  void setUpdateUrl(String key, String url) {
+    _updateUrls[key] = url;
+  }
+
+  String? updateUrlFor(String key) => _updateUrls[key];
+
+  void removeAvailableUpdate(String key) {
+    _availableUpdates.remove(key);
+    _updateUrls.remove(key);
   }
 
   Map<String, String> get availableUpdates => Map.from(_availableUpdates);
