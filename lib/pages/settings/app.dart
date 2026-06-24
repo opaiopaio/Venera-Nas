@@ -8,6 +8,8 @@ class AppSettings extends StatefulWidget {
 }
 
 class _AppSettingsState extends State<AppSettings> {
+  int _previousRetentionDays = 0;
+
   @override
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
@@ -95,9 +97,44 @@ class _AppSettingsState extends State<AppSettings> {
           interval: 7,
           min: 0,
           max: 182,
+          onChangeStart: (value) {
+            _previousRetentionDays =
+                (appdata.settings['historyRetentionDays'] as num).round();
+          },
           onChangeEnd: () {
             final retentionDays =
                 (appdata.settings['historyRetentionDays'] as num).round();
+            // Require confirmation when lowering to a short retention window,
+            // since this immediately deletes recent history.
+            const confirmThreshold = 15;
+            if (retentionDays > 0 &&
+                retentionDays <= confirmThreshold &&
+                retentionDays < _previousRetentionDays) {
+              var confirmed = false;
+              showConfirmDialog(
+                context: App.rootContext,
+                title: "Auto Clear History".tl,
+                content: "Short retention warning".tl,
+                confirmText: "Confirm",
+                btnColor: context.colorScheme.error,
+                onConfirm: () {
+                  confirmed = true;
+                  HistoryManager().clearExpiredHistory(retentionDays);
+                },
+              ).then((_) {
+                if (!confirmed) {
+                  // User dismissed without confirming: revert to the previous
+                  // value so the destructive change is not applied.
+                  appdata.settings['historyRetentionDays'] =
+                      _previousRetentionDays;
+                  appdata.saveData();
+                  if (mounted) {
+                    setState(() {});
+                  }
+                }
+              });
+              return;
+            }
             if (retentionDays > 0) {
               HistoryManager().clearExpiredHistory(retentionDays);
             }

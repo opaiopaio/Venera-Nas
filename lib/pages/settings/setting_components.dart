@@ -381,6 +381,7 @@ class _SliderSetting extends StatefulWidget {
     required this.min,
     required this.max,
     this.onChanged,
+    this.onChangeStart,
     this.onChangeEnd,
     this.subtitle,
     this.comicId,
@@ -399,6 +400,8 @@ class _SliderSetting extends StatefulWidget {
   final double max;
 
   final VoidCallback? onChanged;
+
+  final void Function(double value)? onChangeStart;
 
   final VoidCallback? onChangeEnd;
 
@@ -505,6 +508,9 @@ class _SliderSettingState extends State<_SliderSetting> {
                 _setValue(value);
               });
               widget.onChanged?.call();
+            },
+            onChangeStart: (value) {
+              widget.onChangeStart?.call(value);
             },
             onChangeEnd: (value) {
               _setValue(value);
