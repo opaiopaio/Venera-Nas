@@ -590,6 +590,23 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                       },
                     ),
                   MenuEntry(
+                    icon: Icons.folder_delete_outlined,
+                    text: "Unfavorite".tl,
+                    color: context.colorScheme.error,
+                    onClick: () {
+                      showConfirmDialog(
+                        context: context,
+                        title: "Unfavorite".tl,
+                        content: "Remove @c comics from all favorite folders?"
+                            .tlParams({"c": selectedComics.length}),
+                        btnColor: context.colorScheme.error,
+                        onConfirm: () {
+                          _unfavoriteSelected();
+                        },
+                      );
+                    },
+                  ),
+                  MenuEntry(
                     icon: Icons.download,
                     text: "Download".tl,
                     onClick: downloadSelected,
@@ -690,6 +707,26 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                       );
                     },
                   ),
+                MenuEntry(
+                  icon: Icons.folder_delete_outlined,
+                  text: "Unfavorite".tl,
+                  color: context.colorScheme.error,
+                  onClick: () {
+                    showConfirmDialog(
+                      context: context,
+                      title: "Unfavorite".tl,
+                      content:
+                          "Remove this comic from all favorite folders?".tl,
+                      btnColor: context.colorScheme.error,
+                      onConfirm: () {
+                        LocalFavoritesManager().batchDeleteComicsInAllFolders([
+                          ComicID((c as FavoriteItem).type, c.id),
+                        ]);
+                        setState(() {});
+                      },
+                    );
+                  },
+                ),
                 MenuEntry(
                   icon: Icons.check,
                   text: "Select".tl,
@@ -1014,6 +1051,14 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
         .map((e) => e as FavoriteItem)
         .toList();
     LocalFavoritesManager().batchDeleteComics(widget.folder, toBeDeleted);
+    _cancel();
+  }
+
+  void _unfavoriteSelected() {
+    var comics = selectedComics.keys
+        .map((e) => ComicID((e as FavoriteItem).type, e.id))
+        .toList();
+    LocalFavoritesManager().batchDeleteComicsInAllFolders(comics);
     _cancel();
   }
 }
