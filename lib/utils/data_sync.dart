@@ -486,6 +486,7 @@ class DataSync with ChangeNotifier {
           }
 
           _cleanupBackup();
+          App.forceRebuild();
           Log.info("Data Sync", "Data downloaded successfully");
           return const Res(true);
         } catch (e, s) {
