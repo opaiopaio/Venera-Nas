@@ -263,44 +263,19 @@ class ComicSource {
     return !res.error;
   }
 
-  /// Get settings dynamically from JavaScript source.
-  /// This allows sources to use getters for dynamic settings that can change at runtime.
+  /// Get settings for UI rendering.
+  ///
+  /// 历史背景：原本（commit f786b2e）通过 JS 动态读取，是为了支持源用 getter
+  /// 在运行时返回不同的 settings（如动态域名列表）。但实践中发现：
+  /// - 部分源会在 init() 后修改 `this.settings.xxx`，把某个 setting 的 value
+  ///   从对象覆盖成字符串/其他类型（例如 copy_manga 的 refreshAppApi 把
+  ///   `this.settings.base_url` 改成了 String 类型的域名）。
+  /// - 这种被运行时污染的 settings 不应展示给用户。
+  ///
+  /// 因此这里直接使用加载时缓存的 [settings]，它在源 js 解析阶段定型，
+  /// 反映了源作者在文件里写下的原始结构，是稳定可信的。
   Map<String, Map<String, dynamic>>? getSettingsDynamic() {
-    try {
-      var value = JsEngine().runCode("ComicSource.sources.$key.settings");
-      if (value is Map) {
-        var newMap = <String, Map<String, dynamic>>{};
-        for (var e in value.entries) {
-          if (e.key is! String) {
-            continue;
-          }
-          if (e.value is! Map) {
-            Log.warning(
-              "ComicSource",
-              "Setting '${e.key}' has non-Map value (${e.value.runtimeType}), skipping",
-            );
-            continue;
-          }
-          var v = <String, dynamic>{};
-          for (var e2 in e.value.entries) {
-            if (e2.key is! String) {
-              continue;
-            }
-            var v2 = e2.value;
-            if (v2 is JSInvokable) {
-              v2 = JSAutoFreeFunction(v2);
-            }
-            v[e2.key] = v2;
-          }
-          newMap[e.key] = v;
-        }
-        return newMap;
-      }
-      return null;
-    } catch (e) {
-      Log.error("ComicSource", "Failed to get dynamic settings: $e");
-      return settings;
-    }
+    return settings;
   }
 
   ComicSource(
