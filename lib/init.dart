@@ -98,13 +98,17 @@ void _checkOldConfigs() {
     appdata.writeImplicitData();
   }
 
-  if (legacySourceListUrls.contains(appdata.settings['comicSourceListUrl']) ||
-      appdata.settings['comicSourceListUrl'].toString().contains(
-        "git.nyne.dev",
-      )) {
-    // 迁移到当前的默认漫画源列表 URL
-    appdata.settings['comicSourceListUrl'] = defaultSourceListUrl;
-    appdata.saveData();
+  // 一次性迁移:把使用旧版源列表 URL 的用户切回当前默认值。
+  // 通过本地标志位保证只执行一次 —— 用户之后手动改回的 URL 不会被再次覆盖。
+  if (appdata.implicitData['sourceListMigratedToDefault'] != true) {
+    var currentUrl = appdata.settings['comicSourceListUrl'].toString();
+    if (legacySourceListUrls.contains(currentUrl) ||
+        currentUrl.contains("git.nyne.dev")) {
+      appdata.settings['comicSourceListUrl'] = defaultSourceListUrl;
+      appdata.saveData();
+    }
+    appdata.implicitData['sourceListMigratedToDefault'] = true;
+    appdata.writeImplicitData();
   }
 }
 
