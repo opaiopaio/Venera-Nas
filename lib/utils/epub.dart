@@ -3,6 +3,7 @@ import 'dart:isolate';
 import 'package:uuid/uuid.dart';
 import 'package:venera/foundation/app.dart';
 import 'package:venera/foundation/local.dart';
+import 'package:venera/foundation/log.dart';
 import 'package:venera/utils/file_type.dart';
 import 'package:venera/utils/io.dart';
 import 'package:zip_flutter/zip_flutter.dart';
@@ -201,7 +202,35 @@ Future<File> createEpubWithLocalComic(
       0,
     )).map((e) => File(e)).toList();
   } else {
-    for (var chapter in comic.downloadedChapters) {
+    var availableChapters = <String>[];
+    var missingChapters = <String>[];
+    // 按章节原始顺序遍历,而非 downloadedChapters(其顺序可能是完成顺序)。
+    var downloadedSet = comic.downloadedChapters.toSet();
+    for (var c in comic.chapters!.ids) {
+      if (!downloadedSet.contains(c)) continue;
+      var chapterDir = Directory(
+        FilePath.join(comic.baseDir, LocalManager.getChapterDirectoryName(c)),
+      );
+      if (chapterDir.existsSync()) {
+        availableChapters.add(c);
+      } else {
+        missingChapters.add(c);
+      }
+    }
+    if (availableChapters.isEmpty) {
+      throw StateError(
+        'No downloadable chapters found on disk for "${comic.title}". '
+        'Please delete and re-download the comic.',
+      );
+    }
+    if (missingChapters.isNotEmpty) {
+      var missingTitles = missingChapters.map((c) => comic.chapters![c] ?? c);
+      Log.warning(
+        'EPUB',
+        'Skipped missing chapters for "${comic.title}": ${missingTitles.join(', ')}',
+      );
+    }
+    for (var chapter in availableChapters) {
       chapters[comic.chapters![chapter]!] = (await LocalManager().getImages(
         comic.id,
         comic.comicType,
