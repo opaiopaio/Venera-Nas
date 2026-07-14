@@ -8,6 +8,7 @@ import 'package:venera/foundation/log.dart';
 import 'package:venera/utils/ext.dart';
 import 'package:venera/utils/file_type.dart';
 import 'package:venera/utils/io.dart';
+import 'package:venera/pages/local_comics/chapter_export.dart';
 import 'package:zip_flutter/zip_flutter.dart';
 
 class ComicMetaData {
@@ -60,6 +61,25 @@ class ComicChapter {
 
   ComicChapter({required this.title, required this.start, required this.end});
 }
+
+/// Result of a multi-volume CBZ export.
+class VolumeExportResult {
+  /// Successfully generated CBZ files, in production order.
+  final List<File> files;
+
+  /// Failure reasons, each formatted as "Vol`NN`: `reason`".
+  final List<String> errors;
+
+  VolumeExportResult({required this.files, required this.errors});
+
+  bool get allFailed => files.isEmpty && errors.isNotEmpty;
+
+  bool get partialSuccess => files.isNotEmpty && errors.isNotEmpty;
+}
+
+/// Image extensions accepted when packing a CBZ. Mirrors the filter used by
+/// [CBZ.import]. Lower-cased, without the leading dot.
+const _cbzImageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'jpe'];
 
 /// Comic Book Archive. Currently supports CBZ, ZIP and 7Z formats.
 abstract class CBZ {
@@ -114,8 +134,8 @@ abstract class CBZ {
     }
     var files = cache.listSync().whereType<File>().toList();
     files.removeWhere((e) {
-      var ext = e.path.split('.').last;
-      return !['jpg', 'jpeg', 'png', 'webp', 'gif', 'jpe'].contains(ext);
+      var ext = e.path.split('.').last.toLowerCase();
+      return !_cbzImageExtensions.contains(ext);
     });
     if (files.isEmpty) {
       cache.deleteSync(recursive: true);
@@ -203,99 +223,74 @@ abstract class CBZ {
     var cache = Directory(FilePath.join(App.cachePath, 'cbz_export'));
     if (cache.existsSync()) cache.deleteSync(recursive: true);
     cache.createSync();
-    List<ComicChapter>? chapters;
-    var pageCount = 0;
-    if (comic.chapters == null) {
-      var images = await LocalManager().getImages(comic.id, comic.comicType, 1);
-      if (images.isEmpty) {
-        throw StateError(
-          'No images found on disk for "${comic.title}". '
-          'The comic may not have been fully downloaded. '
-          'Please delete and re-download.',
-        );
-      }
-      pageCount = images.length;
-      int i = 1;
-      for (var image in images) {
-        var src = File(_localFilePathFromImageUri(image));
-        var dstName = compatiblePageFileName(i, image.split('.').last);
-        var dst = File(FilePath.join(cache.path, dstName));
-        await src.copyMem(dst.path);
-        i++;
-      }
-    } else {
-      var availableChapters = <String>[];
-      var missingChapters = <String>[];
-      // 按章节原始顺序遍历,而非 downloadedChapters(其顺序可能是完成顺序)。
-      var downloadedSet = comic.downloadedChapters.toSet();
-      for (var c in comic.chapters!.ids) {
-        if (!downloadedSet.contains(c)) continue;
-        var chapterDir = Directory(
-          FilePath.join(comic.baseDir, LocalManager.getChapterDirectoryName(c)),
-        );
-        if (chapterDir.existsSync()) {
-          availableChapters.add(c);
-        } else {
-          missingChapters.add(c);
-        }
-      }
-      if (availableChapters.isEmpty) {
-        throw StateError(
-          'No downloadable chapters found on disk for "${comic.title}". '
-          'Please delete and re-download the comic.',
-        );
-      }
-      if (missingChapters.isNotEmpty) {
-        var missingTitles = missingChapters.map((c) => comic.chapters![c] ?? c);
-        Log.warning(
-          'CBZ',
-          'Skipped missing chapters for "${comic.title}": ${missingTitles.join(', ')}',
-        );
-      }
-      var allImages = <String>[];
-      final chapterPageCounts = <MapEntry<String, int>>[];
-      for (var c in availableChapters) {
-        var chapterName = comic.chapters![c];
+    try {
+      if (comic.chapters == null) {
         var images = await LocalManager().getImages(
           comic.id,
           comic.comicType,
-          c,
+          1,
         );
-        allImages.addAll(images);
-        chapterPageCounts.add(MapEntry(chapterName!, images.length));
+        if (images.isEmpty) {
+          throw StateError(
+            'No images found on disk for "${comic.title}". '
+            'The comic may not have been fully downloaded. '
+            'Please delete and re-download.',
+          );
+        }
+        var pageCount = images.length;
+        int i = 1;
+        for (var image in images) {
+          var src = File(_localFilePathFromImageUri(image));
+          var dstName = compatiblePageFileName(i, image.split('.').last);
+          var dst = File(FilePath.join(cache.path, dstName));
+          await src.copyMem(dst.path);
+          i++;
+        }
+        var cover = comic.coverFile;
+        await cover.copyMem(
+          FilePath.join(cache.path, 'cover.${cover.path.split('.').last}'),
+        );
+        final metaData = ComicMetaData(
+          title: comic.title,
+          author: comic.subtitle,
+          tags: comic.tags,
+          chapters: null,
+        );
+        await File(
+          FilePath.join(cache.path, 'metadata.json'),
+        ).writeAsString(jsonEncode(metaData));
+        await File(
+          FilePath.join(cache.path, 'ComicInfo.xml'),
+        ).writeAsString(_buildComicInfoXml(metaData, pageCount: pageCount));
+        var cbz = File(outFilePath);
+        if (cbz.existsSync()) cbz.deleteSync();
+        await _compress(cache.path, cbz.path);
+        return cbz;
+      } else {
+        // 按章节原始顺序遍历,而非 downloadedChapters(其顺序可能是完成顺序)。
+        var downloadedSet = comic.downloadedChapters.toSet();
+        var orderedIds = comic.chapters!.ids.where(
+          (c) => downloadedSet.contains(c),
+        );
+        var availableChapters = _collectAvailableChapters(comic, orderedIds);
+        if (availableChapters.isEmpty) {
+          throw StateError(
+            'No downloadable chapters found on disk for "${comic.title}". '
+            'Please delete and re-download the comic.',
+          );
+        }
+        var cbz = await _exportChaptersToCbz(
+          comic,
+          availableChapters,
+          outFilePath,
+          cache: cache,
+          includeCover: true,
+        );
+        return cbz;
       }
-      chapters = _buildChapterRanges(chapterPageCounts);
-      pageCount = allImages.length;
-      int i = 1;
-      for (var image in allImages) {
-        var src = File(_localFilePathFromImageUri(image));
-        var dstName = compatiblePageFileName(i, image.split('.').last);
-        var dst = File(FilePath.join(cache.path, dstName));
-        await src.copyMem(dst.path);
-        i++;
-      }
+    } finally {
+      cache.deleteSync(recursive: true);
     }
-    var cover = comic.coverFile;
-    await cover.copyMem(
-      FilePath.join(cache.path, 'cover.${cover.path.split('.').last}'),
-    );
-    final metaData = ComicMetaData(
-      title: comic.title,
-      author: comic.subtitle,
-      tags: comic.tags,
-      chapters: chapters,
-    );
-    await File(
-      FilePath.join(cache.path, 'metadata.json'),
-    ).writeAsString(jsonEncode(metaData));
-    await File(
-      FilePath.join(cache.path, 'ComicInfo.xml'),
-    ).writeAsString(_buildComicInfoXml(metaData, pageCount: pageCount));
-    var cbz = File(outFilePath);
-    if (cbz.existsSync()) cbz.deleteSync();
-    await _compress(cache.path, cbz.path);
-    cache.deleteSync(recursive: true);
-    return cbz;
   }
 
   static String compatiblePageFileName(int pageIndex, String extension) {
@@ -317,6 +312,252 @@ abstract class CBZ {
     Map<String, int> chapterPageCounts,
   ) {
     return _buildChapterRanges(chapterPageCounts.entries);
+  }
+
+  /// Collect chapters from [chapterIds] that are both downloaded and present
+  /// on disk, preserving the input order. Returns warnings for missing ones
+  /// via [Log.warning].
+  static List<String> _collectAvailableChapters(
+    LocalComic comic,
+    Iterable<String> chapterIds,
+  ) {
+    var availableChapters = <String>[];
+    var missingChapters = <String>[];
+    for (var c in chapterIds) {
+      var chapterDir = Directory(
+        FilePath.join(comic.baseDir, LocalManager.getChapterDirectoryName(c)),
+      );
+      if (chapterDir.existsSync()) {
+        availableChapters.add(c);
+      } else {
+        missingChapters.add(c);
+      }
+    }
+    if (missingChapters.isNotEmpty) {
+      var missingTitles = missingChapters.map((c) => comic.chapters![c] ?? c);
+      Log.warning(
+        'CBZ',
+        'Skipped missing chapters for "${comic.title}": ${missingTitles.join(', ')}',
+      );
+    }
+    return availableChapters;
+  }
+
+  static List<String> collectAvailableChaptersForTesting(
+    LocalComic comic,
+    Iterable<String> chapterIds,
+  ) {
+    return _collectAvailableChapters(comic, chapterIds);
+  }
+
+  /// List image URIs (file://...) for a single chapter of [comic] by reading
+  /// directly from disk, mirroring [LocalManager.getImages] without the DB
+  /// lookup. The [comic] passed in is authoritative.
+  ///
+  /// - For chaptered comics, reads from `<baseDir>/<chapterDir(c)>`.
+  /// - For non-chaptered comics, reads from `<baseDir>`.
+  /// - Skips files starting with `cover.` or `.`.
+  /// - Sorts by integer prefix when both names parse, else lexicographically.
+  static Future<List<String>> _listChapterImages(
+    LocalComic comic,
+    String chapterId,
+  ) async {
+    var directory = Directory(comic.baseDir);
+    if (comic.hasChapters) {
+      var cid = LocalManager.getChapterDirectoryName(chapterId);
+      directory = Directory(FilePath.join(directory.path, cid));
+    }
+    if (!await directory.exists()) {
+      throw StateError(
+        'Chapter directory not found: ${directory.path}. '
+        'The chapter may not have been fully downloaded. '
+        'Please delete and re-download the affected chapters.',
+      );
+    }
+    var files = <File>[];
+    await for (var entity in directory.list()) {
+      if (entity is File) {
+        if (entity.name.startsWith('cover.')) {
+          continue;
+        }
+        if (entity.name.startsWith('.')) {
+          continue;
+        }
+        // Skip non-image files (metadata.json, Thumbs.db, etc.) that may
+        // exist alongside the pages. Mirrors [CBZ.import]'s filter.
+        final ext = entity.path.split('.').last.toLowerCase();
+        if (!_cbzImageExtensions.contains(ext)) {
+          continue;
+        }
+        files.add(entity);
+      }
+    }
+    files.sort((a, b) {
+      var ai = int.tryParse(a.name.split('.').first);
+      var bi = int.tryParse(b.name.split('.').first);
+      if (ai != null && bi != null) {
+        return ai.compareTo(bi);
+      }
+      return a.name.compareTo(b.name);
+    });
+    return files.map((e) => "file://${e.path}").toList();
+  }
+
+  /// Export a subset of [comic]'s chapters as a single CBZ file.
+  ///
+  /// - Pages are numbered from 0001 within this CBZ.
+  /// - metadata.json and ComicInfo.xml only contain [chapterIds]' chapters.
+  /// - [includeCover] controls whether cover.* is written.
+  /// - [cache] must be an existing empty directory owned by the caller;
+  ///   the caller is responsible for creating and deleting it.
+  static Future<File> _exportChaptersToCbz(
+    LocalComic comic,
+    List<String> chapterIds,
+    String outFilePath, {
+    required Directory cache,
+    bool includeCover = true,
+  }) async {
+    if (chapterIds.isEmpty) {
+      throw StateError('No chapters to export for "${comic.title}".');
+    }
+    var allImages = <String>[];
+    final chapterPageCounts = <MapEntry<String, int>>[];
+    for (var c in chapterIds) {
+      final chapterName = comic.chapters![c] ?? c;
+      var images = await _listChapterImages(comic, c);
+      allImages.addAll(images);
+      chapterPageCounts.add(MapEntry(chapterName, images.length));
+    }
+    final chapters = _buildChapterRanges(chapterPageCounts);
+    final pageCount = allImages.length;
+    int i = 1;
+    for (var image in allImages) {
+      var src = File(_localFilePathFromImageUri(image));
+      var dstName = compatiblePageFileName(i, image.split('.').last);
+      var dst = File(FilePath.join(cache.path, dstName));
+      await src.copyMem(dst.path);
+      i++;
+    }
+    if (includeCover) {
+      var cover = comic.coverFile;
+      await cover.copyMem(
+        FilePath.join(cache.path, 'cover.${cover.path.split('.').last}'),
+      );
+    }
+    final metaData = ComicMetaData(
+      title: comic.title,
+      author: comic.subtitle,
+      tags: comic.tags,
+      chapters: chapters,
+    );
+    await File(
+      FilePath.join(cache.path, 'metadata.json'),
+    ).writeAsString(jsonEncode(metaData));
+    await File(
+      FilePath.join(cache.path, 'ComicInfo.xml'),
+    ).writeAsString(_buildComicInfoXml(metaData, pageCount: pageCount));
+    var cbz = File(outFilePath);
+    if (cbz.existsSync()) cbz.deleteSync();
+    await _compress(cache.path, cbz.path);
+    return cbz;
+  }
+
+  /// Export [comic] as multiple CBZ files, one per downloaded chapter, into
+  /// [outDir].
+  ///
+  /// - [outDir] must exist and be writable.
+  /// - [onProgress] is called before each chapter with (completed, total,
+  ///   currentLabel) where total counts only chapters with on-disk images.
+  /// - [isCancelled], if it returns true, stops before the next chapter;
+  ///   already-produced files are kept.
+  /// - Only the first produced CBZ includes the cover.
+  /// - A single chapter failure does not abort the rest; failures are
+  ///   recorded in [VolumeExportResult.errors].
+  /// - Throws [StateError] if [comic.chapters] is null.
+  /// - Throws [StateError] if no chapters have on-disk images.
+  static Future<VolumeExportResult> exportByChapters(
+    LocalComic comic,
+    String outDir, {
+    void Function(int completed, int total, String currentLabel)? onProgress,
+    bool Function()? isCancelled,
+  }) async {
+    if (comic.chapters == null) {
+      throw StateError('exportByChapters requires a comic with chapters.');
+    }
+    final downloadedSet = comic.downloadedChapters.toSet();
+    final orderedIds = comic.chapters!.ids.where(
+      (id) => downloadedSet.contains(id),
+    );
+    final availableChapters = _collectAvailableChapters(comic, orderedIds);
+
+    if (availableChapters.isEmpty) {
+      throw StateError(
+        'No downloadable chapters found on disk for "${comic.title}". '
+        'Please delete and re-download the comic.',
+      );
+    }
+
+    final total = availableChapters.length;
+    final files = <File>[];
+    final errors = <String>[];
+    var completed = 0;
+    var coverGiven = false;
+
+    for (var i = 0; i < availableChapters.length; i++) {
+      final chapterId = availableChapters[i];
+      final chapterTitle = comic.chapters![chapterId] ?? chapterId;
+      final epLabel = 'EP$chapterTitle';
+
+      if (isCancelled?.call() == true) break;
+
+      onProgress?.call(completed, total, chapterTitle);
+
+      // Build single-chapter ExportableChapter for filename.
+      final exportableChapter = ExportableChapter(
+        id: chapterId,
+        title: chapterTitle,
+        position: i + 1,
+      );
+      final fileName = singleChapterExportFilename(
+        comic: comic,
+        chapter: exportableChapter,
+        extension: '.cbz',
+      );
+      final outPath = FilePath.join(outDir, fileName);
+      // Compress to a cache-local temp path first, then copy to outPath.
+      // On Android/iOS the outDir may be a SAF/security-scoped path that
+      // native zip (and plain dart:io outside overrideIO) cannot write to
+      // directly. The cache is always natively writable.
+      final tempCbzPath = FilePath.join(App.cachePath, 'cbz_export_tmp.cbz');
+
+      var cache = Directory(FilePath.join(App.cachePath, 'cbz_export'));
+      if (cache.existsSync()) cache.deleteSync(recursive: true);
+      cache.createSync();
+      try {
+        await _exportChaptersToCbz(
+          comic,
+          [chapterId],
+          tempCbzPath,
+          cache: cache,
+          includeCover: !coverGiven,
+        );
+        // Copy the finished CBZ to the user-chosen directory via overrideIO
+        // so SAF/security-scoped paths are handled correctly.
+        await overrideIO(() async {
+          await File(tempCbzPath).copyMem(outPath);
+        });
+        files.add(File(outPath));
+        if (!coverGiven) coverGiven = true;
+      } catch (e) {
+        errors.add('$epLabel: $e');
+      } finally {
+        cache.deleteSync(recursive: true);
+        File(tempCbzPath).deleteIgnoreError();
+      }
+      completed++;
+    }
+
+    return VolumeExportResult(files: files, errors: errors);
   }
 
   static List<ComicChapter> _buildChapterRanges(
@@ -471,8 +712,18 @@ abstract class CBZ {
     return values.toSet().toList();
   }
 
-  static _compress(String src, String dst) async {
+  /// Compress a directory into a CBZ/ZIP archive. Defaults to the native
+  /// [ZipFile.compressFolderAsync]; overridable via [compressor] to enable
+  /// unit testing without the native zip dynamic library.
+  static Future<void> Function(String src, String dst) compressor =
+      _defaultCompressor;
+
+  static Future<void> _defaultCompressor(String src, String dst) async {
     await ZipFile.compressFolderAsync(src, dst, 4);
+  }
+
+  static _compress(String src, String dst) async {
+    await compressor(src, dst);
   }
 }
 

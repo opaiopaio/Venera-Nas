@@ -605,7 +605,12 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
         icon: Icons.outbox_outlined,
         text: "Export as cbz".tl,
         onClick: () {
-          chooseExportScopeAndExport(comics, CBZ.export, ".cbz");
+          chooseExportScopeAndExport(
+            comics,
+            CBZ.export,
+            ".cbz",
+            allowSplitByChapters: true,
+          );
         },
       ),
       MenuEntry(
@@ -628,12 +633,18 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
   Future<void> chooseExportScopeAndExport(
     List<LocalComic> comics,
     ExportComicFunc export,
-    String ext,
-  ) async {
+    String ext, {
+    bool allowSplitByChapters = false,
+  }) async {
     final canSelectChapters =
         comics.length == 1 &&
         comics.first.chapters != null &&
         orderedDownloadedChapters(comics.first).isNotEmpty;
+    // When the export function is CBZ (allowSplitByChapters), selected
+    // chapters are exported as one CBZ per chapter into a directory.
+    // Other formats (PDF/EPUB) keep the legacy "merge selected into one
+    // file" behavior via exportComics.
+    final canSplitSelected = allowSplitByChapters && canSelectChapters;
     var scope = _LocalComicExportScope.entireComic;
 
     final selectedScope = await showDialog<_LocalComicExportScope>(
@@ -692,15 +703,40 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
       case _LocalComicExportScope.entireComic:
         exportComics(comics, export, ext);
       case _LocalComicExportScope.selectedChapters:
-        showExportChaptersPopWindow(comics.first, export, ext);
+        if (canSplitSelected) {
+          // CBZ: each selected chapter becomes its own CBZ in a directory.
+          showExportChaptersPopWindow(
+            comics.first,
+            onSubmit: (selectedIds) => exportComicByChaptersToDirectory(
+              comics.first,
+              selectedChapterIds: selectedIds,
+            ),
+          );
+        } else {
+          // PDF/EPUB: merge selected chapters into one file.
+          showExportChaptersPopWindow(
+            comics.first,
+            onSubmit: (selectedIds) => _exportSelectedChaptersMerged(
+              comics.first,
+              selectedIds,
+              export,
+              ext,
+            ),
+          );
+        }
     }
   }
 
+  /// Chapter-selection popup shared by the "merge into one file" (PDF/EPUB)
+  /// and "one CBZ per chapter" (CBZ) export flows.
+  ///
+  /// [onSubmit] receives the list of selected chapter IDs (in the comic's
+  /// chapter order, not selection order) and is invoked after the popup is
+  /// dismissed.
   void showExportChaptersPopWindow(
-    LocalComic comic,
-    ExportComicFunc export,
-    String ext,
-  ) {
+    LocalComic comic, {
+    required Future<void> Function(List<String> selectedChapterIds) onSubmit,
+  }) {
     final chapters = orderedDownloadedChapters(comic);
     final selectedChapterIds = <String>{};
 
@@ -769,31 +805,19 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
                         onPressed: selectedChapterIds.isEmpty
                             ? null
                             : () {
-                                final selectedChapters = chapters
+                                // Preserve comic chapter order, not selection
+                                // order, so multi-chapter filenames stay
+                                // stable regardless of tap order.
+                                final orderedSelected = chapters
                                     .where(
                                       (chapter) => selectedChapterIds.contains(
                                         chapter.id,
                                       ),
                                     )
+                                    .map((chapter) => chapter.id)
                                     .toList();
-                                final filteredComic = copyWithSelectedChapters(
-                                  comic,
-                                  selectedChapters
-                                      .map((chapter) => chapter.id)
-                                      .toList(),
-                                );
-                                final filename = selectedChapterExportFilename(
-                                  comic: comic,
-                                  selectedChapters: selectedChapters,
-                                  extension: ext,
-                                );
                                 App.rootContext.pop();
-                                exportComics(
-                                  [filteredComic],
-                                  export,
-                                  ext,
-                                  filenameOverride: filename,
-                                );
+                                onSubmit(orderedSelected);
                               },
                         child: Text("Submit".tl),
                       ),
@@ -806,6 +830,30 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
         ),
       ),
     );
+  }
+
+  /// Merge-selected-chapters flow: builds a comic whose `downloadedChapters`
+  /// is exactly [selectedChapterIds], derives a single output filename, and
+  /// delegates to [exportComics]. Used by PDF/EPUB where each export is one
+  /// file regardless of how many chapters are picked.
+  Future<void> _exportSelectedChaptersMerged(
+    LocalComic comic,
+    List<String> selectedChapterIds,
+    ExportComicFunc export,
+    String ext,
+  ) async {
+    final filteredComic = copyWithSelectedChapters(comic, selectedChapterIds);
+    // Reconstruct ExportableChapter list in the same order to feed the
+    // filename helper.
+    final ordered = orderedDownloadedChapters(
+      comic,
+    ).where((c) => selectedChapterIds.contains(c.id)).toList();
+    final filename = selectedChapterExportFilename(
+      comic: comic,
+      selectedChapters: ordered,
+      extension: ext,
+    );
+    exportComics([filteredComic], export, ext, filenameOverride: filename);
   }
 
   /// Export given comics to a file
@@ -894,6 +942,80 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
     await saveFile(file: File(outFile), filename: "comics_export.zip");
     loadingController.close();
     File(outFile).deleteIgnoreError();
+  }
+
+  /// Export a single chaptered comic as one CBZ per chapter into a
+  /// user-chosen directory. Does NOT re-compress into a zip.
+  ///
+  /// When [selectedChapterIds] is omitted, all downloaded chapters are
+  /// exported. When provided, only those chapters are exported (each as its
+  /// own CBZ).
+  Future<void> exportComicByChaptersToDirectory(
+    LocalComic comic, {
+    List<String>? selectedChapterIds,
+  }) async {
+    final effectiveComic = selectedChapterIds == null
+        ? comic
+        : copyWithSelectedChapters(comic, selectedChapterIds);
+    final picker = DirectoryPicker();
+    final picked = await picker.pickDirectory();
+    if (picked == null) return;
+    if (!mounted) return;
+    final outDir = picked.path;
+
+    var canceled = false;
+    final loadingController = showLoadingDialog(
+      context,
+      allowCancel: true,
+      message: "${"Exporting".tl} 0/?",
+      withProgress: true,
+      onCancel: () {
+        canceled = true;
+      },
+    );
+
+    try {
+      final result = await CBZ.exportByChapters(
+        effectiveComic,
+        outDir,
+        isCancelled: () => canceled,
+        onProgress: (completed, total, label) {
+          loadingController.setMessage("${"Exporting".tl} $completed/$total");
+          loadingController.setProgress(total > 0 ? completed / total : null);
+        },
+      );
+
+      loadingController.close();
+      if (!mounted) return;
+
+      if (result.allFailed) {
+        context.showMessage(
+          message: "Export failed: @errors".tlParams({
+            'errors': result.errors.join('; '),
+          }),
+        );
+      } else if (result.partialSuccess) {
+        context.showMessage(
+          message: "Export completed: @success files saved, @failed failed"
+              .tlParams({
+                'success': result.files.length.toString(),
+                'failed': result.errors.length.toString(),
+              }),
+        );
+      } else {
+        context.showMessage(
+          message: "Export completed: @count files saved".tlParams({
+            'count': result.files.length.toString(),
+          }),
+        );
+      }
+    } catch (e, s) {
+      Log.error("Export Chapters", e, s);
+      loadingController.close();
+      if (mounted) {
+        context.showMessage(message: e.toString());
+      }
+    }
   }
 }
 
