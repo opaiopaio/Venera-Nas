@@ -215,11 +215,11 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
 
   Future<void> _startScan() async {
     if (_selectedServer == null) {
-      context.showMessage(message: "Please select a server".tl);
+      context.showMessage(message: "请选择一个服务器".tl);
       return;
     }
     if (_rootPath.trim().isEmpty) {
-      context.showMessage(message: "Please enter a root path".tl);
+      context.showMessage(message: "请输入根路径".tl);
       return;
     }
 
@@ -243,14 +243,14 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
       LocalManager().notifyListeners();
       setState(() {
         _isScanning = false;
-        _scanResult = "Imported @a comics from @b"
+        _scanResult = "从 @b 导入了 @a 部漫画"
             .tlParams({'a': comics.length, 'b': _selectedServer!.name});
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _isScanning = false;
-        _scanResult = "${"Import failed".tl}: $e";
+        _scanResult = "${"导入失败".tl}: $e";
       });
       Log.error("SMB Import", e.toString());
     }
@@ -260,12 +260,12 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
   Widget build(BuildContext context) {
     if (_servers.isEmpty) {
       return ContentDialog(
-        title: "SMB / NAS Import".tl,
+        title: "SMB / NAS 导入".tl,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              "No SMB servers configured. Please add a server in Settings > SMB / NAS Servers first."
+              "未配置 SMB 服务器。请先在 设置 > SMB / NAS 服务器 中添加服务器。"
                   .tl,
             ).paddingHorizontal(16),
             const SizedBox(height: 16),
@@ -282,7 +282,7 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
 
     if (_scanResult != null) {
       return ContentDialog(
-        title: "Scan Complete".tl,
+        title: "扫描完成".tl,
         content: Text(_scanResult!).paddingHorizontal(16),
         actions: [
           FilledButton(
@@ -294,7 +294,7 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
     }
 
     return ContentDialog(
-      title: "SMB / NAS Import".tl,
+      title: "SMB / NAS 导入".tl,
       content: _isScanning ? _buildProgress() : _buildForm(_servers),
       actions: _isScanning ? _buildProgressActions() : _buildFormActions(),
     );
@@ -308,7 +308,7 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
         DropdownButtonFormField<SmbConnection>(
           value: _selectedServer,
           decoration: InputDecoration(
-            labelText: "Server".tl,
+            labelText: "服务器".tl,
             border: const OutlineInputBorder(),
           ),
           items: servers.map((s) {
@@ -323,7 +323,7 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
         const SizedBox(height: 12),
         TextField(
           decoration: InputDecoration(
-            labelText: "Root Path".tl,
+            labelText: "根路径".tl,
             hintText: 'Comics/Manga',
             border: const OutlineInputBorder(),
           ),
@@ -331,7 +331,7 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
         ).paddingHorizontal(16),
         const SizedBox(height: 8),
         Text(
-          "Path on the SMB share where comic directories are located.".tl,
+          "SMB 共享中漫画目录所在的路径。".tl,
           style: TextStyle(
             fontSize: 12,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -349,7 +349,7 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
           value: _total > 0 ? _current / _total : null,
         ),
         const SizedBox(height: 16),
-        Text("Scanning...".tl),
+        Text("正在扫描...".tl),
         if (_total > 0) Text("$_current / $_total"),
       ],
     ).paddingHorizontal(16);
@@ -361,7 +361,7 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
         onPressed: () => Navigator.of(context).pop(),
         child: Text("Cancel".tl),
       ),
-      FilledButton(onPressed: _startScan, child: Text("Scan".tl)),
+      FilledButton(onPressed: _startScan, child: Text("开始扫描".tl)),
     ];
   }
 

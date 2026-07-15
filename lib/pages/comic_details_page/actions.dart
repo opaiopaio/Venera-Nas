@@ -133,6 +133,33 @@ abstract mixin class _ComicPageActions {
 
   void onReadEnd();
 
+  Future<DownloadMode?> _selectDownloadMode() async {
+    DownloadMode result = DownloadMode.local;
+    final value = await showDialog<DownloadMode>(
+      context: App.rootContext,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => ContentDialog(
+          title: 'Download Mode'.tl,
+          content: RadioGroup<DownloadMode>(
+            groupValue: result,
+            onChanged: (v) => setState(() => result = v ?? result),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RadioListTile<DownloadMode>(title: Text('Local'.tl), value: DownloadMode.local),
+                RadioListTile<DownloadMode>(title: Text('NAS (SMB)'.tl), value: DownloadMode.smb),
+              ],
+            ),
+          ),
+          actions: [
+            FilledButton(onPressed: () => Navigator.of(ctx).pop(result), child: Text('Confirm'.tl)),
+          ],
+        ),
+      ),
+    );
+    return value;
+  }
+
   void download() async {
     if (LocalManager().isDownloading(comic.id, comic.comicType)) {
       App.rootContext.showMessage(message: "The comic is downloading".tl);
@@ -150,7 +177,7 @@ abstract mixin class _ComicPageActions {
       int selected = -1;
       bool isLoading = false;
       bool isGettingLink = false;
-      await showDialog(
+      final value = await showDialog<DownloadMode>(
         context: App.rootContext,
         builder: (context) {
           return StatefulBuilder(
@@ -256,12 +283,25 @@ abstract mixin class _ComicPageActions {
       }
     }
 
+    // Ask user for download mode
+    final downloadMode = await _selectDownloadMode();
+    if (downloadMode == null) return;
+
+    if (downloadMode == DownloadMode.smb && LocalManager().smbPath.isEmpty) {
+      if (!App.rootContext.mounted) return;
+      App.rootContext.showMessage(
+        message: "请先在 设置 > App > 设置 NAS 下载路径 中配置 NAS 地址。".tl,
+      );
+      return;
+    }
+
     if (comic.chapters == null) {
       LocalManager().addTask(
         ImagesDownloadTask(
           source: comicSource,
           comicId: comic.id,
           comic: comic,
+          downloadMode: downloadMode,
         ),
       );
     } else {
@@ -296,6 +336,7 @@ abstract mixin class _ComicPageActions {
           chapters: selected!.map((i) {
             return comic.chapters!.ids.elementAt(i);
           }).toList(),
+          downloadMode: downloadMode,
         ),
       );
     }

@@ -29,6 +29,7 @@ import 'package:venera/utils/tags_translation.dart';
 import 'package:venera/utils/translations.dart';
 
 import 'local_comics_page.dart';
+import 'local_comics/import_dialog.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -427,15 +428,9 @@ class _LocalState extends State<_Local> {
                 comics: local,
                 heroTagPrefix: 'local_',
                 onItemTap: (comic, heroID) {
-                  context.to(
-                    () => ComicPage(
-                      id: comic.id,
-                      sourceKey: comic.sourceKey,
-                      cover: comic.cover,
-                      title: comic.title,
-                      heroID: heroID,
-                    ),
-                  );
+                  if (comic is LocalComic) {
+                    comic.read();
+                  }
                 },
               )
             : null,
@@ -462,6 +457,16 @@ class _LocalState extends State<_Local> {
                 },
               ),
             const Spacer(),
+            Button.outlined(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => const SmbImportDialog(),
+                );
+              },
+              child: Text("扫描 NAS".tl),
+            ),
+            const SizedBox(width: 8),
             Button.filled(onPressed: import, child: Text("Import".tl)),
           ],
         ).paddingHorizontal(AppSpace.lg).paddingVertical(AppSpace.sm),
