@@ -95,8 +95,8 @@ class _App {
   }
 
   Future<void> initComponents() async {
+    await data.init();
     await Future.wait([
-      data.init(),
       history.init(),
       favorites.init(),
       local.init(),

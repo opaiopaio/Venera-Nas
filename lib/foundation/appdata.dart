@@ -90,6 +90,7 @@ class Appdata with Init {
     "lastSyncTime",
     "disableSyncFields",
     "authorizationRequired",
+    "smbDownloadPath",
   ];
 
   /// Restore data from a local backup file.
@@ -121,6 +122,7 @@ class Appdata with Init {
     "lastSyncTime",
     "imageFavoritesDisplayType",
     "commentFontSize",
+    "smbDownloadPath",
   ];
 
   static const _archiveSyncFields = ["backupWebdav", "backupWebdavPath"];
