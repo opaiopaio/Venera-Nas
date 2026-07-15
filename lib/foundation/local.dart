@@ -585,18 +585,15 @@ class LocalManager with ChangeNotifier {
   ]) {
     var comic = find(id, type);
     if (comic == null) return false;
-
-    // SMB comics: rely solely on downloadedChapters in the database.
-    // There is no local filesystem to check.
-    if (type == ComicType.smb) {
+    // If the comic's directory is an smb:// URL, skip all local
+    // filesystem checks and rely solely on downloadedChapters.
+    if (comic.baseDir.startsWith('smb://')) {
       if (comic.chapters == null || ep == null) {
-        // No chapter info — treat as fully available if the record exists.
         return true;
       }
       var sid = (chapters ?? comic.chapters)!.ids.elementAtOrNull(ep - 1);
       return sid != null && comic.downloadedChapters.contains(sid);
     }
-
     if (comic.chapters == null || ep == null) {
       return Directory(comic.baseDir).existsSync();
     }
@@ -642,6 +639,11 @@ class LocalManager with ChangeNotifier {
     var comic = find(id, type);
     if (comic != null) {
       return Directory(FilePath.join(path, comic.directory));
+    }
+    // SMB path: skip local directory creation.
+    if (path.startsWith('smb://')) {
+      var dir = findValidDirectoryName(path, name);
+      return Directory(FilePath.join(path, dir));
     }
     const comicDirectoryMaxLength = 80;
     if (name.length > comicDirectoryMaxLength) {
@@ -825,7 +827,7 @@ class LocalManager with ChangeNotifier {
     _db.execute('BEGIN TRANSACTION;');
     try {
       for (var c in comics) {
-        if (removeFileOnDisk) {
+        if (removeFileOnDisk && !c.baseDir.startsWith('smb://')) {
           var dir = Directory(FilePath.join(path, c.directory));
           if (dir.existsSync()) {
             shouldRemovedDirs.add(dir);

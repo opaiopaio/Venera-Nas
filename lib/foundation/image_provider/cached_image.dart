@@ -48,6 +48,9 @@ class CachedImageProvider
         var file = File(url.substring(7));
         return file.readAsBytes();
       }
+      if (url.startsWith('smb://')) {
+        throw 'SMB cover must be loaded via LocalComicImageProvider';
+      }
       await for (var progress in ImageDownloader.loadThumbnail(
         url,
         sourceKey,
@@ -71,7 +74,7 @@ class CachedImageProvider
           cid!,
           ComicType.fromKey(sourceKey!),
         );
-        if (localComic != null) {
+        if (localComic != null && localComic.comicType != ComicType.smb) {
           var file = localComic.coverFile;
           if (await file.exists()) {
             var data = await file.readAsBytes();

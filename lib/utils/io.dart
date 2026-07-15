@@ -289,6 +289,14 @@ Future<void> copyDirectoryIsolate(
 }
 
 String findValidDirectoryName(String path, String directory) {
+  // SMB paths: skip local filesystem existence check.
+  if (path.startsWith('smb://')) {
+    var name = sanitizeFileName(directory);
+    if (name.isEmpty || name == '.' || name == '..') {
+      name = 'smb_download';
+    }
+    return name;
+  }
   var name = sanitizeFileName(directory);
   var dir = Directory("$path/$name");
   var i = 1;

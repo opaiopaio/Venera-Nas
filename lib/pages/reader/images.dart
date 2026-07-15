@@ -56,7 +56,7 @@ class _ReaderImagesState extends State<_ReaderImages> {
   void load() async {
     if (inProgress) return;
     inProgress = true;
-    if (reader.type == ComicType.local ||
+    if (reader.type == ComicType.local || reader.type == ComicType.smb ||
         (LocalManager().isDownloaded(
           reader.cid,
           reader.type,
