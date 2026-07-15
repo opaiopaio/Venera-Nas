@@ -31,33 +31,12 @@ class _AppSettingsState extends State<AppSettings> {
           title: "Set New Storage Path".tl,
           actionTitle: "Set".tl,
           callback: () async {
-            String? result;
-            if (App.isAndroid) {
-              var picker = DirectoryPicker();
-              result = (await picker.pickDirectory())?.path;
-            } else if (App.isIOS) {
-              result = await selectDirectoryIOS();
-            } else {
-              result = await selectDirectory();
-            }
-            if (result == null) return;
-            if (!App.rootContext.mounted) return;
-            var loadingDialog = showLoadingDialog(
-              App.rootContext,
-              barrierDismissible: false,
-              allowCancel: false,
+            showDialog(
+              context: context,
+              builder: (ctx) => _StoragePathDialog(
+                onPathSet: () => setState(() {}),
+              ),
             );
-            var res = await LocalManager().setNewPath(result);
-            if (!App.rootContext.mounted) return;
-            loadingDialog.close();
-            if (res != null) {
-              if (!context.mounted) return;
-              context.showMessage(message: res);
-            } else {
-              if (!context.mounted) return;
-              context.showMessage(message: "Path set successfully".tl);
-              setState(() {});
-            }
           },
         ).toSliver(),
         ListTile(
@@ -104,8 +83,6 @@ class _AppSettingsState extends State<AppSettings> {
           onChangeEnd: () {
             final retentionDays =
                 (appdata.settings['historyRetentionDays'] as num).round();
-            // Require confirmation when lowering to a short retention window,
-            // since this immediately deletes recent history.
             const confirmThreshold = 15;
             if (retentionDays > 0 &&
                 retentionDays <= confirmThreshold &&
@@ -123,8 +100,6 @@ class _AppSettingsState extends State<AppSettings> {
                 },
               ).then((_) {
                 if (!confirmed) {
-                  // User dismissed without confirming: revert to the previous
-                  // value so the destructive change is not applied.
                   appdata.settings['historyRetentionDays'] =
                       _previousRetentionDays;
                   appdata.saveData();
@@ -192,6 +167,14 @@ class _AppSettingsState extends State<AppSettings> {
             showPopUpWidget(context, const _BackupWebdavSetting());
           },
           actionTitle: 'Set'.tl,
+        ).toSliver(),
+        _SettingPartTitle(title: "Network".tl, icon: Icons.dns_outlined),
+        _CallbackSetting(
+          title: "SMB / NAS Servers".tl,
+          callback: () async {
+            showPopUpWidget(context, const _SmbServerManager());
+          },
+          actionTitle: 'Manage'.tl,
         ).toSliver(),
         _SettingPartTitle(title: "User".tl, icon: Icons.person_outline),
         SelectSetting(
@@ -860,5 +843,528 @@ class _BackupWebdavSettingState extends State<_BackupWebdavSetting> {
       context.showMessage(message: "Saved".tl);
       App.rootPop();
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SMB Server Manager
+// ---------------------------------------------------------------------------
+
+class _SmbServerManager extends StatefulWidget {
+  const _SmbServerManager();
+
+  @override
+  State<_SmbServerManager> createState() => _SmbServerManagerState();
+}
+
+class _SmbServerManagerState extends State<_SmbServerManager> {
+  List<SmbConnection> get servers {
+    final raw = appdata.settings['smbServers'];
+    if (raw is! List) return [];
+    try {
+      return raw
+          .map((e) =>
+              SmbConnection.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  set servers(List<SmbConnection> value) {
+    appdata.settings['smbServers'] =
+        value.map((e) => e.toJson()).toList();
+    appdata.saveData();
+  }
+
+  void _addServer() async {
+    final result = await showPopUpWidget<bool>(
+      context,
+      _SmbServerEditDialog(),
+    );
+    if (result == true && mounted) {
+      setState(() {});
+    }
+  }
+
+  void _editServer(int index) async {
+    final result = await showPopUpWidget<bool>(
+      context,
+      _SmbServerEditDialog(connection: servers[index]),
+    );
+    if (result == true && mounted) {
+      setState(() {});
+    }
+  }
+
+  void _deleteServer(int index) {
+    final list = servers;
+    list.removeAt(index);
+    servers = list;
+    setState(() {});
+  }
+
+  Future<void> _testServer(int index) async {
+    final connection = servers[index];
+    setState(() {}); // trigger rebuild for loading indicator if needed
+    final error = await connection.testConnection();
+    if (!mounted) return;
+    if (error == null) {
+      context.showMessage(
+        message: "Connection successful".tl,
+      );
+    } else {
+      context.showMessage(message: error);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final list = servers;
+
+    return PopUpWidgetScaffold(
+      title: "SMB / NAS Servers".tl,
+      body: Column(
+        children: [
+          if (list.isEmpty)
+            Expanded(
+              child: Center(
+                child: Text(
+                  "No servers configured".tl,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: ListView.builder(
+                itemCount: list.length,
+                itemBuilder: (context, index) {
+                  final server = list[index];
+                  return ListTile(
+                    leading: const Icon(Icons.dns),
+                    title: Text(server.name),
+                    subtitle: Text(
+                      '${server.config.host}/${server.config.share}',
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.wifi_find),
+                          tooltip: "Test Connection".tl,
+                          onPressed: () => _testServer(index),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          tooltip: "Edit".tl,
+                          onPressed: () => _editServer(index),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          tooltip: "Delete".tl,
+                          onPressed: () => _deleteServer(index),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: SizedBox(
+              width: double.infinity,
+              child: Button.filled(
+                onPressed: _addServer,
+                child: Text("Add Server".tl),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Dialog for adding / editing an SMB server connection.
+class _SmbServerEditDialog extends StatefulWidget {
+  final SmbConnection? connection;
+
+  const _SmbServerEditDialog({this.connection});
+
+  @override
+  State<_SmbServerEditDialog> createState() => _SmbServerEditDialogState();
+}
+
+class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _hostController;
+  late final TextEditingController _portController;
+  late final TextEditingController _shareController;
+  late final TextEditingController _usernameController;
+  late final TextEditingController _passwordController;
+  late final TextEditingController _domainController;
+
+  bool _isTesting = false;
+
+  bool get _isEditing => widget.connection != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final c = widget.connection;
+    _nameController = TextEditingController(text: c?.name ?? '');
+    _hostController = TextEditingController(text: c?.config.host ?? '');
+    _portController = TextEditingController(
+      text: (c?.config.port ?? 445).toString(),
+    );
+    _shareController = TextEditingController(text: c?.config.share ?? '');
+    _usernameController = TextEditingController(
+      text: c?.config.username ?? '',
+    );
+    _passwordController = TextEditingController(
+      text: c?.config.password ?? '',
+    );
+    _domainController = TextEditingController(
+      text: c?.config.domain ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _hostController.dispose();
+    _portController.dispose();
+    _shareController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
+    _domainController.dispose();
+    super.dispose();
+  }
+
+  SmbConnection _buildConnection() {
+    final port = int.tryParse(_portController.text.trim()) ?? 445;
+    return SmbConnection(
+      name: _nameController.text.trim(),
+      config: SmbConfig(
+        host: _hostController.text.trim(),
+        port: port,
+        share: _shareController.text.trim(),
+        username: _usernameController.text.trim(),
+        password: _passwordController.text,
+        domain: _domainController.text.trim(),
+      ),
+    );
+  }
+
+  Future<void> _test() async {
+    if (_isTesting) return;
+    setState(() => _isTesting = true);
+    final error = await _buildConnection().testConnection();
+    if (!mounted) return;
+    setState(() => _isTesting = false);
+    if (error == null) {
+      context.showMessage(message: "Connection successful".tl);
+    } else {
+      context.showMessage(message: error);
+    }
+  }
+
+  void _save() {
+    final connection = _buildConnection();
+    if (connection.name.isEmpty) {
+      context.showMessage(message: "Name is required".tl);
+      return;
+    }
+    if (connection.config.host.isEmpty) {
+      context.showMessage(message: "Host is required".tl);
+      return;
+    }
+    if (connection.config.share.isEmpty) {
+      context.showMessage(message: "Share is required".tl);
+      return;
+    }
+
+    // Read existing servers, replace or append
+    final raw = appdata.settings['smbServers'];
+    List<SmbConnection> servers;
+    if (raw is List) {
+      servers = raw
+          .map(
+            (e) => SmbConnection.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
+          .toList();
+    } else {
+      servers = [];
+    }
+
+    if (_isEditing) {
+      // Replace by name
+      final oldName = widget.connection!.name;
+      final idx = servers.indexWhere((s) => s.name == oldName);
+      if (idx >= 0) {
+        servers[idx] = connection;
+      } else {
+        servers.add(connection);
+      }
+    } else {
+      servers.add(connection);
+    }
+
+    appdata.settings['smbServers'] =
+        servers.map((e) => e.toJson()).toList();
+    appdata.saveData();
+    Navigator.of(context).pop(true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopUpWidgetScaffold(
+      title: _isEditing ? "Edit Server".tl : "Add Server".tl,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            TextField(
+              decoration: InputDecoration(
+                labelText: "Name".tl,
+                hintText: "My NAS",
+                border: const OutlineInputBorder(),
+              ),
+              controller: _nameController,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              decoration: InputDecoration(
+                labelText: "Host".tl,
+                hintText: "192.168.1.100",
+                border: const OutlineInputBorder(),
+              ),
+              controller: _hostController,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              decoration: InputDecoration(
+                labelText: "Port".tl,
+                hintText: "445",
+                border: const OutlineInputBorder(),
+              ),
+              controller: _portController,
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              decoration: InputDecoration(
+                labelText: "Share".tl,
+                hintText: "Comics",
+                border: const OutlineInputBorder(),
+              ),
+              controller: _shareController,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              decoration: InputDecoration(
+                labelText: "Username".tl,
+                border: const OutlineInputBorder(),
+              ),
+              controller: _usernameController,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              decoration: InputDecoration(
+                labelText: "Password".tl,
+                border: const OutlineInputBorder(),
+              ),
+              controller: _passwordController,
+              obscureText: true,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              decoration: InputDecoration(
+                labelText: "Domain".tl,
+                hintText: "WORKGROUP",
+                border: const OutlineInputBorder(),
+              ),
+              controller: _domainController,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Button.outlined(
+                    isLoading: _isTesting,
+                    onPressed: _test,
+                    child: Text("Test Connection".tl),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Button.filled(
+                    isLoading: _isTesting,
+                    onPressed: _save,
+                    child: Text("Save".tl),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
+        ).paddingHorizontal(16),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Storage Path Dialog — supports local browsing and SMB URL entry
+// ---------------------------------------------------------------------------
+
+class _StoragePathDialog extends StatefulWidget {
+  final VoidCallback onPathSet;
+
+  const _StoragePathDialog({required this.onPathSet});
+
+  @override
+  State<_StoragePathDialog> createState() => _StoragePathDialogState();
+}
+
+class _StoragePathDialogState extends State<_StoragePathDialog> {
+  final _urlController = TextEditingController();
+  bool _isBusy = false;
+
+  @override
+  void dispose() {
+    _urlController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _browseLocal() async {
+    String? result;
+    if (App.isAndroid) {
+      var picker = DirectoryPicker();
+      result = (await picker.pickDirectory())?.path;
+    } else if (App.isIOS) {
+      result = await selectDirectoryIOS();
+    } else {
+      result = await selectDirectory();
+    }
+    if (result == null) return;
+    await _setPath(result);
+  }
+
+  Future<void> _setPath(String newPath) async {
+    if (_isBusy) return;
+    if (!App.rootContext.mounted) return;
+
+    setState(() => _isBusy = true);
+    var loadingDialog = showLoadingDialog(
+      App.rootContext,
+      barrierDismissible: false,
+      allowCancel: false,
+    );
+
+    // SMB paths: skip local validation and just save.
+    if (newPath.startsWith('smb://')) {
+      final file = File(FilePath.join(App.dataPath, 'local_path'));
+      await file.writeAsString(newPath);
+      LocalManager().path = newPath;
+      // SMB path, no .nomedia needed
+      if (!App.rootContext.mounted) return;
+      loadingDialog.close();
+      if (!mounted) return;
+      context.showMessage(message: "Path set successfully".tl);
+      widget.onPathSet();
+      Navigator.of(context).pop();
+      setState(() => _isBusy = false);
+      return;
+    }
+
+    var res = await LocalManager().setNewPath(newPath);
+    if (!App.rootContext.mounted) return;
+    loadingDialog.close();
+    setState(() => _isBusy = false);
+    if (res != null) {
+      if (!mounted) return;
+      context.showMessage(message: res);
+    } else {
+      if (!mounted) return;
+      context.showMessage(message: "Path set successfully".tl);
+      widget.onPathSet();
+      Navigator.of(context).pop();
+    }
+  }
+
+  void _useManualUrl() {
+    final text = _urlController.text.trim();
+    if (text.isEmpty) {
+      context.showMessage(message: "Please enter a path".tl);
+      return;
+    }
+    _setPath(text);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ContentDialog(
+      title: "Set Storage Path".tl,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Choose a local folder, or enter an SMB/NAS URL to save downloads directly to a network share."
+                .tl,
+          ).paddingHorizontal(16),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: Button.outlined(
+              isLoading: _isBusy,
+              onPressed: _browseLocal,
+              child: Text("Browse Local Folder".tl),
+            ),
+          ).paddingHorizontal(16),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Text("- or enter manually -".tl),
+              ),
+            ],
+          ).paddingHorizontal(16),
+          const SizedBox(height: 12),
+          TextField(
+            decoration: InputDecoration(
+              labelText: "Path or SMB URL".tl,
+              hintText: "C:\\Comics\\Downloads  or  smb://192.168.1.100/Comics/Downloads",
+              border: const OutlineInputBorder(),
+            ),
+            controller: _urlController,
+          ).paddingHorizontal(16),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: Button.outlined(
+              isLoading: _isBusy,
+              onPressed: _useManualUrl,
+              child: Text("Use Manual Path".tl),
+            ),
+          ).paddingHorizontal(16),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isBusy ? null : () => Navigator.of(context).pop(),
+          child: Text("Cancel".tl),
+        ),
+      ],
+    );
   }
 }

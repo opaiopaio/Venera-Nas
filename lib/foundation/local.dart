@@ -11,6 +11,8 @@ import 'package:venera/foundation/favorites.dart';
 import 'package:venera/foundation/log.dart';
 import 'package:venera/foundation/sqlite_connection.dart';
 import 'package:venera/network/download.dart';
+import 'package:venera/network/smb/smb_client.dart';
+import 'package:venera/network/smb/smb_config.dart';
 import 'package:venera/pages/reader/reader.dart';
 import 'package:venera/utils/io.dart';
 import 'package:venera/utils/background_download.dart';
@@ -82,9 +84,14 @@ class LocalComic with HistoryMixin implements Comic {
 
   File get coverFile => File(FilePath.join(baseDir, cover));
 
-  String get baseDir => (directory.contains('/') || directory.contains('\\'))
-      ? directory
-      : FilePath.join(LocalManager().path, directory);
+  String get baseDir {
+    if (directory.startsWith('smb://')) {
+      return directory;
+    }
+    return (directory.contains('/') || directory.contains('\\'))
+        ? directory
+        : FilePath.join(LocalManager().path, directory);
+  }
 
   @override
   String get description => "";
@@ -243,6 +250,11 @@ class LocalManager with ChangeNotifier {
   }
 
   Future<void> _checkPathValidation() async {
+    // SMB paths are validated through SmbConnection.testConnection(),
+    // not through the local filesystem.
+    if (path.startsWith('smb://')) {
+      return;
+    }
     var testFile = File(FilePath.join(path, 'venera_test'));
     try {
       testFile.createSync();
@@ -275,18 +287,22 @@ class LocalManager with ChangeNotifier {
     ''');
     if (File(FilePath.join(App.dataPath, 'local_path')).existsSync()) {
       path = File(FilePath.join(App.dataPath, 'local_path')).readAsStringSync();
-      if (!directory.existsSync()) {
+      // SMB paths: skip local filesystem existence checks.
+      if (!path.startsWith('smb://') && !directory.existsSync()) {
         path = await findDefaultPath();
       }
     } else {
       path = await findDefaultPath();
     }
-    try {
-      if (!directory.existsSync()) {
-        await directory.create();
+    // SMB paths: no local directory to create.
+    if (!path.startsWith('smb://')) {
+      try {
+        if (!directory.existsSync()) {
+          await directory.create();
+        }
+      } catch (e, s) {
+        Log.error("IO", "Failed to create local folder: $e", s);
       }
-    } catch (e, s) {
-      Log.error("IO", "Failed to create local folder: $e", s);
     }
     _checkPathValidation();
     _checkNoMedia();
@@ -315,7 +331,6 @@ class LocalManager with ChangeNotifier {
     if (old != null) {
       downloaded.addAll(old.downloadedChapters);
     }
-    // 去重,避免历史数据或多次 add 累积重复 chapter id。
     downloaded = downloaded.toSet().toList();
     _db.execute(
       'INSERT OR REPLACE INTO comics VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);',
@@ -423,6 +438,12 @@ class LocalManager with ChangeNotifier {
       throw "Invalid ep";
     }
     var comic = find(id, type) ?? (throw "Comic Not Found");
+
+    // SMB: list files remotely via dart_smb2
+    if (type == ComicType.smb) {
+      return _getSmbImages(comic, ep);
+    }
+
     var directory = Directory(comic.baseDir);
     if (comic.hasChapters) {
       var cid = ep is int
@@ -441,12 +462,9 @@ class LocalManager with ChangeNotifier {
     var files = <File>[];
     await for (var entity in directory.list()) {
       if (entity is File) {
-        // Do not exclude comic.cover, since it may be the first page of the chapter.
-        // A file with name starting with 'cover.' is not a comic page.
         if (entity.name.startsWith('cover.')) {
           continue;
         }
-        //Hidden file in some file system
         if (entity.name.startsWith('.')) {
           continue;
         }
@@ -464,6 +482,101 @@ class LocalManager with ChangeNotifier {
     return files.map((e) => "file://${e.path}").toList();
   }
 
+  /// List images for an SMB comic chapter.
+  ///
+  /// Parses [SmbConfig] from [LocalComic.baseDir], connects, lists the
+  /// chapter directory, filters image files, and returns `smb://...` URLs.
+  Future<List<String>> _getSmbImages(LocalComic comic, Object ep) async {
+    print('[SMB] _getSmbImages baseDir: ${comic.baseDir}');
+    final config = _parseSmbConfigFromUrl(comic.baseDir);
+    print('[SMB] SmbConfig host=${config.host} share=${config.share} username=${config.username}');
+    final client = SmbClient(config: config);
+    try {
+      await client.connect();
+
+      var remoteDir = _smbPathFromUrl(comic.baseDir);
+      if (comic.hasChapters) {
+        var cid = ep is int
+            ? comic.chapters!.ids.elementAt(ep - 1)
+            : (ep as String);
+        cid = getChapterDirectoryName(cid);
+        remoteDir = '$remoteDir/$cid';
+      }
+      print('[SMB] listDirectory remoteDir: $remoteDir');
+
+      final entries = await client.listDirectory(remoteDir);
+      print('[SMB] listDirectory returned ${entries.length} entries');
+
+      // Log first few entry names for debugging
+      for (var i = 0; i < entries.length && i < 5; i++) {
+        print('[SMB]   entry[$i]: name=${entries[i].name} isDir=${entries[i].isDirectory} ext=${entries[i].extension}');
+      }
+
+      const imageExtensions = [
+        'jpg', 'jpeg', 'png', 'webp', 'gif', 'jpe', 'bmp',
+        'pdf', 'cbz', 'zip', 'rar', 'cbr', 'cb7',
+      ];
+
+      var imageEntries = entries.where((e) {
+        if (!e.isFile) return false;
+        if (e.name.startsWith('cover.')) return false;
+        if (e.name.startsWith('.')) return false;
+        final ext = e.extension.toLowerCase();
+        return imageExtensions.contains(ext);
+      }).toList();
+
+      imageEntries.sort((a, b) {
+        var ai = int.tryParse(a.name.split('.').first);
+        var bi = int.tryParse(b.name.split('.').first);
+        if (ai != null && bi != null) {
+          return ai.compareTo(bi);
+        }
+        return a.name.compareTo(b.name);
+      });
+
+      final baseUrl = config.buildUrl();
+      final urls = imageEntries
+          .map((e) => '$baseUrl/$remoteDir/${e.name}')
+          .toList();
+      print('[SMB] image URLs (first 3 of ${urls.length}):');
+      for (var i = 0; i < urls.length && i < 3; i++) {
+        print('[SMB]   ${urls[i]}');
+      }
+      return urls;
+    } finally {
+      await client.disconnect();
+    }
+  }
+
+  /// Parse [SmbConfig] from an smb:// URL.
+  ///
+  /// Credentials stored in the URL's userinfo are decoded; a credential
+  /// lookup from saved [SmbConnection]s should be added here for better
+  /// security (so passwords are not stored in the comic directory field).
+  static SmbConfig _parseSmbConfigFromUrl(String url) {
+    final uri = Uri.parse(url);
+    final parts = uri.pathSegments;
+    final share = parts.isNotEmpty ? parts.first : '';
+    final userInfo = uri.userInfo.split(':');
+    return SmbConfig(
+      host: uri.host,
+      port: uri.hasPort ? uri.port : 445,
+      share: share,
+      username: userInfo.isNotEmpty ? Uri.decodeComponent(userInfo[0]) : '',
+      password: userInfo.length > 1 ? Uri.decodeComponent(userInfo[1]) : '',
+    );
+  }
+
+  /// Extract the share-relative path from an smb:// URL.
+  ///
+  /// For `smb://host/share/dir/subdir`, returns `dir/subdir`.
+  static String _smbPathFromUrl(String url) {
+    final uri = Uri.parse(url);
+    final segments = uri.pathSegments;
+    if (segments.length <= 1) return '';
+    return segments.sublist(1).join('/');
+  }
+
   bool isDownloaded(
     String id,
     ComicType type, [
@@ -472,13 +585,23 @@ class LocalManager with ChangeNotifier {
   ]) {
     var comic = find(id, type);
     if (comic == null) return false;
+
+    // SMB comics: rely solely on downloadedChapters in the database.
+    // There is no local filesystem to check.
+    if (type == ComicType.smb) {
+      if (comic.chapters == null || ep == null) {
+        // No chapter info — treat as fully available if the record exists.
+        return true;
+      }
+      var sid = (chapters ?? comic.chapters)!.ids.elementAtOrNull(ep - 1);
+      return sid != null && comic.downloadedChapters.contains(sid);
+    }
+
     if (comic.chapters == null || ep == null) {
-      // 整本下载(无章节信息):校验漫画根目录存在
       return Directory(comic.baseDir).existsSync();
     }
     if (chapters != null) {
       if (comic.chapters?.length != chapters.length) {
-        // update
         add(
           LocalComic(
             id: comic.id,
@@ -497,7 +620,6 @@ class LocalManager with ChangeNotifier {
     }
     var cid = (chapters ?? comic.chapters)!.ids.elementAtOrNull(ep - 1);
     if (cid == null || !comic.downloadedChapters.contains(cid)) return false;
-    // 校验该章节目录实际存在
     var chapterDir = Directory(
       FilePath.join(comic.baseDir, getChapterDirectoryName(cid)),
     );
@@ -538,7 +660,6 @@ class LocalManager with ChangeNotifier {
     _syncBackgroundService();
   }
 
-  /// 把单个 chapter 标记为已下载(upsert 到 SQLite)
   Future<void> markChapterDownloaded(
     String comicId,
     ComicType type,
@@ -547,7 +668,6 @@ class LocalManager with ChangeNotifier {
   }) async {
     var existing = find(comicId, type);
     if (existing == null) {
-      // 首次:用 comicBuilder 构造完整 LocalComic,downloadedChapters 仅含 [chapterId]
       var comic = comicBuilder();
       await add(
         LocalComic(
@@ -565,8 +685,6 @@ class LocalManager with ChangeNotifier {
       );
     } else {
       if (existing.downloadedChapters.contains(chapterId)) return;
-      // 只传新增的 [chapterId],add() 内部会自动与 existing.downloadedChapters 合并,
-      // 避免传入 [...existing.downloadedChapters, chapterId] 导致 add() 二次合并产生重复。
       await add(
         LocalComic(
           id: existing.id,
@@ -639,18 +757,15 @@ class LocalManager with ChangeNotifier {
     _syncBackgroundService();
   }
 
-  /// 让原生前台服务与下载队列保持同步。
-  /// 不支持后台下载保护的平台上为 no-op。
   void _syncBackgroundService() {
     BackgroundDownload.instance.sync();
   }
 
   void deleteComic(LocalComic c, [bool removeFileOnDisk = true]) {
-    if (removeFileOnDisk) {
+    if (removeFileOnDisk && c.comicType != ComicType.smb) {
       var dir = Directory(FilePath.join(path, c.directory));
       dir.deleteIgnoreError(recursive: true);
     }
-    // Deleting a local comic means that it's no longer available, thus both favorite and history should be deleted.
     if (c.comicType == ComicType.local) {
       if (HistoryManager().find(c.id, c.comicType) != null) {
         HistoryManager().remove(c.id, c.comicType);
