@@ -1,8 +1,11 @@
 import 'dart:async' show Future;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:venera/foundation/comic_type.dart';
 import 'package:venera/foundation/local.dart';
 import 'package:venera/network/images.dart';
+import 'package:venera/network/smb/smb_client.dart';
+import 'package:venera/network/smb/smb_config.dart';
 import '../history.dart';
 import 'base_image_provider.dart';
 import 'history_image_provider.dart' as image_provider;
@@ -21,7 +24,15 @@ class HistoryImageProvider
     var url = history.cover;
     if (!url.contains('/')) {
       var localComic = LocalManager().find(history.id, history.type);
+      if (localComic == null) {
+        // Try finding by ComicType.smb — history may reference a network
+        // source but the comic was imported as SMB local.
+        localComic = LocalManager().find(history.id, ComicType.smb);
+      }
       if (localComic != null) {
+        if (localComic.comicType == ComicType.smb || localComic.baseDir.startsWith('smb://')) {
+          return _loadSmbCover(localComic);
+        }
         return localComic.coverFile.readAsBytes();
       }
       var comicSource =
@@ -49,6 +60,42 @@ class HistoryImageProvider
       }
     }
     throw "Error: Empty response body.";
+  }
+
+  Future<Uint8List> _loadSmbCover(LocalComic comic) async {
+    final baseDir = comic.baseDir;
+    final coverName = comic.cover;
+    final coverUrl = '${baseDir.endsWith('/') ? baseDir : '$baseDir/'}$coverName';
+    final config = _parseSmbConfig(baseDir);
+    final remotePath = _smbCoverPathFromUrl(config, coverUrl);
+    final client = SmbClient(config: config);
+    try {
+      await client.connect();
+      return await client.readFile(remotePath);
+    } finally {
+      await client.disconnect();
+    }
+  }
+
+  static SmbConfig _parseSmbConfig(String url) {
+    final uri = Uri.parse(url);
+    final parts = uri.pathSegments;
+    final share = parts.isNotEmpty ? parts.first : '';
+    final userInfo = uri.userInfo.split(':');
+    return SmbConfig(
+      host: uri.host,
+      port: uri.hasPort ? uri.port : 445,
+      share: share,
+      username: userInfo.isNotEmpty ? Uri.decodeComponent(userInfo[0]) : '',
+      password: userInfo.length > 1 ? Uri.decodeComponent(userInfo[1]) : '',
+    );
+  }
+
+  static String _smbCoverPathFromUrl(SmbConfig config, String url) {
+    final uri = Uri.parse(url);
+    final segments = uri.pathSegments;
+    if (segments.length <= 1) return '';
+    return segments.sublist(1).join('/');
   }
 
   @override

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:venera/foundation/comic_type.dart';
 import 'package:venera/foundation/local.dart';
+import 'package:dart_smb2/dart_smb2.dart';
 import 'package:venera/network/smb/smb_client.dart';
 import 'package:venera/network/smb/smb_config.dart';
 import 'package:venera/utils/io.dart';
@@ -21,7 +22,7 @@ class LocalComicImageProvider
   @override
   Future<Uint8List> load(chunkEvents, checkStop) async {
     // SMB: read cover from remote share
-    if (comic.comicType == ComicType.smb) {
+    if (comic.comicType == ComicType.smb || comic.baseDir.startsWith('smb://')) {
       return _loadSmbCover();
     }
 
@@ -105,15 +106,48 @@ class LocalComicImageProvider
     final client = SmbClient(config: config);
     try {
       await client.connect();
-      final data = await client.readFile(remoteCoverPath);
-      print('[SMB Cover] readFile done, ${data.length} bytes');
-      if (data.isEmpty) {
-        throw "Exception: Empty cover file on SMB.";
+      try {
+        final data = await client.readFile(remoteCoverPath);
+        print('[SMB Cover] readFile done, ${data.length} bytes');
+        if (data.isEmpty) {
+          throw "Exception: Empty cover file on SMB.";
+        }
+        return data;
+      } on Smb2Exception catch (e) {
+        if (e.type != Smb2ErrorType.fileNotFound) rethrow;
+        // Cover not found at expected path — search the directory.
+        print('[SMB Cover] cover not found at $remoteCoverPath, searching...');
+        final smbDir = _smbCoverPathFromUrl(config, baseDir);
+        final entries = await client.listDirectory(smbDir);
+        // Try cover.* first, then any image
+        const exts = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'jpe'];
+        SmbEntry? found;
+        for (final e in entries) {
+          if (!e.isFile || !exts.contains(e.extension.toLowerCase())) continue;
+          if (e.name.toLowerCase().startsWith('cover')) {
+            found = e;
+            break;
+          }
+          found ??= e;
+        }
+        // If not found in base directory, try first subdirectory (chapter)
+        if (found == null) {
+          for (final e in entries) {
+            if (!e.isDirectory) continue;
+            final subEntries = await client.listDirectory(e.path);
+            for (final se in subEntries) {
+              if (!se.isFile || !exts.contains(se.extension.toLowerCase())) continue;
+              found = se;
+              break;
+            }
+            if (found != null) break;
+          }
+        }
+        if (found == null) rethrow;
+        final data = await client.readFile(found.path);
+        print('[SMB Cover] fallback cover: ${found.path}, ${data.length} bytes');
+        return data;
       }
-      return data;
-    } catch (e) {
-      print('[SMB Cover] ERROR: $e');
-      rethrow;
     } finally {
       await client.disconnect();
     }

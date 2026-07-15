@@ -224,12 +224,25 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
       } else {
         saveTo = Directory(path!);
       }
+      final isSmb = path != null && path!.startsWith('smb://');
+      SmbConfig? smbCfg;
+      String? smbD;
+      if (isSmb) {
+        smbCfg = _parseSmbConfig(path!);
+        smbD = _smbDirFromPath(path!);
+        if (comic!.chapters != null) {
+          smbD = '$smbD/' + LocalManager.getChapterDirectoryName(_images!.keys.elementAt(_chapter));
+        }
+      }
       var task = _ImageDownloadWrapper(
         this,
         _images!.keys.elementAt(_chapter),
         images[i],
         saveTo,
         i,
+        isSmbPath: isSmb,
+        smbConfig: smbCfg,
+        smbDir: smbD,
       );
       tasks[i] = task;
       task.wait().then((task) {
@@ -279,10 +292,13 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
           comicType,
           comic!.title,
         );
-        if (!(await dir.exists())) {
-          await dir.create();
+        final dirPath = dir.path;
+        if (!dirPath.startsWith('smb://')) {
+          if (!(await dir.exists())) {
+            await dir.create();
+          }
         }
-        path = dir.path;
+        path = dirPath;
       } catch (e, s) {
         Log.error("Download", e.toString(), s);
         _setError("Error: $e");
@@ -653,7 +669,9 @@ class _ImageDownloadWrapper {
     final client = SmbClient(config: _smbConfig!);
     try {
       await client.connect();
-      final remotePath = '/';
+      // Ensure parent directories exist before writing.
+      await client.mkdirs(_smbDir!);
+      final remotePath = '$_smbDir/$fileName';
       await client.writeFile(remotePath, data);
     } finally {
       await client.disconnect();

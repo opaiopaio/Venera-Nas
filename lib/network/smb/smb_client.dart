@@ -172,6 +172,28 @@ class SmbClient {
     await _p.streamWrite(remotePath, stream);
   }
 
+  /// Recursively create directories on the SMB share.
+  ///
+  /// [remotePath] is a share-relative path (e.g. `'Comics/Series/Chapter1'`).
+  /// Intermediate directories that already exist are silently skipped.
+  Future<void> mkdirs(String remotePath) async {
+    if (remotePath.isEmpty) return;
+    final parts = remotePath.replaceAll('\\', '/').split('/');
+    var current = '';
+    for (final part in parts) {
+      if (part.isEmpty) continue;
+      current = current.isEmpty ? part : '$current/$part';
+      try {
+        await _p.mkdir(current);
+      } on Smb2Exception catch (e) {
+        // Silently ignore already-exists errors
+        if (e.type != Smb2ErrorType.alreadyExists) {
+          rethrow;
+        }
+      }
+    }
+  }
+
   /// Reconnect the client (e.g. after a network interruption).
   Future<void> reconnect() async {
     await disconnect();

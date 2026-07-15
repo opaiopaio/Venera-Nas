@@ -370,15 +370,8 @@ class ImportComic {
       return null;
     }
 
-    // Sort images
-    imageEntries.sort((a, b) {
-      var ai = int.tryParse(a.name.split('.').first);
-      var bi = int.tryParse(b.name.split('.').first);
-      if (ai != null && bi != null) {
-        return ai.compareTo(bi);
-      }
-      return a.name.compareTo(b.name);
-    });
+    // Sort images (string sort, matching local _checkSingleComic)
+    imageEntries.sort((a, b) => a.name.compareTo(b.name));
 
     // Sort chapters
     chapterEntries.sort((a, b) => a.name.compareTo(b.name));
@@ -389,18 +382,17 @@ class ImportComic {
           imageEntries.firstWhereOrNull((l) => l.name.startsWith('cover'))?.name ??
           imageEntries.first.name;
     } else if (hasChapters && chapterEntries.isNotEmpty) {
-      // Use first image from first chapter as cover
+      // Use the first image in the first chapter as the cover
+      // (matching local _checkSingleComic: string sort, unfiltered)
       final firstChapterPath = chapterEntries.first.path;
-      final chapterImages = await client.listDirectory(firstChapterPath);
-      final firstImage = chapterImages.firstWhereOrNull((e) {
-        const imgExts = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'jpe'];
-        return e.isFile && imgExts.contains(e.extension.toLowerCase());
-      });
-      if (firstImage == null) {
+      final chapterEntries2 = await client.listDirectory(firstChapterPath);
+      final files = chapterEntries2.where((e) => e.isFile).toList();
+      files.sort((a, b) => a.name.compareTo(b.name));
+      if (files.isEmpty) {
         Log.info("Import Comic (SMB)", "Invalid Comic: $name\nNo cover image found.");
         return null;
       }
-      coverName = firstImage.name;
+      coverName = '${chapterEntries.first.name}/${files.first.name}';
     } else {
       Log.info("Import Comic (SMB)", "Invalid Comic: $name\nNo cover image found.");
       return null;
