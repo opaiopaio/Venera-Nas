@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:flutter/widgets.dart' show ChangeNotifier;
@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3/sqlite3.dart';
 import 'package:venera/foundation/comic_source/comic_source.dart';
 import 'package:venera/foundation/comic_type.dart';
+import 'package:venera/foundation/appdata.dart';
 import 'package:venera/foundation/favorites.dart';
 import 'package:venera/foundation/log.dart';
 import 'package:venera/foundation/sqlite_connection.dart';
@@ -192,10 +193,13 @@ class LocalManager with ChangeNotifier {
   /// path to the directory where all the comics are stored
   late String path;
 
+  /// path for SMB/NAS downloads
+  late String smbPath;
+
   Directory get directory => Directory(path);
 
   void _checkNoMedia() {
-    if (App.isAndroid) {
+    if (App.isAndroid && !path.startsWith('smb://')) {
       var file = File(FilePath.join(path, '.nomedia'));
       if (!file.existsSync()) {
         file.createSync();
@@ -207,13 +211,16 @@ class LocalManager with ChangeNotifier {
   Future<String?> setNewPath(String newPath) async {
     var newDir = Directory(newPath);
     if (!await newDir.exists()) {
-      return "Directory does not exist";
+      return "目录不存在";
     }
     if (!await newDir.list().isEmpty) {
-      return "Directory is not empty";
+      return "目录不为空";
     }
     try {
-      await copyDirectoryIsolate(directory, newDir);
+      if (!path.startsWith('smb://')) {
+        await copyDirectoryIsolate(directory, newDir);
+        await directory.deleteContents(recursive: true);
+      }
       await File(
         FilePath.join(App.dataPath, 'local_path'),
       ).writeAsString(newPath);
@@ -221,14 +228,13 @@ class LocalManager with ChangeNotifier {
       Log.error("IO", e, s);
       return e.toString();
     }
-    await directory.deleteContents(recursive: true);
     path = newPath;
     _checkNoMedia();
     return null;
   }
 
   Future<String> findDefaultPath() async {
-    if (App.isAndroid) {
+    if (App.isAndroid && !path.startsWith('smb://')) {
       var external = await getExternalStorageDirectories();
       if (external != null && external.isNotEmpty) {
         return FilePath.join(external.first.path, 'local');
@@ -306,6 +312,9 @@ class LocalManager with ChangeNotifier {
     }
     _checkPathValidation();
     _checkNoMedia();
+    // SMB download path: from settings or default
+    smbPath = (appdata.settings['smbDownloadPath'] ?? '').toString().trim();
+    
     await ComicSourceManager().ensureInit();
     restoreDownloadingTasks();
   }
@@ -638,7 +647,18 @@ class LocalManager with ChangeNotifier {
   ) async {
     var comic = find(id, type);
     if (comic != null) {
-      return Directory(FilePath.join(path, comic.directory));
+      final basePath = type == ComicType.smb ? smbPath : path;
+      return Directory(FilePath.join(basePath, comic.directory));
+    }
+    // SMB type: use smbPath
+    if (type == ComicType.smb) {
+      if (smbPath.isEmpty) {
+        throw StateError(
+          '未设置 NAS 下载路径。请先在 设置 > App > 设置 NAS 下载路径 中配置 SMB 地址。',
+        );
+      }
+      var dir = findValidDirectoryName(smbPath, name);
+      return Directory(FilePath.join(smbPath, dir));
     }
     // SMB path: skip local directory creation.
     if (path.startsWith('smb://')) {

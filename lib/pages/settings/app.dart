@@ -16,8 +16,9 @@ class _AppSettingsState extends State<AppSettings> {
       slivers: [
         SliverAppbar(title: Text("App".tl)),
         _SettingPartTitle(title: "Data".tl, icon: Icons.storage),
+        _SettingPartTitle(title: "下载路径".tl, icon: Icons.folder_outlined),
         ListTile(
-          title: Text("Storage Path for local comics".tl),
+          title: Text("本地下载路径".tl),
           subtitle: Text(LocalManager().path, softWrap: false),
           trailing: IconButton(
             icon: const Icon(Icons.copy),
@@ -28,12 +29,35 @@ class _AppSettingsState extends State<AppSettings> {
           ),
         ).toSliver(),
         _CallbackSetting(
-          title: "Set New Storage Path".tl,
+          title: "设置本地下载路径".tl,
           actionTitle: "Set".tl,
           callback: () async {
             showDialog(
               context: context,
-              builder: (ctx) => _StoragePathDialog(
+              builder: (ctx) => _LocalPathDialog(
+                onPathSet: () => setState(() {}),
+              ),
+            );
+          },
+        ).toSliver(),
+        ListTile(
+          title: Text("NAS 下载路径 (SMB)".tl),
+          subtitle: Text(LocalManager().smbPath, softWrap: false),
+          trailing: IconButton(
+            icon: const Icon(Icons.copy),
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: LocalManager().smbPath));
+              context.showMessage(message: "Path copied to clipboard".tl);
+            },
+          ),
+        ).toSliver(),
+        _CallbackSetting(
+          title: "设置 NAS 下载路径".tl,
+          actionTitle: "Set".tl,
+          callback: () async {
+            showDialog(
+              context: context,
+              builder: (ctx) => _NasPathDialog(
                 onPathSet: () => setState(() {}),
               ),
             );
@@ -167,14 +191,6 @@ class _AppSettingsState extends State<AppSettings> {
             showPopUpWidget(context, const _BackupWebdavSetting());
           },
           actionTitle: 'Set'.tl,
-        ).toSliver(),
-        _SettingPartTitle(title: "Network".tl, icon: Icons.dns_outlined),
-        _CallbackSetting(
-          title: "SMB / NAS Servers".tl,
-          callback: () async {
-            showPopUpWidget(context, const _SmbServerManager());
-          },
-          actionTitle: 'Manage'.tl,
         ).toSliver(),
         _SettingPartTitle(title: "User".tl, icon: Icons.person_outline),
         SelectSetting(
@@ -846,396 +862,16 @@ class _BackupWebdavSettingState extends State<_BackupWebdavSetting> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// SMB Server Manager
-// ---------------------------------------------------------------------------
-
-class _SmbServerManager extends StatefulWidget {
-  const _SmbServerManager();
-
-  @override
-  State<_SmbServerManager> createState() => _SmbServerManagerState();
-}
-
-class _SmbServerManagerState extends State<_SmbServerManager> {
-  List<SmbConnection> get servers {
-    final raw = appdata.settings['smbServers'];
-    if (raw is! List) return [];
-    try {
-      return raw
-          .map((e) =>
-              SmbConnection.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-    } catch (_) {
-      return [];
-    }
-  }
-
-  set servers(List<SmbConnection> value) {
-    appdata.settings['smbServers'] =
-        value.map((e) => e.toJson()).toList();
-    appdata.saveData();
-  }
-
-  void _addServer() async {
-    final result = await showPopUpWidget<bool>(
-      context,
-      _SmbServerEditDialog(),
-    );
-    if (result == true && mounted) {
-      setState(() {});
-    }
-  }
-
-  void _editServer(int index) async {
-    final result = await showPopUpWidget<bool>(
-      context,
-      _SmbServerEditDialog(connection: servers[index]),
-    );
-    if (result == true && mounted) {
-      setState(() {});
-    }
-  }
-
-  void _deleteServer(int index) {
-    final list = servers;
-    list.removeAt(index);
-    servers = list;
-    setState(() {});
-  }
-
-  Future<void> _testServer(int index) async {
-    final connection = servers[index];
-    setState(() {}); // trigger rebuild for loading indicator if needed
-    final error = await connection.testConnection();
-    if (!mounted) return;
-    if (error == null) {
-      context.showMessage(
-        message: "Connection successful".tl,
-      );
-    } else {
-      context.showMessage(message: error);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final list = servers;
-
-    return PopUpWidgetScaffold(
-      title: "SMB / NAS Servers".tl,
-      body: Column(
-        children: [
-          if (list.isEmpty)
-            Expanded(
-              child: Center(
-                child: Text(
-                  "No servers configured".tl,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            )
-          else
-            Expanded(
-              child: ListView.builder(
-                itemCount: list.length,
-                itemBuilder: (context, index) {
-                  final server = list[index];
-                  return ListTile(
-                    leading: const Icon(Icons.dns),
-                    title: Text(server.name),
-                    subtitle: Text(
-                      '${server.config.host}/${server.config.share}',
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.wifi_find),
-                          tooltip: "Test Connection".tl,
-                          onPressed: () => _testServer(index),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.edit),
-                          tooltip: "Edit".tl,
-                          onPressed: () => _editServer(index),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline),
-                          tooltip: "Delete".tl,
-                          onPressed: () => _deleteServer(index),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: SizedBox(
-              width: double.infinity,
-              child: Button.filled(
-                onPressed: _addServer,
-                child: Text("Add Server".tl),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Dialog for adding / editing an SMB server connection.
-class _SmbServerEditDialog extends StatefulWidget {
-  final SmbConnection? connection;
-
-  const _SmbServerEditDialog({this.connection});
-
-  @override
-  State<_SmbServerEditDialog> createState() => _SmbServerEditDialogState();
-}
-
-class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
-  late final TextEditingController _nameController;
-  late final TextEditingController _hostController;
-  late final TextEditingController _portController;
-  late final TextEditingController _shareController;
-  late final TextEditingController _usernameController;
-  late final TextEditingController _passwordController;
-  late final TextEditingController _domainController;
-
-  bool _isTesting = false;
-
-  bool get _isEditing => widget.connection != null;
-
-  @override
-  void initState() {
-    super.initState();
-    final c = widget.connection;
-    _nameController = TextEditingController(text: c?.name ?? '');
-    _hostController = TextEditingController(text: c?.config.host ?? '');
-    _portController = TextEditingController(
-      text: (c?.config.port ?? 445).toString(),
-    );
-    _shareController = TextEditingController(text: c?.config.share ?? '');
-    _usernameController = TextEditingController(
-      text: c?.config.username ?? '',
-    );
-    _passwordController = TextEditingController(
-      text: c?.config.password ?? '',
-    );
-    _domainController = TextEditingController(
-      text: c?.config.domain ?? '',
-    );
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _hostController.dispose();
-    _portController.dispose();
-    _shareController.dispose();
-    _usernameController.dispose();
-    _passwordController.dispose();
-    _domainController.dispose();
-    super.dispose();
-  }
-
-  SmbConnection _buildConnection() {
-    final port = int.tryParse(_portController.text.trim()) ?? 445;
-    return SmbConnection(
-      name: _nameController.text.trim(),
-      config: SmbConfig(
-        host: _hostController.text.trim(),
-        port: port,
-        share: _shareController.text.trim(),
-        username: _usernameController.text.trim(),
-        password: _passwordController.text,
-        domain: _domainController.text.trim(),
-      ),
-    );
-  }
-
-  Future<void> _test() async {
-    if (_isTesting) return;
-    setState(() => _isTesting = true);
-    final error = await _buildConnection().testConnection();
-    if (!mounted) return;
-    setState(() => _isTesting = false);
-    if (error == null) {
-      context.showMessage(message: "Connection successful".tl);
-    } else {
-      context.showMessage(message: error);
-    }
-  }
-
-  void _save() {
-    final connection = _buildConnection();
-    if (connection.name.isEmpty) {
-      context.showMessage(message: "Name is required".tl);
-      return;
-    }
-    if (connection.config.host.isEmpty) {
-      context.showMessage(message: "Host is required".tl);
-      return;
-    }
-    if (connection.config.share.isEmpty) {
-      context.showMessage(message: "Share is required".tl);
-      return;
-    }
-
-    // Read existing servers, replace or append
-    final raw = appdata.settings['smbServers'];
-    List<SmbConnection> servers;
-    if (raw is List) {
-      servers = raw
-          .map(
-            (e) => SmbConnection.fromJson(Map<String, dynamic>.from(e as Map)),
-          )
-          .toList();
-    } else {
-      servers = [];
-    }
-
-    if (_isEditing) {
-      // Replace by name
-      final oldName = widget.connection!.name;
-      final idx = servers.indexWhere((s) => s.name == oldName);
-      if (idx >= 0) {
-        servers[idx] = connection;
-      } else {
-        servers.add(connection);
-      }
-    } else {
-      servers.add(connection);
-    }
-
-    appdata.settings['smbServers'] =
-        servers.map((e) => e.toJson()).toList();
-    appdata.saveData();
-    Navigator.of(context).pop(true);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return PopUpWidgetScaffold(
-      title: _isEditing ? "Edit Server".tl : "Add Server".tl,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(height: 12),
-            TextField(
-              decoration: InputDecoration(
-                labelText: "Name".tl,
-                hintText: "My NAS",
-                border: const OutlineInputBorder(),
-              ),
-              controller: _nameController,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              decoration: InputDecoration(
-                labelText: "Host".tl,
-                hintText: "192.168.1.100",
-                border: const OutlineInputBorder(),
-              ),
-              controller: _hostController,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              decoration: InputDecoration(
-                labelText: "Port".tl,
-                hintText: "445",
-                border: const OutlineInputBorder(),
-              ),
-              controller: _portController,
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              decoration: InputDecoration(
-                labelText: "Share".tl,
-                hintText: "Comics",
-                border: const OutlineInputBorder(),
-              ),
-              controller: _shareController,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              decoration: InputDecoration(
-                labelText: "Username".tl,
-                border: const OutlineInputBorder(),
-              ),
-              controller: _usernameController,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              decoration: InputDecoration(
-                labelText: "Password".tl,
-                border: const OutlineInputBorder(),
-              ),
-              controller: _passwordController,
-              obscureText: true,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              decoration: InputDecoration(
-                labelText: "Domain".tl,
-                hintText: "WORKGROUP",
-                border: const OutlineInputBorder(),
-              ),
-              controller: _domainController,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: Button.outlined(
-                    isLoading: _isTesting,
-                    onPressed: _test,
-                    child: Text("Test Connection".tl),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: Button.filled(
-                    isLoading: _isTesting,
-                    onPressed: _save,
-                    child: Text("Save".tl),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-          ],
-        ).paddingHorizontal(16),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Storage Path Dialog — supports local browsing and SMB URL entry
-// ---------------------------------------------------------------------------
-
-class _StoragePathDialog extends StatefulWidget {
+class _LocalPathDialog extends StatefulWidget {
   final VoidCallback onPathSet;
 
-  const _StoragePathDialog({required this.onPathSet});
+  const _LocalPathDialog({required this.onPathSet});
 
   @override
-  State<_StoragePathDialog> createState() => _StoragePathDialogState();
+  State<_LocalPathDialog> createState() => _LocalPathDialogState();
 }
 
-class _StoragePathDialogState extends State<_StoragePathDialog> {
+class _LocalPathDialogState extends State<_LocalPathDialog> {
   final _urlController = TextEditingController();
   bool _isBusy = false;
 
@@ -1256,10 +892,10 @@ class _StoragePathDialogState extends State<_StoragePathDialog> {
       result = await selectDirectory();
     }
     if (result == null) return;
-    await _setPath(result);
+    await _setLocalPath(result);
   }
 
-  Future<void> _setPath(String newPath) async {
+  Future<void> _setLocalPath(String newPath) async {
     if (_isBusy) return;
     if (!App.rootContext.mounted) return;
 
@@ -1270,22 +906,6 @@ class _StoragePathDialogState extends State<_StoragePathDialog> {
       allowCancel: false,
     );
 
-    // SMB paths: skip local validation and just save.
-    if (newPath.startsWith('smb://')) {
-      final file = File(FilePath.join(App.dataPath, 'local_path'));
-      await file.writeAsString(newPath);
-      LocalManager().path = newPath;
-      // SMB path, no .nomedia needed
-      if (!App.rootContext.mounted) return;
-      loadingDialog.close();
-      if (!mounted) return;
-      context.showMessage(message: "Path set successfully".tl);
-      widget.onPathSet();
-      Navigator.of(context).pop();
-      setState(() => _isBusy = false);
-      return;
-    }
-
     var res = await LocalManager().setNewPath(newPath);
     if (!App.rootContext.mounted) return;
     loadingDialog.close();
@@ -1295,31 +915,31 @@ class _StoragePathDialogState extends State<_StoragePathDialog> {
       context.showMessage(message: res);
     } else {
       if (!mounted) return;
-      context.showMessage(message: "Path set successfully".tl);
+      context.showMessage(message: "路径设置成功".tl);
       widget.onPathSet();
       Navigator.of(context).pop();
     }
   }
 
-  void _useManualUrl() {
+  void _useManualPath() {
     final text = _urlController.text.trim();
     if (text.isEmpty) {
-      context.showMessage(message: "Please enter a path".tl);
+      context.showMessage(message: "请输入路径".tl);
       return;
     }
-    _setPath(text);
+    _setLocalPath(text);
   }
 
   @override
   Widget build(BuildContext context) {
     return ContentDialog(
-      title: "Set Storage Path".tl,
+      title: "设置本地下载路径".tl,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Choose a local folder, or enter an SMB/NAS URL to save downloads directly to a network share."
+            "选择一个本地文件夹用于保存下载的漫画。该文件夹必须为空。"
                 .tl,
           ).paddingHorizontal(16),
           const SizedBox(height: 16),
@@ -1328,22 +948,120 @@ class _StoragePathDialogState extends State<_StoragePathDialog> {
             child: Button.outlined(
               isLoading: _isBusy,
               onPressed: _browseLocal,
-              child: Text("Browse Local Folder".tl),
+              child: Text("浏览本地文件夹".tl),
             ),
           ).paddingHorizontal(16),
           const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
-                child: Text("- or enter manually -".tl),
+                child: Text("- 或手动输入 -".tl),
               ),
             ],
           ).paddingHorizontal(16),
           const SizedBox(height: 12),
           TextField(
             decoration: InputDecoration(
-              labelText: "Path or SMB URL".tl,
-              hintText: "C:\\Comics\\Downloads  or  smb://192.168.1.100/Comics/Downloads",
+              labelText: "本地路径".tl,
+              hintText: "C:\\Comics\\Downloads",
+              border: const OutlineInputBorder(),
+            ),
+            controller: _urlController,
+          ).paddingHorizontal(16),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: Button.outlined(
+              isLoading: _isBusy,
+              onPressed: _useManualPath,
+              child: Text("使用此路径".tl),
+            ),
+          ).paddingHorizontal(16),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isBusy ? null : () => Navigator.of(context).pop(),
+          child: Text("Cancel".tl),
+        ),
+      ],
+    );
+  }
+}
+
+class _NasPathDialog extends StatefulWidget {
+  final VoidCallback onPathSet;
+
+  const _NasPathDialog({required this.onPathSet});
+
+  @override
+  State<_NasPathDialog> createState() => _NasPathDialogState();
+}
+
+class _NasPathDialogState extends State<_NasPathDialog> {
+  final _urlController = TextEditingController();
+  bool _isBusy = false;
+
+  @override
+  void dispose() {
+    _urlController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _setNasPath(String nasUrl) async {
+    if (_isBusy) return;
+    if (!nasUrl.startsWith('smb://')) {
+      context.showMessage(message: "请输入有效的 SMB 地址 (smb://...)".tl);
+      return;
+    }
+    if (!App.rootContext.mounted) return;
+
+    setState(() => _isBusy = true);
+    var loadingDialog = showLoadingDialog(
+      App.rootContext,
+      barrierDismissible: false,
+      allowCancel: false,
+    );
+
+    appdata.settings['smbDownloadPath'] = nasUrl;
+    await appdata.saveData();
+    LocalManager().smbPath = nasUrl;
+
+    if (!App.rootContext.mounted) return;
+    loadingDialog.close();
+    if (!mounted) return;
+    context.showMessage(message: "NAS 路径设置成功".tl);
+    widget.onPathSet();
+    Navigator.of(context).pop();
+    setState(() => _isBusy = false);
+  }
+
+  void _useManualUrl() {
+    final text = _urlController.text.trim();
+    if (text.isEmpty) {
+      context.showMessage(message: "请输入路径".tl);
+      return;
+    }
+    _setNasPath(text);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ContentDialog(
+      title: "设置 NAS 下载路径".tl,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "输入 SMB/NAS 地址，选择 NAS 下载模式时漫画将保存到此路径。"
+                .tl,
+          ).paddingHorizontal(16),
+          const SizedBox(height: 16),
+          TextField(
+            decoration: InputDecoration(
+              labelText: "SMB 地址".tl,
+              hintText: "smb://192.168.1.100/Comics/Downloads",
               border: const OutlineInputBorder(),
             ),
             controller: _urlController,
@@ -1354,7 +1072,7 @@ class _StoragePathDialogState extends State<_StoragePathDialog> {
             child: Button.outlined(
               isLoading: _isBusy,
               onPressed: _useManualUrl,
-              child: Text("Use Manual Path".tl),
+              child: Text("设置 NAS 路径".tl),
             ),
           ).paddingHorizontal(16),
         ],

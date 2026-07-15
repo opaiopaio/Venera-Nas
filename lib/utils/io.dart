@@ -259,6 +259,9 @@ String sanitizeFileNameWithSuffix(
 
 /// Copy the **contents** of the source directory to the destination directory.
 Future<void> copyDirectory(Directory source, Directory destination) async {
+  if (source.path.startsWith('smb://') || destination.path.startsWith('smb://')) {
+    return;
+  }
   if (!destination.existsSync()) {
     destination.createSync();
   }

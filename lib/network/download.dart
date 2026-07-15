@@ -7,6 +7,7 @@ import 'package:venera/foundation/app.dart';
 import 'package:venera/foundation/appdata.dart';
 import 'package:venera/foundation/comic_source/comic_source.dart';
 import 'package:venera/foundation/comic_type.dart';
+import 'package:venera/foundation/download_mode.dart';
 import 'package:venera/foundation/local.dart';
 import 'package:venera/foundation/log.dart';
 import 'package:venera/foundation/res.dart';
@@ -90,9 +91,11 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
   String get id => comicId;
 
   @override
-  ComicType get comicType => ComicType(source.key.hashCode);
+  ComicType get comicType => downloadMode == DownloadMode.smb ? ComicType.smb : ComicType(source.key.hashCode);
 
   String? comicTitle;
+
+  final DownloadMode downloadMode;
 
   ImagesDownloadTask({
     required this.source,
@@ -100,6 +103,7 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
     this.comic,
     this.chapters,
     this.comicTitle,
+    this.downloadMode = DownloadMode.local,
   });
 
   @override
@@ -433,7 +437,7 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
       if (chapters == null || chapters!.contains(completedChapterId)) {
         await LocalManager().markChapterDownloaded(
           comicId,
-          ComicType(source.key.hashCode),
+          comicType,
           completedChapterId,
           comicBuilder: toLocalComic,
         );
@@ -481,6 +485,7 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
       "totalCount": _totalCount,
       "index": _index,
       "chapter": _chapter,
+      "downloadMode": downloadMode.name,
     };
   }
 
@@ -504,6 +509,10 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
             ? null
             : ComicDetails.fromJson(json["comic"]),
         chapters: ListOrNull.from(json["chapters"]),
+        downloadMode: DownloadMode.values.firstWhere(
+          (e) => e.name == (json["downloadMode"] as String?),
+          orElse: () => DownloadMode.local,
+        ),
       )
       ..path = json["path"]
       .._cover = json["cover"]
@@ -522,6 +531,7 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
 
   @override
   LocalComic toLocalComic() {
+    final actualType = comicType;
     return LocalComic(
       id: comic!.id,
       title: title,
@@ -529,10 +539,10 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
       tags: comic!.tags.entries.expand((e) {
         return e.value.map((v) => "${e.key}:$v");
       }).toList(),
-      directory: Directory(path!).name,
+      directory: actualType == ComicType.smb ? (path ?? '') : Directory(path!).name,
       chapters: comic!.chapters,
       cover: File(_cover!.split("file://").last).name,
-      comicType: ComicType(source.key.hashCode),
+      comicType: actualType,
       downloadedChapters: chapters ?? comic?.chapters?.ids.toList() ?? [],
       createdAt: DateTime.now(),
     );
@@ -951,7 +961,7 @@ class ArchiveDownloadTask extends DownloadTask {
       directory: Directory(path!).name,
       chapters: null,
       cover: _findCover(),
-      comicType: ComicType(source.key.hashCode),
+      comicType: comicType,
       downloadedChapters: [],
       createdAt: DateTime.now(),
     );

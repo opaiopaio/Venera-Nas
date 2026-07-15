@@ -34,6 +34,8 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
 
   late LocalSortType sortType;
 
+  LocalSourceFilter sourceFilter = LocalSourceFilter.all;
+
   String keyword = "";
 
   bool searchMode = false;
@@ -45,7 +47,14 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
   void update() {
     if (keyword.isEmpty) {
       setState(() {
-        comics = LocalManager().getComics(sortType);
+        final all = LocalManager().getComics(sortType);
+        if (sourceFilter == LocalSourceFilter.localOnly) {
+          comics = all.where((c) => c.comicType == ComicType.local).toList();
+        } else if (sourceFilter == LocalSourceFilter.smbOnly) {
+          comics = all.where((c) => c.comicType == ComicType.smb).toList();
+        } else {
+          comics = all;
+        }
       });
     } else {
       setState(() {
@@ -58,7 +67,14 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
   void initState() {
     var sort = appdata.implicitData["local_sort"] ?? "name";
     sortType = LocalSortType.fromString(sort);
-    comics = LocalManager().getComics(sortType);
+    final all = LocalManager().getComics(sortType);
+        if (sourceFilter == LocalSourceFilter.localOnly) {
+          comics = all.where((c) => c.comicType == ComicType.local).toList();
+        } else if (sourceFilter == LocalSourceFilter.smbOnly) {
+          comics = all.where((c) => c.comicType == ComicType.smb).toList();
+        } else {
+          comics = all;
+        }
     LocalManager().addListener(update);
     super.initState();
   }
@@ -1136,3 +1152,4 @@ void showDeleteChaptersPopWindow(BuildContext context, LocalComic comic) {
     ),
   );
 }
+enum LocalSourceFilter { all, localOnly, smbOnly; }
