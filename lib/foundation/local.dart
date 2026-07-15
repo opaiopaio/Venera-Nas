@@ -213,13 +213,20 @@ class LocalManager with ChangeNotifier {
     if (!await newDir.exists()) {
       return "目录不存在";
     }
-    if (!await newDir.list().isEmpty) {
-      return "目录不为空";
+    try {
+      final contents = await newDir.list().toList();
+      if (contents.isNotEmpty) {
+        return "目录不为空";
+      }
+    } catch (_) {
+      // Directory exists but listing failed; assume empty and proceed.
     }
     try {
       if (!path.startsWith('smb://')) {
-        await copyDirectoryIsolate(directory, newDir);
-        await directory.deleteContents(recursive: true);
+        if (await directory.exists()) {
+          await copyDirectoryIsolate(directory, newDir);
+          await directory.deleteContents(recursive: true);
+        }
       }
       await File(
         FilePath.join(App.dataPath, 'local_path'),

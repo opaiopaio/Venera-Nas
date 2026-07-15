@@ -14,6 +14,7 @@ import 'package:venera/foundation/res.dart';
 import 'package:venera/network/images.dart';
 import 'package:venera/network/smb/smb_client.dart';
 import 'package:venera/network/smb/smb_config.dart';
+import 'package:venera/network/smb/smb_utils.dart';
 import 'package:venera/utils/ext.dart';
 import 'package:venera/utils/file_type.dart';
 import 'package:venera/utils/io.dart';
@@ -330,7 +331,19 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
         }
         var fileType = detectFileType(data);
         if (path!.startsWith('smb://')) {
-          return 'smb://cover${fileType.ext}';
+          final coverName = 'cover${fileType.ext}';
+          final coverRemotePath = '$path/$coverName';
+          final config = parseSmbConfigFromUrl(coverRemotePath);
+          final remoteDir = smbPathFromUrl(path!);
+          final client = SmbClient(config: config);
+          try {
+            await client.connect();
+            await client.mkdirs(remoteDir);
+            await client.writeFile('$remoteDir/$coverName', data);
+          } finally {
+            await client.disconnect();
+          }
+          return coverRemotePath;
         }
         var file = File(FilePath.join(path!, "cover${fileType.ext}"));
         file.writeAsBytesSync(data);
@@ -541,7 +554,9 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
       }).toList(),
       directory: actualType == ComicType.smb ? (path ?? '') : Directory(path!).name,
       chapters: comic!.chapters,
-      cover: File(_cover!.split("file://").last).name,
+      cover: actualType == ComicType.smb && _cover != null
+          ? _cover!.split('/').last
+          : File(_cover!.split("file://").last).name,
       comicType: actualType,
       downloadedChapters: chapters ?? comic?.chapters?.ids.toList() ?? [],
       createdAt: DateTime.now(),
