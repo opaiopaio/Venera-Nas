@@ -6,6 +6,8 @@ import 'package:venera/foundation/comic_type.dart';
 import 'package:venera/foundation/favorites.dart';
 import 'package:venera/foundation/local.dart';
 import 'package:venera/foundation/log.dart';
+import 'package:venera/network/smb/smb_client.dart';
+import 'package:venera/network/smb/smb_config.dart';
 import 'package:sqlite3/sqlite3.dart' as sql;
 import 'package:venera/utils/ext.dart';
 import 'package:venera/utils/translations.dart';
@@ -251,6 +253,181 @@ class ImportComic {
     controller.close();
     if (cancelled) return false;
     return registerComics(imported, false);
+  }
+
+  /// Scan an SMB share for comics.
+  ///
+  /// [config] is the connection configuration.
+  /// [rootPath] is the directory path on the SMB share to scan (e.g. `'Comics'`
+  /// or `''` for the share root).
+  /// If [copyToLocal] is true, comic files will be downloaded and stored
+  /// locally (requires sufficient disk space).
+  /// [favoriteFolder] is an optional favorite folder name to add found comics
+  /// to.
+  ///
+  /// Returns the list of [LocalComic] objects found, or an empty list if
+  /// nothing was found or an error occurred.
+  static Future<List<LocalComic>> smb({
+    required SmbConfig config,
+    required String rootPath,
+    String? id,
+    bool copyToLocal = false,
+    List<String>? tags,
+    String? subtitle,
+    String? favoriteFolder,
+  }) async {
+    final client = SmbClient(config: config);
+    try {
+      await client.connect();
+
+      final entries = await client.listDirectory(rootPath);
+      final subDirs = entries.where((e) => e.isDirectory).toList();
+
+      final comics = <LocalComic>[];
+      for (final subDir in subDirs) {
+        final comic = await _checkSingleSmbComic(
+          client,
+          subDir.path,
+          config: config,
+          tags: tags,
+          subtitle: subtitle,
+        );
+        if (comic != null) {
+          comics.add(comic);
+        }
+      }
+
+      // Register with LocalManager
+      for (final comic in comics) {
+        var assignedId = id ?? LocalManager().findValidId(ComicType.smb);
+        LocalManager().add(comic, assignedId);
+        if (favoriteFolder != null) {
+          if (!LocalFavoritesManager().existsFolder(favoriteFolder)) {
+            LocalFavoritesManager().createFolder(favoriteFolder);
+          }
+          LocalFavoritesManager().addComic(
+            favoriteFolder,
+            FavoriteItem(
+              id: assignedId,
+              name: comic.title,
+              coverPath: comic.cover,
+              author: comic.subtitle,
+              type: comic.comicType,
+              tags: comic.tags,
+              favoriteTime: comic.createdAt,
+            ),
+          );
+        }
+      }
+
+      return comics;
+    } catch (e) {
+      Log.error("Import Comic (SMB)", e.toString());
+      return [];
+    } finally {
+      await client.disconnect();
+    }
+  }
+
+  /// Scan a single directory on an SMB share and return a [LocalComic] if
+  /// valid. Mirrors [_checkSingleComic] but operates on SMB entries instead
+  /// of local [Directory] objects.
+  static Future<LocalComic?> _checkSingleSmbComic(
+    SmbClient client,
+    String directoryPath, {
+    required SmbConfig config,
+    String? id,
+    String? title,
+    List<String>? tags,
+    String? subtitle,
+    DateTime? createTime,
+  }) async {
+    final name = title ?? directoryPath.split('/').last;
+    if (LocalManager().findByName(name) != null) {
+      Log.info("Import Comic (SMB)", "Comic already exists: $name");
+      return null;
+    }
+
+    final entries = await client.listDirectory(directoryPath);
+
+    bool hasChapters = false;
+    var chapterEntries = <SmbEntry>[];
+    var imageEntries = <SmbEntry>[];
+
+    for (final entry in entries) {
+      if (entry.isDirectory) {
+        hasChapters = true;
+        chapterEntries.add(entry);
+      } else if (entry.isFile) {
+        const imageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'jpe'];
+        if (imageExtensions.contains(entry.extension.toLowerCase())) {
+          imageEntries.add(entry);
+        }
+      }
+    }
+
+    if (imageEntries.isEmpty && !hasChapters) {
+      return null;
+    }
+
+    // Sort images
+    imageEntries.sort((a, b) {
+      var ai = int.tryParse(a.name.split('.').first);
+      var bi = int.tryParse(b.name.split('.').first);
+      if (ai != null && bi != null) {
+        return ai.compareTo(bi);
+      }
+      return a.name.compareTo(b.name);
+    });
+
+    // Sort chapters
+    chapterEntries.sort((a, b) => a.name.compareTo(b.name));
+
+    String coverName;
+    if (imageEntries.isNotEmpty) {
+      coverName =
+          imageEntries.firstWhereOrNull((l) => l.name.startsWith('cover'))?.name ??
+          imageEntries.first.name;
+    } else if (hasChapters && chapterEntries.isNotEmpty) {
+      // Use first image from first chapter as cover
+      final firstChapterPath = chapterEntries.first.path;
+      final chapterImages = await client.listDirectory(firstChapterPath);
+      final firstImage = chapterImages.firstWhereOrNull((e) {
+        const imgExts = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'jpe'];
+        return e.isFile && imgExts.contains(e.extension.toLowerCase());
+      });
+      if (firstImage == null) {
+        Log.info("Import Comic (SMB)", "Invalid Comic: $name\nNo cover image found.");
+        return null;
+      }
+      coverName = firstImage.name;
+    } else {
+      Log.info("Import Comic (SMB)", "Invalid Comic: $name\nNo cover image found.");
+      return null;
+    }
+
+    final baseUrl = config.buildUrl();
+    final fullBaseDir = '$baseUrl/$directoryPath';
+
+    final chapters = hasChapters
+        ? Map.fromIterables(
+            chapterEntries.map((e) => e.name),
+            chapterEntries.map((e) => e.name),
+          )
+        : null;
+
+    return LocalComic(
+      id: id ?? '0',
+      title: name,
+      subtitle: subtitle ?? '',
+      tags: tags ?? [],
+      directory: fullBaseDir,
+      chapters: hasChapters ? ComicChapters(chapters!) : null,
+      cover: coverName,
+      comicType: ComicType.smb,
+      downloadedChapters: hasChapters ? chapterEntries.map((e) => e.name).toList() : [],
+      createdAt: createTime ?? DateTime.now(),
+    );
   }
 
   //Automatically search for cover image and chapters

@@ -232,6 +232,15 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
       );
     }
 
+    void showSmbImportDialog() {
+      showDialog(
+        context: context,
+        builder: (context) => const SmbImportDialog(),
+      ).then((_) {
+        update();
+      });
+    }
+
     final exportImportMenu = MenuButton(
       entries: [
         MenuEntry(
@@ -243,6 +252,11 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
           icon: Icons.file_download,
           text: "Import Migrated Comics".tl,
           onClick: showImportDialog,
+        ),
+        MenuEntry(
+          icon: Icons.dns,
+          text: "Import from SMB / NAS".tl,
+          onClick: showSmbImportDialog,
         ),
       ],
     );

@@ -1,7 +1,10 @@
 import 'dart:async' show Future;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:venera/foundation/comic_type.dart';
 import 'package:venera/foundation/local.dart';
+import 'package:venera/network/smb/smb_client.dart';
+import 'package:venera/network/smb/smb_config.dart';
 import 'package:venera/utils/io.dart';
 import 'base_image_provider.dart';
 import 'local_comic_image.dart' as image_provider;
@@ -17,6 +20,11 @@ class LocalComicImageProvider
 
   @override
   Future<Uint8List> load(chunkEvents, checkStop) async {
+    // SMB: read cover from remote share
+    if (comic.comicType == ComicType.smb) {
+      return _loadSmbCover();
+    }
+
     File? file = comic.coverFile;
     if (!await file.exists()) {
       file = null;
@@ -71,6 +79,65 @@ class LocalComicImageProvider
       throw "Exception: Empty file(${file.path}).";
     }
     return data;
+  }
+
+  Future<Uint8List> _loadSmbCover() async {
+    final baseDir = comic.baseDir;
+    final coverName = comic.cover;
+
+    // Build the full smb:// URL for the cover image.
+    // If the cover is already a full URL (starts with smb://), use it directly.
+    final String coverUrl;
+    if (coverName.startsWith('smb://')) {
+      coverUrl = coverName;
+    } else {
+      // baseDir is smb://host/share/path, cover is "cover.jpg" or similar
+      coverUrl = '${baseDir.endsWith('/') ? baseDir : '$baseDir/'}$coverName';
+    }
+
+    print('[SMB Cover] loading: $coverUrl');
+
+    final config = _parseSmbConfigFromUrl(baseDir);
+    final remoteCoverPath = _smbCoverPathFromUrl(config, coverUrl);
+
+    print('[SMB Cover] host=${config.host} share=${config.share} remotePath=$remoteCoverPath');
+
+    final client = SmbClient(config: config);
+    try {
+      await client.connect();
+      final data = await client.readFile(remoteCoverPath);
+      print('[SMB Cover] readFile done, ${data.length} bytes');
+      if (data.isEmpty) {
+        throw "Exception: Empty cover file on SMB.";
+      }
+      return data;
+    } catch (e) {
+      print('[SMB Cover] ERROR: $e');
+      rethrow;
+    } finally {
+      await client.disconnect();
+    }
+  }
+
+  static SmbConfig _parseSmbConfigFromUrl(String url) {
+    final uri = Uri.parse(url);
+    final parts = uri.pathSegments;
+    final share = parts.isNotEmpty ? parts.first : '';
+    final userInfo = uri.userInfo.split(':');
+    return SmbConfig(
+      host: uri.host,
+      port: uri.hasPort ? uri.port : 445,
+      share: share,
+      username: userInfo.isNotEmpty ? Uri.decodeComponent(userInfo[0]) : '',
+      password: userInfo.length > 1 ? Uri.decodeComponent(userInfo[1]) : '',
+    );
+  }
+
+  static String _smbCoverPathFromUrl(SmbConfig config, String url) {
+    final uri = Uri.parse(url);
+    final segments = uri.pathSegments;
+    if (segments.length <= 1) return '';
+    return segments.sublist(1).join('/');
   }
 
   @override

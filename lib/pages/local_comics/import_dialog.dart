@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:venera/components/components.dart';
 import 'package:venera/foundation/app.dart';
+import 'package:venera/foundation/appdata.dart';
+import 'package:venera/foundation/local.dart';
+import 'package:venera/foundation/log.dart';
+import 'package:venera/network/smb/smb_client.dart';
+import 'package:venera/network/smb/smb_config.dart';
+import 'package:venera/network/smb/smb_connection.dart';
 import 'package:venera/utils/comic_import.dart';
+import 'package:venera/utils/import_comic.dart';
 import 'package:venera/utils/io.dart';
 import 'package:venera/utils/translations.dart';
 
@@ -81,7 +88,7 @@ class _ImportComicsDialogState extends State<ImportComicsDialog> {
               "Errors:".tl,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ).paddingHorizontal(16),
-            ..._result!.errors.map((e) => Text("• $e").paddingHorizontal(16)),
+            ..._result!.errors.map((e) => Text("  $e").paddingHorizontal(16)),
           ],
         ],
       ),
@@ -162,5 +169,210 @@ class _ImportComicsDialogState extends State<ImportComicsDialog> {
         _error = "${"Import failed".tl}: $e";
       });
     }
+  }
+}
+
+/// Dialog for importing comics from an SMB / NAS share.
+class SmbImportDialog extends StatefulWidget {
+  const SmbImportDialog({super.key});
+
+  @override
+  State<SmbImportDialog> createState() => _SmbImportDialogState();
+}
+
+class _SmbImportDialogState extends State<SmbImportDialog> {
+  List<SmbConnection> _servers = [];
+  SmbConnection? _selectedServer;
+  String _rootPath = '';
+  bool _isScanning = false;
+  bool _cancelled = false;
+  int _current = 0;
+  int _total = 0;
+  String? _scanResult;
+
+  static List<SmbConnection> _loadServers() {
+    final raw = appdata.settings['smbServers'];
+    if (raw is! List) return [];
+    try {
+      return raw
+          .map(
+            (e) => SmbConnection.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _servers = _loadServers();
+    if (_servers.isNotEmpty) {
+      _selectedServer = _servers.first;
+    }
+  }
+
+  Future<void> _startScan() async {
+    if (_selectedServer == null) {
+      context.showMessage(message: "Please select a server".tl);
+      return;
+    }
+    if (_rootPath.trim().isEmpty) {
+      context.showMessage(message: "Please enter a root path".tl);
+      return;
+    }
+
+    setState(() {
+      _isScanning = true;
+      _cancelled = false;
+      _current = 0;
+      _total = 0;
+      _scanResult = null;
+    });
+
+    try {
+      final rootPath = _rootPath.trim();
+      final comics = await ImportComic.smb(
+        config: _selectedServer!.config,
+        rootPath: rootPath,
+        favoriteFolder: _selectedServer!.name,
+      );
+
+      if (!mounted) return;
+      LocalManager().notifyListeners();
+      setState(() {
+        _isScanning = false;
+        _scanResult = "Imported @a comics from @b"
+            .tlParams({'a': comics.length, 'b': _selectedServer!.name});
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isScanning = false;
+        _scanResult = "${"Import failed".tl}: $e";
+      });
+      Log.error("SMB Import", e.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_servers.isEmpty) {
+      return ContentDialog(
+        title: "SMB / NAS Import".tl,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "No SMB servers configured. Please add a server in Settings > SMB / NAS Servers first."
+                  .tl,
+            ).paddingHorizontal(16),
+            const SizedBox(height: 16),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text("OK".tl),
+          ),
+        ],
+      );
+    }
+
+    if (_scanResult != null) {
+      return ContentDialog(
+        title: "Scan Complete".tl,
+        content: Text(_scanResult!).paddingHorizontal(16),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text("OK".tl),
+          ),
+        ],
+      );
+    }
+
+    return ContentDialog(
+      title: "SMB / NAS Import".tl,
+      content: _isScanning ? _buildProgress() : _buildForm(_servers),
+      actions: _isScanning ? _buildProgressActions() : _buildFormActions(),
+    );
+  }
+
+  Widget _buildForm(List<SmbConnection> servers) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<SmbConnection>(
+          value: _selectedServer,
+          decoration: InputDecoration(
+            labelText: "Server".tl,
+            border: const OutlineInputBorder(),
+          ),
+          items: servers.map((s) {
+            return DropdownMenuItem(value: s, child: Text(s.name));
+          }).toList(),
+          onChanged: (v) {
+            if (v != null) {
+              setState(() => _selectedServer = v);
+            }
+          },
+        ).paddingHorizontal(16),
+        const SizedBox(height: 12),
+        TextField(
+          decoration: InputDecoration(
+            labelText: "Root Path".tl,
+            hintText: 'Comics/Manga',
+            border: const OutlineInputBorder(),
+          ),
+          onChanged: (v) => _rootPath = v,
+        ).paddingHorizontal(16),
+        const SizedBox(height: 8),
+        Text(
+          "Path on the SMB share where comic directories are located.".tl,
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ).paddingHorizontal(16),
+      ],
+    );
+  }
+
+  Widget _buildProgress() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        LinearProgressIndicator(
+          value: _total > 0 ? _current / _total : null,
+        ),
+        const SizedBox(height: 16),
+        Text("Scanning...".tl),
+        if (_total > 0) Text("$_current / $_total"),
+      ],
+    ).paddingHorizontal(16);
+  }
+
+  List<Widget> _buildFormActions() {
+    return [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: Text("Cancel".tl),
+      ),
+      FilledButton(onPressed: _startScan, child: Text("Scan".tl)),
+    ];
+  }
+
+  List<Widget> _buildProgressActions() {
+    return [
+      TextButton(
+        onPressed: () {
+          setState(() => _cancelled = true);
+        },
+        child: Text("Cancel".tl),
+      ),
+    ];
   }
 }

@@ -11,6 +11,8 @@ import 'package:venera/foundation/local.dart';
 import 'package:venera/foundation/log.dart';
 import 'package:venera/foundation/res.dart';
 import 'package:venera/network/images.dart';
+import 'package:venera/network/smb/smb_client.dart';
+import 'package:venera/network/smb/smb_config.dart';
 import 'package:venera/utils/ext.dart';
 import 'package:venera/utils/file_type.dart';
 import 'package:venera/utils/io.dart';
@@ -105,7 +107,7 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
     _isRunning = false;
     LocalManager().removeTask(this);
     var local = LocalManager().find(id, comicType);
-    if (path != null) {
+    if (path != null && !path!.startsWith('smb://')) {
       if (local == null) {
         Future.sync(() async {
           var tasks = this.tasks.values.toList();
@@ -216,7 +218,7 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
             ),
           ),
         );
-        if (!saveTo.existsSync()) {
+        if (!path!.startsWith('smb://') && !saveTo.existsSync()) {
           saveTo.createSync(recursive: true);
         }
       } else {
@@ -307,6 +309,9 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
           throw "Failed to download cover";
         }
         var fileType = detectFileType(data);
+        if (path!.startsWith('smb://')) {
+          return 'smb://cover${fileType.ext}';
+        }
         var file = File(FilePath.join(path!, "cover${fileType.ext}"));
         file.writeAsBytesSync(data);
         return "file://${file.path}";
@@ -557,13 +562,27 @@ class _ImageDownloadWrapper {
 
   final Directory saveTo;
 
+  /// If true, writes go to SMB instead of [saveTo].
+  final bool _isSmbPath;
+
+  /// Pre-parsed SMB config (valid when [_isSmbPath] is true).
+  final SmbConfig? _smbConfig;
+
+  /// SMB remote directory path relative to the share root.
+  final String? _smbDir;
+
   _ImageDownloadWrapper(
     this.task,
     this.chapter,
     this.image,
     this.saveTo,
-    this.index,
-  ) {
+    this.index, {
+    bool isSmbPath = false,
+    SmbConfig? smbConfig,
+    String? smbDir,
+  }) : _isSmbPath = isSmbPath,
+      _smbConfig = smbConfig,
+      _smbDir = smbDir {
     start();
   }
 
@@ -597,8 +616,13 @@ class _ImageDownloadWrapper {
         lastBytes = p.currentBytes;
         if (p.imageBytes != null) {
           var fileType = detectFileType(p.imageBytes!);
-          var file = saveTo.joinFile("$index${fileType.ext}");
-          await file.writeAsBytes(p.imageBytes!);
+          final fileName = "$index${fileType.ext}";
+          if (_isSmbPath) {
+            await _writeToSmb(p.imageBytes!, fileName);
+          } else {
+            var file = saveTo.joinFile(fileName);
+            await file.writeAsBytes(p.imageBytes!);
+          }
           isComplete = true;
           for (var c in completers) {
             c.complete(this);
@@ -622,6 +646,17 @@ class _ImageDownloadWrapper {
           c.complete(this);
         }
       }
+    }
+  }
+
+  Future<void> _writeToSmb(Uint8List data, String fileName) async {
+    final client = SmbClient(config: _smbConfig!);
+    try {
+      await client.connect();
+      final remotePath = '/';
+      await client.writeFile(remotePath, data);
+    } finally {
+      await client.disconnect();
     }
   }
 
@@ -707,7 +742,7 @@ class ArchiveDownloadTask extends DownloadTask {
   void cancel() async {
     _isRunning = false;
     await _downloader?.stop();
-    if (path != null) {
+    if (path != null && !path!.startsWith('smb://')) {
       Directory(path!).deleteIgnoreError(recursive: true);
     }
     path = null;
@@ -766,15 +801,18 @@ class ArchiveDownloadTask extends DownloadTask {
         comicType,
         comic.title,
       );
-      if (!(await dir.exists())) {
-        try {
-          await dir.create();
-        } catch (e) {
-          _setError("Error: $e");
-          return;
+      final dirPath = dir.path;
+      if (!dirPath.startsWith('smb://')) {
+        if (!(await dir.exists())) {
+          try {
+            await dir.create();
+          } catch (e) {
+            _setError("Error: $e");
+            return;
+          }
         }
       }
-      path = dir.path;
+      path = dirPath;
     }
 
     var archiveFile = File(
@@ -868,6 +906,9 @@ class ArchiveDownloadTask extends DownloadTask {
   }
 
   String _findCover() {
+    if (path != null && path!.startsWith('smb://')) {
+      return '';
+    }
     var files = Directory(path!).listSync();
     for (var f in files) {
       if (f.name.startsWith('cover')) {
@@ -897,4 +938,26 @@ class ArchiveDownloadTask extends DownloadTask {
       createdAt: DateTime.now(),
     );
   }
+
+}
+
+SmbConfig _parseSmbConfig(String url) {
+  final uri = Uri.parse(url);
+  final parts = uri.pathSegments;
+  final share = parts.isNotEmpty ? parts.first : '';
+  final userInfo = uri.userInfo.split(':');
+  return SmbConfig(
+    host: uri.host,
+    port: uri.hasPort ? uri.port : 445,
+    share: share,
+    username: userInfo.isNotEmpty ? Uri.decodeComponent(userInfo[0]) : '',
+    password: userInfo.length > 1 ? Uri.decodeComponent(userInfo[1]) : '',
+  );
+}
+
+String _smbDirFromPath(String url) {
+  final uri = Uri.parse(url);
+  final segments = uri.pathSegments;
+  if (segments.length <= 1) return '';
+  return segments.sublist(1).join('/');
 }
