@@ -1,10 +1,25 @@
 /// Configuration for connecting to an SMB share.
+/// Configuration for connecting to an SMB share.
+///
+/// Stores the host, port, share name, and optional credentials
+/// required to establish an SMB session.
 class SmbConfig {
+  /// SMB server hostname or IP address.
   final String host;
+
+  /// SMB port (default: 445).
   final int port;
+
+  /// Name of the shared folder on the server.
   final String share;
+
+  /// Username for authentication (empty string if anonymous).
   final String username;
+
+  /// Password for authentication (empty string if anonymous).
   final String password;
+
+  /// Windows domain for authentication (default: empty string).
   final String domain;
 
   const SmbConfig({
@@ -62,11 +77,23 @@ class SmbConfig {
 }
 
 /// Represents an entry (file or directory) on an SMB share.
+/// Represents a file or directory entry on an SMB share.
+///
+/// Returned by [SmbClient.listDirectory] and similar operations.
 class SmbEntry {
+  /// The entry name (file or directory name only).
   final String name;
+
+  /// The full share-relative path.
   final String path;
+
+  /// Whether this entry is a directory.
   final bool isDirectory;
+
+  /// File size in bytes (0 for directories).
   final int size;
+
+  /// Last modification timestamp.
   final DateTime modified;
 
   SmbEntry({
