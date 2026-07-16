@@ -15,7 +15,6 @@ class _AppSettingsState extends State<AppSettings> {
     return SmoothCustomScrollView(
       slivers: [
         SliverAppbar(title: Text("App".tl)),
-        _SettingPartTitle(title: "Data".tl, icon: Icons.storage),
         _SettingPartTitle(title: "下载路径".tl, icon: Icons.folder_outlined),
         ListTile(
           title: Text("本地下载路径".tl),
