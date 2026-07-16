@@ -1,13 +1,13 @@
-# Venera - NAS
-> **本项目基于 [haukuen/Venera](https://github.com/haukuen/Venera) 二次开发，在此向原作者致以诚挚的感谢！**
+# Venera-Nas
 
-## 📌 与原版的区别
+> 基于 [haukuen/Venera](https://github.com/haukuen/Venera) 二次开发，增加了 SMB/NAS 协议支持。
 
-| SMB 协议连接 NAS 
-| 从 NAS 扫描漫画
-| 下载到 NAS (SMB)
-| SMB 漫画流式阅读
-| 两种下载方式（本地 / NAS）
+## ✨ 特色功能
+
+- **SMB 协议连接 NAS**：直接访问网络存储设备中的漫画文件
+- **从 NAS 扫描导入漫画**：扫描 SMB 共享目录，自动识别漫画结构并导入
+- **SMB 漫画流式阅读**：无需下载到本地，直接从 NAS 读取漫画页面
+- **双模式下载**：支持下载到本地存储，或直接下载到 NAS (SMB)
 
 ## 🚀 快速开始
 
@@ -17,7 +17,7 @@
 3. 点击 **Test Connection** 验证连接
 
 ### 从 NAS 导入漫画
-- 在主页点击 导入旁的扫描按钮，或者进入本地页面点击右上角
+- 在主页点击导入旁的扫描按钮，或进入本地页面点击右上角菜单
 - 选择服务器和根目录，开始扫描
 
 ### 下载方式选择
@@ -26,21 +26,21 @@
 
 ## 📦 下载
 
-- [Windows 安装包](https://github.com/opaiopaio/Venera-Nas/releases)
-- [Android APK]https://github.com/opaiopaio/Venera-Nas/releases)
+> 前往 [Releases](https://github.com/opaiopaio/Venera-Nas/releases) 下载最新版本
 
-> 请前往 [Releases](https://github.com/opaiopaio/Venera-Nas/releases) 下载最新版本
+## 🙏 致谢
 
-## 🙏 鸣谢
+本项目基于以下开源项目二次开发：
 
-- 原作者：[haukuen](https://github.com/haukuen)
-- 原项目：[Venera](https://github.com/haukuen/Venera)
-- 本版本在原有基础上增加了 SMB/NAS 完整支持，感谢原作者的卓越贡献！
+- **[Venera](https://github.com/venera-app/venera)**：原版漫画阅读器，提供了完整的跨平台框架
+- **[haukuen/Venera](https://github.com/haukuen/Venera)**：本项目直接 Fork 自 haukuen 的维护版本，感谢他的持续维护工作
+
+本版本（Venera-Nas）在此基础上增加了 SMB/NAS 完整支持、双模式下载等新功能。
 
 ## 📜 许可证
 
-本项目继承原项目的开源许可证，请参考 [LICENSE](LICENSE) 文件。
+本项目继承原项目的开源许可证，详见 [LICENSE](LICENSE) 文件。
 
 ---
 
-**⚠️ 注意**：本版本并非官方版本，如有问题请到 [本项目 Issues](https://github.com/opaiopaio/venera-smb/issues) 反馈。
+**⚠️ 注意**：本版本非官方版本，如有问题请到 [Issues](https://github.com/opaiopaio/venera-smb/issues) 反馈。
