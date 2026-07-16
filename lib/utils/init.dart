@@ -34,7 +34,10 @@ abstract mixin class Init {
     if (_isInit) {
       return;
     }
-    await doInit();
-    await _markInit();
+    try {
+      await doInit();
+    } finally {
+      await _markInit();
+    }
   }
 }

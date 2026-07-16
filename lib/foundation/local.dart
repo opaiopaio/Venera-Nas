@@ -191,10 +191,10 @@ class LocalManager with ChangeNotifier {
   late Database _db;
 
   /// path to the directory where all the comics are stored
-  late String path;
+  String path = '';
 
   /// path for SMB/NAS downloads
-  late String smbPath;
+  String smbPath = '';
 
   Directory get directory => Directory(path);
 
