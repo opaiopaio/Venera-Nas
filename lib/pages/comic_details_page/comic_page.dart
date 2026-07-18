@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -214,18 +214,19 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
 
   @override
   Future<Res<ComicDetails>> loadData() async {
-    if (widget.sourceKey == 'local') {
-      var localComic = LocalManager().find(widget.id, ComicType.local);
+    if (widget.sourceKey == 'local' || widget.sourceKey == 'smb') {
+      var comicType = widget.sourceKey == 'local' ? ComicType.local : ComicType.smb;
+      var localComic = LocalManager().find(widget.id, comicType);
       if (localComic == null) {
         return const Res.error('Local comic not found');
       }
-      var history = HistoryManager().find(widget.id, ComicType.local);
+      var history = HistoryManager().find(widget.id, comicType);
       if (isFirst) {
         Future.microtask(() {
           if (!App.rootContext.mounted) return;
           App.rootContext.to(() {
             return Reader(
-              type: ComicType.local,
+              type: comicType,
               cid: widget.id,
               name: localComic.title,
               chapters: localComic.chapters,
