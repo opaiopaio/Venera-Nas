@@ -1,19 +1,19 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:desktop_webview_window/desktop_webview_window.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
-import 'package:venera/foundation/log.dart';
-import 'package:venera/pages/auth_page.dart';
-import 'package:venera/pages/comic_details_page/comic_page.dart';
-import 'package:venera/pages/main_page.dart';
-import 'package:venera/utils/app_links.dart';
-import 'package:venera/utils/background_download.dart';
-import 'package:venera/utils/io.dart';
-import 'package:venera/utils/translations.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/log.dart';
+import 'package:venera_nas/pages/auth_page.dart';
+import 'package:venera_nas/pages/comic_details_page/comic_page.dart';
+import 'package:venera_nas/pages/main_page.dart';
+import 'package:venera_nas/utils/app_links.dart';
+import 'package:venera_nas/utils/background_download.dart';
+import 'package:venera_nas/utils/io.dart';
+import 'package:venera_nas/utils/translations.dart';
 import 'package:window_manager/window_manager.dart';
 import 'components/components.dart';
 import 'components/window_frame.dart';
@@ -326,7 +326,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           tertiary = light.tertiary;
         }
         return MaterialApp(
-          title: "venera",
+          title: "VeneraNas",
           home: home,
           debugShowCheckedModeBanner: false,
           theme: getTheme(primary, secondary, tertiary, Brightness.light),
@@ -444,3 +444,5 @@ class _SystemUiProvider extends StatelessWidget {
     );
   }
 }
+
+

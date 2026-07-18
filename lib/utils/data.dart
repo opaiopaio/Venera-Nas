@@ -1,17 +1,17 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:sqlite3/sqlite3.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/appdata.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
-import 'package:venera/foundation/comic_type.dart';
-import 'package:venera/foundation/favorites.dart';
-import 'package:venera/foundation/history.dart';
-import 'package:venera/foundation/log.dart';
-import 'package:venera/foundation/read_later.dart';
-import 'package:venera/network/cookie_jar.dart';
-import 'package:venera/utils/ext.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/favorites.dart';
+import 'package:venera_nas/foundation/history.dart';
+import 'package:venera_nas/foundation/log.dart';
+import 'package:venera_nas/foundation/read_later.dart';
+import 'package:venera_nas/network/cookie_jar.dart';
+import 'package:venera_nas/utils/ext.dart';
 import 'package:zip_flutter/zip_flutter.dart';
 
 import 'io.dart';
@@ -394,3 +394,5 @@ Future<void> importPicaData(File file) async {
     cacheDir.deleteIgnoreError(recursive: true);
   }
 }
+
+

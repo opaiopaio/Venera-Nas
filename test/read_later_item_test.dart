@@ -1,6 +1,6 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:venera/foundation/comic_type.dart';
-import 'package:venera/foundation/read_later.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/read_later.dart';
 
 void main() {
   test('read later item equality survives list refreshes', () {
@@ -32,3 +32,5 @@ void main() {
     expect(selectedComics.containsKey(refreshed), isTrue);
   });
 }
+
+

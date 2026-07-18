@@ -1,22 +1,22 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:venera/components/components.dart';
-import 'package:venera/components/window_frame.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/appdata.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
-import 'package:venera/foundation/favorites.dart';
-import 'package:venera/foundation/history.dart';
-import 'package:venera/foundation/log.dart';
-import 'package:venera/foundation/read_later.dart';
-import 'package:venera/foundation/res.dart';
-import 'package:venera/network/app_dio.dart';
-import 'package:venera/network/cookie_jar.dart';
-import 'package:venera/utils/data.dart';
-import 'package:venera/utils/ext.dart';
+import 'package:venera_nas/components/components.dart';
+import 'package:venera_nas/components/window_frame.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/favorites.dart';
+import 'package:venera_nas/foundation/history.dart';
+import 'package:venera_nas/foundation/log.dart';
+import 'package:venera_nas/foundation/read_later.dart';
+import 'package:venera_nas/foundation/res.dart';
+import 'package:venera_nas/network/app_dio.dart';
+import 'package:venera_nas/network/cookie_jar.dart';
+import 'package:venera_nas/utils/data.dart';
+import 'package:venera_nas/utils/ext.dart';
 import 'package:webdav_client/webdav_client.dart' hide File;
-import 'package:venera/utils/translations.dart';
+import 'package:venera_nas/utils/translations.dart';
 
 import 'io.dart';
 
@@ -509,3 +509,5 @@ class DataSync with ChangeNotifier {
     }
   }
 }
+
+

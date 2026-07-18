@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:venera/foundation/app.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:venera_nas/foundation/app.dart';
 
 /// patched slider.dart with RtL support
 class _SliderDefaultsM3 extends SliderThemeData {
@@ -266,3 +266,5 @@ class _CustomSliderState extends State<CustomSlider> {
     );
   }
 }
+
+

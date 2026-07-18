@@ -1,11 +1,11 @@
-import 'dart:async' show Future;
+﻿import 'dart:async' show Future;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:venera/foundation/comic_type.dart';
-import 'package:venera/foundation/local.dart';
-import 'package:venera/network/images.dart';
-import 'package:venera/network/smb/smb_client.dart';
-import 'package:venera/network/smb/smb_config.dart';
+import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/local.dart';
+import 'package:venera_nas/network/images.dart';
+import 'package:venera_nas/network/smb/smb_client.dart';
+import 'package:venera_nas/network/smb/smb_config.dart';
 import '../history.dart';
 import 'base_image_provider.dart';
 import 'history_image_provider.dart' as image_provider;
@@ -106,3 +106,5 @@ class HistoryImageProvider
   @override
   String get key => "history${history.id}${history.type.value}";
 }
+
+

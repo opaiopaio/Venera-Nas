@@ -1,23 +1,23 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:isolate';
 
 import 'package:flutter/widgets.dart' show ChangeNotifier;
 import 'package:flutter_saf/flutter_saf.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/appdata.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
-import 'package:venera/foundation/comic_type.dart';
-import 'package:venera/foundation/download_mode.dart';
-import 'package:venera/foundation/local.dart';
-import 'package:venera/foundation/log.dart';
-import 'package:venera/foundation/res.dart';
-import 'package:venera/network/images.dart';
-import 'package:venera/network/smb/smb_client.dart';
-import 'package:venera/network/smb/smb_config.dart';
-import 'package:venera/network/smb/smb_utils.dart';
-import 'package:venera/utils/ext.dart';
-import 'package:venera/utils/file_type.dart';
-import 'package:venera/utils/io.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/download_mode.dart';
+import 'package:venera_nas/foundation/local.dart';
+import 'package:venera_nas/foundation/log.dart';
+import 'package:venera_nas/foundation/res.dart';
+import 'package:venera_nas/network/images.dart';
+import 'package:venera_nas/network/smb/smb_client.dart';
+import 'package:venera_nas/network/smb/smb_config.dart';
+import 'package:venera_nas/network/smb/smb_utils.dart';
+import 'package:venera_nas/utils/ext.dart';
+import 'package:venera_nas/utils/file_type.dart';
+import 'package:venera_nas/utils/io.dart';
 import 'package:zip_flutter/zip_flutter.dart';
 
 import 'file_downloader.dart';
@@ -1004,3 +1004,5 @@ String _smbDirFromPath(String url) {
   if (segments.length <= 1) return '';
   return segments.sublist(1).join('/');
 }
+
+

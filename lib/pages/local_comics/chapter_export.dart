@@ -1,5 +1,5 @@
-import 'package:venera/foundation/local.dart';
-import 'package:venera/utils/io.dart';
+﻿import 'package:venera_nas/foundation/local.dart';
+import 'package:venera_nas/utils/io.dart';
 
 class ExportableChapter {
   final String id;
@@ -105,3 +105,5 @@ String singleChapterExportFilename({
     fallback: 'comic',
   );
 }
+
+

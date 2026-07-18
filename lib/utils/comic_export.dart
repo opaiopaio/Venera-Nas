@@ -1,9 +1,9 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:isolate';
 
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/local.dart';
-import 'package:venera/utils/io.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/local.dart';
+import 'package:venera_nas/utils/io.dart';
 import 'package:zip_flutter/zip_flutter.dart';
 
 /// 漫画导出元信息
@@ -274,3 +274,5 @@ class ComicExporter {
     }
   }
 }
+
+

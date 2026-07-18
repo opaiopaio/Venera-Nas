@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'dart:isolate';
 import 'dart:math';
@@ -7,15 +7,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart' show ChangeNotifier;
 import 'package:sqlite3/sqlite3.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
-import 'package:venera/foundation/comic_type.dart';
-import 'package:venera/foundation/favorites.dart';
-import 'package:venera/foundation/image_provider/image_favorites_provider.dart';
-import 'package:venera/foundation/log.dart';
-import 'package:venera/foundation/sqlite_connection.dart';
-import 'package:venera/utils/channel.dart';
-import 'package:venera/utils/ext.dart';
-import 'package:venera/utils/translations.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/favorites.dart';
+import 'package:venera_nas/foundation/image_provider/image_favorites_provider.dart';
+import 'package:venera_nas/foundation/log.dart';
+import 'package:venera_nas/foundation/sqlite_connection.dart';
+import 'package:venera_nas/utils/channel.dart';
+import 'package:venera_nas/utils/ext.dart';
+import 'package:venera_nas/utils/translations.dart';
 
 import 'app.dart';
 import 'appdata.dart';
@@ -676,3 +676,5 @@ class RefreshProgress {
     this.skipped,
   );
 }
+
+

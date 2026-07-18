@@ -1,12 +1,12 @@
-import 'dart:async' show Future;
+﻿import 'dart:async' show Future;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:venera/foundation/comic_type.dart';
-import 'package:venera/foundation/local.dart';
+import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/local.dart';
 import 'package:dart_smb2/dart_smb2.dart';
-import 'package:venera/network/smb/smb_client.dart';
-import 'package:venera/network/smb/smb_config.dart';
-import 'package:venera/utils/io.dart';
+import 'package:venera_nas/network/smb/smb_client.dart';
+import 'package:venera_nas/network/smb/smb_config.dart';
+import 'package:venera_nas/utils/io.dart';
 import 'base_image_provider.dart';
 import 'local_comic_image.dart' as image_provider;
 
@@ -182,3 +182,5 @@ class LocalComicImageProvider
   @override
   String get key => "local${comic.id}${comic.comicType.value}";
 }
+
+

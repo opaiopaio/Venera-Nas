@@ -1,9 +1,9 @@
-import 'package:app_links/app_links.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
-import 'package:venera/pages/aggregated_search_page.dart';
-import 'package:venera/pages/comic_details_page/comic_page.dart';
-import 'package:venera/utils/translations.dart';
+﻿import 'package:app_links/app_links.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/pages/aggregated_search_page.dart';
+import 'package:venera_nas/pages/comic_details_page/comic_page.dart';
+import 'package:venera_nas/utils/translations.dart';
 
 final _veneraLinkRegex = RegExp(r'venera://\S+');
 
@@ -87,3 +87,5 @@ Future<bool> handleAppLink(Uri uri) async {
   }
   return false;
 }
+
+

@@ -1,10 +1,10 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:sqlite3/sqlite3.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
-import 'package:venera/foundation/comic_type.dart';
-import 'package:venera/foundation/history.dart';
-import 'package:venera/foundation/sqlite_connection.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/history.dart';
+import 'package:venera_nas/foundation/sqlite_connection.dart';
 
 class ReadLaterItem implements Comic {
   @override
@@ -218,3 +218,5 @@ class ReadLaterManager with ChangeNotifier {
     notifyListeners();
   }
 }
+
+

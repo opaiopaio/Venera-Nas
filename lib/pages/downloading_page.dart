@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:venera/components/components.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/image_provider/cached_image.dart';
-import 'package:venera/foundation/local.dart';
-import 'package:venera/network/download.dart';
-import 'package:venera/utils/background_download.dart';
-import 'package:venera/utils/io.dart';
-import 'package:venera/utils/translations.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:venera_nas/components/components.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/image_provider/cached_image.dart';
+import 'package:venera_nas/foundation/local.dart';
+import 'package:venera_nas/network/download.dart';
+import 'package:venera_nas/utils/background_download.dart';
+import 'package:venera_nas/utils/io.dart';
+import 'package:venera_nas/utils/translations.dart';
 
 class DownloadingPage extends StatefulWidget {
   const DownloadingPage({super.key});
@@ -240,3 +240,5 @@ class _DownloadTaskTileState extends State<_DownloadTaskTile> {
     );
   }
 }
+
+

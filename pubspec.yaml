@@ -1,5 +1,5 @@
-name: venera
-description: "A comic app."
+name: venera_nas
+description: "A comic app with SMB/NAS support."
 publish_to: 'none'
 
 version: 1.6.1+1
@@ -92,6 +92,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.3
   path_provider_platform_interface: any
   flutter_to_arch: ^1.0.1
   flutter_to_debian: 
@@ -111,11 +112,26 @@ flutter:
     - assets/opencc/STPhrases.txt
     - assets/opencc/TSCharacters.txt
     - assets/opencc/TSPhrases.txt
-# fonts:
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  macos:
+    generate: true
+    image_path: "assets/app_icon.png"
+    # Manual macOS sizes via Contents.json — flutter_launcher_icons auto-generates
+  windows:
+    generate: true
+    image_path: "assets/app_icon.png"
+    icon_size: 48
+  linux:
+    generate: true
+    image_path: "assets/app_icon.png"
+  image_path: "assets/app_icon.png"
 
 flutter_to_arch:
-  name: Venera
-  url: https://github.com/haukuen/venera
+  name: VeneraNas
+  url: https://github.com/opaiopaio/Venera-Nas
   icon: debian/gui/venera.png
   categories: Utility
   keywords: Flutter;comic;images;

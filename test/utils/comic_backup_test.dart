@@ -1,11 +1,11 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/appdata.dart';
-import 'package:venera/foundation/comic_type.dart';
-import 'package:venera/foundation/local.dart';
-import 'package:venera/utils/comic_backup.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/local.dart';
+import 'package:venera_nas/utils/comic_backup.dart';
 
 void main() {
   setUp(() {
@@ -321,3 +321,5 @@ class _FakeBackupOps implements ComicBackupWebDavOps {
     deletedRemotePaths.add(remotePath);
   }
 }
+
+

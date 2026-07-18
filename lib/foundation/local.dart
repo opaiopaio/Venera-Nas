@@ -5,18 +5,18 @@ import 'package:flutter/widgets.dart' show ChangeNotifier;
 import 'package:flutter_saf/flutter_saf.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3/sqlite3.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
-import 'package:venera/foundation/comic_type.dart';
-import 'package:venera/foundation/appdata.dart';
-import 'package:venera/foundation/favorites.dart';
-import 'package:venera/foundation/log.dart';
-import 'package:venera/foundation/sqlite_connection.dart';
-import 'package:venera/network/download.dart';
-import 'package:venera/network/smb/smb_client.dart';
-import 'package:venera/network/smb/smb_config.dart';
-import 'package:venera/pages/reader/reader.dart';
-import 'package:venera/utils/io.dart';
-import 'package:venera/utils/background_download.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/favorites.dart';
+import 'package:venera_nas/foundation/log.dart';
+import 'package:venera_nas/foundation/sqlite_connection.dart';
+import 'package:venera_nas/network/download.dart';
+import 'package:venera_nas/network/smb/smb_client.dart';
+import 'package:venera_nas/network/smb/smb_config.dart';
+import 'package:venera_nas/pages/reader/reader.dart';
+import 'package:venera_nas/utils/io.dart';
+import 'package:venera_nas/utils/background_download.dart';
 
 import 'app.dart';
 import 'history.dart';
@@ -942,3 +942,5 @@ enum LocalSortType {
     return name;
   }
 }
+
+

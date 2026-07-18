@@ -1,10 +1,10 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:venera/foundation/history.dart';
+import 'package:venera_nas/foundation/history.dart';
 
 import 'read_later.dart';
 import 'appdata.dart';
@@ -117,3 +117,5 @@ class _App {
 
 // ignore: non_constant_identifier_names
 final App = _App();
+
+

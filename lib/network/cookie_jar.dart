@@ -1,11 +1,11 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3/sqlite3.dart';
-import 'package:venera/foundation/log.dart';
-import 'package:venera/foundation/sqlite_connection.dart';
-import 'package:venera/utils/ext.dart';
+import 'package:venera_nas/foundation/log.dart';
+import 'package:venera_nas/foundation/sqlite_connection.dart';
+import 'package:venera_nas/utils/ext.dart';
 
 class CookieJarSql {
   late Database _db;
@@ -265,3 +265,5 @@ class CookieManagerSql extends Interceptor {
     handler.next(err);
   }
 }
+
+

@@ -1,30 +1,30 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_reorderable_grid_view/widgets/reorderable_builder.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:url_launcher/url_launcher_string.dart';
-import 'package:venera/components/components.dart';
-import 'package:venera/components/pin_pad.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/appdata.dart';
-import 'package:venera/foundation/cache_manager.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
-import 'package:venera/foundation/favorites.dart';
-import 'package:venera/foundation/history.dart';
-import 'package:venera/foundation/js_engine.dart';
-import 'package:venera/foundation/local.dart';
-import 'package:venera/foundation/log.dart';
-import 'package:venera/network/app_dio.dart';
-import 'package:venera/network/smb/smb_client.dart';
-import 'package:venera/network/smb/smb_config.dart';
-import 'package:venera/network/smb/smb_connection.dart';
-import 'package:venera/utils/auth_storage.dart';
-import 'package:venera/utils/data.dart';
-import 'package:venera/utils/data_sync.dart';
-import 'package:venera/utils/comic_backup.dart';
-import 'package:venera/utils/io.dart';
-import 'package:venera/utils/translations.dart';
+import 'package:venera_nas/components/components.dart';
+import 'package:venera_nas/components/pin_pad.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/cache_manager.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/favorites.dart';
+import 'package:venera_nas/foundation/history.dart';
+import 'package:venera_nas/foundation/js_engine.dart';
+import 'package:venera_nas/foundation/local.dart';
+import 'package:venera_nas/foundation/log.dart';
+import 'package:venera_nas/network/app_dio.dart';
+import 'package:venera_nas/network/smb/smb_client.dart';
+import 'package:venera_nas/network/smb/smb_config.dart';
+import 'package:venera_nas/network/smb/smb_connection.dart';
+import 'package:venera_nas/utils/auth_storage.dart';
+import 'package:venera_nas/utils/data.dart';
+import 'package:venera_nas/utils/data_sync.dart';
+import 'package:venera_nas/utils/comic_backup.dart';
+import 'package:venera_nas/utils/io.dart';
+import 'package:venera_nas/utils/translations.dart';
 import 'package:yaml/yaml.dart';
 import 'package:pub_semver/pub_semver.dart';
 
@@ -282,3 +282,5 @@ class _SettingsDetailPage extends StatelessWidget {
     };
   }
 }
+
+

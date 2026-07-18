@@ -1,13 +1,13 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/log.dart';
-import 'package:venera/utils/data_sync.dart';
-import 'package:venera/utils/init.dart';
-import 'package:venera/utils/io.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/log.dart';
+import 'package:venera_nas/utils/data_sync.dart';
+import 'package:venera_nas/utils/init.dart';
+import 'package:venera_nas/utils/io.dart';
 
 class Appdata with Init {
   Appdata._create();
@@ -434,3 +434,5 @@ const _defaultSourceListUrl = defaultSourceListUrl;
 const legacySourceListUrls = <String>{
   "https://cdn.jsdelivr.net/gh/venera-app/venera-configs@main/index.json",
 };
+
+

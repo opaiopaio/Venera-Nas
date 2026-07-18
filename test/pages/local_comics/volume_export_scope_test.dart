@@ -1,7 +1,7 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
-import 'package:venera/foundation/comic_type.dart';
-import 'package:venera/foundation/local.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/local.dart';
 
 // Mirror of the private _canSplitByChapters logic for direct testing.
 bool canSplitByChapters(LocalComic comic) {
@@ -78,3 +78,5 @@ void main() {
     });
   });
 }
+
+

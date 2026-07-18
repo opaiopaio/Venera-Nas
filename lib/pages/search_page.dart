@@ -1,20 +1,20 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sliver_tools/sliver_tools.dart';
-import 'package:venera/components/components.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/appdata.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
-import 'package:venera/foundation/global_state.dart';
-import 'package:venera/pages/aggregated_search_page.dart';
-import 'package:venera/pages/search_result_page.dart';
-import 'package:venera/pages/settings/settings_page.dart';
-import 'package:venera/utils/app_links.dart';
-import 'package:venera/utils/ext.dart';
-import 'package:venera/utils/tags_translation.dart';
-import 'package:venera/utils/translations.dart';
+import 'package:venera_nas/components/components.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/global_state.dart';
+import 'package:venera_nas/pages/aggregated_search_page.dart';
+import 'package:venera_nas/pages/search_result_page.dart';
+import 'package:venera_nas/pages/settings/settings_page.dart';
+import 'package:venera_nas/utils/app_links.dart';
+import 'package:venera_nas/utils/ext.dart';
+import 'package:venera_nas/utils/tags_translation.dart';
+import 'package:venera_nas/utils/translations.dart';
 
 import 'comic_details_page/comic_page.dart';
 import 'comic_source_page.dart';
@@ -686,3 +686,5 @@ class _SearchHistoryState extends State<_SearchHistory> {
     );
   }
 }
+
+

@@ -1,8 +1,8 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
-import 'package:venera/foundation/comic_type.dart';
-import 'package:venera/foundation/local.dart';
-import 'package:venera/pages/local_comics/chapter_export.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/local.dart';
+import 'package:venera_nas/pages/local_comics/chapter_export.dart';
 
 LocalComic _comic({
   String title = 'Test Comic',
@@ -156,3 +156,5 @@ void main() {
     });
   });
 }
+
+

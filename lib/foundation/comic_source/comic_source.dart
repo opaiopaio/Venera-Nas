@@ -1,4 +1,4 @@
-library;
+﻿library;
 
 import 'dart:async';
 import 'dart:collection';
@@ -7,17 +7,17 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/comic_type.dart';
-import 'package:venera/foundation/history.dart';
-import 'package:venera/foundation/res.dart';
-import 'package:venera/pages/category_comics_page.dart';
-import 'package:venera/pages/search_result_page.dart';
-import 'package:venera/utils/data_sync.dart';
-import 'package:venera/utils/ext.dart';
-import 'package:venera/utils/init.dart';
-import 'package:venera/utils/io.dart';
-import 'package:venera/utils/translations.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/history.dart';
+import 'package:venera_nas/foundation/res.dart';
+import 'package:venera_nas/pages/category_comics_page.dart';
+import 'package:venera_nas/pages/search_result_page.dart';
+import 'package:venera_nas/utils/data_sync.dart';
+import 'package:venera_nas/utils/ext.dart';
+import 'package:venera_nas/utils/init.dart';
+import 'package:venera_nas/utils/io.dart';
+import 'package:venera_nas/utils/translations.dart';
 
 import '../js_engine.dart';
 import '../log.dart';
@@ -535,3 +535,5 @@ class ArchiveDownloader {
 
   const ArchiveDownloader(this.getArchives, this.getDownloadUrl);
 }
+
+

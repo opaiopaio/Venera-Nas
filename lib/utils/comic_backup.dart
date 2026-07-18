@@ -1,10 +1,10 @@
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/res.dart';
-import 'package:venera/foundation/appdata.dart';
-import 'package:venera/foundation/local.dart';
-import 'package:venera/network/app_dio.dart';
-import 'package:venera/utils/cbz.dart';
-import 'package:venera/utils/io.dart';
+﻿import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/res.dart';
+import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/local.dart';
+import 'package:venera_nas/network/app_dio.dart';
+import 'package:venera_nas/utils/cbz.dart';
+import 'package:venera_nas/utils/io.dart';
 import 'package:webdav_client/webdav_client.dart' hide File;
 
 /// WebDAV archive backup configuration for local comic CBZ files.
@@ -422,3 +422,5 @@ class ComicBackupManager {
 
   static String _twoDigits(int value) => value.toString().padLeft(2, '0');
 }
+
+

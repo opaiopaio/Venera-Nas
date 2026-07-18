@@ -1,9 +1,9 @@
-import 'dart:math';
+﻿import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:venera/foundation/app.dart';
+import 'package:venera_nas/foundation/app.dart';
 
 const double _kBackGestureWidth = 20.0;
 const int _kMaxDroppedSwipePageForwardAnimationTime = 800;
@@ -516,3 +516,5 @@ class SlidePageTransitionBuilder extends PageTransitionsBuilder {
     );
   }
 }
+
+

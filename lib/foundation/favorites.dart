@@ -1,16 +1,16 @@
-import 'dart:collection';
+﻿import 'dart:collection';
 import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
 import 'package:sqlite3/sqlite3.dart';
-import 'package:venera/foundation/appdata.dart';
-import 'package:venera/foundation/image_provider/local_favorite_image.dart';
-import 'package:venera/foundation/local.dart';
-import 'package:venera/foundation/log.dart';
-import 'package:venera/foundation/sqlite_connection.dart';
-import 'package:venera/pages/follow_updates_page.dart';
-import 'package:venera/utils/tags_translation.dart';
+import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/image_provider/local_favorite_image.dart';
+import 'package:venera_nas/foundation/local.dart';
+import 'package:venera_nas/foundation/log.dart';
+import 'package:venera_nas/foundation/sqlite_connection.dart';
+import 'package:venera_nas/pages/follow_updates_page.dart';
+import 'package:venera_nas/utils/tags_translation.dart';
 import 'dart:io';
 
 import 'app.dart';
@@ -1442,3 +1442,5 @@ class LocalFavoritesManager with ChangeNotifier {
     notifyListeners();
   }
 }
+
+
