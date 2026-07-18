@@ -1,4 +1,4 @@
-part of 'settings_page.dart';
+﻿part of 'settings_page.dart';
 
 class NetworkSettings extends StatefulWidget {
   const NetworkSettings({super.key});
@@ -407,21 +407,21 @@ class _SmbServerManagerState extends State<_SmbServerManager> {
   }
 
   void _addServer() async {
-    final result = await showPopUpWidget<bool>(
+    final result = await showPopUpWidget<bool?>(
       context,
       _SmbServerEditDialog(),
     );
-    if (result == true && mounted) {
+    if (result != false && mounted) {
       setState(() {});
     }
   }
 
   void _editServer(int index) async {
-    final result = await showPopUpWidget<bool>(
+    final result = await showPopUpWidget<bool?>(
       context,
       _SmbServerEditDialog(connection: servers[index]),
     );
-    if (result == true && mounted) {
+    if (result != false && mounted) {
       setState(() {});
     }
   }
@@ -439,11 +439,11 @@ class _SmbServerManagerState extends State<_SmbServerManager> {
     final error = await connection.testConnection();
     if (!mounted) return;
     if (error == null) {
-      context.showMessage(
-        message: "Connection successful".tl,
-      );
+    if (error == null) {
+      showDialogMessage(context, "Test Connection".tl, "Connection successful".tl);
     } else {
-      context.showMessage(message: error);
+      showDialogMessage(context, "Test Connection".tl, error);
+    }
     }
   }
 
@@ -596,24 +596,24 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
     if (!mounted) return;
     setState(() => _isTesting = false);
     if (error == null) {
-      context.showMessage(message: "Connection successful".tl);
+      showDialogMessage(context, "Test Connection".tl, "Connection successful".tl);
     } else {
-      context.showMessage(message: error);
+      showDialogMessage(context, "Test Connection".tl, error);
     }
   }
 
   void _save() {
     final connection = _buildConnection();
     if (connection.name.isEmpty) {
-      context.showMessage(message: "Name is required".tl);
+      showDialogMessage(context, "Error".tl, "Name is required".tl);
       return;
     }
     if (connection.config.host.isEmpty) {
-      context.showMessage(message: "Host is required".tl);
+      showDialogMessage(context, "Error".tl, "Host is required".tl);
       return;
     }
     if (connection.config.share.isEmpty) {
-      context.showMessage(message: "Share is required".tl);
+      showDialogMessage(context, "Error".tl, "Share is required".tl);
       return;
     }
 
@@ -646,7 +646,7 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
     appdata.settings['smbServers'] =
         servers.map((e) => e.toJson()).toList();
     appdata.saveData();
-    Navigator.of(context).pop(true);
+    Navigator.of(context, rootNavigator: true).pop(true);
   }
 
   @override
