@@ -1,10 +1,11 @@
-import 'dart:async' show Future;
+﻿import 'dart:async' show Future;
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:venera_nas/foundation/cache_manager.dart';
 import 'package:venera_nas/foundation/comic_type.dart';
 import 'package:venera_nas/foundation/local.dart';
+import 'package:dart_smb2/dart_smb2.dart';
 import 'package:venera_nas/network/images.dart';
 import 'package:venera_nas/network/smb/smb_client.dart';
 import 'package:venera_nas/network/smb/smb_config.dart';
@@ -70,7 +71,7 @@ class HistoryImageProvider
     final cacheKey = 'smb_cover:${comic.id}';
     final cached = await CacheManager().findCache(cacheKey);
     if (cached != null) {
-      print('[SMB Cover History] cache hit: comic id=${comic.id}');
+      
       final bytes = await cached.readAsBytes();
       return Uint8List.fromList(bytes);
     }
@@ -84,7 +85,7 @@ class HistoryImageProvider
     try {
       await client.connect();
       final data = await client.readFile(remotePath);
-      final compressed = LocalComicImageProvider.compressCoverImage(data);
+      final compressed = await LocalComicImageProvider.compressCoverImage(data);
       await CacheManager().writeCache(cacheKey, compressed);
       return Uint8List.fromList(compressed);
     } finally {

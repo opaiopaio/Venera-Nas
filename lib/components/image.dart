@@ -1,4 +1,4 @@
-part of 'components.dart';
+﻿part of 'components.dart';
 
 class AnimatedImage extends StatefulWidget {
   /// show animation when loading is complete.
@@ -299,7 +299,7 @@ class _AnimatedImageState extends State<AnimatedImage>
           color: widget.color,
           opacity: widget.opacity,
           colorBlendMode: widget.colorBlendMode,
-          fit: BoxFit.cover,
+          fit: widget.fit ?? BoxFit.cover,
           alignment: widget.alignment,
           repeat: widget.repeat,
           centerSlice: widget.centerSlice,

@@ -439,11 +439,9 @@ class _SmbServerManagerState extends State<_SmbServerManager> {
     final error = await connection.testConnection();
     if (!mounted) return;
     if (error == null) {
-    if (error == null) {
       showDialogMessage(context, "Test Connection".tl, "Connection successful".tl);
     } else {
       showDialogMessage(context, "Test Connection".tl, error);
-    }
     }
   }
 
