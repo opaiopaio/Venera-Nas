@@ -27,7 +27,14 @@ if (flutterVersionName == null) {
 
 def keystorePropertiesFile = rootProject.file("key.properties")
 def keystoreProperties = new Properties()
-keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+} else {
+    keystoreProperties.setProperty('storeFile', 'debug.keystore')
+    keystoreProperties.setProperty('storePassword', 'android')
+    keystoreProperties.setProperty('keyAlias', 'androiddebugkey')
+    keystoreProperties.setProperty('keyPassword', 'android')
+}
 def resolvedKeystoreFile = rootProject.file(keystoreProperties['storeFile'])
 
 android {

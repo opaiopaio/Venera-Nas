@@ -1,16 +1,17 @@
-﻿import 'dart:async' show Future;
+import 'dart:async' show Future;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
+import 'package:venera_nas/foundation/appdata.dart';
 import 'package:venera_nas/foundation/cache_manager.dart';
 import 'package:venera_nas/foundation/js_engine.dart';
+import 'package:venera_nas/foundation/log.dart';
 import 'package:venera_nas/network/images.dart';
 import 'package:venera_nas/network/smb/smb_client.dart';
-import 'package:venera_nas/network/smb/smb_config.dart';
+import 'package:venera_nas/network/smb/smb_utils.dart';
 import 'package:venera_nas/utils/io.dart';
 import 'base_image_provider.dart';
 import 'reader_image.dart' as image_provider;
-import 'package:venera_nas/foundation/appdata.dart';
 
 class ReaderImageProvider
     extends BaseImageProvider<image_provider.ReaderImageProvider> {
@@ -53,18 +54,17 @@ class ReaderImageProvider
     } else if (imageKey.startsWith('smb://')) {
       // Read from SMB share — connect, read bytes, disconnect.
       // No disk caching: data stays in memory only.
-      print('[SMB Reader] loading: $imageKey');
-      final config = _parseSmbConfigFromUrl(imageKey);
-      final remotePath = _smbFilePathFromUrl(config, imageKey);
-      print('[SMB Reader] host=${config.host} share=${config.share} remotePath=$remotePath');
+      Log.info('SMB Reader', 'loading: $imageKey');
+      final config = parseSmbConfigFromUrl(imageKey);
+      final remotePath = smbPathFromUrl(imageKey);
+      Log.info('SMB Reader', 'host=${config.host} share=${config.share} remotePath=$remotePath');
       final client = SmbClient(config: config);
       try {
         await client.connect();
-        print('[SMB Reader] connected, calling readFile...');
         imageBytes = await client.readFile(remotePath);
-        print('[SMB Reader] readFile done, ${imageBytes.length} bytes');
+        Log.info('SMB Reader', 'readFile done, ${imageBytes.length} bytes');
       } catch (e) {
-        print('[SMB Reader] ERROR: $e');
+        Log.error('SMB Reader', e);
         rethrow;
       } finally {
         await client.disconnect();
@@ -168,31 +168,3 @@ class ReaderImageProvider
     onLoadFailed?.call();
   }
 }
-
-/// Parse [SmbConfig] from an smb:// URL string.
-SmbConfig _parseSmbConfigFromUrl(String url) {
-  final uri = Uri.parse(url);
-  final parts = uri.pathSegments;
-  final share = parts.isNotEmpty ? parts.first : '';
-  final userInfo = uri.userInfo.split(':');
-  return SmbConfig(
-    host: uri.host,
-    port: uri.hasPort ? uri.port : 445,
-    share: share,
-    username: userInfo.isNotEmpty ? Uri.decodeComponent(userInfo[0]) : '',
-    password: userInfo.length > 1 ? Uri.decodeComponent(userInfo[1]) : '',
-  );
-}
-
-/// Extract the file path (relative to the share root) from an smb:// URL.
-///
-/// For `smb://host/share/dir/subdir/001.jpg`, returns `dir/subdir/001.jpg`.
-String _smbFilePathFromUrl(SmbConfig config, String url) {
-  final uri = Uri.parse(url);
-  final segments = uri.pathSegments;
-  // segments[0] = share name, rest = path within share
-  if (segments.length <= 1) return '';
-  return segments.sublist(1).join('/');
-}
-
-

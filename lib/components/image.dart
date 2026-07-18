@@ -1,4 +1,4 @@
-﻿part of 'components.dart';
+part of 'components.dart';
 
 class AnimatedImage extends StatefulWidget {
   /// show animation when loading is complete.
@@ -98,7 +98,6 @@ class _AnimatedImageState extends State<AnimatedImage>
 
   @override
   void dispose() {
-    assert(_imageStream != null);
     WidgetsBinding.instance.removeObserver(this);
     _stopListeningToStream();
     _completerHandle?.dispose();

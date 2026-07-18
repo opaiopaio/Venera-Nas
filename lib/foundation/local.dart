@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:flutter/widgets.dart' show ChangeNotifier;
@@ -14,6 +14,7 @@ import 'package:venera_nas/foundation/sqlite_connection.dart';
 import 'package:venera_nas/network/download.dart';
 import 'package:venera_nas/network/smb/smb_client.dart';
 import 'package:venera_nas/network/smb/smb_config.dart';
+import 'package:venera_nas/network/smb/smb_utils.dart';
 import 'package:venera_nas/pages/reader/reader.dart';
 import 'package:venera_nas/utils/io.dart';
 import 'package:venera_nas/utils/background_download.dart';
@@ -503,14 +504,14 @@ class LocalManager with ChangeNotifier {
   /// Parses [SmbConfig] from [LocalComic.baseDir], connects, lists the
   /// chapter directory, filters image files, and returns `smb://...` URLs.
   Future<List<String>> _getSmbImages(LocalComic comic, Object ep) async {
-    print('[SMB] _getSmbImages baseDir: ${comic.baseDir}');
-    final config = _parseSmbConfigFromUrl(comic.baseDir);
-    print('[SMB] SmbConfig host=${config.host} share=${config.share} username=${config.username}');
+    Log.info('SMB', '_getSmbImages baseDir: ${comic.baseDir}');
+    final config = parseSmbConfigFromUrl(comic.baseDir);
+    Log.info('SMB', 'SmbConfig host=${config.host} share=${config.share} username=${config.username}');
     final client = SmbClient(config: config);
     try {
       await client.connect();
 
-      var remoteDir = _smbPathFromUrl(comic.baseDir);
+      var remoteDir = smbPathFromUrl(comic.baseDir);
       if (comic.hasChapters) {
         var cid = ep is int
             ? comic.chapters!.ids.elementAt(ep - 1)
@@ -518,14 +519,14 @@ class LocalManager with ChangeNotifier {
         cid = getChapterDirectoryName(cid);
         remoteDir = '$remoteDir/$cid';
       }
-      print('[SMB] listDirectory remoteDir: $remoteDir');
+      Log.info('SMB', 'listDirectory remoteDir: $remoteDir');
 
       final entries = await client.listDirectory(remoteDir);
-      print('[SMB] listDirectory returned ${entries.length} entries');
+      Log.info('SMB', 'listDirectory returned ${entries.length} entries');
 
       // Log first few entry names for debugging
       for (var i = 0; i < entries.length && i < 5; i++) {
-        print('[SMB]   entry[$i]: name=${entries[i].name} isDir=${entries[i].isDirectory} ext=${entries[i].extension}');
+        Log.info('SMB', '  entry[$i]: name=${entries[i].name} isDir=${entries[i].isDirectory} ext=${entries[i].extension}');
       }
 
       const imageExtensions = [
@@ -554,43 +555,14 @@ class LocalManager with ChangeNotifier {
       final urls = imageEntries
           .map((e) => '$baseUrl/$remoteDir/${e.name}')
           .toList();
-      print('[SMB] image URLs (first 3 of ${urls.length}):');
+      Log.info('SMB', 'image URLs (first 3 of ${urls.length}):');
       for (var i = 0; i < urls.length && i < 3; i++) {
-        print('[SMB]   ${urls[i]}');
+        Log.info('SMB', '  ${urls[i]}');
       }
       return urls;
     } finally {
       await client.disconnect();
     }
-  }
-
-  /// Parse [SmbConfig] from an smb:// URL.
-  ///
-  /// Credentials stored in the URL's userinfo are decoded; a credential
-  /// lookup from saved [SmbConnection]s should be added here for better
-  /// security (so passwords are not stored in the comic directory field).
-  static SmbConfig _parseSmbConfigFromUrl(String url) {
-    final uri = Uri.parse(url);
-    final parts = uri.pathSegments;
-    final share = parts.isNotEmpty ? parts.first : '';
-    final userInfo = uri.userInfo.split(':');
-    return SmbConfig(
-      host: uri.host,
-      port: uri.hasPort ? uri.port : 445,
-      share: share,
-      username: userInfo.isNotEmpty ? Uri.decodeComponent(userInfo[0]) : '',
-      password: userInfo.length > 1 ? Uri.decodeComponent(userInfo[1]) : '',
-    );
-  }
-
-  /// Extract the share-relative path from an smb:// URL.
-  ///
-  /// For `smb://host/share/dir/subdir`, returns `dir/subdir`.
-  static String _smbPathFromUrl(String url) {
-    final uri = Uri.parse(url);
-    final segments = uri.pathSegments;
-    if (segments.length <= 1) return '';
-    return segments.sublist(1).join('/');
   }
 
   bool isDownloaded(
