@@ -5,6 +5,8 @@ class PopUpWidget<T> extends PopupRoute<T> {
 
   final Widget widget;
 
+  final _innerKey = GlobalKey<NavigatorState>();
+
   @override
   Color? get barrierColor => Colors.black54;
 
@@ -43,8 +45,12 @@ class PopUpWidget<T> extends PopupRoute<T> {
         height: showPopUp ? height : double.infinity,
         child: ClipRect(
           child: Navigator(
+            key: _innerKey,
             onGenerateRoute: (settings) =>
                 MaterialPageRoute(builder: (context) => widget),
+            onPopPage: (route, result) {
+              return route.didPop(result);
+            },
           ),
         ),
       ),

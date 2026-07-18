@@ -1,6 +1,9 @@
-﻿import 'dart:async' show Future;
+import 'dart:async' show Future;
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image/image.dart' as img;
+import 'package:venera_nas/foundation/cache_manager.dart';
 import 'package:venera_nas/foundation/comic_type.dart';
 import 'package:venera_nas/foundation/local.dart';
 import 'package:dart_smb2/dart_smb2.dart';
@@ -83,6 +86,15 @@ class LocalComicImageProvider
   }
 
   Future<Uint8List> _loadSmbCover() async {
+    // Check disk cache first
+    final cacheKey = 'smb_cover:${comic.id}';
+    final cached = await CacheManager().findCache(cacheKey);
+    if (cached != null) {
+      print('[SMB Cover] cache hit: comic id=${comic.id}');
+      final bytes = await cached.readAsBytes();
+      return Uint8List.fromList(bytes);
+    }
+
     final baseDir = comic.baseDir;
     final coverName = comic.cover;
 
@@ -112,7 +124,9 @@ class LocalComicImageProvider
         if (data.isEmpty) {
           throw "Exception: Empty cover file on SMB.";
         }
-        return data;
+        final compressed = compressCoverImage(data);
+        await CacheManager().writeCache(cacheKey, compressed);
+        return Uint8List.fromList(compressed);
       } on Smb2Exception catch (e) {
         if (e.type != Smb2ErrorType.fileNotFound) rethrow;
         // Cover not found at expected path — search the directory.
@@ -146,11 +160,30 @@ class LocalComicImageProvider
         if (found == null) rethrow;
         final data = await client.readFile(found.path);
         print('[SMB Cover] fallback cover: ${found.path}, ${data.length} bytes');
-        return data;
+        final compressed = compressCoverImage(data);
+        await CacheManager().writeCache(cacheKey, compressed);
+        return Uint8List.fromList(compressed);
       }
     } finally {
       await client.disconnect();
     }
+  }
+
+  /// Compress cover image for cache storage.
+  /// Resize to max 512px and encode as JPEG quality 85.
+  /// Compress cover image for cache storage.
+  /// Resize to max 512px and encode as JPEG quality 85.
+  static List<int> compressCoverImage(Uint8List bytes) {
+    final decoded = img.decodeImage(bytes);
+    if (decoded == null) return bytes.toList();
+
+    // Resize so the longest side is at most 512px
+    final maxSide = 512;
+    if (decoded.width > maxSide || decoded.height > maxSide) {
+      final resized = img.copyResize(decoded, width: maxSide, height: maxSide);
+      return img.encodeJpg(resized, quality: 85);
+    }
+    return img.encodeJpg(decoded, quality: 85);
   }
 
   static SmbConfig _parseSmbConfigFromUrl(String url) {
@@ -182,5 +215,3 @@ class LocalComicImageProvider
   @override
   String get key => "local${comic.id}${comic.comicType.value}";
 }
-
-
