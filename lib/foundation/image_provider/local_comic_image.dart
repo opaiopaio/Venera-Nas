@@ -1,4 +1,5 @@
-import 'dart:async' show Future;
+import 'dart:async';
+import 'dart:isolate';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,32 @@ import 'package:venera_nas/network/smb/smb_config.dart';
 import 'package:venera_nas/utils/io.dart';
 import 'base_image_provider.dart';
 import 'local_comic_image.dart' as image_provider;
+
+/// Simple semaphore to limit concurrent async operations.
+class _Semaphore {
+  _Semaphore(this._maxCount);
+  final int _maxCount;
+  int _current = 0;
+  final List<Completer<void>> _waiters = [];
+
+  Future<void> acquire() {
+    if (_current < _maxCount) {
+      _current++;
+      return Future.value();
+    }
+    final c = Completer<void>();
+    _waiters.add(c);
+    return c.future;
+  }
+
+  void release() {
+    if (_waiters.isNotEmpty) {
+      _waiters.removeAt(0).complete();
+    } else {
+      _current--;
+    }
+  }
+}
 
 class LocalComicImageProvider
     extends BaseImageProvider<image_provider.LocalComicImageProvider> {
@@ -85,12 +112,13 @@ class LocalComicImageProvider
     return data;
   }
 
+  static final _smbSemaphore = _Semaphore(2);
+
   Future<Uint8List> _loadSmbCover() async {
     // Check disk cache first
     final cacheKey = 'smb_cover:${comic.id}';
     final cached = await CacheManager().findCache(cacheKey);
     if (cached != null) {
-      print('[SMB Cover] cache hit: comic id=${comic.id}');
       final bytes = await cached.readAsBytes();
       return Uint8List.fromList(bytes);
     }
@@ -108,29 +136,24 @@ class LocalComicImageProvider
       coverUrl = '${baseDir.endsWith('/') ? baseDir : '$baseDir/'}$coverName';
     }
 
-    print('[SMB Cover] loading: $coverUrl');
-
     final config = _parseSmbConfigFromUrl(baseDir);
     final remoteCoverPath = _smbCoverPathFromUrl(config, coverUrl);
 
-    print('[SMB Cover] host=${config.host} share=${config.share} remotePath=$remoteCoverPath');
-
     final client = SmbClient(config: config);
+    await _smbSemaphore.acquire();
     try {
       await client.connect();
       try {
         final data = await client.readFile(remoteCoverPath);
-        print('[SMB Cover] readFile done, ${data.length} bytes');
         if (data.isEmpty) {
           throw "Exception: Empty cover file on SMB.";
         }
-        final compressed = compressCoverImage(data);
+        final compressed = await compressCoverImage(data);
         await CacheManager().writeCache(cacheKey, compressed);
         return Uint8List.fromList(compressed);
       } on Smb2Exception catch (e) {
         if (e.type != Smb2ErrorType.fileNotFound) rethrow;
         // Cover not found at expected path — search the directory.
-        print('[SMB Cover] cover not found at $remoteCoverPath, searching...');
         final smbDir = _smbCoverPathFromUrl(config, baseDir);
         final entries = await client.listDirectory(smbDir);
         // Try cover.* first, then any image
@@ -159,31 +182,36 @@ class LocalComicImageProvider
         }
         if (found == null) rethrow;
         final data = await client.readFile(found.path);
-        print('[SMB Cover] fallback cover: ${found.path}, ${data.length} bytes');
-        final compressed = compressCoverImage(data);
+        final compressed = await compressCoverImage(data);
         await CacheManager().writeCache(cacheKey, compressed);
         return Uint8List.fromList(compressed);
       }
     } finally {
       await client.disconnect();
+      _smbSemaphore.release();
     }
   }
 
   /// Compress cover image for cache storage.
   /// Resize to max 512px and encode as JPEG quality 85.
-  /// Compress cover image for cache storage.
-  /// Resize to max 512px and encode as JPEG quality 85.
-  static List<int> compressCoverImage(Uint8List bytes) {
-    final decoded = img.decodeImage(bytes);
-    if (decoded == null) return bytes.toList();
+  /// Runs on a background isolate to avoid blocking the UI thread.
+  static Future<List<int>> compressCoverImage(Uint8List bytes) {
+    return Isolate.run(() {
+      try {
+        final decoded = img.decodeImage(bytes);
+        if (decoded == null) return bytes.toList();
 
-    // Resize so the longest side is at most 512px
-    final maxSide = 512;
-    if (decoded.width > maxSide || decoded.height > maxSide) {
-      final resized = img.copyResize(decoded, width: maxSide, height: maxSide);
-      return img.encodeJpg(resized, quality: 85);
-    }
-    return img.encodeJpg(decoded, quality: 85);
+        // Resize so the longest side is at most 512px, keeping aspect ratio
+        final maxSide = 512;
+        if (decoded.width > maxSide || decoded.height > maxSide) {
+          final resized = img.copyResize(decoded, width: maxSide);
+          return img.encodeJpg(resized, quality: 85);
+        }
+        return img.encodeJpg(decoded, quality: 85);
+      } catch (_) {
+        return bytes.toList();
+      }
+    });
   }
 
   static SmbConfig _parseSmbConfigFromUrl(String url) {
