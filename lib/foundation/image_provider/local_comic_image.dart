@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:isolate';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
@@ -10,6 +9,7 @@ import 'package:venera_nas/foundation/local.dart';
 import 'package:dart_smb2/dart_smb2.dart';
 import 'package:venera_nas/network/smb/smb_client.dart';
 import 'package:venera_nas/network/smb/smb_config.dart';
+import 'package:venera_nas/network/smb/smb_utils.dart';
 import 'package:venera_nas/utils/io.dart';
 import 'base_image_provider.dart';
 import 'local_comic_image.dart' as image_provider;
@@ -66,15 +66,7 @@ class LocalComicImageProvider
       Directory? firstDir;
       await for (var entity in dir.list()) {
         if (entity is File) {
-          if ([
-            "jpg",
-            "jpeg",
-            "png",
-            "webp",
-            "gif",
-            "jpe",
-            "jpeg",
-          ].contains(entity.extension)) {
+          if (_imageExtensions.contains(entity.extension)) {
             file = entity;
             break;
           }
@@ -85,15 +77,7 @@ class LocalComicImageProvider
       if (file == null && firstDir != null) {
         await for (var entity in firstDir.list()) {
           if (entity is File) {
-            if ([
-              "jpg",
-              "jpeg",
-              "png",
-              "webp",
-              "gif",
-              "jpe",
-              "jpeg",
-            ].contains(entity.extension)) {
+            if (_imageExtensions.contains(entity.extension)) {
               file = entity;
               break;
             }
@@ -136,8 +120,8 @@ class LocalComicImageProvider
       coverUrl = '${baseDir.endsWith('/') ? baseDir : '$baseDir/'}$coverName';
     }
 
-    final config = _parseSmbConfigFromUrl(baseDir);
-    final remoteCoverPath = _smbCoverPathFromUrl(config, coverUrl);
+    final config = parseSmbConfigFromUrl(baseDir);
+    final remoteCoverPath = smbPathFromUrl(coverUrl);
 
     final client = SmbClient(config: config);
     await _smbSemaphore.acquire();
@@ -154,7 +138,7 @@ class LocalComicImageProvider
       } on Smb2Exception catch (e) {
         if (e.type != Smb2ErrorType.fileNotFound) rethrow;
         // Cover not found at expected path — search the directory.
-        final smbDir = _smbCoverPathFromUrl(config, baseDir);
+        final smbDir = smbPathFromUrl(baseDir);
         final entries = await client.listDirectory(smbDir);
         // Try cover.* first, then any image
         const exts = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'jpe'];
@@ -195,13 +179,17 @@ class LocalComicImageProvider
   /// Compress cover image for cache storage.
   /// Resize to max 512px and encode as JPEG quality 85.
   /// Runs on a background isolate to avoid blocking the UI thread.
+  static const _imageExtensions = [
+    'jpg', 'jpeg', 'png', 'webp', 'gif', 'jpe',
+  ];
+
   static Future<List<int>> compressCoverImage(Uint8List bytes) {
     return Isolate.run(() {
       try {
         final decoded = img.decodeImage(bytes);
         if (decoded == null) return bytes.toList();
 
-        // Resize so the longest side is at most 512px, keeping aspect ratio
+        // Resize to max 512px width, keeping aspect ratio via auto-computed height.
         final maxSide = 512;
         if (decoded.width > maxSide || decoded.height > maxSide) {
           final resized = img.copyResize(decoded, width: maxSide);
@@ -212,27 +200,6 @@ class LocalComicImageProvider
         return bytes.toList();
       }
     });
-  }
-
-  static SmbConfig _parseSmbConfigFromUrl(String url) {
-    final uri = Uri.parse(url);
-    final parts = uri.pathSegments;
-    final share = parts.isNotEmpty ? parts.first : '';
-    final userInfo = uri.userInfo.split(':');
-    return SmbConfig(
-      host: uri.host,
-      port: uri.hasPort ? uri.port : 445,
-      share: share,
-      username: userInfo.isNotEmpty ? Uri.decodeComponent(userInfo[0]) : '',
-      password: userInfo.length > 1 ? Uri.decodeComponent(userInfo[1]) : '',
-    );
-  }
-
-  static String _smbCoverPathFromUrl(SmbConfig config, String url) {
-    final uri = Uri.parse(url);
-    final segments = uri.pathSegments;
-    if (segments.length <= 1) return '';
-    return segments.sublist(1).join('/');
   }
 
   @override

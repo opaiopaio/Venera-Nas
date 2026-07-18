@@ -1,4 +1,4 @@
-﻿part of 'settings_page.dart';
+part of 'settings_page.dart';
 
 class NetworkSettings extends StatefulWidget {
   const NetworkSettings({super.key});
@@ -59,6 +59,11 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
   String username = '';
   String password = '';
 
+  late final TextEditingController _hostCtrl;
+  late final TextEditingController _portCtrl;
+  late final TextEditingController _usernameCtrl;
+  late final TextEditingController _passwordCtrl;
+
   // USERNAME:PASSWORD@HOST:PORT
   String toProxyStr() {
     if (type == 'direct') {
@@ -113,9 +118,22 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
 
   @override
   void initState() {
+    super.initState();
     var proxy = appdata.settings['proxy'];
     parseProxyString(proxy);
-    super.initState();
+    _hostCtrl = TextEditingController(text: host);
+    _portCtrl = TextEditingController(text: port);
+    _usernameCtrl = TextEditingController(text: username);
+    _passwordCtrl = TextEditingController(text: password);
+  }
+
+  @override
+  void dispose() {
+    _hostCtrl.dispose();
+    _portCtrl.dispose();
+    _usernameCtrl.dispose();
+    _passwordCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -159,7 +177,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
               border: const OutlineInputBorder(),
               labelText: "Host".tl,
             ),
-            controller: TextEditingController(text: host),
+            controller: _hostCtrl,
             onChanged: (v) {
               host = v;
             },
@@ -176,7 +194,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
               border: const OutlineInputBorder(),
               labelText: "Port".tl,
             ),
-            controller: TextEditingController(text: port),
+            controller: _portCtrl,
             onChanged: (v) {
               port = v;
             },
@@ -196,7 +214,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
               border: const OutlineInputBorder(),
               labelText: "Username".tl,
             ),
-            controller: TextEditingController(text: username),
+            controller: _usernameCtrl,
             onChanged: (v) {
               username = v;
             },
@@ -213,7 +231,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
               border: const OutlineInputBorder(),
               labelText: "Password".tl,
             ),
-            controller: TextEditingController(text: password),
+            controller: _passwordCtrl,
             onChanged: (v) {
               password = v;
             },
@@ -247,12 +265,15 @@ class __DNSOverridesState extends State<_DNSOverrides> {
 
   @override
   void initState() {
-    for (var entry in (appdata.settings['dnsOverrides'] as Map).entries) {
-      if (entry.key is String && entry.value is String) {
-        overrides.add((
-          TextEditingController(text: entry.key),
-          TextEditingController(text: entry.value),
-        ));
+    final raw = appdata.settings['dnsOverrides'];
+    if (raw is Map) {
+      for (var entry in raw.entries) {
+        if (entry.key is String && entry.value is String) {
+          overrides.add((
+            TextEditingController(text: entry.key),
+            TextEditingController(text: entry.value),
+          ));
+        }
       }
     }
     super.initState();

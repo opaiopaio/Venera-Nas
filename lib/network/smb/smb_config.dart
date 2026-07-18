@@ -1,5 +1,4 @@
 /// Configuration for connecting to an SMB share.
-/// Configuration for connecting to an SMB share.
 ///
 /// Stores the host, port, share name, and optional credentials
 /// required to establish an SMB session.
@@ -76,7 +75,6 @@ class SmbConfig {
   int get hashCode => Object.hash(host, port, share, username);
 }
 
-/// Represents an entry (file or directory) on an SMB share.
 /// Represents a file or directory entry on an SMB share.
 ///
 /// Returned by [SmbClient.listDirectory] and similar operations.

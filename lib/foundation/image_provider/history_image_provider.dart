@@ -1,14 +1,14 @@
-﻿import 'dart:async' show Future;
-import 'dart:typed_data';
+import 'dart:async' show Future;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:dart_smb2/dart_smb2.dart';
 import 'package:venera_nas/foundation/cache_manager.dart';
 import 'package:venera_nas/foundation/comic_type.dart';
 import 'package:venera_nas/foundation/local.dart';
-import 'package:dart_smb2/dart_smb2.dart';
 import 'package:venera_nas/network/images.dart';
 import 'package:venera_nas/network/smb/smb_client.dart';
 import 'package:venera_nas/network/smb/smb_config.dart';
+import 'package:venera_nas/network/smb/smb_utils.dart';
 import '../history.dart';
 import 'base_image_provider.dart';
 import 'history_image_provider.dart' as image_provider;
@@ -71,47 +71,71 @@ class HistoryImageProvider
     final cacheKey = 'smb_cover:${comic.id}';
     final cached = await CacheManager().findCache(cacheKey);
     if (cached != null) {
-      
       final bytes = await cached.readAsBytes();
       return Uint8List.fromList(bytes);
     }
 
     final baseDir = comic.baseDir;
     final coverName = comic.cover;
-    final coverUrl = '${baseDir.endsWith('/') ? baseDir : '$baseDir/'}$coverName';
-    final config = _parseSmbConfig(baseDir);
-    final remotePath = _smbCoverPathFromUrl(config, coverUrl);
+
+    final String coverUrl;
+    if (coverName.startsWith('smb://')) {
+      coverUrl = coverName;
+    } else {
+      coverUrl = '${baseDir.endsWith('/') ? baseDir : '$baseDir/'}$coverName';
+    }
+
+    final config = parseSmbConfigFromUrl(baseDir);
+    final remoteCoverPath = smbPathFromUrl(coverUrl);
+
     final client = SmbClient(config: config);
     try {
       await client.connect();
-      final data = await client.readFile(remotePath);
-      final compressed = await LocalComicImageProvider.compressCoverImage(data);
-      await CacheManager().writeCache(cacheKey, compressed);
-      return Uint8List.fromList(compressed);
+      try {
+        final data = await client.readFile(remoteCoverPath);
+        if (data.isEmpty) {
+          throw "Exception: Empty cover file on SMB.";
+        }
+        final compressed = await LocalComicImageProvider.compressCoverImage(data);
+        await CacheManager().writeCache(cacheKey, compressed);
+        return Uint8List.fromList(compressed);
+      } on Smb2Exception catch (e) {
+        if (e.type != Smb2ErrorType.fileNotFound) rethrow;
+        // Cover not found at expected path — search the directory.
+        final smbDir = smbPathFromUrl(baseDir);
+        final entries = await client.listDirectory(smbDir);
+        const exts = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'jpe'];
+        SmbEntry? found;
+        for (final e in entries) {
+          if (!e.isFile || !exts.contains(e.extension.toLowerCase())) continue;
+          if (e.name.toLowerCase().startsWith('cover')) {
+            found = e;
+            break;
+          }
+          found ??= e;
+        }
+        // If not found in base directory, try first subdirectory (chapter)
+        if (found == null) {
+          for (final e in entries) {
+            if (!e.isDirectory) continue;
+            final subEntries = await client.listDirectory(e.path);
+            for (final se in subEntries) {
+              if (!se.isFile || !exts.contains(se.extension.toLowerCase())) continue;
+              found = se;
+              break;
+            }
+            if (found != null) break;
+          }
+        }
+        if (found == null) rethrow;
+        final data = await client.readFile(found.path);
+        final compressed = await LocalComicImageProvider.compressCoverImage(data);
+        await CacheManager().writeCache(cacheKey, compressed);
+        return Uint8List.fromList(compressed);
+      }
     } finally {
       await client.disconnect();
     }
-  }
-
-  static SmbConfig _parseSmbConfig(String url) {
-    final uri = Uri.parse(url);
-    final parts = uri.pathSegments;
-    final share = parts.isNotEmpty ? parts.first : '';
-    final userInfo = uri.userInfo.split(':');
-    return SmbConfig(
-      host: uri.host,
-      port: uri.hasPort ? uri.port : 445,
-      share: share,
-      username: userInfo.isNotEmpty ? Uri.decodeComponent(userInfo[0]) : '',
-      password: userInfo.length > 1 ? Uri.decodeComponent(userInfo[1]) : '',
-    );
-  }
-
-  static String _smbCoverPathFromUrl(SmbConfig config, String url) {
-    final uri = Uri.parse(url);
-    final segments = uri.pathSegments;
-    if (segments.length <= 1) return '';
-    return segments.sublist(1).join('/');
   }
 
   @override
