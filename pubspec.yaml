@@ -2,7 +2,7 @@ name: venera_nas
 description: "A comic app with SMB/NAS support."
 publish_to: 'none'
 
-version: 1.6.1+1
+version: 1.7.0+2
 
 environment:
   sdk: '>=3.8.0 <4.0.0'
