@@ -2,6 +2,8 @@
 
 > 基于 [haukuen/Venera](https://github.com/haukuen/Venera) 二次开发，增加了 SMB/NAS 协议支持。
 
+### <big><strong>⚠️ 本版本已修改包名和图标，可与原版 Venera 及其他分支版本共存安装，互不干扰。</strong></big>
+
 ## ✨ 特色功能
 
 - **SMB 协议连接 NAS**：直接访问网络存储设备中的漫画文件
