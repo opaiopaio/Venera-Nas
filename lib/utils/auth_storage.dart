@@ -1,11 +1,11 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/log.dart';
-import 'package:venera/utils/io.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/log.dart';
+import 'package:venera_nas/utils/io.dart';
 
 class AuthStorage {
   static String get _path => p.join(App.dataPath, 'auth.json');
@@ -60,3 +60,5 @@ class AuthStorage {
     return stored == sha256.convert(utf8.encode(salt + pin)).toString();
   }
 }
+
+

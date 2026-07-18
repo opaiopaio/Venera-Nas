@@ -1,11 +1,11 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
 import 'package:window_manager/window_manager.dart';
 
 const _kTitleBarHeight = 36.0;
@@ -665,3 +665,5 @@ TransitionBuilder VirtualWindowFrameInit() {
 void debug() {
   ComicSourceManager().reload();
 }
+
+

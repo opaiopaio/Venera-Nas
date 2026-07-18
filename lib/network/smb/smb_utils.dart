@@ -1,4 +1,4 @@
-import 'package:venera/network/smb/smb_config.dart';
+﻿import 'package:venera_nas/network/smb/smb_config.dart';
 
 /// Returns `true` if [path] is an SMB (smb://) URL.
 bool isSmbPath(String path) => path.startsWith('smb://');
@@ -48,3 +48,5 @@ String normalizeSmbPath(String path) {
   }
   return normalized;
 }
+
+

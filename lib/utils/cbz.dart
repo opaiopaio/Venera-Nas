@@ -1,14 +1,14 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter_7zip/flutter_7zip.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
-import 'package:venera/foundation/comic_type.dart';
-import 'package:venera/foundation/local.dart';
-import 'package:venera/foundation/log.dart';
-import 'package:venera/utils/ext.dart';
-import 'package:venera/utils/file_type.dart';
-import 'package:venera/utils/io.dart';
-import 'package:venera/pages/local_comics/chapter_export.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/local.dart';
+import 'package:venera_nas/foundation/log.dart';
+import 'package:venera_nas/utils/ext.dart';
+import 'package:venera_nas/utils/file_type.dart';
+import 'package:venera_nas/utils/io.dart';
+import 'package:venera_nas/pages/local_comics/chapter_export.dart';
 import 'package:zip_flutter/zip_flutter.dart';
 
 class ComicMetaData {
@@ -740,3 +740,5 @@ class _ComicInfoTags {
     required this.tags,
   });
 }
+
+

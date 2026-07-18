@@ -54,3 +54,7 @@ add_translation.py
 .claude/settings.local.json
 docs/superpowers/
 .worktrees/
+.vs/
+windows/out/
+.mcp.json
+.x-code/

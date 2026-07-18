@@ -1,4 +1,4 @@
-/*
+﻿/*
 数据来自于:
 https://github.com/EhTagTranslation/Database/tree/master/database
 
@@ -7,9 +7,9 @@ https://github.com/EhTagTranslation/Database/tree/master/database
 
 import 'dart:convert';
 import 'package:flutter/services.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/utils/ext.dart';
-import 'package:venera/utils/opencc.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/utils/ext.dart';
+import 'package:venera_nas/utils/opencc.dart';
 
 extension TagsTranslation on String {
   static final Map<String, Map<String, String>> _data = {};
@@ -247,3 +247,5 @@ class MultipleMap<S, T> {
     return null;
   }
 }
+
+

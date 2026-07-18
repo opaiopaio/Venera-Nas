@@ -1,13 +1,13 @@
-import 'dart:collection';
+﻿import 'dart:collection';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher_string.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/appdata.dart';
-import 'package:venera/foundation/image_provider/cached_image.dart';
-import 'package:venera/utils/app_links.dart';
-import 'package:venera/utils/ext.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/image_provider/cached_image.dart';
+import 'package:venera_nas/utils/app_links.dart';
+import 'package:venera_nas/utils/ext.dart';
 
 /// A widget that displays comment content with support for rich text formatting.
 ///
@@ -346,3 +346,5 @@ class _RichCommentContentState extends State<RichCommentContent> {
     return content;
   }
 }
+
+

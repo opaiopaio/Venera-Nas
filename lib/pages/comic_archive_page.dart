@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
-import 'package:venera/components/components.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/utils/comic_backup.dart';
-import 'package:venera/utils/io.dart';
-import 'package:venera/utils/translations.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:venera_nas/components/components.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/utils/comic_backup.dart';
+import 'package:venera_nas/utils/io.dart';
+import 'package:venera_nas/utils/translations.dart';
 
 class ComicArchivePage extends StatefulWidget {
   const ComicArchivePage({super.key});
@@ -303,3 +303,5 @@ class _ComicArchivePageState extends State<ComicArchivePage> {
         '${twoDigits(time.hour)}:${twoDigits(time.minute)}';
   }
 }
+
+

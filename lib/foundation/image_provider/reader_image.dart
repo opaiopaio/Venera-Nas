@@ -1,16 +1,16 @@
-import 'dart:async' show Future;
+﻿import 'dart:async' show Future;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
-import 'package:venera/foundation/cache_manager.dart';
-import 'package:venera/foundation/js_engine.dart';
-import 'package:venera/network/images.dart';
-import 'package:venera/network/smb/smb_client.dart';
-import 'package:venera/network/smb/smb_config.dart';
-import 'package:venera/utils/io.dart';
+import 'package:venera_nas/foundation/cache_manager.dart';
+import 'package:venera_nas/foundation/js_engine.dart';
+import 'package:venera_nas/network/images.dart';
+import 'package:venera_nas/network/smb/smb_client.dart';
+import 'package:venera_nas/network/smb/smb_config.dart';
+import 'package:venera_nas/utils/io.dart';
 import 'base_image_provider.dart';
 import 'reader_image.dart' as image_provider;
-import 'package:venera/foundation/appdata.dart';
+import 'package:venera_nas/foundation/appdata.dart';
 
 class ReaderImageProvider
     extends BaseImageProvider<image_provider.ReaderImageProvider> {
@@ -194,3 +194,5 @@ String _smbFilePathFromUrl(SmbConfig config, String url) {
   if (segments.length <= 1) return '';
   return segments.sublist(1).join('/');
 }
+
+

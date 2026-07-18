@@ -1,6 +1,6 @@
-import 'package:flutter/services.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/pages/aggregated_search_page.dart';
+﻿import 'package:flutter/services.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/pages/aggregated_search_page.dart';
 
 bool _isHandling = false;
 
@@ -21,3 +21,5 @@ void handleTextShare() async {
     }
   }
 }
+
+

@@ -1,22 +1,22 @@
-import 'package:flutter/material.dart';
-import 'package:venera/components/components.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/appdata.dart';
-import 'package:venera/foundation/comic_type.dart';
-import 'package:venera/foundation/local.dart';
-import 'package:venera/foundation/log.dart';
-import 'package:venera/pages/comic_details_page/comic_page.dart';
-import 'package:venera/pages/local_comics/export_dialog.dart';
-import 'package:venera/pages/local_comics/chapter_export.dart';
-import 'package:venera/pages/local_comics/import_dialog.dart';
-import 'package:venera/pages/downloading_page.dart';
-import 'package:venera/pages/favorites/favorites_page.dart';
-import 'package:venera/utils/cbz.dart';
-import 'package:venera/utils/comic_backup.dart';
-import 'package:venera/utils/epub.dart';
-import 'package:venera/utils/io.dart';
-import 'package:venera/utils/pdf.dart';
-import 'package:venera/utils/translations.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:venera_nas/components/components.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/local.dart';
+import 'package:venera_nas/foundation/log.dart';
+import 'package:venera_nas/pages/comic_details_page/comic_page.dart';
+import 'package:venera_nas/pages/local_comics/export_dialog.dart';
+import 'package:venera_nas/pages/local_comics/chapter_export.dart';
+import 'package:venera_nas/pages/local_comics/import_dialog.dart';
+import 'package:venera_nas/pages/downloading_page.dart';
+import 'package:venera_nas/pages/favorites/favorites_page.dart';
+import 'package:venera_nas/utils/cbz.dart';
+import 'package:venera_nas/utils/comic_backup.dart';
+import 'package:venera_nas/utils/epub.dart';
+import 'package:venera_nas/utils/io.dart';
+import 'package:venera_nas/utils/pdf.dart';
+import 'package:venera_nas/utils/translations.dart';
 import 'package:zip_flutter/zip_flutter.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
@@ -1153,3 +1153,5 @@ void showDeleteChaptersPopWindow(BuildContext context, LocalComic comic) {
   );
 }
 enum LocalSourceFilter { all, localOnly, smbOnly; }
+
+

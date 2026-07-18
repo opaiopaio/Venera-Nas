@@ -1,16 +1,16 @@
-import 'package:flutter/foundation.dart';
-import 'package:venera/components/components.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
-import 'package:venera/foundation/comic_type.dart';
-import 'package:venera/foundation/favorites.dart';
-import 'package:venera/foundation/local.dart';
-import 'package:venera/foundation/log.dart';
-import 'package:venera/network/smb/smb_client.dart';
-import 'package:venera/network/smb/smb_config.dart';
+﻿import 'package:flutter/foundation.dart';
+import 'package:venera_nas/components/components.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/favorites.dart';
+import 'package:venera_nas/foundation/local.dart';
+import 'package:venera_nas/foundation/log.dart';
+import 'package:venera_nas/network/smb/smb_client.dart';
+import 'package:venera_nas/network/smb/smb_config.dart';
 import 'package:sqlite3/sqlite3.dart' as sql;
-import 'package:venera/utils/ext.dart';
-import 'package:venera/utils/translations.dart';
+import 'package:venera_nas/utils/ext.dart';
+import 'package:venera_nas/utils/translations.dart';
 import 'cbz.dart';
 import 'io.dart';
 
@@ -652,3 +652,5 @@ class ImportComic {
     return map[category] ?? 'UNKNOWN';
   }
 }
+
+

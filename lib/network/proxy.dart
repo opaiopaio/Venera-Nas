@@ -1,9 +1,9 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:flutter/services.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/appdata.dart';
-import 'package:venera/utils/ext.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/utils/ext.dart';
 
 String? _cachedProxy;
 
@@ -101,3 +101,5 @@ String? _normalizeProxy(String value) {
 
   return proxy;
 }
+
+

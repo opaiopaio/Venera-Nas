@@ -1,4 +1,4 @@
-import 'package:venera/foundation/comic_source/comic_source.dart';
+﻿import 'package:venera_nas/foundation/comic_source/comic_source.dart';
 
 class ComicType {
   final int value;
@@ -43,3 +43,5 @@ class ComicType {
     }
   }
 }
+
+

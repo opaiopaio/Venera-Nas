@@ -1,13 +1,13 @@
-import 'dart:io' as io;
+﻿import 'dart:io' as io;
 
 import 'package:dio/dio.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/appdata.dart';
-import 'package:venera/foundation/consts.dart';
-import 'package:venera/foundation/log.dart';
-import 'package:venera/pages/webview.dart';
-import 'package:venera/utils/ext.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/consts.dart';
+import 'package:venera_nas/foundation/log.dart';
+import 'package:venera_nas/pages/webview.dart';
+import 'package:venera_nas/utils/ext.dart';
 
 import 'cookie_jar.dart';
 
@@ -228,3 +228,5 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
     onFinished();
   }
 }
+
+

@@ -31,7 +31,7 @@ keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 def resolvedKeystoreFile = rootProject.file(keystoreProperties['storeFile'])
 
 android {
-    namespace = "io.github.haukuen.venera"
+    namespace = "io.github.opaiopaio.veneranas"
     compileSdk = flutter.compileSdkVersion
     ndkVersion "28.0.13004108"
 
@@ -74,7 +74,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "io.github.haukuen.venera"
+        applicationId = "io.github.opaiopaio.veneranas"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdk = flutter.minSdkVersion
@@ -105,13 +105,13 @@ android {
             def abi = output.getFilter(com.android.build.OutputFile.ABI)
             if (variant.buildType.name == "release") {
                 if (abi != null) {
-                    outputFileName = "venera-${variant.versionName}-${abi}.apk"
+                    outputFileName = "veneranas-${variant.versionName}-${abi}.apk"
                     def abiVersionCode = project.ext.abiCodes.get(abi)
                     if (abiVersionCode != null) {
                         versionCodeOverride = variant.versionCode * 10 + abiVersionCode
                     }
                 } else {
-                    outputFileName = "venera-${variant.versionName}.apk"
+                    outputFileName = "veneranas-${variant.versionName}.apk"
                     versionCodeOverride = variant.versionCode * 10
                 }
             } else if (variant.buildType.name == "debug") {

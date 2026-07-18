@@ -1,11 +1,11 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/appdata.dart';
-import 'package:venera/foundation/comic_type.dart';
-import 'package:venera/foundation/favorites.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/favorites.dart';
 
 class _TestPathProviderPlatform extends PathProviderPlatform {
   _TestPathProviderPlatform(this.path);
@@ -91,3 +91,5 @@ void main() {
     expect(notifications, 1);
   });
 }
+
+

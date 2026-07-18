@@ -1,14 +1,14 @@
-import 'package:flutter/material.dart';
-import 'package:venera/components/components.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/appdata.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
-import 'package:venera/foundation/global_state.dart';
-import 'package:venera/foundation/res.dart';
-import 'package:venera/pages/comic_source_page.dart';
-import 'package:venera/pages/settings/settings_page.dart';
-import 'package:venera/utils/ext.dart';
-import 'package:venera/utils/translations.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:venera_nas/components/components.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/global_state.dart';
+import 'package:venera_nas/foundation/res.dart';
+import 'package:venera_nas/pages/comic_source_page.dart';
+import 'package:venera_nas/pages/settings/settings_page.dart';
+import 'package:venera_nas/utils/ext.dart';
+import 'package:venera_nas/utils/translations.dart';
 
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});
@@ -579,3 +579,5 @@ class _MultiPartExplorePageState extends State<_MultiPartExplorePage> {
     }
   }
 }
+
+

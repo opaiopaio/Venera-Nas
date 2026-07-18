@@ -1,10 +1,10 @@
-import 'dart:async' show Future;
+﻿import 'dart:async' show Future;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
-import 'package:venera/network/images.dart';
-import 'package:venera/utils/io.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/network/images.dart';
+import 'package:venera_nas/utils/io.dart';
 import 'base_image_provider.dart';
 import 'local_favorite_image.dart' as image_provider;
 
@@ -65,3 +65,5 @@ class LocalFavoriteImageProvider
   @override
   String get key => id + intKey.toString();
 }
+
+

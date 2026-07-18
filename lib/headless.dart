@@ -1,14 +1,14 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/widgets.dart';
-import 'package:venera/utils/data_sync.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
-import 'package:venera/foundation/log.dart';
-import 'package:venera/pages/comic_source_page.dart';
-import 'package:venera/init.dart';
-import 'package:venera/foundation/follow_updates.dart';
-import 'package:venera/foundation/appdata.dart';
-import 'package:venera/foundation/favorites.dart';
+import 'package:venera_nas/utils/data_sync.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/log.dart';
+import 'package:venera_nas/pages/comic_source_page.dart';
+import 'package:venera_nas/init.dart';
+import 'package:venera_nas/foundation/follow_updates.dart';
+import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/favorites.dart';
 
 void cliPrint(Map<String, dynamic> data) {
   print('[CLI PRINT] ${jsonEncode(data)}');
@@ -251,3 +251,5 @@ Future<void> runHeadlessMode(List<String> args) async {
   // Exit after command execution
   exit(0);
 }
+
+

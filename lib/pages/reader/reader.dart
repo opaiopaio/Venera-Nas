@@ -1,4 +1,4 @@
-library;
+﻿library;
 
 import 'dart:async';
 import 'dart:convert';
@@ -14,33 +14,33 @@ import 'package:flutter_memory_info/flutter_memory_info.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
-import 'package:venera/components/components.dart';
-import 'package:venera/components/custom_slider.dart';
-import 'package:venera/components/rich_comment_content.dart';
-import 'package:venera/components/window_frame.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/appdata.dart';
-import 'package:venera/foundation/cache_manager.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
-import 'package:venera/foundation/comic_type.dart';
-import 'package:venera/foundation/consts.dart';
-import 'package:venera/foundation/favorites.dart';
-import 'package:venera/foundation/global_state.dart';
-import 'package:venera/foundation/history.dart';
-import 'package:venera/foundation/image_provider/cached_image.dart';
-import 'package:venera/foundation/image_provider/reader_image.dart';
-import 'package:venera/foundation/local.dart';
-import 'package:venera/foundation/log.dart';
-import 'package:venera/foundation/res.dart';
-import 'package:venera/network/images.dart';
-import 'package:venera/pages/settings/settings_page.dart';
-import 'package:venera/utils/clipboard_image.dart';
-import 'package:venera/utils/ext.dart';
-import 'package:venera/utils/file_type.dart';
-import 'package:venera/utils/io.dart';
-import 'package:venera/utils/tags_translation.dart';
-import 'package:venera/utils/translations.dart';
-import 'package:venera/utils/volume.dart';
+import 'package:venera_nas/components/components.dart';
+import 'package:venera_nas/components/custom_slider.dart';
+import 'package:venera_nas/components/rich_comment_content.dart';
+import 'package:venera_nas/components/window_frame.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/cache_manager.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/consts.dart';
+import 'package:venera_nas/foundation/favorites.dart';
+import 'package:venera_nas/foundation/global_state.dart';
+import 'package:venera_nas/foundation/history.dart';
+import 'package:venera_nas/foundation/image_provider/cached_image.dart';
+import 'package:venera_nas/foundation/image_provider/reader_image.dart';
+import 'package:venera_nas/foundation/local.dart';
+import 'package:venera_nas/foundation/log.dart';
+import 'package:venera_nas/foundation/res.dart';
+import 'package:venera_nas/network/images.dart';
+import 'package:venera_nas/pages/settings/settings_page.dart';
+import 'package:venera_nas/utils/clipboard_image.dart';
+import 'package:venera_nas/utils/ext.dart';
+import 'package:venera_nas/utils/file_type.dart';
+import 'package:venera_nas/utils/io.dart';
+import 'package:venera_nas/utils/tags_translation.dart';
+import 'package:venera_nas/utils/translations.dart';
+import 'package:venera_nas/utils/volume.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -841,3 +841,5 @@ abstract interface class _ImageViewController {
 
   String? getImageKeyByOffset(Offset offset);
 }
+
+

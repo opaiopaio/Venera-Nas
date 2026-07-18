@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
-import 'package:venera/foundation/appdata.dart';
-import 'package:venera/pages/categories_page.dart';
-import 'package:venera/pages/search_page.dart';
-import 'package:venera/pages/settings/settings_page.dart';
-import 'package:venera/utils/translations.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/pages/categories_page.dart';
+import 'package:venera_nas/pages/search_page.dart';
+import 'package:venera_nas/pages/settings/settings_page.dart';
+import 'package:venera_nas/utils/translations.dart';
 
 import '../components/components.dart';
 import '../foundation/app.dart';
@@ -109,3 +109,5 @@ class _MainPageState extends State<MainPage> {
     );
   }
 }
+
+

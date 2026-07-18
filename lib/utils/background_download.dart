@@ -1,9 +1,9 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/services.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/local.dart';
-import 'package:venera/utils/translations.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/local.dart';
+import 'package:venera_nas/utils/translations.dart';
 
 /// 原生后台下载控制器。
 ///
@@ -206,3 +206,5 @@ class BackgroundDownload {
     });
   }
 }
+
+

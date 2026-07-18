@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,28 +6,28 @@ import 'package:photo_view/photo_view.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 import 'package:url_launcher/url_launcher_string.dart';
-import 'package:venera/components/components.dart';
-import 'package:venera/components/rich_comment_content.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/appdata.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
-import 'package:venera/foundation/comic_type.dart';
-import 'package:venera/foundation/download_mode.dart';
-import 'package:venera/foundation/consts.dart';
-import 'package:venera/foundation/favorites.dart';
-import 'package:venera/foundation/history.dart';
-import 'package:venera/foundation/image_provider/cached_image.dart';
-import 'package:venera/foundation/local.dart';
-import 'package:venera/foundation/read_later.dart';
-import 'package:venera/foundation/res.dart';
-import 'package:venera/network/download.dart';
-import 'package:venera/network/cache.dart';
-import 'package:venera/pages/favorites/favorites_page.dart';
-import 'package:venera/pages/reader/reader.dart';
-import 'package:venera/utils/file_type.dart';
-import 'package:venera/utils/io.dart';
-import 'package:venera/utils/tags_translation.dart';
-import 'package:venera/utils/translations.dart';
+import 'package:venera_nas/components/components.dart';
+import 'package:venera_nas/components/rich_comment_content.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/download_mode.dart';
+import 'package:venera_nas/foundation/consts.dart';
+import 'package:venera_nas/foundation/favorites.dart';
+import 'package:venera_nas/foundation/history.dart';
+import 'package:venera_nas/foundation/image_provider/cached_image.dart';
+import 'package:venera_nas/foundation/local.dart';
+import 'package:venera_nas/foundation/read_later.dart';
+import 'package:venera_nas/foundation/res.dart';
+import 'package:venera_nas/network/download.dart';
+import 'package:venera_nas/network/cache.dart';
+import 'package:venera_nas/pages/favorites/favorites_page.dart';
+import 'package:venera_nas/pages/reader/reader.dart';
+import 'package:venera_nas/utils/file_type.dart';
+import 'package:venera_nas/utils/io.dart';
+import 'package:venera_nas/utils/tags_translation.dart';
+import 'package:venera_nas/utils/translations.dart';
 import 'dart:math' as math;
 
 part 'comments_page.dart';
@@ -1103,3 +1103,5 @@ class _ComicPageLoadingPlaceHolder extends StatelessWidget {
     );
   }
 }
+
+

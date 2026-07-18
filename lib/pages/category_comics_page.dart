@@ -1,8 +1,8 @@
-import "package:flutter/material.dart";
-import "package:venera/components/components.dart";
-import "package:venera/foundation/app.dart";
-import "package:venera/foundation/comic_source/comic_source.dart";
-import "package:venera/utils/translations.dart";
+﻿import "package:flutter/material.dart";
+import "package:venera_nas/components/components.dart";
+import "package:venera_nas/foundation/app.dart";
+import "package:venera_nas/foundation/comic_source/comic_source.dart";
+import "package:venera_nas/utils/translations.dart";
 
 class CategoryComicsPage extends StatefulWidget {
   const CategoryComicsPage({
@@ -212,3 +212,5 @@ class _CategoryComicsPageState extends State<CategoryComicsPage> {
     ).paddingLeft(8).paddingRight(8);
   }
 }
+
+

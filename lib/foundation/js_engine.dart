@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:crypto/crypto.dart';
@@ -22,13 +22,13 @@ import 'package:pointycastle/block/modes/cfb.dart';
 import 'package:pointycastle/block/modes/ecb.dart';
 import 'package:pointycastle/block/modes/ofb.dart';
 import 'package:uuid/uuid.dart';
-import 'package:venera/components/js_ui.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/js_pool.dart';
-import 'package:venera/network/app_dio.dart';
-import 'package:venera/network/cookie_jar.dart';
-import 'package:venera/network/proxy.dart';
-import 'package:venera/utils/init.dart';
+import 'package:venera_nas/components/js_ui.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/js_pool.dart';
+import 'package:venera_nas/network/app_dio.dart';
+import 'package:venera_nas/network/cookie_jar.dart';
+import 'package:venera_nas/network/proxy.dart';
+import 'package:venera_nas/utils/init.dart';
 
 import 'comic_source/comic_source.dart';
 import 'consts.dart';
@@ -736,3 +736,5 @@ class JSAutoFreeFunction {
     func.destroy();
   });
 }
+
+

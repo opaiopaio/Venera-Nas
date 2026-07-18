@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:venera/components/pin_pad.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/utils/auth_storage.dart';
-import 'package:venera/utils/translations.dart';
+import 'package:venera_nas/components/pin_pad.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/utils/auth_storage.dart';
+import 'package:venera_nas/utils/translations.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key, this.onSuccessfulAuth});
@@ -128,3 +128,5 @@ class _AuthPageState extends State<AuthPage> {
     );
   }
 }
+
+

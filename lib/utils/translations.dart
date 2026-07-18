@@ -1,7 +1,7 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:flutter/services.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
 import '../foundation/app.dart';
 
 extension AppTranslation on String {
@@ -59,3 +59,5 @@ extension ListTranslation on List<String> {
 
   List<String> get tl => _translate();
 }
+
+

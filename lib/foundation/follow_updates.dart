@@ -1,8 +1,8 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
-import 'package:venera/foundation/favorites.dart';
-import 'package:venera/foundation/log.dart';
-import 'package:venera/utils/channel.dart';
+import 'package:venera_nas/foundation/favorites.dart';
+import 'package:venera_nas/foundation/log.dart';
+import 'package:venera_nas/utils/channel.dart';
 
 class ComicUpdateResult {
   final bool updated;
@@ -214,3 +214,5 @@ Future<String> getUpdatedComicsAsJson(String folder) async {
       .toList();
   return jsonEncode(jsonList);
 }
+
+

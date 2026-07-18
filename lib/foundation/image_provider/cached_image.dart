@@ -1,10 +1,10 @@
-import 'dart:async' show Future;
+﻿import 'dart:async' show Future;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:venera/foundation/comic_type.dart';
-import 'package:venera/foundation/local.dart';
-import 'package:venera/network/images.dart';
-import 'package:venera/utils/io.dart';
+import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/local.dart';
+import 'package:venera_nas/network/images.dart';
+import 'package:venera_nas/utils/io.dart';
 import 'base_image_provider.dart';
 import 'cached_image.dart' as image_provider;
 
@@ -98,3 +98,5 @@ class CachedImageProvider
   @override
   String get key => url + (sourceKey ?? "") + (cid ?? "");
 }
+
+

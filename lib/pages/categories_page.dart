@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:venera/components/components.dart';
-import 'package:venera/foundation/app.dart';
-import 'package:venera/foundation/appdata.dart';
-import 'package:venera/foundation/comic_source/comic_source.dart';
-import 'package:venera/pages/ranking_page.dart';
-import 'package:venera/pages/settings/settings_page.dart';
-import 'package:venera/utils/ext.dart';
-import 'package:venera/utils/translations.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:venera_nas/components/components.dart';
+import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/pages/ranking_page.dart';
+import 'package:venera_nas/pages/settings/settings_page.dart';
+import 'package:venera_nas/utils/ext.dart';
+import 'package:venera_nas/utils/translations.dart';
 
 import 'comic_source_page.dart';
 
@@ -276,3 +276,5 @@ class _CategoryPage extends StatelessWidget {
 
   bool get enableTranslation => App.locale.languageCode == 'zh';
 }
+
+
