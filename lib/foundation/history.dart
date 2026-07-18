@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:isolate';
 import 'dart:math';
@@ -162,7 +162,9 @@ class History implements Comic {
   @override
   String get sourceKey => type == ComicType.local
       ? 'local'
-      : type.comicSource?.key ?? "Unknown:${type.value}";
+      : type == ComicType.smb
+          ? 'smb'
+          : type.comicSource?.key ?? "Unknown:${type.value}";
 
   @override
   double? get stars => null;
