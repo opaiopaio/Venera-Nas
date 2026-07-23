@@ -423,7 +423,7 @@ async function processImage(image, cid, eid, page, sourceKey) {
 ''';
 
 const defaultSourceListUrl =
-    "https://cdn.jsdelivr.net/gh/haukuen/venera-configs@main/index.json";
+    "https://cdn.jsdelivr.net/gh/opaiopaio/venera-configs@main/index.json";
 
 /// 保留私有别名以保持向后兼容。
 const _defaultSourceListUrl = defaultSourceListUrl;
@@ -433,6 +433,7 @@ const _defaultSourceListUrl = defaultSourceListUrl;
 /// 迁移通过本地标志位保证只执行一次,用户之后手动改回的 URL 不会被再次覆盖。
 const legacySourceListUrls = <String>{
   "https://cdn.jsdelivr.net/gh/venera-app/venera-configs@main/index.json",
+  "https://cdn.jsdelivr.net/gh/haukuen/venera-configs@main/index.json",
 };
 
 
