@@ -2,7 +2,7 @@
 description: "A comic app with SMB/NAS support."
 publish_to: 'none'
 
-version: 1.7.1+3
+version: 1.7.2+4
 
 environment:
   sdk: '>=3.8.0 <4.0.0'
@@ -116,6 +116,9 @@ flutter:
 
 flutter_launcher_icons:
   android: true
+  adaptive_icon_background: "#2143F3"
+  adaptive_icon_foreground: "assets/app_icon_foreground.png"
+  adaptive_icon_monochrome: "assets/app_icon_foreground.png"
   ios: false
   macos:
     generate: true
