@@ -102,14 +102,16 @@ void _checkOldConfigs() {
 
   // 一次性迁移:把使用旧版源列表 URL 的用户切回当前默认值。
   // 通过本地标志位保证只执行一次 —— 用户之后手动改回的 URL 不会被再次覆盖。
-  if (appdata.implicitData['sourceListMigratedToDefault'] != true) {
+  // 注意:每次 defaultSourceListUrl 变更时必须用新 key(旧版已置位旧 key,沿用会跳过迁移)。
+  // 本次 1.7.1: default 由 haukuen/venera-configs 迁移至 opaiopaio/venera-configs。
+  if (appdata.implicitData['sourceListMigratedToOpaiopaioRepo'] != true) {
     var currentUrl = appdata.settings['comicSourceListUrl'].toString();
     if (legacySourceListUrls.contains(currentUrl) ||
         currentUrl.contains("git.nyne.dev")) {
       appdata.settings['comicSourceListUrl'] = defaultSourceListUrl;
       appdata.saveData();
     }
-    appdata.implicitData['sourceListMigratedToDefault'] = true;
+    appdata.implicitData['sourceListMigratedToOpaiopaioRepo'] = true;
     appdata.writeImplicitData();
   }
 }
