@@ -56,5 +56,5 @@ docs/superpowers/
 .worktrees/
 .vs/
 windows/out/
-.mcp.json
-.x-code/
+AGENTS.md
+doc/history-changelog.md

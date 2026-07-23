@@ -13,6 +13,12 @@ This document will describe how to write a comic source for Venera.
 
 Venera can display a list of comic sources in the app.
 
+**Venera-Nas** uses the following repo url by default (maintained by opaiopaio):
+
+```
+https://cdn.jsdelivr.net/gh/opaiopaio/venera-configs@main/index.json
+```
+
 You can use the following repo url:
 ```
 https://cdn.jsdelivr.net/gh/venera-app/venera-configs@main/index.json
