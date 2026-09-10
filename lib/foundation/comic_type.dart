@@ -17,7 +17,7 @@ class ComicType {
     } else if (this == smb) {
       return "smb";
     } else {
-      return comicSource!.key;
+      return comicSource?.key ?? "Unknown:$value";
     }
   }
 
