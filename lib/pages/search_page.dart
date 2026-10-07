@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,6 +18,7 @@ import 'package:venera_nas/utils/translations.dart';
 
 import 'comic_details_page/comic_page.dart';
 import 'comic_source_page.dart';
+import 'package:venera_nas/foundation/app_theme.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -252,7 +253,7 @@ class _SearchPageState extends State<SearchPage> {
     return SliverToBoxAdapter(
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -368,7 +369,7 @@ class _SearchPageState extends State<SearchPage> {
     return SliverToBoxAdapter(
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: children,
@@ -655,7 +656,7 @@ class _SearchHistoryState extends State<_SearchHistory> {
         // 不限制高度（否则会裁掉行内左侧竖条/文字），靠纵向 margin 拉开间距，
         // 让每块遮罩显得更细、选项之间有呼吸感。
         return WindowOverlayBox(
-          margin: const EdgeInsets.symmetric(vertical: 4),
+          margin: const EdgeInsets.symmetric(vertical: AppSpace.xs),
           child: buildItem(index - 2),
         );
       }, childCount: 2 + appdata.searchHistory.length),
@@ -715,7 +716,7 @@ class _SearchHistoryState extends State<_SearchHistory> {
                 ),
               ),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: AppSpace.sm),
             child: Text(appdata.searchHistory[index], style: ts.s14),
           ),
         ).paddingBottom(

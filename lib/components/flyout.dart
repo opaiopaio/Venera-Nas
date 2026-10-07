@@ -199,7 +199,7 @@ class FlyoutContent extends StatelessWidget {
               : context.colorScheme.surface.toOpacity(0.82),
           child: Container(
             constraints: const BoxConstraints(minWidth: minFlyoutWidth),
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            padding: const EdgeInsets.symmetric(vertical: AppSpace.sm, horizontal: AppSpace.lg),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppRadius.md),
               border: context.brightness == ui.Brightness.dark

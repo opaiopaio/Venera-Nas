@@ -64,7 +64,7 @@ class _FollowUpdatesWidgetState
             ? Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpace.lg,
-                  vertical: 2,
+                  vertical: AppSpace.xxs,
                 ),
                 margin: const EdgeInsets.only(
                   bottom: AppSpace.lg,
@@ -146,7 +146,7 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
             buildNotConfigured(context)
           else
             buildConfigured(context),
-          SliverPadding(padding: const EdgeInsets.only(top: 8)),
+          SliverPadding(padding: const EdgeInsets.only(top: AppSpace.sm)),
           buildUpdatedComics(),
           buildAllComics(),
         ],
@@ -157,7 +157,7 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
   Widget buildNotConfigured(BuildContext context) {
     return SliverToBoxAdapter(
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.sm),
         decoration: BoxDecoration(
           color: windowOverlayColor(),
           border: Border.all(
@@ -193,7 +193,7 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
   Widget buildConfigured(BuildContext context) {
     return SliverToBoxAdapter(
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.sm),
         decoration: BoxDecoration(
           color: windowOverlayColor(),
           border: Border.all(
@@ -250,8 +250,8 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
       slivers: [
         SliverToBoxAdapter(
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            padding: const EdgeInsets.symmetric(vertical: 4),
+            margin: const EdgeInsets.symmetric(horizontal: AppSpace.lg, vertical: AppSpace.sm),
+            padding: const EdgeInsets.symmetric(vertical: AppSpace.xs),
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
@@ -306,12 +306,12 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
               children: [
                 Container(
                   margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+                    horizontal: AppSpace.lg,
+                    vertical: AppSpace.sm,
                   ),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
+                    horizontal: AppSpace.md,
+                    vertical: AppSpace.xs,
                   ),
                   decoration: BoxDecoration(
                     color: appdata.settings.customBackgroundActive
@@ -338,8 +338,8 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
       slivers: [
         SliverToBoxAdapter(
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            padding: const EdgeInsets.symmetric(vertical: 4),
+            margin: const EdgeInsets.symmetric(horizontal: AppSpace.lg, vertical: AppSpace.sm),
+            padding: const EdgeInsets.symmetric(vertical: AppSpace.xs),
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(

@@ -263,7 +263,7 @@ class ComicTile extends StatelessWidget {
                     height: 24,
                     color: Colors.blue.toOpacity(0.9),
                     constraints: const BoxConstraints(minWidth: 24),
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpace.xs),
                     child: Center(
                       child: Text(
                         _buildHistoryProgressText(
@@ -680,7 +680,7 @@ class _ComicDescription extends StatelessWidget {
                       for (var s in tags!)
                         Container(
                           height: 21,
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpace.xs),
                           constraints: BoxConstraints(
                             maxWidth: constraints.maxWidth * 0.45,
                           ),
@@ -931,7 +931,7 @@ class _SliverGridComics extends StatelessWidget {
         if (selection == null) {
           // 给每张漫画卡片留出间距，避免「窗口/按钮背景」连成一片。
           return Padding(
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(AppSpace.tiny),
             child: comic,
           );
         }
@@ -946,7 +946,7 @@ class _SliverGridComics extends StatelessWidget {
                 : null,
             borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
-          margin: const EdgeInsets.all(4),
+          margin: const EdgeInsets.all(AppSpace.xs),
           child: comic,
         );
       }, childCount: comics.length),
@@ -1159,8 +1159,8 @@ class ComicListState extends State<ComicList> {
                 },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 6,
+                    horizontal: AppSpace.lg,
+                    vertical: AppSpace.tiny,
                   ),
                   child: Text("Page $_page / ${_maxPage ?? '?'}"),
                 ),

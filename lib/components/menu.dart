@@ -74,8 +74,8 @@ class _MenuRoute<T> extends PopupRoute<T> {
                 child: Container(
                   width: width,
                   padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 6,
+                    vertical: AppSpace.md,
+                    horizontal: AppSpace.tiny,
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -102,7 +102,7 @@ class _MenuRoute<T> extends PopupRoute<T> {
       child: SizedBox(
         height: entryHeight,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
           child: Row(
             children: [
               if (entry.icon != null)

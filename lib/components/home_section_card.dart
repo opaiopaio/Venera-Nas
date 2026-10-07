@@ -1,4 +1,4 @@
-part of 'components.dart';
+﻿part of 'components.dart';
 
 class HomeSectionCard extends StatelessWidget {
   const HomeSectionCard({
@@ -62,7 +62,7 @@ class HomeSectionCard extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: AppSpace.sm),
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpace.sm,
-                vertical: 2,
+                vertical: AppSpace.xxs,
               ),
               decoration: BoxDecoration(
                 color: context.colorScheme.secondaryContainer,

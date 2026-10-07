@@ -110,7 +110,7 @@ class _AppbarState extends State<Appbar> {
           ...?widget.actions?.map(
             (e) => appdata.settings.customBackgroundActive
                 // 启用「窗口/按钮背景」时按钮自带底色块，这里补间距避免贴在一起
-                ? Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: e)
+                ? Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpace.tiny), child: e)
                 : e,
           ),
           const SizedBox(width: 8),
@@ -221,7 +221,7 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
         ),
         ...?actions?.map(
           (e) => appdata.settings.customBackgroundActive
-              ? Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: e)
+              ? Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpace.tiny), child: e)
               : e,
         ),
         const SizedBox(width: 8),
@@ -302,7 +302,7 @@ class _AppTabBarState extends State<AppTabBar> {
 
   static const _kTabHeight = 48.0;
 
-  static const tabPadding = EdgeInsets.symmetric(horizontal: 2, vertical: 6);
+  static const tabPadding = EdgeInsets.symmetric(horizontal: AppSpace.xxs, vertical: AppSpace.tiny);
 
   static const tabRadius = 8.0;
 
@@ -483,7 +483,7 @@ class _AppTabBarState extends State<AppTabBar> {
       child: KeyedSubtree(
         key: keys[i],
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg),
           child: DefaultTextStyle(
             style: DefaultTextStyle.of(context).style.copyWith(
               color: i == _controller.animation?.value.round()
@@ -821,7 +821,7 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
           const BackButton(),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpace.sm),
               child: TextField(
                 focusNode: focusNode,
                 controller: editingController,
@@ -929,7 +929,7 @@ class _SearchBarState extends State<AppSearchBar> with _SearchBarMixin {
           const BackButton(),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpace.sm),
               child: TextField(
                 controller: _editingController,
                 decoration: InputDecoration(
@@ -991,7 +991,7 @@ class TabActionButton extends StatelessWidget {
       borderRadius: radius,
       child: Container(
         constraints: const BoxConstraints(minHeight: _kTabHeight),
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
         child: IconTheme(
           data: IconThemeData(size: 20, color: context.colorScheme.primary),
           child: Row(

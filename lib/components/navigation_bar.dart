@@ -1,4 +1,4 @@
-part of 'components.dart';
+﻿part of 'components.dart';
 
 class PaneItemEntry {
   String label;
@@ -264,7 +264,7 @@ class NaviPaneState extends State<NaviPane>
     return Material(
       color: customBackgroundAware(null),
       child: Container(
-        padding: const EdgeInsets.only(left: 16, right: 16),
+        padding: const EdgeInsets.only(left: AppSpace.lg, right: AppSpace.lg),
         constraints: const BoxConstraints(minHeight: _kTopBarHeight),
         width: double.infinity,
         child: Row(
@@ -403,7 +403,7 @@ class _SideNaviWidget extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
         constraints: const BoxConstraints(minHeight: 38),
         decoration: BoxDecoration(
           // 选中项用主题高亮；未选中项在配置了「窗口/按钮背景」时用该色，
@@ -444,7 +444,7 @@ class _PaneActionWidget extends StatelessWidget {
       ),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
         constraints: const BoxConstraints(minHeight: 38),
         decoration: BoxDecoration(
           // 侧栏左下角的操作项（搜索/设置）同样使用「窗口/按钮背景」。

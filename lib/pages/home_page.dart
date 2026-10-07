@@ -66,7 +66,7 @@ class _SearchBar extends StatelessWidget {
         // 自适应：最小高度 + 随文字撑开（默认字号外观不变）
         constraints: BoxConstraints(minHeight: App.isMobile ? 52 : 46),
         width: double.infinity,
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.sm),
         child: Material(
           color: appdata.settings.customBackgroundActive
               ? windowOverlayColor()
@@ -155,7 +155,7 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
     } else if (syncStatus.isSyncing) {
       child = SliverToBoxAdapter(
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          margin: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.sm),
           decoration: BoxDecoration(
             color: windowOverlayColor(),
             border: Border.all(color: Theme.of(context).colorScheme.primary),
@@ -176,7 +176,7 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
     } else if (App.isMobile) {
       child = SliverToBoxAdapter(
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          margin: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.sm),
           decoration: BoxDecoration(
             color: windowOverlayColor(),
             border: Border.all(
@@ -187,7 +187,7 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
                 BorderRadius.circular(AppRadius.md),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: AppSpace.sm),
             child: Row(
               children: [
                 const Icon(Icons.sync),
@@ -214,8 +214,8 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                        horizontal: AppSpace.sm,
+                        vertical: AppSpace.xs,
                       ),
                       decoration: BoxDecoration(
                         color: context.colorScheme.errorContainer,
@@ -250,7 +250,7 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
     } else {
       child = SliverToBoxAdapter(
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          margin: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.sm),
           decoration: BoxDecoration(
             color: windowOverlayColor(),
             border: Border.all(
@@ -279,8 +279,8 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                        horizontal: AppSpace.sm,
+                        vertical: AppSpace.xs,
                       ),
                       decoration: BoxDecoration(
                         color: context.colorScheme.errorContainer,
@@ -554,7 +554,7 @@ class _ComicArchiveWidgetState extends State<_ComicArchiveWidget> {
     final newest = currentFiles.isEmpty ? null : currentFiles.first.modified;
     return SliverToBoxAdapter(
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.sm),
         decoration: BoxDecoration(
           border: Border.all(
             color: Theme.of(context).colorScheme.outlineVariant,
@@ -827,7 +827,7 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                         return Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: AppSpace.sm,
-                            vertical: 2,
+                            vertical: AppSpace.xxs,
                           ),
                           decoration: BoxDecoration(
                             color: context.colorScheme.secondaryContainer,
@@ -842,7 +842,7 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                     Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: AppSpace.sm,
-                            vertical: 4,
+                            vertical: AppSpace.xs,
                           ),
                           decoration: BoxDecoration(
                             border: Border.all(
@@ -1047,7 +1047,7 @@ class _ImageFavoritesState extends State<ImageFavorites> {
       },
       child: AnimatedContainer(
         width: 96,
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(vertical: AppSpace.xs),
         decoration: BoxDecoration(
           color: displayType == type
               ? context.colorScheme.primaryContainer

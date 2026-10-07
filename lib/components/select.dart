@@ -73,7 +73,7 @@ class Select extends StatelessWidget {
             const SizedBox(width: 8),
             Icon(Icons.arrow_drop_down, color: context.colorScheme.primary),
           ],
-        ).padding(const EdgeInsets.symmetric(horizontal: 12, vertical: 4)),
+        ).padding(const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: AppSpace.xs)),
       ),
     );
   }
@@ -285,7 +285,7 @@ class OptionChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.md),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg, vertical: AppSpace.tiny),
             child: Text(text),
           ),
         ),
