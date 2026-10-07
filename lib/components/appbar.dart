@@ -82,6 +82,10 @@ class _AppbarState extends State<Appbar> {
 
 enum AppbarStyle { blur, shadow }
 
+/// **A/B 定位开关（临时）**：顶栏内是否绘制"整窗背景切片"。
+/// 用于排查"点弹层后页面被切成左右两半、中间背景可滚动"的鬼影来源。
+bool headerBackgroundSliceEnabled = false;
+
 /// 顶栏底：**不透明的「背景切片」**。
 ///
 /// 启用自定义背景（背景图/底色）时，顶栏直接画出与全窗背景**同一份**的
@@ -138,7 +142,9 @@ class _HeaderSurfaceState extends State<_HeaderSurface> {
           Positioned.fill(
             child: ColoredBox(color: context.colorScheme.surface),
           ),
-          if (AppBackground.isActive && offset != null)
+          if (headerBackgroundSliceEnabled &&
+              AppBackground.isActive &&
+              offset != null)
             // 背景切片：子项是**整窗**尺寸，但这里用 OverflowBox + Transform 摆放 ——
             // 它**不参与父级尺寸计算**，任何约束环境下都不会影响顶栏布局，
             // 也不会进入外层滚动区（历史 bug：它把弹层滚动区撑成了"中间那条背景"）。
