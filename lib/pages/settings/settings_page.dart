@@ -8,6 +8,7 @@ import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/components/pin_pad.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/app_settings_scope.dart';
 import 'package:venera_nas/foundation/text_style_settings.dart';
 import 'package:venera_nas/foundation/cache_manager.dart';
 import 'package:venera_nas/foundation/comic_source/comic_source.dart';

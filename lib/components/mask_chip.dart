@@ -37,6 +37,9 @@ class MaskChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 建立设置依赖：外观/设置变化时由框架**精准重建**本控件
+    // （取代 App.forceRebuild() 的整树 markNeedsBuild 遍历，后者会导致鬼影）。
+    AppSettingsScope.of(context);
     final scheme = context.colorScheme;
     final radius =
         windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.md);

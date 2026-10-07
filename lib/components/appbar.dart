@@ -129,22 +129,32 @@ class _HeaderSurfaceState extends State<_HeaderSurface> {
     final offset = _offsetInWindow;
     return ClipRect(
       child: Stack(
-        // body 必须**撑满**顶栏（StackFit.expand）→ Row 的 crossAxisAlignment=center
-        // 才能在纵向居中；否则非定位子项按顶部对齐，标题/按钮会贴着顶栏上沿。
-        fit: StackFit.expand,
+        // 用 alignment 居中（**不要** StackFit.expand）：后者要求约束有界，
+        // 顶栏被放进弹层/滚动容器这类无界上下文时会撑爆布局，真机上表现为
+        // "中间出现一条可以上下滚动的背景带"。
+        alignment: Alignment.center,
         children: [
           // 不透明兜底（背景底色可能是半透明的）
           Positioned.fill(
             child: ColoredBox(color: context.colorScheme.surface),
           ),
           if (AppBackground.isActive && offset != null)
-            Positioned(
-              left: -offset.dx,
-              top: -offset.dy,
-              child: SizedBox(
-                width: size.width,
-                height: size.height,
-                child: const AppBackground(),
+            // 背景切片：子项是**整窗**尺寸，但这里用 OverflowBox + Transform 摆放 ——
+            // 它**不参与父级尺寸计算**，任何约束环境下都不会影响顶栏布局，
+            // 也不会进入外层滚动区（历史 bug：它把弹层滚动区撑成了"中间那条背景"）。
+            OverflowBox(
+              minWidth: 0,
+              maxWidth: double.infinity,
+              minHeight: 0,
+              maxHeight: double.infinity,
+              alignment: Alignment.topLeft,
+              child: Transform.translate(
+                offset: Offset(-offset.dx, -offset.dy),
+                child: SizedBox(
+                  width: size.width,
+                  height: size.height,
+                  child: const AppBackground(),
+                ),
               ),
             ),
           widget.body,

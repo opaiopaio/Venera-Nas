@@ -37,6 +37,9 @@ class _SwitchSetting extends StatefulWidget {
 class _SwitchSettingState extends State<_SwitchSetting> {
   @override
   Widget build(BuildContext context) {
+    // 建立设置依赖：外观/设置变化时由框架**精准重建**本控件
+    // （取代 App.forceRebuild() 的整树 markNeedsBuild 遍历，后者会导致鬼影）。
+    AppSettingsScope.of(context);
     var value = appdata.settings.readSettingValue(
       key: widget.settingKey,
       comicId: widget.comicId,
@@ -107,6 +110,9 @@ class SelectSetting extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 建立设置依赖：外观/设置变化时由框架**精准重建**本控件
+    // （取代 App.forceRebuild() 的整树 markNeedsBuild 遍历，后者会导致鬼影）。
+    AppSettingsScope.of(context);
     return SizedBox(
       width: double.infinity,
       child: LayoutBuilder(
@@ -183,6 +189,9 @@ class _DoubleLineSelectSettings extends StatefulWidget {
 class _DoubleLineSelectSettingsState extends State<_DoubleLineSelectSettings> {
   @override
   Widget build(BuildContext context) {
+    // 建立设置依赖：外观/设置变化时由框架**精准重建**本控件
+    // （取代 App.forceRebuild() 的整树 markNeedsBuild 遍历，后者会导致鬼影）。
+    AppSettingsScope.of(context);
     var value = appdata.settings.readSettingValue(
       key: widget.settingKey,
       comicId: widget.comicId,
@@ -309,6 +318,9 @@ class _EndSelectorSelectSetting extends StatefulWidget {
 class _EndSelectorSelectSettingState extends State<_EndSelectorSelectSetting> {
   @override
   Widget build(BuildContext context) {
+    // 建立设置依赖：外观/设置变化时由框架**精准重建**本控件
+    // （取代 App.forceRebuild() 的整树 markNeedsBuild 遍历，后者会导致鬼影）。
+    AppSettingsScope.of(context);
     var options = widget.optionTranslation;
     var value = appdata.settings.readSettingValue(
       key: widget.settingKey,
@@ -460,6 +472,9 @@ class _SliderSettingState extends State<_SliderSetting> {
 
   @override
   Widget build(BuildContext context) {
+    // 建立设置依赖：外观/设置变化时由框架**精准重建**本控件
+    // （取代 App.forceRebuild() 的整树 markNeedsBuild 遍历，后者会导致鬼影）。
+    AppSettingsScope.of(context);
     var value = (appdata.settings.readSettingValue(
       key: widget.settingsIndex,
       comicId: widget.comicId,
