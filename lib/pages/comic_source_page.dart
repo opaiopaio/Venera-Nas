@@ -71,7 +71,7 @@ class ComicSourcePage extends StatelessWidget {
     }
     await ComicSourceManager().reload();
     if (showLoading) {
-      App.forceRebuild();
+      ComicSourceManager().notifyStateChange();
     }
   }
 
@@ -189,7 +189,7 @@ class _BodyState extends State<_Body> {
         file.delete();
         ComicSourceManager().remove(source.key);
         _validatePages();
-        App.forceRebuild();
+        ComicSourceManager().notifyStateChange();
       },
     );
   }
@@ -211,7 +211,7 @@ class _BodyState extends State<_Body> {
               TextButton(
                 onPressed: () async {
                   await ComicSourceManager().reload();
-                  App.forceRebuild();
+                  ComicSourceManager().notifyStateChange();
                 },
                 child: const Text("continue"),
               ),
@@ -363,7 +363,7 @@ class _BodyState extends State<_Body> {
     ComicSourceManager().add(comicSource);
     _addAllPagesWithComicSource(comicSource);
     appdata.saveData();
-    App.forceRebuild();
+    ComicSourceManager().notifyStateChange();
   }
 }
 
