@@ -125,6 +125,9 @@ class _HeaderSurfaceState extends State<_HeaderSurface> {
     final offset = _offsetInWindow;
     return ClipRect(
       child: Stack(
+        // body 必须**撑满**顶栏（StackFit.expand）→ Row 的 crossAxisAlignment=center
+        // 才能在纵向居中；否则非定位子项按顶部对齐，标题/按钮会贴着顶栏上沿。
+        fit: StackFit.expand,
         children: [
           // 不透明兜底（背景底色可能是半透明的）
           Positioned.fill(
