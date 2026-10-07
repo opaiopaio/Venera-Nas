@@ -195,10 +195,8 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
     // 建立设置依赖：二级页面样式/色调/强度变化时由框架精准重建本弹层表面
     // （取代历史上的整树遍历刷新；见 doc-private/03-implementation/11-refresh-mechanism.md）
     AppSettingsScope.of(context);
-    // 二级页面表面：改为**分层叠加** ——
-    //   底层：背景图装饰（有背景图时）
-    //   中层：色调层（加深/变浅的半透明黑/白，或无图时的实色）
-    //   上层：内容（Material 透明，避免"半透明 Material 底色"被当成实色渲染）
+    // 内容（Material 透明，避免"半透明 Material 底色"被当成实色渲染）；
+    // 表面（背景切片 + 色调层）统一由 build 末尾的 [SecondaryPageSurface] 提供 ✓
     Widget content = Material(
       color: Colors.transparent,
       child: Column(
