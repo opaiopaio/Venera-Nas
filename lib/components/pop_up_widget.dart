@@ -125,12 +125,24 @@ class SecondaryPageSurface extends StatelessWidget {
     super.key,
     required this.child,
     this.borderRadius,
+    this.fallbackToSurface = true,
+    this.clip = true,
   });
 
   final Widget child;
 
   /// 不传则跟随圆角设置（默认 `AppRadius.md`）。
   final BorderRadius? borderRadius;
+
+  /// 二级页面体系未启用时，是否补一层主题表面色。
+  /// - `ContentDialog`：需要（否则弹窗会透明透出下层内容）→ 保持默认 `true` ✓
+  /// - `PopUpWidgetScaffold`：不需要（它依赖**自身路由的 decoration**，见其 buildPage）
+  ///   → 传 `false`，与迁移前行为一致 ✓
+  final bool fallbackToSurface;
+
+  /// 是否用 [ClipRRect] 按 `borderRadius` 裁切。
+  /// `PopUpWidgetScaffold` 的形状/圆角由路由 decoration 提供 → 传 `false`（等价迁移）✓
+  final bool clip;
 
   @override
   Widget build(BuildContext context) {
@@ -141,23 +153,21 @@ class SecondaryPageSurface extends StatelessWidget {
         borderRadius ??
         windowOverlayBorderRadius() ??
         BorderRadius.circular(AppRadius.md);
-    return ClipRRect(
-      borderRadius: radius,
-      child: Stack(
-        children: [
-          if (decoration != null)
-            // 与全窗背景**逐像素对齐**的切片（此前是 `DecorationImage` 按自身盒子
-            // fit → 小弹窗看到的是**缩略图** ✗）。只画不布局，见 [BackgroundSlice]。
-            const Positioned.fill(child: BackgroundSlice()),
-          if (tint != null) Positioned.fill(child: ColoredBox(color: tint)),
-          if (decoration == null && tint == null)
-            Positioned.fill(
-              child: ColoredBox(color: context.colorScheme.surface),
-            ),
-          Material(color: Colors.transparent, child: child),
-        ],
-      ),
+    final stack = Stack(
+      children: [
+        if (decoration != null)
+          // 与全窗背景**逐像素对齐**的切片（此前是 `DecorationImage` 按自身盒子
+          // fit → 小弹窗看到的是**缩略图** ✗）。只画不布局，见 [BackgroundSlice]。
+          const Positioned.fill(child: BackgroundSlice()),
+        if (tint != null) Positioned.fill(child: ColoredBox(color: tint)),
+        if (fallbackToSurface && decoration == null && tint == null)
+          Positioned.fill(
+            child: ColoredBox(color: context.colorScheme.surface),
+          ),
+        Material(color: Colors.transparent, child: child),
+      ],
     );
+    return clip ? ClipRRect(borderRadius: radius, child: stack) : stack;
   }
 }
 
@@ -189,8 +199,6 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
     //   底层：背景图装饰（有背景图时）
     //   中层：色调层（加深/变浅的半透明黑/白，或无图时的实色）
     //   上层：内容（Material 透明，避免"半透明 Material 底色"被当成实色渲染）
-    final decoration = secondaryPageDecoration();
-    final tint = customSecondarySurfaceColor(context.colorScheme);
     Widget content = Material(
       color: Colors.transparent,
       child: Column(
@@ -267,16 +275,13 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
         ],
       ),
     );
-    if (decoration != null || tint != null) {
-      content = Stack(
-        children: [
-          if (decoration != null)
-            Positioned.fill(child: DecoratedBox(decoration: decoration)),
-          if (tint != null) Positioned.fill(child: ColoredBox(color: tint)),
-          content,
-        ],
-      );
-    }
-    return content;
+    // 统一表面（与 ContentDialog 共用同一实现，见 [SecondaryPageSurface]）：
+    // fallbackToSurface: false —— 本二级页依赖**自身路由的 decoration**（不一致地补底会变样 ✗）；
+    // clip: false —— 形状/圆角由路由 decoration 提供（与迁移前行为一致 ✓）。
+    return SecondaryPageSurface(
+      fallbackToSurface: false,
+      clip: false,
+      child: content,
+    );
   }
 }
