@@ -476,8 +476,19 @@ class _BackgroundImageTile extends StatelessWidget {
         }
       }
       final ext = result.path.split('.').last.toLowerCase();
-      final name = 'background.$ext';
-      File(result.path).copySync('${dir.path}/$name');
+      // **文件名必须每次唯一**：`FileImage` / `Image.file` 按**路径**缓存，
+      // 若沿用固定名（`background.<ext>`），覆盖同名文件后：
+      // ① ImageCache 命中旧位图；② 新 provider 与旧 provider 相等 → `Image`
+      // 不会重启图片流 → 界面一直显示上一张（本 bug 的根因）。
+      final previous = (appdata.settings['backgroundImage'] ?? '').toString();
+      final name = 'background_${DateTime.now().millisecondsSinceEpoch}.$ext';
+      final target = File('${dir.path}/$name');
+      File(result.path).copySync(target.path);
+      // 顺手把旧图从缓存里清掉（文件已在上面的循环里删除，这里只是释放缓存）
+      if (previous.isNotEmpty && previous != name) {
+        await FileImage(File('${dir.path}/$previous')).evict();
+      }
+      await FileImage(target).evict();
       appdata.settings['backgroundImage'] = name;
       // 记录**原始选取路径**，用于在设置页显示真实的文件地址与文件名。
       appdata.settings['backgroundImageSource'] = result.path;
