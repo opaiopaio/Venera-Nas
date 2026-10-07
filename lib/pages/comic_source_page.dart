@@ -245,11 +245,6 @@ class _BodyState extends State<_Body> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              tileColor: windowOverlayColor(),
-              shape: RoundedRectangleBorder(
-                borderRadius:
-                    windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.md),
-              ),
               title: Text("Add comic source".tl),
               leading: const Icon(Icons.dashboard_customize),
             ),
