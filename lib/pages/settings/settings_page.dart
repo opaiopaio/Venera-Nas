@@ -27,6 +27,7 @@ import 'package:venera_nas/utils/io.dart';
 import 'package:venera_nas/utils/translations.dart';
 import 'package:yaml/yaml.dart';
 import 'package:pub_semver/pub_semver.dart';
+import 'package:venera_nas/foundation/design_tokens.dart';
 
 part 'reader.dart';
 part 'explore_settings.dart';
@@ -109,7 +110,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           Expanded(
             child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
+              duration: AppMotion.short,
               transitionBuilder: (child, animation) {
                 return LayoutBuilder(
                   builder: (context, constrains) {
@@ -183,7 +184,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
       Widget content = AnimatedContainer(
         key: ValueKey(id),
-        duration: const Duration(milliseconds: 200),
+        duration: AppMotion.short,
         width: double.infinity,
         height: 46,
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),

@@ -30,6 +30,7 @@ import 'package:venera_nas/utils/translations.dart';
 
 import 'local_comics_page.dart';
 import 'local_comics/import_dialog.dart';
+import 'package:venera_nas/foundation/design_tokens.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -320,7 +321,7 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
       );
     }
     return SliverAnimatedPaintExtent(
-      duration: const Duration(milliseconds: 200),
+      duration: AppMotion.short,
       child: child,
     );
   }
@@ -1041,7 +1042,7 @@ class _ImageFavoritesState extends State<ImageFavorites> {
         var scrollController = ScrollState.of(context).controller;
         scrollController.animateTo(
           scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 200),
+          duration: AppMotion.short,
           curve: Curves.ease,
         );
       },
@@ -1058,7 +1059,7 @@ class _ImageFavoritesState extends State<ImageFavorites> {
           ),
           borderRadius: BorderRadius.circular(radius),
         ),
-        duration: const Duration(milliseconds: 200),
+        duration: AppMotion.short,
         child: Center(child: Text(text, style: ts.s16)),
       ),
     );
@@ -1123,7 +1124,7 @@ class __ChartLineState extends State<_ChartLine>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200),
+      duration: AppMotion.short,
       value: 0,
     )..forward();
   }

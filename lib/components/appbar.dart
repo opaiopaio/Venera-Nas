@@ -463,7 +463,7 @@ class _AppTabBarState extends State<AppTabBar> {
     );
     scrollController.animateTo(
       scrollOffset,
-      duration: const Duration(milliseconds: 200),
+      duration: AppMotion.short,
       curve: Curves.easeInOut,
     );
   }

@@ -19,6 +19,7 @@ import 'package:venera_nas/utils/translations.dart';
 import 'comic_details_page/comic_page.dart';
 import 'comic_source_page.dart';
 import 'package:venera_nas/foundation/app_theme.dart';
+import 'package:venera_nas/foundation/design_tokens.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -241,7 +242,7 @@ class _SearchPageState extends State<SearchPage> {
     } else {
       yield buildSearchTarget();
       yield SliverAnimatedPaintExtent(
-        duration: const Duration(milliseconds: 200),
+        duration: AppMotion.short,
         child: buildSearchOptions(),
       );
       yield _SearchHistory(search);
