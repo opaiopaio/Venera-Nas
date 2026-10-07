@@ -134,6 +134,116 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
           max: 0.6,
           onChanged: () => App.forceRebuild(),
         ).toSliver(),
+        _SettingPartTitle(title: "Text".tl, icon: Icons.text_fields),
+        ColorSettingTile(
+          title: "Text color".tl,
+          settingValue: (appdata.settings['globalTextColor'] ?? 'system')
+              .toString(),
+          allowSystem: true,
+          onPicked: (value) async {
+            appdata.settings['globalTextColor'] = value;
+            await appdata.saveData();
+            App.forceRebuild();
+          },
+        ).toSliver(),
+        SelectSetting(
+          title: "Font".tl,
+          settingKey: "globalFontFamily",
+          optionTranslation: {
+            "system": "Follow system".tl,
+            "Microsoft YaHei": "微软雅黑",
+            "SimHei": "黑体",
+            "SimSun": "宋体",
+            "Noto Sans CJK SC": "Noto Sans CJK SC",
+            "Source Han Sans SC": "思源黑体",
+            "PingFang SC": "苹方",
+            "WenQuanYi Micro Hei": "文泉驿微米黑",
+            "serif": "Serif",
+            "monospace": "Monospace",
+          },
+          onChanged: () async {
+            await App.init();
+            App.forceRebuild();
+          },
+        ).toSliver(),
+        _SliderSetting(
+          title: "Font scale".tl,
+          settingsIndex: "globalFontScale",
+          interval: 0.05,
+          min: 0.8,
+          max: 1.4,
+          onChanged: () => App.forceRebuild(),
+        ).toSliver(),
+        _SwitchSetting(
+          title: "Text shadow".tl,
+          settingKey: "textShadowEnabled",
+          onChanged: () => App.forceRebuild(),
+        ).toSliver(),
+        ColorSettingTile(
+          title: "Shadow color".tl,
+          settingValue: (appdata.settings['textShadowColor'] ?? '#000000')
+              .toString(),
+          onPicked: (value) async {
+            appdata.settings['textShadowColor'] = value;
+            await appdata.saveData();
+            App.forceRebuild();
+          },
+        ).toSliver(),
+        _SliderSetting(
+          title: "Shadow blur".tl,
+          settingsIndex: "textShadowBlur",
+          interval: 0.5,
+          min: 0.0,
+          max: 10.0,
+          onChanged: () => App.forceRebuild(),
+        ).toSliver(),
+        _SliderSetting(
+          title: "Shadow offset X".tl,
+          settingsIndex: "textShadowOffsetX",
+          interval: 0.5,
+          min: -4.0,
+          max: 4.0,
+          onChanged: () => App.forceRebuild(),
+        ).toSliver(),
+        _SliderSetting(
+          title: "Shadow offset Y".tl,
+          settingsIndex: "textShadowOffsetY",
+          interval: 0.5,
+          min: -4.0,
+          max: 4.0,
+          onChanged: () => App.forceRebuild(),
+        ).toSliver(),
+        _SwitchSetting(
+          title: "Text glow".tl,
+          settingKey: "textGlowEnabled",
+          onChanged: () => App.forceRebuild(),
+        ).toSliver(),
+        ColorSettingTile(
+          title: "Glow color".tl,
+          settingValue: (appdata.settings['textGlowColor'] ?? '#FFFFFF')
+              .toString(),
+          onPicked: (value) async {
+            appdata.settings['textGlowColor'] = value;
+            await appdata.saveData();
+            App.forceRebuild();
+          },
+        ).toSliver(),
+        _SliderSetting(
+          title: "Glow radius".tl,
+          settingsIndex: "textGlowRadius",
+          interval: 1.0,
+          min: 0.0,
+          max: 20.0,
+          onChanged: () => App.forceRebuild(),
+        ).toSliver(),
+        _SliderSetting(
+          title: "Glow strength".tl,
+          settingsIndex: "textGlowStrength",
+          interval: 0.05,
+          min: 0.0,
+          max: 1.0,
+          onChanged: () => App.forceRebuild(),
+        ).toSliver(),
         _SettingPartTitle(title: "Comic Display".tl, icon: Icons.grid_view),
         SelectSetting(
           title: "Display mode of comic tile".tl,

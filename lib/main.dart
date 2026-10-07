@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:venera_nas/foundation/comic_source/comic_source.dart';
 import 'package:venera_nas/foundation/log.dart';
+import 'package:venera_nas/foundation/text_style_settings.dart';
 import 'package:venera_nas/pages/auth_page.dart';
 import 'package:venera_nas/pages/comic_details_page/comic_page.dart';
 import 'package:venera_nas/pages/main_page.dart';
@@ -281,7 +282,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     // 这样遮罩色与由主题色控制的 tag/滑条颜色能区分开。
     // ⚠️ 此处禁止调用 Theme.of（主题尚未建立会启动异常）。
     systemContainerColorCache = scheme.surfaceContainerHigh;
-    return ThemeData(
+    final gStyle = globalTextStyle();
+    var theme = ThemeData(
       colorScheme: scheme,
       fontFamily: font,
       fontFamilyFallback: fallback,
@@ -293,6 +295,25 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       textButtonTheme: TextButtonThemeData(style: overlayButtonStyle),
       outlinedButtonTheme: OutlinedButtonThemeData(style: overlayButtonStyle),
     );
+    // 全局文字（字体 + 颜色）：注入主题文字与图标，做到"大致全控制"。
+    // 注：FilledButton 等"实色主操作按钮"的前景保留自身配色，避免与实色底冲突不可读。
+    if (gStyle != null) {
+      final fg = gStyle.color;
+      theme = theme.copyWith(
+        textTheme: theme.textTheme.apply(
+          fontFamily: gStyle.fontFamily,
+          bodyColor: fg,
+          displayColor: fg,
+        ),
+        primaryTextTheme: theme.primaryTextTheme.apply(
+          fontFamily: gStyle.fontFamily,
+          bodyColor: fg,
+          displayColor: fg,
+        ),
+        iconTheme: fg == null ? null : theme.iconTheme.copyWith(color: fg),
+      );
+    }
+    return theme;
   }
 
   @override
@@ -415,6 +436,24 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                     const Positioned.fill(child: AppBackground()),
                     widget,
                   ],
+                );
+              }
+
+              // 全局文字：字号缩放 + 颜色/字体/阴影/发光（未配置时不干预，零回归）
+              final textScale = globalFontScale();
+              if (textScale != 1.0) {
+                widget = MediaQuery(
+                  data: MediaQuery.of(
+                    context,
+                  ).copyWith(textScaler: TextScaler.linear(textScale)),
+                  child: widget,
+                );
+              }
+              final gTextStyle = globalTextStyle();
+              if (gTextStyle != null) {
+                widget = DefaultTextStyle.merge(
+                  style: gTextStyle,
+                  child: widget,
                 );
               }
 

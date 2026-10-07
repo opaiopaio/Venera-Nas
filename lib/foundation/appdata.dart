@@ -301,6 +301,20 @@ class Settings with ChangeNotifier {
     'windowOverlayColor': 'system', // 窗口/按钮背景色：system / transparent / #RRGGBB（独立于主题色）
     'windowOverlayOpacity': 1.0, // 窗口表面遮罩不透明度 0.0 - 1.0
     'windowOverlayCorner': 'rounded', // 窗口/按钮背景圆角：rounded / square
+    // ── 全局文字（与自定义背景搭配）──
+    'globalTextColor': 'system', // system / transparent / #RRGGBB（system=跟随系统）
+    'globalFontFamily': '', // 空 = 跟随系统；否则字体名
+    'globalFontFile': '', // 自定义字体文件（ttf/otf，存 dataPath/fonts/）
+    'globalFontScale': 1.0, // 全局字号缩放 0.8 - 1.4
+    'textShadowEnabled': false, // 文字阴影开关
+    'textShadowColor': '#000000', // 阴影颜色
+    'textShadowBlur': 2.0, // 阴影模糊 0 - 10
+    'textShadowOffsetX': 0.0, // 阴影横向偏移 -4 - 4
+    'textShadowOffsetY': 1.0, // 阴影纵向偏移 -4 - 4
+    'textGlowEnabled': false, // 文字发光开关
+    'textGlowColor': '#FFFFFF', // 发光颜色
+    'textGlowRadius': 4.0, // 发光半径 0 - 20
+    'textGlowStrength': 0.8, // 发光强度 0 - 1
     'secondaryPageTint': 'darken', // 二级页面区分：darken/lighten/none
     'secondaryPageTintStrength': 0.22, // 二级页面区分强度 0.0 - 0.6
     'secondaryPageMode': 'opaque', // 二级页面样式：opaque(不透明遮挡) / transparent(半透明)
