@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:venera_nas/foundation/app_settings_scope.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
@@ -234,6 +235,9 @@ class _JSCallbackButtonState extends State<_JSCallbackButton> {
 
   @override
   Widget build(BuildContext context) {
+    // 建立设置依赖：本控件的外观由设置算出 → 设置变化时由框架精准重建
+    // （见 doc-private/03-implementation/11-refresh-mechanism.md）
+    AppSettingsScope.of(context);
     return switch (widget.style) {
       "filled" => FilledButton(
         onPressed: onClick,
