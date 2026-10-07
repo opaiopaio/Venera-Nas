@@ -5,6 +5,8 @@ class SliverGridViewWithFixedItemHeight extends StatelessWidget {
     required this.delegate,
     required this.maxCrossAxisExtent,
     required this.itemHeight,
+    this.crossAxisSpacing = 0,
+    this.mainAxisSpacing = 0,
     super.key,
   });
 
@@ -14,6 +16,11 @@ class SliverGridViewWithFixedItemHeight extends StatelessWidget {
 
   final double itemHeight;
 
+  /// 网格项之间的水平/垂直间距（0 = 紧贴，默认保持原行为）。
+  final double crossAxisSpacing;
+
+  final double mainAxisSpacing;
+
   @override
   Widget build(BuildContext context) {
     return SliverLayoutBuilder(
@@ -21,6 +28,8 @@ class SliverGridViewWithFixedItemHeight extends StatelessWidget {
         delegate: delegate,
         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: maxCrossAxisExtent,
+          crossAxisSpacing: crossAxisSpacing,
+          mainAxisSpacing: mainAxisSpacing,
           childAspectRatio: calcChildAspectRatio(constraints.crossAxisExtent),
         ),
       ),
