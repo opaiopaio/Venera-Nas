@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:venera_nas/components/components.dart';
@@ -165,7 +165,7 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
             width: 0.6,
           ),
           borderRadius:
-              windowOverlayBorderRadius() ?? BorderRadius.circular(8),
+              windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.md),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,7 +201,7 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
             width: 0.6,
           ),
           borderRadius:
-              windowOverlayBorderRadius() ?? BorderRadius.circular(8),
+              windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.md),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,7 +319,7 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
                         : Theme.of(context).colorScheme.surfaceContainerLow,
                     borderRadius:
                         windowOverlayBorderRadius() ??
-                        BorderRadius.circular(16),
+                        BorderRadius.circular(AppRadius.xl),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,

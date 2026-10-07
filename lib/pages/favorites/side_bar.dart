@@ -1,4 +1,4 @@
-part of 'favorites_page.dart';
+﻿part of 'favorites_page.dart';
 
 class _LeftBar extends StatefulWidget {
   const _LeftBar({this.favPage, this.onSelected, this.withAppbar = false});
@@ -238,7 +238,7 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
               padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: context.colorScheme.surfaceContainer,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Text(count.toString()),
             ),

@@ -1,4 +1,4 @@
-part of 'components.dart';
+﻿part of 'components.dart';
 
 ImageProvider? _findImageProvider(Comic comic) {
   ImageProvider image;
@@ -243,7 +243,7 @@ class ComicTile extends StatelessWidget {
           top: 8,
           child: Container(
             height: 24,
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(4)),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadius.sm)),
             clipBehavior: Clip.antiAlias,
             child: Row(
               children: [
@@ -944,7 +944,7 @@ class _SliverGridComics extends StatelessWidget {
                     context,
                   ).colorScheme.secondaryContainer.toOpacity(0.72)
                 : null,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           margin: const EdgeInsets.all(4),
           child: comic,
@@ -1109,9 +1109,9 @@ class ComicListState extends State<ComicList> {
           child: Center(
             child: Material(
               color: Theme.of(context).colorScheme.surfaceContainer,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               child: InkWell(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 onTap: () {
                   String value = '';
                   showDialog(

@@ -1,4 +1,4 @@
-part of 'components.dart';
+﻿part of 'components.dart';
 
 class Appbar extends StatefulWidget implements PreferredSizeWidget {
   const Appbar({
@@ -984,8 +984,8 @@ class TabActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     // 启用「窗口/按钮背景」时，与标签一样带圆角底色（圆角跟随设置）。
     final radius = appdata.settings.customBackgroundActive
-        ? (windowOverlayBorderRadius() ?? BorderRadius.circular(8))
-        : BorderRadius.circular(8);
+        ? (windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.md))
+        : BorderRadius.circular(AppRadius.md);
     final content = InkWell(
       onTap: onPressed,
       borderRadius: radius,

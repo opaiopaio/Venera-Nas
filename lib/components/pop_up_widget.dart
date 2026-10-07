@@ -30,7 +30,7 @@ class PopUpWidget<T> extends PopupRoute<T> {
       child: Container(
         decoration: showPopUp
             ? BoxDecoration(
-                borderRadius: BorderRadius.all(Radius.circular(12)),
+                borderRadius: BorderRadius.all(Radius.circular(AppRadius.lg)),
                 boxShadow: context.brightness == ui.Brightness.dark
                     ? [
                         BoxShadow(

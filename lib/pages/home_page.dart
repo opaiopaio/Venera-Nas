@@ -161,7 +161,7 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
             border: Border.all(color: Theme.of(context).colorScheme.primary),
             borderRadius:
                 windowOverlayBorderRadius() ??
-                BorderRadius.circular(8),
+                BorderRadius.circular(AppRadius.md),
           ),
           child: ListTile(
             leading: const Icon(Icons.sync),
@@ -184,7 +184,7 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
             ),
             borderRadius:
                 windowOverlayBorderRadius() ??
-                BorderRadius.circular(8),
+                BorderRadius.circular(AppRadius.md),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -204,7 +204,7 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
                 ),
                 if (syncStatus.lastError != null)
                   InkWell(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
                     onTap: () {
                       showDialogMessage(
                         App.rootContext,
@@ -219,7 +219,7 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
                       ),
                       decoration: BoxDecoration(
                         color: context.colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppRadius.xl),
                       ),
                       child: Icon(
                         Icons.error_outline,
@@ -258,7 +258,7 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
             ),
             borderRadius:
                 windowOverlayBorderRadius() ??
-                BorderRadius.circular(8),
+                BorderRadius.circular(AppRadius.md),
           ),
           child: ListTile(
             leading: const Icon(Icons.sync),
@@ -269,7 +269,7 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
               children: [
                 if (syncStatus.lastError != null)
                   InkWell(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
                     onTap: () {
                       showDialogMessage(
                         App.rootContext,
@@ -284,7 +284,7 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
                       ),
                       decoration: BoxDecoration(
                         color: context.colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppRadius.xl),
                       ),
                       child: Row(
                         children: [
@@ -559,7 +559,7 @@ class _ComicArchiveWidgetState extends State<_ComicArchiveWidget> {
           border: Border.all(
             color: Theme.of(context).colorScheme.outlineVariant,
           ),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: ListTile(
           leading: const Icon(Icons.archive_outlined),
@@ -1148,7 +1148,7 @@ class __ChartLineState extends State<_ChartLine>
     return Row(
       children: [
         InkWell(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           onTap: () {
             widget.onTap?.call(widget.text);
           },

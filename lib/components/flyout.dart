@@ -1,4 +1,4 @@
-part of "components.dart";
+﻿part of "components.dart";
 
 const minFlyoutWidth = 256.0;
 const minFlyoutHeight = 128.0;
@@ -190,9 +190,9 @@ class FlyoutContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return IntrinsicWidth(
       child: BlurEffect(
-        borderRadius: windowOverlayBorderRadius() ?? BorderRadius.circular(8),
+        borderRadius: windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.md),
         child: Material(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           type: MaterialType.card,
           color: appdata.settings.customBackgroundActive
               ? windowOverlayColor()
@@ -201,7 +201,7 @@ class FlyoutContent extends StatelessWidget {
             constraints: const BoxConstraints(minWidth: minFlyoutWidth),
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               border: context.brightness == ui.Brightness.dark
                   ? Border.all(color: context.colorScheme.outlineVariant)
                   : null,

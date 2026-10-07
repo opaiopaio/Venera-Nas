@@ -1,4 +1,4 @@
-part of "components.dart";
+﻿part of "components.dart";
 
 void showMenuX(BuildContext context, Offset location, List<MenuEntry> entries) {
   Navigator.of(
@@ -52,7 +52,7 @@ class _MenuRoute<T> extends PopupRoute<T> {
           top: top,
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: windowOverlayBorderRadius() ?? BorderRadius.circular(4),
+              borderRadius: windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.sm),
               border: context.brightness == Brightness.dark
                   ? Border.all(color: context.colorScheme.outlineVariant)
                   : null,
@@ -65,12 +65,12 @@ class _MenuRoute<T> extends PopupRoute<T> {
               ],
             ),
             child: BlurEffect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               child: Material(
                 color: appdata.settings.customBackgroundActive
                     ? windowOverlayColor()
                     : context.colorScheme.surface.toOpacity(0.92),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: Container(
                   width: width,
                   padding: const EdgeInsets.symmetric(
@@ -94,7 +94,7 @@ class _MenuRoute<T> extends PopupRoute<T> {
 
   Widget buildEntry(MenuEntry entry, BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       onTap: () {
         Navigator.of(context).pop();
         entry.onClick();

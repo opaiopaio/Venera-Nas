@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -25,6 +25,7 @@ import 'package:venera_nas/utils/io.dart';
 import 'package:venera_nas/utils/opencc.dart';
 import 'package:venera_nas/utils/tags_translation.dart';
 import 'package:venera_nas/utils/translations.dart';
+import 'package:venera_nas/foundation/app_theme.dart';
 
 part 'favorite_actions.dart';
 part 'side_bar.dart';

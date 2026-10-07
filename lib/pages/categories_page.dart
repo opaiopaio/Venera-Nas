@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/app_theme.dart';
 import 'package:venera_nas/foundation/appdata.dart';
 import 'package:venera_nas/foundation/comic_source/comic_source.dart';
 import 'package:venera_nas/pages/ranking_page.dart';
@@ -263,7 +264,7 @@ class _CategoryPage extends StatelessWidget {
               (appdata.settings.customBackgroundActive
                   ? windowOverlayBorderRadius()
                   : null) ??
-              const BorderRadius.all(Radius.circular(8));
+              const BorderRadius.all(Radius.circular(AppRadius.md));
           return Material(
             borderRadius: radius,
             // 分类页的按钮/主题标签属于「窗口与控件」体系：跟随**遮罩色**与不透明度，
