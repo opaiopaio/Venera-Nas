@@ -48,3 +48,22 @@ class AppSettingsScope extends InheritedNotifier<Settings> {
   static Settings? maybeRead(BuildContext context) =>
       context.getInheritedWidgetOfExactType<AppSettingsScope>()?.notifier;
 }
+
+/// 依赖设置的**构建器**：设置变化时重新执行 [builder]。
+///
+/// 用途：那些"外观由**非 widget 的 helper** 算好"的地方 —— 典型是 `toSliver()`：
+/// 它在**调用点**就算好了 `Padding`/`Material` 的遮罩色与圆角，这些包装 widget
+/// 没有自己的元素去建依赖；所以必须由本构建器在设置变化时**重建包装**。
+///
+/// 用法：`SliverToBoxAdapter(child: SettingsBuilder(builder: (context) => ...))`
+class SettingsBuilder extends StatelessWidget {
+  const SettingsBuilder({super.key, required this.builder});
+
+  final WidgetBuilder builder;
+
+  @override
+  Widget build(BuildContext context) {
+    AppSettingsScope.of(context); // 建立依赖 → 设置变化时重跑 builder
+    return builder(context);
+  }
+}

@@ -372,6 +372,12 @@ class Settings with ChangeNotifier {
     }
   }
 
+  /// 对外暴露的「设置已变化」通知入口（`notifyListeners` 是 protected，外部无法直接调）。
+  ///
+  /// 供 `App.forceRebuild()` 的兼容 shim 使用：让依赖 [AppSettingsScope] 的控件
+  /// 由框架**精准重建**，取代历史上的整树 `markNeedsBuild()` 遍历。
+  void notifySettingsChanged() => notifyListeners();
+
   void setEnabledComicSpecificSettings(
     String comicId,
     String sourceKey,

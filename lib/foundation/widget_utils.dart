@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/app_settings_scope.dart';
 import 'package:venera_nas/foundation/window_overlay.dart';
 import 'package:venera_nas/foundation/app_theme.dart';
 
@@ -95,27 +96,35 @@ extension WidgetExtension on Widget {
   Widget toSliver() {
     // 配置了「窗口/按钮背景」时，把设置项做成和侧栏项目一致的圆角方框样式
     // （默认透明/未配置时保持原样，零回归）。
-    Widget content = this;
-    if (appdata.settings.hasWindowOverlay) {
-      // 圆角统一走唯一入口（直角 → 0 / 圆角 → lg），不再自己判定 windowOverlayCorner
-      final radius =
-          windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.lg);
-      // 用 Material + 圆角裁切，保证 InkWell 的水波纹/悬停高亮也跟随圆角
-      // （普通 Container 裁不到 InkWell 画在 Material 上的墨水层）。
-      content = Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpace.sm,
-          vertical: AppSpace.xs,
-        ),
-        child: Material(
-          color: windowOverlayColor(),
-          borderRadius: radius,
-          clipBehavior: Clip.antiAlias,
-          child: content,
-        ),
-      );
-    }
-    return SliverToBoxAdapter(child: content);
+    //
+    // 遮罩色/圆角是在**这里**算好并塞进 `Padding`/`Material` 的，这些包装 widget
+    // 自己没有元素能建依赖 → 必须包一层 [SettingsBuilder]，设置变化时重跑 builder，
+    // 遮罩色/圆角才会刷新（否则改「遮罩色/不透明度/圆角」这些设置行不会跟着变）。
+    return SliverToBoxAdapter(
+      child: SettingsBuilder(
+        builder: (context) {
+          if (!appdata.settings.hasWindowOverlay) return this;
+          // 圆角统一走唯一入口（直角 → 0 / 圆角 → lg）
+          final radius =
+              windowOverlayBorderRadius() ??
+              BorderRadius.circular(AppRadius.lg);
+          // 用 Material + 圆角裁切，保证 InkWell 的水波纹/悬停高亮也跟随圆角
+          // （普通 Container 裁不到 InkWell 画在 Material 上的墨水层）。
+          return Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.sm,
+              vertical: AppSpace.xs,
+            ),
+            child: Material(
+              color: windowOverlayColor(),
+              borderRadius: radius,
+              clipBehavior: Clip.antiAlias,
+              child: this,
+            ),
+          );
+        },
+      ),
+    );
   }
 }
 

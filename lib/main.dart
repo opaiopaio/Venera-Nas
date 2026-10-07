@@ -3,6 +3,7 @@ import 'package:desktop_webview_window/desktop_webview_window.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:venera_nas/foundation/app_settings_scope.dart';
@@ -222,13 +223,22 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 
   void forceRebuild() {
-    void rebuild(Element el) {
-      el.markNeedsBuild();
-      el.visitChildren(rebuild);
+    // **只通知设置 scope**：依赖它的控件（`AppSettingsScope.of`）由框架精准重建。
+    //
+    // ⚠️ 这里历史上是"遍历整棵 element 树 markNeedsBuild()"：它会打到
+    // Navigator/Overlay 中**已退场但未销毁**的元素 → 残留图层/半渲染，
+    // 表现为"页面被切成左右两半、中间一条能滚动的背景带、只有背景在动"的严重 bug。
+    // **禁止**再退回那种做法；需要刷新时让对应控件依赖 `AppSettingsScope`。
+    //
+    // 在 build 阶段被调用时延后到帧末，避免 "markNeedsBuild during build"。
+    if (WidgetsBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        appdata.settings.notifySettingsChanged();
+      });
+    } else {
+      appdata.settings.notifySettingsChanged();
     }
-
-    (context as Element).visitChildren(rebuild);
-    setState(() {});
   }
 
   Color translateColorSetting() {
