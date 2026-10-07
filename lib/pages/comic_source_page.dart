@@ -878,6 +878,12 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
         SliverPadding(padding: const EdgeInsets.only(top: AppSpace.lg)),
         SliverToBoxAdapter(
           child: ListTile(
+            tileColor: windowOverlayColor(),
+            shape: RoundedRectangleBorder(
+              borderRadius:
+                  windowOverlayBorderRadius() ??
+                  BorderRadius.circular(AppRadius.md),
+            ),
             onTap: () => setState(() => _isExpanded = !_isExpanded),
             title: Row(
               children: [
@@ -932,6 +938,7 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
                     icon: const Icon(Icons.edit_note),
                   ),
                 ),
+                const SizedBox(width: AppSpace.sm),
                 Tooltip(
                   message: "Update".tl,
                   child: IconButton(
@@ -939,6 +946,7 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
                     icon: const Icon(Icons.update),
                   ),
                 ),
+                const SizedBox(width: AppSpace.sm),
                 Tooltip(
                   message: "Delete".tl,
                   child: IconButton(
