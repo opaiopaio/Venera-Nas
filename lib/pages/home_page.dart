@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:venera_nas/components/components.dart';
+import 'package:venera_nas/components/window_frame.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/appdata.dart';
 import 'package:venera_nas/foundation/app_theme.dart';
@@ -55,9 +56,11 @@ class HomePage extends StatelessWidget {
     );
     // 桌面端把顶部让位放到**滚动视图之外**，形成固定的顶部边界：
     // 内容滚动时不会进入窗口标题栏区域。
+    // ⚠️ 这里用**显式常量**而不是 `context.padding.top` ——
+    // 实测桌面端 MediaQuery.padding.top ≈ 0（不可靠），常量才稳定生效。
     var body = App.isDesktop
         ? Padding(
-            padding: EdgeInsets.only(top: context.padding.top),
+            padding: const EdgeInsets.only(top: kTitleBarHeight + 6),
             child: widget,
           )
         : widget;
