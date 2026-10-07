@@ -201,8 +201,11 @@ class _BodyState extends State<_Body> {
         if (!App.rootContext.mounted) return;
         await showDialog(
           context: App.rootContext,
-          builder: (context) => AlertDialog(
-            title: const Text("Reload Configs"),
+          // 二级菜单统一表面：改走 ContentDialog（原生 AlertDialog 不跟随
+          // 「二级页面样式/色调/强度」，见 doc-private/03-implementation/12-*.md）
+          builder: (context) => ContentDialog(
+            title: "Reload Configs",
+            content: const SizedBox.shrink(),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
