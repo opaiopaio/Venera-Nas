@@ -7,6 +7,7 @@ import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/js_engine.dart';
 
 import 'components.dart';
+import 'package:venera_nas/foundation/app_theme.dart';
 
 mixin class JsUiApi {
   final Map<int, LoadingDialogController> _loadingDialogControllers = {};
@@ -236,6 +237,15 @@ class _JSCallbackButtonState extends State<_JSCallbackButton> {
     return switch (widget.style) {
       "filled" => FilledButton(
         onPressed: onClick,
+        style: ButtonStyle(
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(
+              borderRadius: windowOverlayBorderRadius() ??
+                  BorderRadius.circular(AppRadius.md),
+            ),
+          ),
+          minimumSize: const WidgetStatePropertyAll(Size(36, 36)),
+        ),
         child: isLoading
             ? CircularProgressIndicator(
                 strokeWidth: 1.4,
