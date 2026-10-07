@@ -134,9 +134,14 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    // 二级页面表面：改为**分层叠加** ——
+    //   底层：背景图装饰（有背景图时）
+    //   中层：色调层（加深/变浅的半透明黑/白，或无图时的实色）
+    //   上层：内容（Material 透明，避免"半透明 Material 底色"被当成实色渲染）
     final decoration = secondaryPageDecoration();
+    final tint = customSecondarySurfaceColor(context.colorScheme);
     Widget content = Material(
-      color: customSecondarySurfaceColor(context.colorScheme),
+      color: Colors.transparent,
       child: Column(
         children: [
           Container(
@@ -211,8 +216,16 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
         ],
       ),
     );
-    if (decoration != null) {
-      content = DecoratedBox(decoration: decoration, child: content);
+    if (decoration != null || tint != null) {
+      content = Stack(
+        children: [
+          if (decoration != null)
+            Positioned.fill(child: DecoratedBox(decoration: decoration)),
+          if (tint != null)
+            Positioned.fill(child: ColoredBox(color: tint)),
+          content,
+        ],
+      );
     }
     return content;
   }
