@@ -256,7 +256,12 @@ class _BodyState extends State<_Body> {
             TextField(
               decoration: InputDecoration(
                 hintText: "URL",
-                border: const UnderlineInputBorder(),
+                filled: true,
+                fillColor: windowOverlayColor(),
+                border: OutlineInputBorder(
+                  borderRadius: windowOverlayBorderRadius() ??
+                      BorderRadius.circular(AppRadius.md),
+                ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
                 suffix: IconButton(
                   onPressed: () => handleAddSource(url),
@@ -460,7 +465,12 @@ class _ComicSourceListState extends State<_ComicSourceList> {
                   controller: controller,
                   decoration: InputDecoration(
                     hintText: "URL",
-                    border: const UnderlineInputBorder(),
+                    filled: true,
+                    fillColor: windowOverlayColor(),
+                    border: OutlineInputBorder(
+                      borderRadius: windowOverlayBorderRadius() ??
+                          BorderRadius.circular(AppRadius.md),
+                    ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
                   ),
                   onChanged: (value) {
