@@ -52,7 +52,7 @@ class _MenuRoute<T> extends PopupRoute<T> {
           top: top,
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: windowOverlayBorderRadius() ?? BorderRadius.circular(4),
               border: context.brightness == Brightness.dark
                   ? Border.all(color: context.colorScheme.outlineVariant)
                   : null,
@@ -67,7 +67,9 @@ class _MenuRoute<T> extends PopupRoute<T> {
             child: BlurEffect(
               borderRadius: BorderRadius.circular(4),
               child: Material(
-                color: context.colorScheme.surface.toOpacity(0.92),
+                color: appdata.settings.customBackgroundActive
+                    ? windowOverlayColor()
+                    : context.colorScheme.surface.toOpacity(0.92),
                 borderRadius: BorderRadius.circular(4),
                 child: Container(
                   width: width,

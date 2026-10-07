@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:venera_nas/components/components.dart';
@@ -159,11 +159,13 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
+          color: windowOverlayColor(),
           border: Border.all(
             color: Theme.of(context).colorScheme.outlineVariant,
             width: 0.6,
           ),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius:
+              windowOverlayBorderRadius() ?? BorderRadius.circular(8),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,11 +195,13 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
+          color: windowOverlayColor(),
           border: Border.all(
             color: Theme.of(context).colorScheme.outlineVariant,
             width: 0.6,
           ),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius:
+              windowOverlayBorderRadius() ?? BorderRadius.circular(8),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,10 +223,18 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
                   onPressed: showSelector,
                   child: Text("Change Folder".tl),
                 ),
-                FilledButton.tonal(
-                  onPressed: checkNow,
-                  child: Text("Check Now".tl),
-                ),
+                const SizedBox(width: 8),
+                // 启用「窗口/按钮背景」时用遮罩形式（TextButton 已由主题注入底色），
+                // 不再跟随主题的 tonal 配色。
+                appdata.settings.customBackgroundActive
+                    ? TextButton(
+                        onPressed: checkNow,
+                        child: Text("Check Now".tl),
+                      )
+                    : FilledButton.tonal(
+                        onPressed: checkNow,
+                        child: Text("Check Now".tl),
+                      ),
                 const SizedBox(width: 16),
               ],
             ),
@@ -302,8 +314,12 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(16),
+                    color: appdata.settings.customBackgroundActive
+                        ? windowOverlayColor()
+                        : Theme.of(context).colorScheme.surfaceContainerLow,
+                    borderRadius:
+                        windowOverlayBorderRadius() ??
+                        BorderRadius.circular(16),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,

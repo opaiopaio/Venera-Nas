@@ -528,20 +528,30 @@ class _SliderSettingState extends State<_SliderSetting> {
 }
 
 class _PopupWindowSetting extends StatelessWidget {
-  const _PopupWindowSetting({required this.title, required this.builder});
+  const _PopupWindowSetting({
+    required this.title,
+    required this.builder,
+    this.enabled = true,
+  });
 
   final Widget Function() builder;
 
   final String title;
 
+  /// 为 false 时该项置灰且不可点击进入。
+  final bool enabled;
+
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      enabled: enabled,
       title: Text(title),
       trailing: const Icon(Icons.arrow_right),
-      onTap: () {
-        showPopUpWidget(App.rootContext, builder());
-      },
+      onTap: enabled
+          ? () {
+              showPopUpWidget(App.rootContext, builder());
+            }
+          : null,
     );
   }
 }

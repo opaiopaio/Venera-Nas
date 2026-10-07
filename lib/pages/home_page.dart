@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:venera_nas/components/components.dart';
@@ -66,8 +66,20 @@ class _SearchBar extends StatelessWidget {
         width: double.infinity,
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         child: Material(
-          color: context.colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(32),
+          color: appdata.settings.customBackgroundActive
+              ? windowOverlayColor()
+              : context.colorScheme.surfaceContainerHigh,
+          // 自定义背景时给搜索框加一道浅色描边，与下面「历史/本地」等分区卡片一致，
+          // 避免变成完全透明看不出边界。
+          shape: appdata.settings.customBackgroundActive
+              ? RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(32),
+                  side: BorderSide(color: context.colorScheme.outlineVariant),
+                )
+              : null,
+          borderRadius: appdata.settings.customBackgroundActive
+              ? null
+              : BorderRadius.circular(32),
           child: InkWell(
             borderRadius: BorderRadius.circular(32),
             onTap: () {
@@ -143,8 +155,11 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           decoration: BoxDecoration(
+            color: windowOverlayColor(),
             border: Border.all(color: Theme.of(context).colorScheme.primary),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius:
+                windowOverlayBorderRadius() ??
+                BorderRadius.circular(8),
           ),
           child: ListTile(
             leading: const Icon(Icons.sync),
@@ -161,10 +176,13 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           decoration: BoxDecoration(
+            color: windowOverlayColor(),
             border: Border.all(
               color: Theme.of(context).colorScheme.outlineVariant,
             ),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius:
+                windowOverlayBorderRadius() ??
+                BorderRadius.circular(8),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -214,12 +232,14 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
                     DataSync().uploadData();
                   },
                 ),
+                const SizedBox(width: 6),
                 IconButton(
                   icon: const Icon(Icons.cloud_download_outlined),
                   onPressed: () async {
                     DataSync().downloadData();
                   },
                 ),
+                const SizedBox(width: 4),
               ],
             ),
           ),
@@ -230,10 +250,13 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           decoration: BoxDecoration(
+            color: windowOverlayColor(),
             border: Border.all(
               color: Theme.of(context).colorScheme.outlineVariant,
             ),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius:
+                windowOverlayBorderRadius() ??
+                BorderRadius.circular(8),
           ),
           child: ListTile(
             leading: const Icon(Icons.sync),
@@ -280,12 +303,14 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
                     DataSync().uploadData();
                   },
                 ),
+                const SizedBox(width: 6),
                 IconButton(
                   icon: const Icon(Icons.cloud_download_outlined),
                   onPressed: () async {
                     DataSync().downloadData();
                   },
                 ),
+                const SizedBox(width: 4),
               ],
             ),
           ),

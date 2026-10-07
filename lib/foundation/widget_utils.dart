@@ -1,4 +1,6 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
+import 'package:venera_nas/components/components.dart';
+import 'package:venera_nas/foundation/appdata.dart';
 
 extension WidgetExtension on Widget {
   Widget padding(EdgeInsetsGeometry padding) {
@@ -90,7 +92,28 @@ extension WidgetExtension on Widget {
   }
 
   Widget toSliver() {
-    return SliverToBoxAdapter(child: this);
+    // 配置了「窗口/按钮背景」时，把设置项做成和侧栏项目一致的圆角方框样式
+    // （默认透明/未配置时保持原样，零回归）。
+    Widget content = this;
+    if (appdata.settings.hasWindowOverlay) {
+      final radius =
+          (appdata.settings['windowOverlayCorner'] as String? ?? 'rounded') ==
+              'square'
+          ? 0.0
+          : 12.0;
+      // 用 Material + 圆角裁切，保证 InkWell 的水波纹/悬停高亮也跟随圆角
+      // （普通 Container 裁不到 InkWell 画在 Material 上的墨水层）。
+      content = Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Material(
+          color: windowOverlayColor(),
+          borderRadius: BorderRadius.circular(radius),
+          clipBehavior: Clip.antiAlias,
+          child: content,
+        ),
+      );
+    }
+    return SliverToBoxAdapter(child: content);
   }
 }
 

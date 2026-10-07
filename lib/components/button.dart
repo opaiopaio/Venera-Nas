@@ -366,16 +366,25 @@ class MenuButton extends StatefulWidget {
 class _MenuButtonState extends State<MenuButton> {
   @override
   Widget build(BuildContext context) {
+    final button = Button.icon(
+      icon: const Icon(Icons.more_horiz),
+      onPressed: () {
+        var renderBox = context.findRenderObject() as RenderBox;
+        var offset = renderBox.localToGlobal(Offset.zero);
+        showMenuX(context, offset, widget.entries);
+      },
+    );
     return Tooltip(
       message: 'more'.tl,
-      child: Button.icon(
-        icon: const Icon(Icons.more_horiz),
-        onPressed: () {
-          var renderBox = context.findRenderObject() as RenderBox;
-          var offset = renderBox.localToGlobal(Offset.zero);
-          showMenuX(context, offset, widget.entries);
-        },
-      ),
+      // 启用「窗口/按钮背景」时给「⋯」按钮一个圆角底色方块。
+      child: appdata.settings.customBackgroundActive
+          ? Material(
+              color: windowOverlayColor(),
+              borderRadius: windowOverlayBorderRadius(),
+              clipBehavior: Clip.antiAlias,
+              child: button,
+            )
+          : button,
     );
   }
 }

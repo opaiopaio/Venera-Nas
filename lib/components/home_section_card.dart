@@ -23,11 +23,20 @@ class HomeSectionCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.all(AppSpace.sm),
       decoration: BoxDecoration(
+        color: windowOverlayColor(),
         border: Border.all(color: context.colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(
+          appdata.settings.cornerStyleActive
+              ? windowOverlayRadius()
+              : AppRadius.md,
+        ),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(
+          appdata.settings.cornerStyleActive
+              ? windowOverlayRadius()
+              : AppRadius.md,
+        ),
         onTap: onTap,
         child: Column(
           mainAxisSize: MainAxisSize.min,

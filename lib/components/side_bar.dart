@@ -28,7 +28,9 @@ class SideBarRoute<T> extends PopupRoute<T> {
   bool _barrierSawPointerDown = false;
 
   @override
-  Color? get barrierColor => showBarrier ? Colors.black54 : Colors.transparent;
+  Color? get barrierColor => showBarrier && !appdata.settings.customBackgroundActive
+      ? Colors.black54
+      : Colors.transparent;
 
   @override
   bool get barrierDismissible => dismissible;

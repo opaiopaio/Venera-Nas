@@ -190,11 +190,13 @@ class FlyoutContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return IntrinsicWidth(
       child: BlurEffect(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: windowOverlayBorderRadius() ?? BorderRadius.circular(8),
         child: Material(
           borderRadius: BorderRadius.circular(8),
           type: MaterialType.card,
-          color: context.colorScheme.surface.toOpacity(0.82),
+          color: appdata.settings.customBackgroundActive
+              ? windowOverlayColor()
+              : context.colorScheme.surface.toOpacity(0.82),
           child: Container(
             constraints: const BoxConstraints(minWidth: minFlyoutWidth),
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),

@@ -402,6 +402,11 @@ class _FolderTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
+      color: appdata.settings.customBackgroundActive
+          ? windowOverlayColor()
+          : null,
+      borderRadius: windowOverlayBorderRadius(),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Padding(

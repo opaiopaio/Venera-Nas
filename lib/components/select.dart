@@ -123,6 +123,9 @@ class _FilterChipFixedWidthState extends State<FilterChipFixedWidth> {
   @override
   Widget build(BuildContext context) {
     return Material(
+      color: appdata.settings.customBackgroundActive
+          ? windowOverlayColor()
+          : null,
       textStyle: Theme.of(context).textTheme.labelLarge,
       child: InkWell(
         onTap: () => widget.onSelected(true),
@@ -270,7 +273,7 @@ class OptionChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: isSelected
             ? context.colorScheme.secondaryContainer
-            : context.colorScheme.surface,
+            : windowOverlayColor(),
         border: isSelected
             ? Border.all(color: context.colorScheme.secondaryContainer)
             : Border.all(color: context.colorScheme.outline),

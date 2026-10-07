@@ -262,6 +262,7 @@ class NaviPaneState extends State<NaviPane>
 
   Widget buildTop() {
     return Material(
+      color: customBackgroundAware(null),
       child: Container(
         padding: const EdgeInsets.only(left: 16, right: 16),
         height: _kTopBarHeight,
@@ -289,6 +290,7 @@ class NaviPaneState extends State<NaviPane>
 
   Widget buildBottom() {
     return Material(
+      color: customBackgroundAware(null),
       textStyle: Theme.of(context).textTheme.labelSmall,
       elevation: 0,
       child: Container(
@@ -323,6 +325,7 @@ class NaviPaneState extends State<NaviPane>
     final value = controller.value;
     const paddingHorizontal = 12.0;
     return Material(
+      color: customBackgroundAware(null),
       child: Container(
         width:
             _kFoldedSideBarWidth +
@@ -393,15 +396,21 @@ class _SideNaviWidget extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final icon = Icon(enabled ? entry.activeIcon : entry.icon);
     return InkWell(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(
+        appdata.settings.cornerStyleActive ? windowOverlayRadius() : 12,
+      ),
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 12),
         height: 38,
         decoration: BoxDecoration(
-          color: enabled ? colorScheme.primaryContainer : null,
-          borderRadius: BorderRadius.circular(12),
+          // 选中项用主题高亮；未选中项在配置了「窗口/按钮背景」时用该色，
+          // 呈现类似鼠标悬停的层次感。
+          color: enabled ? colorScheme.primaryContainer : windowOverlayColor(),
+          borderRadius: BorderRadius.circular(
+            appdata.settings.cornerStyleActive ? windowOverlayRadius() : 12,
+          ),
         ),
         child: showTitle
             ? Row(
@@ -429,11 +438,20 @@ class _PaneActionWidget extends StatelessWidget {
     final icon = Icon(entry.icon);
     return InkWell(
       onTap: entry.onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(
+        appdata.settings.cornerStyleActive ? windowOverlayRadius() : 12,
+      ),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 12),
         height: 38,
+        decoration: BoxDecoration(
+          // 侧栏左下角的操作项（搜索/设置）同样使用「窗口/按钮背景」。
+          color: windowOverlayColor(),
+          borderRadius: BorderRadius.circular(
+            appdata.settings.cornerStyleActive ? windowOverlayRadius() : 12,
+          ),
+        ),
         child: showTitle
             ? Row(
                 children: [icon, const SizedBox(width: 12), Text(entry.label)],
@@ -527,8 +545,20 @@ class _SingleBottomNaviWidgetState extends State<_SingleBottomNaviWidget>
         width: 64,
         height: 28,
         decoration: BoxDecoration(
-          borderRadius: const BorderRadius.all(Radius.circular(32)),
-          color: isHovering ? colorScheme.surfaceContainer : Colors.transparent,
+          // 桌面端用与侧栏主项目一致的圆角方框；移动端保持胶囊形。
+          borderRadius: BorderRadius.all(
+            Radius.circular(
+              App.isMobile
+                  ? 32
+                  : (appdata.settings.cornerStyleActive
+                        ? windowOverlayRadius()
+                        : 12),
+            ),
+          ),
+          // 配置了「窗口/按钮背景」时，未悬停也显示该底色（与主页/收藏等一致）。
+          color: isHovering
+              ? colorScheme.surfaceContainer
+              : windowOverlayColor(),
         ),
         child: Center(
           child: Container(

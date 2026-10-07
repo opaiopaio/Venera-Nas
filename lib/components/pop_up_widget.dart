@@ -8,7 +8,9 @@ class PopUpWidget<T> extends PopupRoute<T> {
   final _innerKey = GlobalKey<NavigatorState>();
 
   @override
-  Color? get barrierColor => Colors.black54;
+  Color? get barrierColor => appdata.settings.customBackgroundActive
+      ? Colors.transparent
+      : Colors.black54;
 
   @override
   bool get barrierDismissible => true;
@@ -132,7 +134,9 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    final decoration = secondaryPageDecoration();
+    Widget content = Material(
+      color: customSecondarySurfaceColor(context.colorScheme),
       child: Column(
         children: [
           Container(
@@ -207,5 +211,9 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
         ],
       ),
     );
+    if (decoration != null) {
+      content = DecoratedBox(decoration: decoration, child: content);
+    }
+    return content;
   }
 }

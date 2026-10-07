@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/appdata.dart';
@@ -103,6 +103,7 @@ class _CategoriesPageState extends State<CategoriesPage>
     }
 
     return Material(
+      color: customBackgroundAware(null),
       child: Column(
         children: [
           AppTabBar(
@@ -257,11 +258,19 @@ class _CategoryPage extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
       child: Builder(
         builder: (context) {
+          // 启用「窗口/按钮背景」时圆角跟随「圆角样式」设置。
+          final radius =
+              (appdata.settings.customBackgroundActive
+                  ? windowOverlayBorderRadius()
+                  : null) ??
+              const BorderRadius.all(Radius.circular(8));
           return Material(
-            borderRadius: const BorderRadius.all(Radius.circular(8)),
-            color: context.colorScheme.primaryContainer.toOpacity(0.72),
+            borderRadius: radius,
+            // 分类页的按钮/主题标签属于「窗口与控件」体系：跟随**遮罩色**与不透明度，
+            // 圆角也跟随设置（不是由主题色控制）。
+            color: windowOverlayColor(),
             child: InkWell(
-              borderRadius: const BorderRadius.all(Radius.circular(8)),
+              borderRadius: radius,
               onTap: onClick,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),

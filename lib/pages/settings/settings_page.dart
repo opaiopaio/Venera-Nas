@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_reorderable_grid_view/widgets/reorderable_builder.dart';
@@ -85,7 +85,10 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(child: buildBody());
+    return Material(
+      color: customBackgroundAware(null),
+      child: buildBody(),
+    );
   }
 
   Widget buildBody() {
@@ -146,6 +149,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget buildLeft() {
     return Material(
+      color: customBackgroundAware(null),
       child: Column(
         children: [
           SizedBox(height: MediaQuery.of(context).padding.top),
@@ -184,7 +188,13 @@ class _SettingsPageState extends State<SettingsPage> {
         height: 46,
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
         decoration: BoxDecoration(
-          color: selected ? colors.primaryContainer.toOpacity(0.36) : null,
+          color: selected
+              ? colors.primaryContainer.toOpacity(0.36)
+              : windowOverlayColor(),
+          // 配置了「窗口/按钮背景」时，左栏菜单项也用圆角方框（与侧栏一致）。
+          borderRadius: appdata.settings.cornerStyleActive
+              ? BorderRadius.circular(windowOverlayRadius())
+              : null,
           border: Border(
             left: BorderSide(
               color: selected ? colors.primary : Colors.transparent,
@@ -208,6 +218,9 @@ class _SettingsPageState extends State<SettingsPage> {
             ? const EdgeInsets.fromLTRB(8, 0, 8, 0)
             : EdgeInsets.zero,
         child: InkWell(
+          borderRadius: appdata.settings.cornerStyleActive
+              ? BorderRadius.circular(windowOverlayRadius())
+              : null,
           onTap: () {
             if (enableTwoViews) {
               setState(() => currentPage = id);
@@ -265,7 +278,10 @@ class _SettingsDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(child: _buildPage());
+    return Material(
+      color: customBackgroundAware(null),
+      child: _buildPage(),
+    );
   }
 
   Widget _buildPage() {

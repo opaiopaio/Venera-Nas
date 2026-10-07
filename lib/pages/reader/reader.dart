@@ -140,6 +140,7 @@ class _ReaderState extends State<Reader>
   }
 
   bool get _shouldShowChapterCommentsAtEnd {
+    if (appdata.settings['showComments'] != true) return false;
     if (mode != ReaderMode.galleryLeftToRight &&
         mode != ReaderMode.galleryRightToLeft) {
       return false;

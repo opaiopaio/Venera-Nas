@@ -54,5 +54,7 @@ part 'effects.dart';
 part 'gesture.dart';
 part 'code.dart';
 part 'home_section_card.dart';
+part 'color_picker.dart';
+part 'app_background.dart';
 
 

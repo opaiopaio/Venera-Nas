@@ -782,6 +782,8 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
   }
 
   bool shouldShowChapterComments() {
+    // 评论区总开关：关闭时不显示章节评论
+    if (appdata.settings['showComments'] != true) return false;
     // Check if chapters exist
     if (context.reader.widget.chapters == null) return false;
 

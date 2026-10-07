@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:desktop_webview_window/desktop_webview_window.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flex_seed_scheme/flex_seed_scheme.dart';
@@ -226,17 +226,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 
   Color translateColorSetting() {
-    return switch (appdata.settings['color']) {
-      'red' => Colors.red,
-      'pink' => Colors.pink,
-      'purple' => Colors.purple,
-      'green' => Colors.green,
-      'orange' => Colors.orange,
-      'blue' => Colors.blue,
-      'yellow' => Colors.yellow,
-      'cyan' => Colors.cyan,
-      _ => Colors.blue,
-    };
+    // 支持命名色（旧值）与 #RRGGBB（新值）；system/transparent 回退蓝色。
+    return resolveColorSettingValue(appdata.settings['color'] as String?) ??
+        Colors.blue;
   }
 
   ThemeData getTheme(
@@ -260,16 +252,46 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         'sans-serif',
       ];
     }
-    return ThemeData(
-      colorScheme: SeedColorScheme.fromSeeds(
-        primaryKey: primary,
-        secondaryKey: secondary,
-        tertiaryKey: tertiary,
-        brightness: brightness,
-        tones: FlexTones.vividBackground(brightness),
+    // 启用了自定义背景且配置了「窗口/按钮背景」时，让全局的按钮也带上该底色，
+    // 这样各处零散按钮（收藏页工具栏、搜索页设置/清除历史等）也能跟随层次设计。
+    // 所有按钮统一走「窗口/按钮背景」这套设计：底色 = 遮罩色（未配置即透明），
+    // 形状 = 圆角/直角设置。不再回退到主题色，也不依赖是否配置了遮罩色。
+    final overlayButtonStyle = ButtonStyle(
+      backgroundColor: WidgetStatePropertyAll(windowOverlayColor()),
+      // 让按钮的底色方块更小、彼此不粘连。
+      minimumSize: const WidgetStatePropertyAll(Size(36, 36)),
+      padding: const WidgetStatePropertyAll(
+        EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      shape: WidgetStatePropertyAll(
+        RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(windowOverlayRadius()),
+        ),
+      ),
+    );
+    final scheme = SeedColorScheme.fromSeeds(
+      primaryKey: primary,
+      secondaryKey: secondary,
+      tertiaryKey: tertiary,
+      brightness: brightness,
+      tones: FlexTones.vividBackground(brightness),
+    );
+    // 供「窗口/按钮背景」取"跟随系统"的颜色：用**中性容器色**（不是主题色系），
+    // 这样遮罩色与由主题色控制的 tag/滑条颜色能区分开。
+    // ⚠️ 此处禁止调用 Theme.of（主题尚未建立会启动异常）。
+    systemContainerColorCache = scheme.surfaceContainerHigh;
+    return ThemeData(
+      colorScheme: scheme,
       fontFamily: font,
       fontFamilyFallback: fallback,
+      // 启用自定义背景时，让页面 Scaffold 透明，背景层才能透出。
+      scaffoldBackgroundColor: AppBackground.isActive
+          ? Colors.transparent
+          : null,
+      iconButtonTheme: IconButtonThemeData(style: overlayButtonStyle),
+      textButtonTheme: TextButtonThemeData(style: overlayButtonStyle),
+      outlinedButtonTheme: OutlinedButtonThemeData(style: overlayButtonStyle),
     );
   }
 
@@ -386,8 +408,19 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 );
               }
 
+              if (AppBackground.isActive) {
+                // 自定义背景：垫在所有内容之下，并让页面透出。
+                widget = Stack(
+                  children: [
+                    const Positioned.fill(child: AppBackground()),
+                    widget,
+                  ],
+                );
+              }
+
               widget = OverlayWidget(widget);
               if (App.isDesktop) {
+                widget = _WindowFrameBackgroundSync(child: widget);
                 widget = Shortcuts(
                   shortcuts: {
                     LogicalKeySet(LogicalKeyboardKey.escape):
@@ -401,7 +434,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               }
               return _SystemUiProvider(
                 Material(
-                  color: App.isLinux ? Colors.transparent : null,
+                  color: (App.isLinux || AppBackground.isActive)
+                      ? Colors.transparent
+                      : null,
                   child: widget,
                 ),
               );
@@ -443,6 +478,38 @@ class _SystemUiProvider extends StatelessWidget {
       child: child,
     );
   }
+}
+
+/// 让桌面端窗口标题栏背景在启用自定义背景时变透明，使背景透出。
+class _WindowFrameBackgroundSync extends StatefulWidget {
+  const _WindowFrameBackgroundSync({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_WindowFrameBackgroundSync> createState() =>
+      _WindowFrameBackgroundSyncState();
+}
+
+class _WindowFrameBackgroundSyncState
+    extends State<_WindowFrameBackgroundSync> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      try {
+        WindowFrame.of(
+          context,
+        ).setWindowFrameBackgroundTransparent(AppBackground.isActive);
+      } catch (_) {
+        // 非桌面端或不在窗口框架内时忽略。
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 

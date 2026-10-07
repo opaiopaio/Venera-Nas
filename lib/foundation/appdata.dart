@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -292,7 +292,72 @@ class Settings with ChangeNotifier {
     'imageFavoritesDisplayType': 0, // 0=Tags, 1=Authors, 2=Comics
     'showImageFavoritesChart':
         true, // show chart in image favorites card on home page
+    'showComments': true, // 评论区总开关：false 时全局不显示评论内容
+    'backgroundColor': 'transparent', // 背景底色：'transparent' 或 '#RRGGBB'
+    'backgroundImage': '', // 背景图片文件名（存于 dataPath/background/）
+    'backgroundImageSource': '', // 原始选取路径（设置页显示"真实文件地址与文件名"）
+    'backgroundImageOpacity': 1.0, // 背景图片透明度 0.0 - 1.0
+    'backgroundImageFit': 'cover', // cover/contain/fill/fitWidth/fitHeight/none/scaleDown/repeat
+    'windowOverlayColor': 'system', // 窗口/按钮背景色：system / transparent / #RRGGBB（独立于主题色）
+    'windowOverlayOpacity': 1.0, // 窗口表面遮罩不透明度 0.0 - 1.0
+    'windowOverlayCorner': 'rounded', // 窗口/按钮背景圆角：rounded / square
+    'secondaryPageTint': 'darken', // 二级页面区分：darken/lighten/none
+    'secondaryPageTintStrength': 0.22, // 二级页面区分强度 0.0 - 0.6
+    'secondaryPageMode': 'opaque', // 二级页面样式：opaque(不透明遮挡) / transparent(半透明)
   };
+
+  /// ① 背景体系：是否有背景图 / 背景底色（决定全局背景层、页面透明化、毛玻璃禁用）。
+  bool get backgroundFeatureActive =>
+      (this['backgroundImage'] as String? ?? '').isNotEmpty ||
+      (this['backgroundColor'] as String? ?? 'transparent') != 'transparent';
+
+  /// ②-a 是否需要**填充方块**（遮罩色不是「透明」即需要）。
+  bool get hasWindowOverlay =>
+      (this['windowOverlayColor'] ?? 'system').toString() != 'transparent';
+
+  /// ②-b **圆角样式是否生效** —— 一套系统，始终生效。
+  bool get cornerStyleActive => true;
+
+  /// ② 窗口与控件体系是否启用（填充 或 形状任一被配置）。
+  bool get windowOverlayEnabled => hasWindowOverlay || cornerStyleActive;
+
+  /// ③ 二级页面体系是否启用：相关设置**偏离默认值**即启用（完全独立于 ①②）。
+  bool get secondaryPageFeatureActive =>
+      (this['secondaryPageMode'] as String? ?? 'opaque') != 'opaque' ||
+      (this['secondaryPageTint'] as String? ?? 'darken') != 'darken' ||
+      ((this['secondaryPageTintStrength'] as num?)?.toDouble() ?? 0.22) !=
+          0.22;
+
+  /// 兼容旧调用：任一体系启用。
+  bool get customBackgroundActive =>
+      backgroundFeatureActive ||
+      windowOverlayEnabled ||
+      secondaryPageFeatureActive;
+
+  /// 自定义背景底色的 ARGB 值（未设置/非法/透明时返回 null）。
+  int? get customBackgroundBaseColorValue {
+    final v = this['backgroundColor'] as String? ?? 'transparent';
+    if (!v.startsWith('#') || v.length != 7) return null;
+    final n = int.tryParse(v.substring(1), radix: 16);
+    if (n == null) return null;
+    return 0xFF000000 | n;
+  }
+
+  /// 窗口遮罩色的 ARGB 值（未设置/非法/透明时返回 0 = 完全透明）。
+  int get windowOverlayColorValue {
+    final v = this['windowOverlayColor'] as String? ?? 'transparent';
+    if (!v.startsWith('#') || v.length != 7) return 0;
+    final n = int.tryParse(v.substring(1), radix: 16);
+    if (n == null) return 0;
+    final opacity =
+        ((this['windowOverlayOpacity'] as num?)?.toDouble() ?? 1.0).clamp(
+          0.0,
+          1.0,
+        );
+    final alpha = (opacity * 255).round();
+    if (alpha <= 0) return 0;
+    return (alpha << 24) | n;
+  }
 
   operator [](String key) {
     return _data[key];

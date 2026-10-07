@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -109,11 +109,14 @@ class _FavoritesPageState extends State<FavoritesPage> {
         barrierDismissible: true,
         fullscreenDialog: true,
         opaque: false,
-        barrierColor: Colors.black.toOpacity(0.36),
+        barrierColor: appdata.settings.customBackgroundActive
+            ? Colors.transparent
+            : Colors.black.toOpacity(0.36),
         pageBuilder: (context, animation, secondary) {
           return Align(
             alignment: Alignment.centerLeft,
             child: Material(
+              color: customBackgroundAware(null),
               child: SizedBox(
                 width: min(300, context.width - 16),
                 child: _LeftBar(

@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -282,16 +282,47 @@ class _SearchPageState extends State<SearchPage> {
                 );
               }).toList(),
             ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text("Aggregated Search".tl),
-              leading: Checkbox(
-                value: aggregatedSearch,
-                onChanged: (value) {
-                  setState(() {
-                    aggregatedSearch = value ?? false;
-                  });
-                },
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: WindowOverlayBox(
+                  margin: EdgeInsets.zero,
+                  child: InkWell(
+                    borderRadius: windowOverlayBorderRadius(),
+                    onTap: () {
+                      setState(() {
+                        aggregatedSearch = !aggregatedSearch;
+                      });
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: 4,
+                        right: 12,
+                        top: 3,
+                        bottom: 3,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Checkbox(
+                            value: aggregatedSearch,
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            onChanged: (value) {
+                              setState(() {
+                                aggregatedSearch = value ?? false;
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 6),
+                          Text("Aggregated Search".tl),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
@@ -620,7 +651,13 @@ class _SearchHistoryState extends State<_SearchHistory> {
             ),
           );
         }
-        return buildItem(index - 2);
+        // 与上方「搜索历史」标题左对齐（列表本身已有 16 的横向内边距）。
+        // 不限制高度（否则会裁掉行内左侧竖条/文字），靠纵向 margin 拉开间距，
+        // 让每块遮罩显得更细、选项之间有呼吸感。
+        return WindowOverlayBox(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          child: buildItem(index - 2),
+        );
       }, childCount: 2 + appdata.searchHistory.length),
     ).sliverPaddingHorizontal(16);
   }
@@ -681,7 +718,11 @@ class _SearchHistoryState extends State<_SearchHistory> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Text(appdata.searchHistory[index], style: ts.s14),
           ),
-        ).paddingBottom(8).paddingHorizontal(4);
+        ).paddingBottom(
+          // 启用「窗口/按钮背景」时去掉行底部内边距：否则左侧竖条会贴着遮罩上沿、
+          // 下面空出一块；间距改由外层 WindowOverlayBox 的 margin 提供。
+          appdata.settings.customBackgroundActive ? 0 : 8,
+        ).paddingHorizontal(4);
       },
     );
   }

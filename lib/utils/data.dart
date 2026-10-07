@@ -79,6 +79,15 @@ Future<File> exportAppData([bool sync = true]) async {
         zipFile.addFile("comic_source/${file.name}", file.path);
       }
     }
+    // 自定义背景图片
+    var backgroundDir = Directory(FilePath.join(dataPath, "background"));
+    if (backgroundDir.existsSync()) {
+      for (var file in backgroundDir.listSync()) {
+        if (file is File) {
+          zipFile.addFile("background/${file.name}", file.path);
+        }
+      }
+    }
     zipFile.close();
   });
   return cacheFile;
@@ -200,6 +209,18 @@ Future<void> importAppData(
         }
       }
       await ComicSourceManager().reload();
+    }
+    // 自定义背景图片
+    var bgCacheDir = Directory(FilePath.join(cacheDirPath, "background"));
+    if (bgCacheDir.existsSync()) {
+      var bgDir = Directory(FilePath.join(App.dataPath, "background"));
+      bgDir.deleteIfExistsSync(recursive: true);
+      bgDir.createSync(recursive: true);
+      for (var file in bgCacheDir.listSync()) {
+        if (file is File) {
+          await file.copy(FilePath.join(bgDir.path, file.name));
+        }
+      }
     }
     // 确保所有 manager 的监听者收到数据变更通知
     HistoryManager().notifyChanges();

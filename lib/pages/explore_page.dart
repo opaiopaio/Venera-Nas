@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/appdata.dart';
@@ -106,8 +106,10 @@ class _ExplorePageState extends State<ExplorePage>
     return Tab(text: i.ts(comicSource.key), key: Key(i));
   }
 
-  Widget buildBody(String i) =>
-      Material(child: _SingleExplorePage(i, key: PageStorageKey(i)));
+  Widget buildBody(String i) => Material(
+    color: customBackgroundAware(null),
+    child: _SingleExplorePage(i, key: PageStorageKey(i)),
+  );
 
   Widget buildEmpty() {
     var msg = "No Explore Pages".tl;
@@ -138,6 +140,7 @@ class _ExplorePageState extends State<ExplorePage>
     }
 
     Widget tabBar = Material(
+      color: customBackgroundAware(null),
       child: AppTabBar(
         key: PageStorageKey(pages.toString()),
         tabs: pages.map((e) => buildTab(e)).toList(),

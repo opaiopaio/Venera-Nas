@@ -213,6 +213,17 @@ class DataSync with ChangeNotifier {
         }
       }
     }
+
+    var srcBg = Directory(FilePath.join(App.dataPath, 'background'));
+    if (srcBg.existsSync()) {
+      var dstBg = Directory(FilePath.join(_backupDir, 'background'));
+      dstBg.createSync(recursive: true);
+      for (var f in srcBg.listSync()) {
+        if (f is File) {
+          f.copySync(FilePath.join(_backupDir, 'background', f.name));
+        }
+      }
+    }
   }
 
   Future<void> _restoreBackup() async {
@@ -256,6 +267,18 @@ class DataSync with ChangeNotifier {
       for (var f in srcDir.listSync()) {
         if (f is File) {
           f.copySync(FilePath.join(App.dataPath, 'comic_source', f.name));
+        }
+      }
+    }
+
+    var srcBg = Directory(FilePath.join(_backupDir, 'background'));
+    if (srcBg.existsSync()) {
+      var dstBg = Directory(FilePath.join(App.dataPath, 'background'));
+      dstBg.deleteIfExistsSync(recursive: true);
+      dstBg.createSync(recursive: true);
+      for (var f in srcBg.listSync()) {
+        if (f is File) {
+          f.copySync(FilePath.join(App.dataPath, 'background', f.name));
         }
       }
     }

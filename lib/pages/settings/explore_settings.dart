@@ -45,9 +45,17 @@ class _ExploreSettingsState extends State<ExploreSettings> {
           title: "Keyword blocking".tl,
           builder: () => const _ManageBlockingWordView(),
         ).toSliver(),
+        _SwitchSetting(
+          title: "Show comments section".tl,
+          settingKey: "showComments",
+          onChanged: () {
+            setState(() {});
+          },
+        ).toSliver(),
         _PopupWindowSetting(
           title: "Comment keyword blocking".tl,
           builder: () => const _ManageBlockingCommentWordView(),
+          enabled: appdata.settings["showComments"] == true,
         ).toSliver(),
         SelectSetting(
           title: "Default Search Target".tl,

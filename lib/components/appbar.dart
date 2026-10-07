@@ -79,9 +79,10 @@ class _AppbarState extends State<Appbar> {
   Widget build(BuildContext context) {
     var content = Container(
       decoration: BoxDecoration(
-        color:
-            widget.backgroundColor ??
-            context.colorScheme.surface.toOpacity(0.86),
+        color: customBackgroundAware(
+          widget.backgroundColor ??
+              context.colorScheme.surface.toOpacity(0.86),
+        ),
       ),
       height: _kAppBarHeight + context.padding.top,
       child: Row(
@@ -104,14 +105,19 @@ class _AppbarState extends State<Appbar> {
               child: widget.title,
             ),
           ),
-          ...?widget.actions,
+          ...?widget.actions?.map(
+            (e) => appdata.settings.customBackgroundActive
+                // 启用「窗口/按钮背景」时按钮自带底色块，这里补间距避免贴在一起
+                ? Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: e)
+                : e,
+          ),
           const SizedBox(width: 8),
         ],
       ).paddingTop(context.padding.top),
     );
     if (widget.style == AppbarStyle.shadow) {
       return Material(
-        color: context.colorScheme.surface,
+        color: customBackgroundAware(context.colorScheme.surface),
         elevation: _scrolledUnder ? 2 : 0,
         child: content,
       );
@@ -211,7 +217,11 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
             child: title,
           ),
         ),
-        ...?actions,
+        ...?actions?.map(
+          (e) => appdata.settings.customBackgroundActive
+              ? Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: e)
+              : e,
+        ),
         const SizedBox(width: 8),
       ],
     ).paddingTop(topPadding);
@@ -221,7 +231,9 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
         child: BlurEffect(
           blur: 15,
           child: Material(
-            color: context.colorScheme.surface.toOpacity(0.86),
+            color: customBackgroundAware(
+              context.colorScheme.surface.toOpacity(0.86),
+            ),
             elevation: 0,
             borderRadius: BorderRadius.circular(radius),
             child: body,
@@ -231,7 +243,7 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     } else {
       return SizedBox.expand(
         child: Material(
-          color: context.colorScheme.surface,
+          color: customBackgroundAware(context.colorScheme.surface),
           elevation: shrinkOffset == 0 ? 0 : 2,
           borderRadius: BorderRadius.circular(radius),
           child: body,
@@ -286,7 +298,7 @@ class _AppTabBarState extends State<AppTabBar> {
 
   static const _kTabHeight = 48.0;
 
-  static const tabPadding = EdgeInsets.symmetric(horizontal: 6, vertical: 6);
+  static const tabPadding = EdgeInsets.symmetric(horizontal: 2, vertical: 6);
 
   static const tabRadius = 8.0;
 
@@ -379,7 +391,19 @@ class _AppTabBarState extends State<AppTabBar> {
             child: _TabRow(
               callback: _tabLayoutCallback,
               children: List.generate(widget.tabs.length, buildTab)
-                ..addIfNotNull(widget.actionButton?.padding(tabPadding)),
+                ..addIfNotNull(
+                  widget.actionButton?.padding(
+                    // 与标签用同样的内边距，保证「添加」按钮与标签对齐。
+                    appdata.settings.customBackgroundActive
+                        ? const EdgeInsets.only(
+                            left: 2,
+                            right: 2,
+                            top: 1,
+                            bottom: 11,
+                          )
+                        : tabPadding,
+                  ),
+                ),
             ),
           ).paddingHorizontal(4),
         );
@@ -444,9 +468,13 @@ class _AppTabBarState extends State<AppTabBar> {
   }
 
   Widget buildTab(int i) {
-    return InkWell(
+    // 启用「窗口/按钮背景」时，圆角跟随「圆角样式」设置。
+    final radius = appdata.settings.customBackgroundActive
+        ? (windowOverlayBorderRadius() ?? BorderRadius.circular(tabRadius))
+        : BorderRadius.circular(tabRadius);
+    final tab = InkWell(
       onTap: () => onTabClicked(i),
-      borderRadius: BorderRadius.circular(tabRadius),
+      borderRadius: radius,
       child: KeyedSubtree(
         key: keys[i],
         child: Padding(
@@ -457,12 +485,25 @@ class _AppTabBarState extends State<AppTabBar> {
                   ? context.colorScheme.primary
                   : context.colorScheme.onSurface,
               fontWeight: FontWeight.w500,
+              // 启用「窗口/按钮背景」时把标签文字调大一点。
+              fontSize: appdata.settings.customBackgroundActive ? 16 : null,
             ),
             child: widget.tabs[i],
           ),
         ),
       ),
-    ).padding(tabPadding);
+    );
+    // 启用「窗口/按钮背景」时，遮罩挂在 InkWell 上 —— 与鼠标悬停高亮**同一尺寸**。
+    // 同时整体上移 5px（上 1 / 下 11）。
+    if (appdata.settings.customBackgroundActive) {
+      return Material(
+        color: windowOverlayColor(),
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
+        child: tab,
+      ).padding(const EdgeInsets.only(left: 2, right: 2, top: 1, bottom: 11));
+    }
+    return tab.padding(tabPadding);
   }
 }
 
@@ -762,7 +803,7 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
       width: double.infinity,
       padding: EdgeInsets.only(top: topPadding),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: customBackgroundAware(Theme.of(context).colorScheme.surface),
         border: Border(
           bottom: BorderSide(
             color: Theme.of(context).colorScheme.outlineVariant,
@@ -934,9 +975,13 @@ class TabActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    // 启用「窗口/按钮背景」时，与标签一样带圆角底色（圆角跟随设置）。
+    final radius = appdata.settings.customBackgroundActive
+        ? (windowOverlayBorderRadius() ?? BorderRadius.circular(8))
+        : BorderRadius.circular(8);
+    final content = InkWell(
       onTap: onPressed,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: radius,
       child: Container(
         height: _kTabHeight,
         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -952,5 +997,14 @@ class TabActionButton extends StatelessWidget {
         ),
       ),
     );
+    if (appdata.settings.customBackgroundActive) {
+      return Material(
+        color: windowOverlayColor(),
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
+        child: content,
+      );
+    }
+    return content;
   }
 }

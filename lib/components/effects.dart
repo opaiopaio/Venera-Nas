@@ -16,6 +16,10 @@ class BlurEffect extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 有自定义背景（背景图/底色）时不用毛玻璃（会糊在背景图上、观感差）。
+    if (appdata.settings.backgroundFeatureActive) {
+      return child;
+    }
     return ClipRRect(
       borderRadius: borderRadius ?? BorderRadius.zero,
       child: BackdropFilter(

@@ -1,4 +1,4 @@
-﻿import 'dart:math';
+import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -495,6 +495,42 @@ class SlidePageTransitionBuilder extends PageTransitionsBuilder {
         ? secondaryAnimation
         : CurvedAnimation(parent: secondaryAnimation, curve: Curves.ease);
 
+    final customBg = App.data.settings.customBackgroundActive;
+
+    Widget content = PhysicalModel(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.zero,
+      clipBehavior: Clip.hardEdge,
+      // 透明色 + elevation>0 会把阴影画进形状内部形成整页暗色遮罩，
+      // 自定义背景时必须关掉 elevation（窗口层次改由「窗口遮罩」配置卡片容器）。
+      elevation: customBg ? 0 : 6,
+      child: Material(
+        color: customBg ? Colors.transparent : null,
+        child: child,
+      ),
+    );
+
+    // 自定义背景时页面背景是透明的，原来的「两页同时滑动」会让旧页面从
+    // 新页面的透明区域透出来（残影/两页叠加）。
+    // 改为 fade through：旧页面在前 30% 淡出消失，新页面再从 35% 起淡入 ——
+    // 两页在时间上不重叠，既无残影，也不会闪底色。
+    if (customBg) {
+      final fadeIn = CurvedAnimation(
+        parent: animation,
+        curve: const Interval(0.35, 1.0, curve: Curves.easeIn),
+      );
+      final fadeOut = Tween<double>(begin: 1, end: 0).animate(
+        CurvedAnimation(
+          parent: secondaryAnimation,
+          curve: const Interval(0.0, 0.3, curve: Curves.easeOut),
+        ),
+      );
+      return FadeTransition(
+        opacity: fadeOut,
+        child: FadeTransition(opacity: fadeIn, child: content),
+      );
+    }
+
     return SlideTransition(
       position: Tween<Offset>(
         begin: const Offset(1, 0),
@@ -505,13 +541,7 @@ class SlidePageTransitionBuilder extends PageTransitionsBuilder {
           begin: Offset.zero,
           end: const Offset(-0.4, 0),
         ).animate(secondaryCurve),
-        child: PhysicalModel(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.zero,
-          clipBehavior: Clip.hardEdge,
-          elevation: 6,
-          child: Material(child: child),
-        ),
+        child: content,
       ),
     );
   }

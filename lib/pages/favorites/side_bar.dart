@@ -209,18 +209,25 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
       child: Container(
         height: 42,
         alignment: Alignment.centerLeft,
+        margin: appdata.settings.customBackgroundActive
+            ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2)
+            : null,
         decoration: BoxDecoration(
           color: isSelected
               ? context.colorScheme.primaryContainer.toOpacity(0.36)
-              : null,
-          border: Border(
-            left: BorderSide(
-              color: isSelected
-                  ? context.colorScheme.primary
-                  : Colors.transparent,
-              width: 2,
-            ),
-          ),
+              : windowOverlayColor(),
+          // 跟随「圆角/直角」设置（未启用自定义背景时为 null，保持原样）。
+          borderRadius: windowOverlayBorderRadius(),
+          border: appdata.settings.customBackgroundActive
+              ? null
+              : Border(
+                  left: BorderSide(
+                    color: isSelected
+                        ? context.colorScheme.primary
+                        : Colors.transparent,
+                    width: 2,
+                  ),
+                ),
         ),
         padding: const EdgeInsets.only(left: 16),
         child: Row(
@@ -258,18 +265,25 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
       child: Container(
         height: 42,
         alignment: Alignment.centerLeft,
+        margin: appdata.settings.customBackgroundActive
+            ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2)
+            : null,
         decoration: BoxDecoration(
           color: isSelected
               ? context.colorScheme.primaryContainer.toOpacity(0.36)
-              : null,
-          border: Border(
-            left: BorderSide(
-              color: isSelected
-                  ? context.colorScheme.primary
-                  : Colors.transparent,
-              width: 2,
-            ),
-          ),
+              : windowOverlayColor(),
+          // 跟随「圆角/直角」设置（未启用自定义背景时为 null，保持原样）。
+          borderRadius: windowOverlayBorderRadius(),
+          border: appdata.settings.customBackgroundActive
+              ? null
+              : Border(
+                  left: BorderSide(
+                    color: isSelected
+                        ? context.colorScheme.primary
+                        : Colors.transparent,
+                    width: 2,
+                  ),
+                ),
         ),
         padding: const EdgeInsets.only(left: 16),
         child: Text(data.title),

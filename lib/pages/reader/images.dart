@@ -185,7 +185,7 @@ class _ReaderImagesState extends State<_ReaderImages> {
             true;
         return _GalleryMode(
           key: Key(
-            '${reader.mode.key}_${reader.imagesPerPage}_${showComments}_$showCommentsAtEnd',
+            '${reader.mode.key}_${reader.imagesPerPage}_${showComments}_${showCommentsAtEnd}_${appdata.settings['showComments']}',
           ),
         );
       } else {
@@ -213,6 +213,7 @@ class _GalleryModeState extends State<_GalleryMode>
   late _ReaderState reader;
 
   bool get showChapterCommentsAtEnd {
+    if (appdata.settings['showComments'] != true) return false;
     if (reader.mode != ReaderMode.galleryLeftToRight &&
         reader.mode != ReaderMode.galleryRightToLeft) {
       return false;

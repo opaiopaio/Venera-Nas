@@ -206,6 +206,18 @@ class ComicTile extends StatelessWidget {
         ? _buildDetailedMode(context)
         : _buildBriefMode(context);
 
+    // 自定义背景 + 配置了「窗口/按钮背景」时，给漫画卡片一层底色（层级感，
+    // 类似鼠标悬停的感觉）。
+    if (appdata.settings.hasWindowOverlay) {
+      child = Container(
+        decoration: BoxDecoration(
+          color: windowOverlayColor(),
+          borderRadius: windowOverlayBorderRadius(),
+        ),
+        child: child,
+      );
+    }
+
     var isFavorite = appdata.settings['showFavoriteStatusOnTile']
         ? LocalFavoritesManager().isExist(
             comic.id,
@@ -317,7 +329,8 @@ class ComicTile extends StatelessWidget {
         }
 
         return _TapScaleBuilder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderRadius: windowOverlayBorderRadius() ??
+              BorderRadius.circular(AppRadius.lg),
           onTap: _onTap,
           onLongPress: enableLongPressed ? () => _onLongPressed(context) : null,
           onSecondaryTapDown: (detail) => onSecondaryTap(detail, context),
@@ -377,7 +390,8 @@ class ComicTile extends StatelessWidget {
         }
 
         return _TapScaleBuilder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderRadius: windowOverlayBorderRadius() ??
+              BorderRadius.circular(AppRadius.md),
           onTap: _onTap,
           onLongPress: enableLongPressed ? () => _onLongPressed(context) : null,
           onSecondaryTapDown: (detail) => onSecondaryTap(detail, context),
@@ -915,7 +929,11 @@ class _SliverGridComics extends StatelessWidget {
           heroID: heroIDs[index],
         );
         if (selection == null) {
-          return comic;
+          // 给每张漫画卡片留出间距，避免「窗口/按钮背景」连成一片。
+          return Padding(
+            padding: const EdgeInsets.all(6),
+            child: comic,
+          );
         }
         return AnimatedContainer(
           key: ValueKey(comics[index].id),

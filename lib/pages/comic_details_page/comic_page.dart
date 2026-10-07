@@ -435,7 +435,8 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
                 },
                 iconColor: context.useTextColor(Colors.indigo),
               ),
-              if (comicSource.commentsLoader != null)
+              if (appdata.settings['showComments'] == true &&
+                  comicSource.commentsLoader != null)
                 _ActionButton(
                   icon: const Icon(Icons.comment),
                   text: (comic.commentCount ?? 'Comments'.tl).toString(),
@@ -752,6 +753,9 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
   }
 
   Widget buildComments() {
+    if (appdata.settings['showComments'] != true) {
+      return const SliverPadding(padding: EdgeInsets.zero);
+    }
     if (comic.comments == null || comic.comments!.isEmpty) {
       return const SliverPadding(padding: EdgeInsets.zero);
     }
