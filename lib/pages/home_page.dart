@@ -38,7 +38,9 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     var widget = SmoothCustomScrollView(
       slivers: [
-        SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
+        // 顶部改为**滚动视图外**的固定内边距（见下方 Padding），
+        // 否则滚动时顶部留白会被滚走，内容会侵入窗口标题栏。
+        SliverPadding(padding: EdgeInsets.only(top: App.isDesktop ? 0 : context.padding.top)),
         const _SearchBar(),
         const _SyncDataWidget(),
         const _ReadLater(),
@@ -51,7 +53,15 @@ class HomePage extends StatelessWidget {
         SliverPadding(padding: EdgeInsets.only(top: context.padding.bottom)),
       ],
     );
-    return context.width > changePoint ? widget.paddingHorizontal(8) : widget;
+    // 桌面端把顶部让位放到**滚动视图之外**，形成固定的顶部边界：
+    // 内容滚动时不会进入窗口标题栏区域。
+    var body = App.isDesktop
+        ? Padding(
+            padding: EdgeInsets.only(top: context.padding.top),
+            child: widget,
+          )
+        : widget;
+    return context.width > changePoint ? body.paddingHorizontal(8) : body;
   }
 }
 
