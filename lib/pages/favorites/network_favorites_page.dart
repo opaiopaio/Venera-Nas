@@ -308,6 +308,7 @@ class _MultiFolderFavoritesPageState extends State<_MultiFolderFavoritesPage> {
           SliverGridViewWithFixedItemHeight(
             crossAxisSpacing: AppSpace.sm,
             mainAxisSpacing: AppSpace.sm,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpace.sm),
             delegate: SliverChildBuilderDelegate(childCount: length, (
               context,
               i,

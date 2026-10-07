@@ -128,7 +128,7 @@ class _ReaderSettingsState extends State<ReaderSettings> {
                     ),
                   ),
                 ).toSliver(),
-              Divider().toSliver(),
+              SliverToBoxAdapter(child: Divider()),
             ],
           ),
         if (comicId == null)
@@ -158,7 +158,7 @@ class _ReaderSettingsState extends State<ReaderSettings> {
                     ),
                   ),
                 ).toSliver(),
-              Divider().toSliver(),
+              SliverToBoxAdapter(child: Divider()),
             ],
           ),
         _SwitchSetting(

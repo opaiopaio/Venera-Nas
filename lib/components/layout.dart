@@ -7,6 +7,7 @@ class SliverGridViewWithFixedItemHeight extends StatelessWidget {
     required this.itemHeight,
     this.crossAxisSpacing = 0,
     this.mainAxisSpacing = 0,
+    this.padding = EdgeInsets.zero,
     super.key,
   });
 
@@ -21,8 +22,18 @@ class SliverGridViewWithFixedItemHeight extends StatelessWidget {
 
   final double mainAxisSpacing;
 
+  /// 网格整体内边距（让网格两侧不贴边）。
+  final EdgeInsetsGeometry padding;
+
   @override
   Widget build(BuildContext context) {
+    if (padding != EdgeInsets.zero) {
+      return SliverPadding(padding: padding, sliver: _grid(context));
+    }
+    return _grid(context);
+  }
+
+  Widget _grid(BuildContext context) {
     return SliverLayoutBuilder(
       builder: (context, constraints) => SliverGrid(
         delegate: delegate,
