@@ -19,6 +19,7 @@ import 'package:venera_nas/utils/file_type.dart';
 import 'package:venera_nas/utils/io.dart';
 import 'package:venera_nas/utils/tags_translation.dart';
 import 'package:venera_nas/utils/translations.dart';
+import 'package:venera_nas/foundation/design_tokens.dart';
 
 part "image_favorites_item.dart";
 

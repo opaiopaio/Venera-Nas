@@ -842,7 +842,7 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
               return editingController.text.isEmpty
                   ? const SizedBox()
                   : IconButton(
-                      iconSize: 20,
+                      iconSize: AppIconSize.md,
                       icon: const Icon(Icons.clear),
                       onPressed: () {
                         editingController.clear();
@@ -948,7 +948,7 @@ class _SearchBarState extends State<AppSearchBar> with _SearchBarMixin {
               return _editingController.text.isEmpty
                   ? const SizedBox()
                   : IconButton(
-                      iconSize: 20,
+                      iconSize: AppIconSize.md,
                       icon: const Icon(Icons.clear),
                       onPressed: () {
                         _editingController.clear();
@@ -993,7 +993,7 @@ class TabActionButton extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: _kTabHeight),
         padding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
         child: IconTheme(
-          data: IconThemeData(size: 20, color: context.colorScheme.primary),
+          data: IconThemeData(size: AppIconSize.md, color: context.colorScheme.primary),
           child: Row(
             children: [
               icon,

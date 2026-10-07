@@ -1,4 +1,4 @@
-part of 'settings_page.dart';
+﻿part of 'settings_page.dart';
 
 class AppSettings extends StatefulWidget {
   const AppSettings({super.key});
@@ -561,7 +561,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.info_outline, size: 20),
+                          const Icon(Icons.info_outline, size: AppIconSize.md),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -760,7 +760,7 @@ class _BackupWebdavSettingState extends State<_BackupWebdavSetting> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline, size: 20),
+                  const Icon(Icons.info_outline, size: AppIconSize.md),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(

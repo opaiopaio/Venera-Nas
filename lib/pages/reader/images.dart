@@ -1,4 +1,4 @@
-part of 'reader.dart';
+﻿part of 'reader.dart';
 
 class _ReaderImages extends StatefulWidget {
   const _ReaderImages({super.key});
@@ -1433,7 +1433,7 @@ class _SwipeChangeChapterProgressState
           Icon(
             widget.isPrev ? Icons.arrow_downward : Icons.arrow_upward,
             color: context.colorScheme.onSurface,
-            size: 16,
+            size: AppIconSize.xs,
           ),
           const SizedBox(width: 4),
           Text(msg),

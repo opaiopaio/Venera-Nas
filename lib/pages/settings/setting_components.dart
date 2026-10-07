@@ -1,4 +1,4 @@
-part of 'settings_page.dart';
+﻿part of 'settings_page.dart';
 
 class _SwitchSetting extends StatefulWidget {
   const _SwitchSetting({
@@ -190,7 +190,7 @@ class _DoubleLineSelectSettingsState extends State<_DoubleLineSelectSettings> {
           const SizedBox(width: 4),
           if (widget.help != null)
             Button.icon(
-              size: 18,
+              size: AppIconSize.sm,
               icon: const Icon(Icons.help_outline),
               onPressed: () {
                 showDialog(
@@ -321,7 +321,7 @@ class _EndSelectorSelectSettingState extends State<_EndSelectorSelectSetting> {
           const SizedBox(width: 4),
           if (widget.help != null)
             Button.icon(
-              size: 18,
+              size: AppIconSize.sm,
               icon: const Icon(Icons.help_outline),
               onPressed: () {
                 showDialog(
@@ -801,7 +801,7 @@ class _SettingPartTitle extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, size: 24),
+            Icon(icon, size: AppIconSize.lg),
             const SizedBox(width: 8),
             Text(title, style: ts.s18),
           ],

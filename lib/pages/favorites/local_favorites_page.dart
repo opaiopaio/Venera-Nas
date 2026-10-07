@@ -1,4 +1,4 @@
-part of 'favorites_page.dart';
+﻿part of 'favorites_page.dart';
 
 const _localAllFolderLabel = '^_^[%local_all%]^_^';
 
@@ -904,7 +904,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.add, size: 20),
+                                      const Icon(Icons.add, size: AppIconSize.md),
                                       const SizedBox(width: 4),
                                       Text("New Folder".tl),
                                     ],

@@ -1,4 +1,4 @@
-part of 'components.dart';
+﻿part of 'components.dart';
 
 class SmoothCustomScrollView extends StatelessWidget {
   const SmoothCustomScrollView({
@@ -372,8 +372,8 @@ class _AppScrollBarState extends State<AppScrollBar> {
                         child: Column(
                           children: [
                             const Spacer(),
-                            Icon(Icons.arrow_drop_up, size: 18),
-                            Icon(Icons.arrow_drop_down, size: 18),
+                            Icon(Icons.arrow_drop_up, size: AppIconSize.sm),
+                            Icon(Icons.arrow_drop_down, size: AppIconSize.sm),
                             const Spacer(),
                           ],
                         ).paddingLeft(4),

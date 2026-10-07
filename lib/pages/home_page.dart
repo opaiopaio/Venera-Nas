@@ -225,7 +225,7 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
                       child: Icon(
                         Icons.error_outline,
                         color: Colors.red,
-                        size: 18,
+                        size: AppIconSize.sm,
                       ),
                     ),
                   ).paddingRight(4),
@@ -292,7 +292,7 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
                           Icon(
                             Icons.error_outline,
                             color: Colors.red,
-                            size: 18,
+                            size: AppIconSize.sm,
                           ),
                           const SizedBox(width: 4),
                           Text('Error'.tl, style: ts.s12),
@@ -469,7 +469,7 @@ class _LocalState extends State<_Local> {
                 child: Row(
                   children: [
                     if (LocalManager().downloadingTasks.first.isPaused)
-                      const Icon(Icons.pause_circle_outline, size: 18)
+                      const Icon(Icons.pause_circle_outline, size: AppIconSize.sm)
                     else
                       const _AnimatedDownloadingIcon(),
                     const SizedBox(width: 8),
@@ -712,7 +712,7 @@ class _ImportComicsWidgetState extends State<_ImportComicsWidget> {
             children: [
               Icon(
                 Icons.help_outline,
-                size: 18,
+                size: AppIconSize.sm,
                 color: context.colorScheme.primary,
               ),
               const SizedBox(width: 8),
@@ -857,7 +857,7 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                               Icon(
                                 Icons.update,
                                 color: context.colorScheme.primary,
-                                size: 20,
+                                size: AppIconSize.md,
                               ),
                               const SizedBox(width: AppSpace.sm),
                               Text(
@@ -929,7 +929,7 @@ class __AnimatedDownloadingIconState extends State<_AnimatedDownloadingIcon>
             offset: Offset(0, 18 * _controller.value),
             child: Icon(
               Icons.arrow_downward,
-              size: 16,
+              size: AppIconSize.xs,
               color: Theme.of(context).colorScheme.primary,
             ),
           ),

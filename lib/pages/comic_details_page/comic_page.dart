@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -29,6 +29,7 @@ import 'package:venera_nas/utils/io.dart';
 import 'package:venera_nas/utils/tags_translation.dart';
 import 'package:venera_nas/utils/translations.dart';
 import 'dart:math' as math;
+import 'package:venera_nas/foundation/design_tokens.dart';
 
 part 'comments_page.dart';
 
@@ -666,7 +667,7 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
           if (comic.stars != null)
             Row(
               children: [
-                StarRating(value: comic.stars!, size: 24, onTap: starRating),
+                StarRating(value: comic.stars!, size: AppIconSize.lg, onTap: starRating),
                 const SizedBox(width: 8),
                 Text(comic.stars!.toStringAsFixed(2)),
               ],
@@ -870,7 +871,7 @@ class _ActionButton extends StatelessWidget {
         onLongPress: onLongPressed,
         borderRadius: BorderRadius.circular(18),
         child: IconTheme.merge(
-          data: IconThemeData(size: 20, color: iconColor),
+          data: IconThemeData(size: AppIconSize.md, color: iconColor),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

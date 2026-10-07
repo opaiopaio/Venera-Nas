@@ -1,4 +1,4 @@
-part of 'comic_page.dart';
+﻿part of 'comic_page.dart';
 
 class _FavoritePanel extends StatefulWidget {
   const _FavoritePanel({
@@ -568,7 +568,7 @@ class _LocalSectionState extends State<_LocalSection> {
           title: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.add, size: 20),
+              const Icon(Icons.add, size: AppIconSize.md),
               const SizedBox(width: 4),
               Text("New Folder".tl),
             ],

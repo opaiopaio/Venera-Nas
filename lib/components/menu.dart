@@ -106,7 +106,7 @@ class _MenuRoute<T> extends PopupRoute<T> {
           child: Row(
             children: [
               if (entry.icon != null)
-                Icon(entry.icon, size: 18, color: entry.color),
+                Icon(entry.icon, size: AppIconSize.sm, color: entry.color),
               const SizedBox(width: 12),
               Text(entry.text, style: TextStyle(color: entry.color)),
             ],

@@ -1,4 +1,4 @@
-part of 'components.dart';
+﻿part of 'components.dart';
 
 class NetworkError extends StatelessWidget {
   const NetworkError({
@@ -33,7 +33,7 @@ class NetworkError extends StatelessWidget {
               children: [
                 Icon(
                   Icons.error_outline,
-                  size: 28,
+                  size: AppIconSize.xl,
                   color: context.colorScheme.error,
                 ),
                 const SizedBox(width: 8),

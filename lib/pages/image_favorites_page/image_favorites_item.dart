@@ -1,4 +1,4 @@
-part of 'image_favorites_page.dart';
+﻿part of 'image_favorites_page.dart';
 
 class _ImageFavoritesItem extends StatefulWidget {
   const _ImageFavoritesItem({
@@ -236,7 +236,7 @@ class _ImageFavoritesItemState extends State<_ImageFavoritesItem> {
           ),
         ),
         IconButton(
-          icon: const Icon(Icons.grid_view, size: 18),
+          icon: const Icon(Icons.grid_view, size: AppIconSize.sm),
           tooltip: 'Gallery View'.tl,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(minWidth: 32, minHeight: 32),

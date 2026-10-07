@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 
 /// 外观规则守卫（棘轮式）——**只许变好，不许变差**。
@@ -23,6 +23,7 @@ void main(List<String> args) {
     '裸透明度': RegExp(r'\.withOpacity\(0\.[0-9]+\)'),
     '固定高度': RegExp(r'(?<!\w)height:\s*[0-9]+(\.[0-9]+)?\s*,'),
     '表面色字面量': RegExp(r'color:\s*Colors\.(white|black|grey|gray)'),
+    '硬编码图标尺寸': RegExp(r'(?<!\w)(size|iconSize):\s*[0-9]'),
   };
 
   final counts = <String, int>{};

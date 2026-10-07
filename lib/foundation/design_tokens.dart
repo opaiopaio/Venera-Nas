@@ -84,3 +84,24 @@ abstract final class AppTopBar {
   static EdgeInsets get boundaryPadding =>
       const EdgeInsets.only(top: boundary);
 }
+
+/// 图标尺寸令牌（按实际使用分布定义，只收录常用档）。
+///
+/// 用法：`Icon(Icons.x, size: AppIconSize.sm)`、`IconButton(iconSize: AppIconSize.lg)`。
+/// 异形值（22/26/36/40 等）属少数特例，保留字面量并由守卫记录。
+abstract final class AppIconSize {
+  /// 16 —— 行内小图标（标签、徽标）。
+  static const double xs = 16;
+
+  /// 18 —— 列表/卡片内的图标（最常用）。
+  static const double sm = 18;
+
+  /// 20 —— 次级操作图标。
+  static const double md = 20;
+
+  /// 24 —— 顶栏/工具栏图标。
+  static const double lg = 24;
+
+  /// 28 —— 强调图标（空态、标题侧）。
+  static const double xl = 28;
+}

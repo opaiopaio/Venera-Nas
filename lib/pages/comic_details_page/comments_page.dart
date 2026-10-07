@@ -1,4 +1,4 @@
-part of 'comic_page.dart';
+﻿part of 'comic_page.dart';
 
 bool _shouldBlockComment(Comment comment) {
   var blockedWords = appdata.settings["blockedCommentWords"] as List;
@@ -398,7 +398,7 @@ class _CommentTileState extends State<_CommentTile> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.insert_comment_outlined, size: 16),
+            const Icon(Icons.insert_comment_outlined, size: AppIconSize.xs),
             const SizedBox(width: 8),
             Text(widget.comment.replyCount.toString()),
           ],
@@ -459,11 +459,11 @@ class _CommentTileState extends State<_CommentTile> {
             else if (isLiked)
               Icon(
                 Icons.favorite,
-                size: 16,
+                size: AppIconSize.xs,
                 color: context.useTextColor(Colors.red),
               )
             else
-              const Icon(Icons.favorite_border, size: 16),
+              const Icon(Icons.favorite_border, size: AppIconSize.xs),
             const SizedBox(width: 8),
             Text(likes.toString()),
           ],
@@ -542,7 +542,7 @@ class _CommentTileState extends State<_CommentTile> {
           Button.icon(
             isLoading: isVotingUp,
             icon: const Icon(Icons.arrow_upward),
-            size: 18,
+            size: AppIconSize.sm,
             color: upColor,
             onPressed: () => vote(true),
           ),
@@ -552,7 +552,7 @@ class _CommentTileState extends State<_CommentTile> {
           Button.icon(
             isLoading: isVotingDown,
             icon: const Icon(Icons.arrow_downward),
-            size: 18,
+            size: AppIconSize.sm,
             color: downColor,
             onPressed: () => vote(false),
           ),

@@ -1,4 +1,4 @@
-part of 'favorites_page.dart';
+﻿part of 'favorites_page.dart';
 
 Future<bool> _deleteComic(
   String cid,
@@ -357,7 +357,7 @@ class _MultiFolderFavoritesPageState extends State<_MultiFolderFavoritesPage> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text("Create a folder".tl),
-                        const Icon(Icons.add, size: 18),
+                        const Icon(Icons.add, size: AppIconSize.sm),
                       ],
                     ),
                     onPressed: () {
@@ -415,7 +415,7 @@ class _FolderTile extends StatelessWidget {
             children: [
               Icon(
                 Icons.folder,
-                size: 28,
+                size: AppIconSize.xl,
                 color: Theme.of(context).colorScheme.secondary,
               ),
               const SizedBox(width: 16),

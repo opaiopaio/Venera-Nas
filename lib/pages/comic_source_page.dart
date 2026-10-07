@@ -14,6 +14,7 @@ import 'package:venera_nas/pages/webview.dart';
 import 'package:venera_nas/utils/ext.dart';
 import 'package:venera_nas/utils/io.dart';
 import 'package:venera_nas/utils/translations.dart';
+import 'package:venera_nas/foundation/design_tokens.dart';
 
 class ComicSourcePage extends StatelessWidget {
   const ComicSourcePage({super.key});
@@ -503,7 +504,7 @@ class _ComicSourceListState extends State<_ComicSourceList> {
 
         var key = json![index]["key"];
         var action = currentKey.contains(key)
-            ? const Icon(Icons.check, size: 20).paddingRight(8)
+            ? const Icon(Icons.check, size: AppIconSize.md).paddingRight(8)
             : Button.filled(
                 child: Text("Add".tl),
                 onPressed: () async {
@@ -881,7 +882,7 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
               children: [
                 Icon(
                   _isExpanded ? Icons.expand_less : Icons.expand_more,
-                  size: 20,
+                  size: AppIconSize.md,
                 ),
                 const SizedBox(width: 4),
                 Text(source.name, style: ts.s18),

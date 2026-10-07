@@ -1,4 +1,4 @@
-part of 'settings_page.dart';
+﻿part of 'settings_page.dart';
 
 class AuthPinSetting extends StatefulWidget {
   const AuthPinSetting({super.key});
@@ -87,7 +87,7 @@ class _AuthPinSettingState extends State<AuthPinSetting> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline, size: 20),
+                    const Icon(Icons.info_outline, size: AppIconSize.md),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(

@@ -1,4 +1,4 @@
-part of 'reader.dart';
+﻿part of 'reader.dart';
 
 class _ChaptersView extends StatefulWidget {
   const _ChaptersView(this.reader);
@@ -46,7 +46,7 @@ class _ChaptersViewState extends State<_ChaptersView> {
                 child: TextButton.icon(
                   icon: Icon(
                     !desc ? Icons.arrow_upward : Icons.arrow_downward,
-                    size: 18,
+                    size: AppIconSize.sm,
                   ),
                   label: Text(!desc ? "Ascending".tl : "Descending".tl),
                   onPressed: () {

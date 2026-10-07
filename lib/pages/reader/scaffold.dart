@@ -1,4 +1,4 @@
-part of 'reader.dart';
+﻿part of 'reader.dart';
 
 class _ReaderScaffold extends StatefulWidget {
   const _ReaderScaffold({required this.child});
@@ -842,7 +842,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
             lastValue == 1
                 ? Icons.arrow_forward_ios
                 : Icons.arrow_back_ios_outlined,
-            size: 24,
+            size: AppIconSize.lg,
             color: Theme.of(context).colorScheme.onPrimaryContainer,
           ),
         );
@@ -868,7 +868,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
               child: Center(
                 child: Icon(
                   _getArrowIcon(isReversed, showFloatingButtonValue),
-                  size: 24,
+                  size: AppIconSize.lg,
                   color: Theme.of(context).colorScheme.onPrimaryContainer,
                 ),
               ),
@@ -1083,7 +1083,7 @@ class _BatteryWidgetState extends State<_BatteryWidget> {
       children: [
         Icon(
           batteryIcon,
-          size: 16,
+          size: AppIconSize.xs,
           color: batteryColor,
           // Stroke
           shadows: List.generate(9, (index) {

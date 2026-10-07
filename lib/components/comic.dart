@@ -254,7 +254,7 @@ class ComicTile extends StatelessWidget {
                     color: Colors.green,
                     child: const Icon(
                       Icons.bookmark_rounded,
-                      size: 16,
+                      size: AppIconSize.xs,
                       color: Colors.white,
                     ),
                   ),
@@ -718,7 +718,7 @@ class _ComicDescription extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (rating != null) StarRating(value: rating!, size: 18),
+                  if (rating != null) StarRating(value: rating!, size: AppIconSize.sm),
                   Text(
                     description,
                     style: const TextStyle(fontSize: 12.0),

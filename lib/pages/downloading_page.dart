@@ -7,6 +7,7 @@ import 'package:venera_nas/network/download.dart';
 import 'package:venera_nas/utils/background_download.dart';
 import 'package:venera_nas/utils/io.dart';
 import 'package:venera_nas/utils/translations.dart';
+import 'package:venera_nas/foundation/design_tokens.dart';
 
 class DownloadingPage extends StatefulWidget {
   const DownloadingPage({super.key});
@@ -100,7 +101,7 @@ class _DownloadingPageState extends State<DownloadingPage> {
             OutlinedButton(
               child: Row(
                 children: [
-                  const Icon(Icons.play_arrow, size: 18),
+                  const Icon(Icons.play_arrow, size: AppIconSize.sm),
                   const SizedBox(width: 4),
                   Text("Start".tl),
                 ],
@@ -114,7 +115,7 @@ class _DownloadingPageState extends State<DownloadingPage> {
             OutlinedButton(
               child: Row(
                 children: [
-                  const Icon(Icons.pause, size: 18),
+                  const Icon(Icons.pause, size: AppIconSize.sm),
                   const SizedBox(width: 4),
                   Text("Pause".tl),
                 ],

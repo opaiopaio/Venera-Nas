@@ -1,4 +1,4 @@
-part of 'components.dart';
+﻿part of 'components.dart';
 
 // 颜色设置值的编码约定：
 //  - 'system'      跟随系统
@@ -392,7 +392,7 @@ class _ColorPickerPageState extends State<ColorPickerPage> {
                 child: const CustomPaint(painter: _TransparentSwatchPainter()),
               )
             else if (icon != null)
-              Icon(icon, size: 16),
+              Icon(icon, size: AppIconSize.xs),
             const SizedBox(width: 6),
             Text(label),
           ],

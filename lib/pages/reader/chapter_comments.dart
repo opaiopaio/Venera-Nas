@@ -1,4 +1,4 @@
-part of 'reader.dart';
+﻿part of 'reader.dart';
 
 bool _shouldBlockComment(Comment comment) {
   var blockedWords = appdata.settings["blockedCommentWords"] as List;
@@ -420,7 +420,7 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.insert_comment_outlined, size: 16),
+            const Icon(Icons.insert_comment_outlined, size: AppIconSize.xs),
             const SizedBox(width: 8),
             Text(widget.comment.replyCount.toString()),
           ],
@@ -479,11 +479,11 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
             else if (isLiked)
               Icon(
                 Icons.favorite,
-                size: 16,
+                size: AppIconSize.xs,
                 color: context.useTextColor(Colors.red),
               )
             else
-              const Icon(Icons.favorite_border, size: 16),
+              const Icon(Icons.favorite_border, size: AppIconSize.xs),
             const SizedBox(width: 8),
             Text(likes.toString()),
           ],
@@ -560,7 +560,7 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
           Button.icon(
             isLoading: isVotingUp,
             icon: const Icon(Icons.arrow_upward),
-            size: 18,
+            size: AppIconSize.sm,
             color: upColor,
             onPressed: () => vote(true),
           ),
@@ -570,7 +570,7 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
           Button.icon(
             isLoading: isVotingDown,
             icon: const Icon(Icons.arrow_downward),
-            size: 18,
+            size: AppIconSize.sm,
             color: downColor,
             onPressed: () => vote(false),
           ),
@@ -713,7 +713,7 @@ class _EmbeddedChapterCommentsPageState
             tooltip: "Exit".tl,
           ),
           const SizedBox(width: 4),
-          Icon(Icons.comment, size: 24),
+          Icon(Icons.comment, size: AppIconSize.lg),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
