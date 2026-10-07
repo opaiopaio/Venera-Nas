@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:desktop_webview_window/desktop_webview_window.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flex_seed_scheme/flex_seed_scheme.dart';
@@ -579,5 +579,3 @@ class _WindowFrameBackgroundSyncState
   @override
   Widget build(BuildContext context) => widget.child;
 }
-
-

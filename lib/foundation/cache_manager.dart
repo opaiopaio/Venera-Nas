@@ -1,4 +1,4 @@
-﻿import 'dart:ffi';
+import 'dart:ffi';
 import 'dart:isolate';
 
 import 'package:crypto/crypto.dart';
@@ -318,5 +318,3 @@ class CacheManager {
     _currentSize = 0;
   }
 }
-
-

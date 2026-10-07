@@ -163,8 +163,8 @@ class History implements Comic {
   String get sourceKey => type == ComicType.local
       ? 'local'
       : type == ComicType.smb
-          ? 'smb'
-          : type.comicSource?.key ?? "Unknown:${type.value}";
+      ? 'smb'
+      : type.comicSource?.key ?? "Unknown:${type.value}";
 
   @override
   double? get stars => null;
@@ -678,5 +678,3 @@ class RefreshProgress {
     this.skipped,
   );
 }
-
-

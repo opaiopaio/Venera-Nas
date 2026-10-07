@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/local.dart';
@@ -82,7 +82,11 @@ class _ExportComicsDialogState extends State<ExportComicsDialog> {
         ),
         if (_error != null)
           Padding(
-            padding: const EdgeInsets.only(top: AppSpace.sm, left: AppSpace.lg, right: AppSpace.lg),
+            padding: const EdgeInsets.only(
+              top: AppSpace.sm,
+              left: AppSpace.lg,
+              right: AppSpace.lg,
+            ),
             child: Text(
               _error!,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
@@ -214,5 +218,3 @@ class _ExportComicsDialogState extends State<ExportComicsDialog> {
     }
   }
 }
-
-

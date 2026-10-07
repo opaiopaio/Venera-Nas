@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
@@ -60,5 +60,3 @@ class AuthStorage {
     return stored == sha256.convert(utf8.encode(salt + pin)).toString();
   }
 }
-
-

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:venera_nas/foundation/app.dart';
@@ -206,5 +206,3 @@ class BackgroundDownload {
     });
   }
 }
-
-

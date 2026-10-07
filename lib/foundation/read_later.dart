@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:sqlite3/sqlite3.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/comic_source/comic_source.dart';
@@ -218,5 +218,3 @@ class ReadLaterManager with ChangeNotifier {
     notifyListeners();
   }
 }
-
-

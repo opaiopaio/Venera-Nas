@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/comic_source/comic_source.dart';
@@ -379,7 +379,9 @@ class ImportComic {
     String coverName;
     if (imageEntries.isNotEmpty) {
       coverName =
-          imageEntries.firstWhereOrNull((l) => l.name.startsWith('cover'))?.name ??
+          imageEntries
+              .firstWhereOrNull((l) => l.name.startsWith('cover'))
+              ?.name ??
           imageEntries.first.name;
     } else if (hasChapters && chapterEntries.isNotEmpty) {
       // Use the first image in the first chapter as the cover
@@ -389,12 +391,18 @@ class ImportComic {
       final files = chapterEntries2.where((e) => e.isFile).toList();
       files.sort((a, b) => a.name.compareTo(b.name));
       if (files.isEmpty) {
-        Log.info("Import Comic (SMB)", "Invalid Comic: $name\nNo cover image found.");
+        Log.info(
+          "Import Comic (SMB)",
+          "Invalid Comic: $name\nNo cover image found.",
+        );
         return null;
       }
       coverName = '${chapterEntries.first.name}/${files.first.name}';
     } else {
-      Log.info("Import Comic (SMB)", "Invalid Comic: $name\nNo cover image found.");
+      Log.info(
+        "Import Comic (SMB)",
+        "Invalid Comic: $name\nNo cover image found.",
+      );
       return null;
     }
 
@@ -417,7 +425,9 @@ class ImportComic {
       chapters: hasChapters ? ComicChapters(chapters!) : null,
       cover: coverName,
       comicType: ComicType.smb,
-      downloadedChapters: hasChapters ? chapterEntries.map((e) => e.name).toList() : [],
+      downloadedChapters: hasChapters
+          ? chapterEntries.map((e) => e.name).toList()
+          : [],
       createdAt: createTime ?? DateTime.now(),
     );
   }
@@ -652,5 +662,3 @@ class ImportComic {
     return map[category] ?? 'UNKNOWN';
   }
 }
-
-

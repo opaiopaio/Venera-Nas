@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 
 /// 外观规则守卫（棘轮式）——**只许变好，不许变差**。
@@ -49,8 +49,8 @@ void main(List<String> args) {
     return;
   }
 
-  final baseline =
-      (jsonDecode(baselineFile.readAsStringSync()) as Map).cast<String, dynamic>();
+  final baseline = (jsonDecode(baselineFile.readAsStringSync()) as Map)
+      .cast<String, dynamic>();
   var failed = false;
   for (final entry in counts.entries) {
     final base = (baseline[entry.key] as num?)?.toInt();
@@ -66,7 +66,9 @@ void main(List<String> args) {
     }
   }
   if (failed) {
-    stderr.writeln('\n外观规则守卫未通过：新增代码请使用 AppRadius/AppSpace/AppOpacity/AppMotion/AppTopBar。');
+    stderr.writeln(
+      '\n外观规则守卫未通过：新增代码请使用 AppRadius/AppSpace/AppOpacity/AppMotion/AppTopBar。',
+    );
     exit(1);
   }
   stdout.writeln('\n外观规则守卫通过。');

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:isolate';
 import 'package:flutter/services.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
@@ -165,5 +165,3 @@ class TaskResult {
 
   const TaskResult(this.id, this.result, this.error);
 }
-
-

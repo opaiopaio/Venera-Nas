@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/image_provider/cached_image.dart';
@@ -175,7 +175,10 @@ class _DownloadTaskTileState extends State<_DownloadTaskTile> {
   Widget build(BuildContext context) {
     return Container(
       height: 136,
-      padding: const EdgeInsets.symmetric(vertical: AppSpace.sm, horizontal: AppSpace.md),
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpace.sm,
+        horizontal: AppSpace.md,
+      ),
       child: Row(
         children: [
           Container(
@@ -242,5 +245,3 @@ class _DownloadTaskTileState extends State<_DownloadTaskTile> {
     );
   }
 }
-
-

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:isolate';
 import 'package:flutter_saf/flutter_saf.dart';
@@ -457,5 +457,3 @@ class PdfGenerator {
     return (width: width, height: height, data: data);
   }
 }
-
-

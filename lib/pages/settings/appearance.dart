@@ -43,8 +43,8 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
         const _BackgroundImageTile().toSliver(),
         ColorSettingTile(
           title: "Background color".tl,
-          settingValue:
-              (appdata.settings['backgroundColor'] ?? 'transparent').toString(),
+          settingValue: (appdata.settings['backgroundColor'] ?? 'transparent')
+              .toString(),
           allowTransparent: true,
           onPicked: (value) async {
             appdata.settings['backgroundColor'] = value;
@@ -99,10 +99,7 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
         SelectSetting(
           title: "Corner style".tl,
           settingKey: "windowOverlayCorner",
-          optionTranslation: {
-            "rounded": "Rounded".tl,
-            "square": "Square".tl,
-          },
+          optionTranslation: {"rounded": "Rounded".tl, "square": "Square".tl},
           onChanged: () => App.forceRebuild(),
         ).toSliver(),
         _SettingPartTitle(title: "Secondary page".tl, icon: Icons.layers),

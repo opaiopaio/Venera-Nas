@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/utils/translations.dart';
@@ -152,7 +152,9 @@ class PinPadState extends State<PinPad> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(slotCount, (i) {
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpace.sm),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.sm,
+                    ),
                     child: _buildDot(i < _input.length),
                   );
                 }),
@@ -212,5 +214,3 @@ class PinPadState extends State<PinPad> {
     );
   }
 }
-
-

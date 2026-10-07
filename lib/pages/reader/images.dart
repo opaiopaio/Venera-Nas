@@ -1,4 +1,4 @@
-﻿part of 'reader.dart';
+part of 'reader.dart';
 
 class _ReaderImages extends StatefulWidget {
   const _ReaderImages({super.key});
@@ -56,7 +56,8 @@ class _ReaderImagesState extends State<_ReaderImages> {
   void load() async {
     if (inProgress) return;
     inProgress = true;
-    if (reader.type == ComicType.local || reader.type == ComicType.smb ||
+    if (reader.type == ComicType.local ||
+        reader.type == ComicType.smb ||
         (LocalManager().isDownloaded(
           reader.cid,
           reader.type,
@@ -764,10 +765,7 @@ class _ContinuousModeState extends State<_ContinuousMode>
   var imageStates = <State<ComicImage>>{};
 
   void delayedSetIsScrolling(bool value) {
-    Future.delayed(
-      AppMotion.medium,
-      () => delayedIsScrolling = value,
-    );
+    Future.delayed(AppMotion.medium, () => delayedIsScrolling = value);
   }
 
   bool prepareToPrevChapter = false;
@@ -1462,7 +1460,13 @@ class _ProgressPainter extends CustomPainter {
       ..color = backgroundColor
       ..style = PaintingStyle.fill;
     canvas.drawRRect(
-      RRect.fromLTRBR(0, 0, size.width, size.height, Radius.circular(AppRadius.xl)),
+      RRect.fromLTRBR(
+        0,
+        0,
+        size.width,
+        size.height,
+        Radius.circular(AppRadius.xl),
+      ),
       paint,
     );
 

@@ -1,4 +1,4 @@
-﻿import "package:flutter/material.dart";
+import "package:flutter/material.dart";
 import "package:venera_nas/components/components.dart";
 import "package:venera_nas/foundation/app.dart";
 import "package:venera_nas/foundation/comic_source/comic_source.dart";
@@ -92,5 +92,3 @@ class _RankingPageState extends State<RankingPage> {
     );
   }
 }
-
-

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:venera_nas/foundation/appdata.dart';
 import 'package:venera_nas/pages/categories_page.dart';
 import 'package:venera_nas/pages/search_page.dart';
@@ -109,5 +109,3 @@ class _MainPageState extends State<MainPage> {
     );
   }
 }
-
-

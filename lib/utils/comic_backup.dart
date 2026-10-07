@@ -1,4 +1,4 @@
-﻿import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/res.dart';
 import 'package:venera_nas/foundation/appdata.dart';
 import 'package:venera_nas/foundation/local.dart';
@@ -422,5 +422,3 @@ class ComicBackupManager {
 
   static String _twoDigits(int value) => value.toString().padLeft(2, '0');
 }
-
-

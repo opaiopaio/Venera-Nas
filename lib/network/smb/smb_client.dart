@@ -165,10 +165,7 @@ class SmbClient {
   /// Write data from a stream to a file on the SMB share.
   ///
   /// Useful for large files that should not be fully loaded into memory.
-  Future<void> streamWrite(
-    String remotePath,
-    Stream<Uint8List> stream,
-  ) async {
+  Future<void> streamWrite(String remotePath, Stream<Uint8List> stream) async {
     await _p.streamWrite(remotePath, stream);
   }
 

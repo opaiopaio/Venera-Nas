@@ -1,4 +1,4 @@
-﻿import 'dart:typed_data';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
@@ -240,7 +240,8 @@ class _JSCallbackButtonState extends State<_JSCallbackButton> {
         style: ButtonStyle(
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(
-              borderRadius: windowOverlayBorderRadius() ??
+              borderRadius:
+                  windowOverlayBorderRadius() ??
                   BorderRadius.circular(AppRadius.md),
             ),
           ),
@@ -274,5 +275,3 @@ class _JSCallbackButtonState extends State<_JSCallbackButton> {
     };
   }
 }
-
-

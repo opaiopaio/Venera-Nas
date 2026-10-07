@@ -1,4 +1,4 @@
-﻿import 'package:app_links/app_links.dart';
+import 'package:app_links/app_links.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/comic_source/comic_source.dart';
 import 'package:venera_nas/pages/aggregated_search_page.dart';
@@ -87,5 +87,3 @@ Future<bool> handleAppLink(Uri uri) async {
   }
   return false;
 }
-
-

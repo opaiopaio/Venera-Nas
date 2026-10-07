@@ -57,7 +57,10 @@ class ReaderImageProvider
       Log.info('SMB Reader', 'loading: $imageKey');
       final config = parseSmbConfigFromUrl(imageKey);
       final remotePath = smbPathFromUrl(imageKey);
-      Log.info('SMB Reader', 'host=${config.host} share=${config.share} remotePath=$remotePath');
+      Log.info(
+        'SMB Reader',
+        'host=${config.host} share=${config.share} remotePath=$remotePath',
+      );
       final client = SmbClient(config: config);
       try {
         await client.connect();

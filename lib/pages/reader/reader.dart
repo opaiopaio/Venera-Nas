@@ -1,4 +1,4 @@
-﻿library;
+library;
 
 import 'dart:async';
 import 'dart:convert';
@@ -874,5 +874,3 @@ abstract interface class _ImageViewController {
 
   String? getImageKeyByOffset(Offset offset);
 }
-
-

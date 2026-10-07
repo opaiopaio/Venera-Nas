@@ -14,16 +14,12 @@ class SmbConnection {
 
   const SmbConnection({required this.name, required this.config});
 
-  Map<String, dynamic> toJson() => {
-    'name': name,
-    'config': config.toJson(),
-  };
+  Map<String, dynamic> toJson() => {'name': name, 'config': config.toJson()};
 
-  factory SmbConnection.fromJson(Map<String, dynamic> json) =>
-      SmbConnection(
-        name: json['name'] as String,
-        config: SmbConfig.fromJson(json['config'] as Map<String, dynamic>),
-      );
+  factory SmbConnection.fromJson(Map<String, dynamic> json) => SmbConnection(
+    name: json['name'] as String,
+    config: SmbConfig.fromJson(json['config'] as Map<String, dynamic>),
+  );
 
   /// Serialize a list of connections to a JSON string.
   static String encodeList(List<SmbConnection> connections) =>
@@ -62,7 +58,7 @@ class SmbConnection {
       if (type == Smb2ErrorType.auth) {
         return 'Authentication failed: ${e.message}';
       } else if (type == Smb2ErrorType.connection ||
-                 type == Smb2ErrorType.timeout) {
+          type == Smb2ErrorType.timeout) {
         return 'Connection failed: ${e.message}';
       } else if (type == Smb2ErrorType.fileNotFound) {
         // The share itself may be empty or root is not listable.

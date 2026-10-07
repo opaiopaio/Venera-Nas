@@ -1,4 +1,4 @@
-﻿import 'package:venera_nas/utils/ext.dart';
+import 'package:venera_nas/utils/ext.dart';
 
 enum ImageFavoriteSortType {
   title("Title"),
@@ -101,5 +101,3 @@ enum TimeRangeType {
 
   const TimeRangeType(this.value);
 }
-
-

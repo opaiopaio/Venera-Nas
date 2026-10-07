@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:desktop_webview_window/desktop_webview_window.dart';
@@ -362,5 +362,3 @@ class DesktopWebview {
     _webview = null;
   }
 }
-
-

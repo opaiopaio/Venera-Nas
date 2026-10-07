@@ -1,4 +1,4 @@
-﻿part of 'settings_page.dart';
+part of 'settings_page.dart';
 
 class AppSettings extends StatefulWidget {
   const AppSettings({super.key});
@@ -33,9 +33,8 @@ class _AppSettingsState extends State<AppSettings> {
           callback: () async {
             showDialog(
               context: context,
-              builder: (ctx) => _LocalPathDialog(
-                onPathSet: () => setState(() {}),
-              ),
+              builder: (ctx) =>
+                  _LocalPathDialog(onPathSet: () => setState(() {})),
             );
           },
         ).toSliver(),
@@ -56,9 +55,8 @@ class _AppSettingsState extends State<AppSettings> {
           callback: () async {
             showDialog(
               context: context,
-              builder: (ctx) => _NasPathDialog(
-                onPathSet: () => setState(() {}),
-              ),
+              builder: (ctx) =>
+                  _NasPathDialog(onPathSet: () => setState(() {})),
             );
           },
         ).toSliver(),
@@ -950,10 +948,7 @@ class _LocalPathDialogState extends State<_LocalPathDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "选择一个本地文件夹用于保存下载的漫画。该文件夹必须为空。"
-                .tl,
-          ).paddingHorizontal(16),
+          Text("选择一个本地文件夹用于保存下载的漫画。该文件夹必须为空。".tl).paddingHorizontal(16),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
@@ -965,11 +960,7 @@ class _LocalPathDialogState extends State<_LocalPathDialog> {
           ).paddingHorizontal(16),
           const SizedBox(height: 16),
           Row(
-            children: [
-              Expanded(
-                child: Text("- 或手动输入 -".tl),
-              ),
-            ],
+            children: [Expanded(child: Text("- 或手动输入 -".tl))],
           ).paddingHorizontal(16),
           const SizedBox(height: 12),
           TextField(
@@ -1065,10 +1056,7 @@ class _NasPathDialogState extends State<_NasPathDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "输入 SMB/NAS 地址，选择 NAS 下载模式时漫画将保存到此路径。"
-                .tl,
-          ).paddingHorizontal(16),
+          Text("输入 SMB/NAS 地址，选择 NAS 下载模式时漫画将保存到此路径。".tl).paddingHorizontal(16),
           const SizedBox(height: 16),
           TextField(
             decoration: InputDecoration(

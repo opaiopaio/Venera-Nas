@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter_7zip/flutter_7zip.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/comic_source/comic_source.dart';
@@ -840,5 +840,3 @@ class _ComicInfoTags {
     required this.tags,
   });
 }
-
-

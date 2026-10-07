@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/utils/comic_backup.dart';
@@ -304,5 +304,3 @@ class _ComicArchivePageState extends State<ComicArchivePage> {
         '${twoDigits(time.hour)}:${twoDigits(time.minute)}';
   }
 }
-
-

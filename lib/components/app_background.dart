@@ -50,7 +50,10 @@ class AppBackground extends StatelessWidget {
       }
       layer = Stack(
         fit: StackFit.expand,
-        children: [layer, Opacity(opacity: opacity, child: img)],
+        children: [
+          layer,
+          Opacity(opacity: opacity, child: img),
+        ],
       );
     }
     return layer;

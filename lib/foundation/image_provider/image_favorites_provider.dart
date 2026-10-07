@@ -1,4 +1,4 @@
-﻿import 'dart:async' show Future, StreamController;
+import 'dart:async' show Future, StreamController;
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -161,5 +161,3 @@ class ImageFavoritesProvider
   String get key =>
       "ImageFavorites ${imageFavorite.imageKey}@${imageFavorite.sourceKey}@${imageFavorite.id}@${imageFavorite.eid}";
 }
-
-

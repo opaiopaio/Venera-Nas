@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_reorderable_grid_view/widgets/reorderable_builder.dart';
@@ -87,10 +87,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: customBackgroundAware(null),
-      child: buildBody(),
-    );
+    return Material(color: customBackgroundAware(null), child: buildBody());
   }
 
   Widget buildBody() {
@@ -280,10 +277,7 @@ class _SettingsDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: customBackgroundAware(null),
-      child: _buildPage(),
-    );
+    return Material(color: customBackgroundAware(null), child: _buildPage());
   }
 
   Widget _buildPage() {
@@ -300,5 +294,3 @@ class _SettingsDetailPage extends StatelessWidget {
     };
   }
 }
-
-

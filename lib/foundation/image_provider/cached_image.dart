@@ -1,4 +1,4 @@
-﻿import 'dart:async' show Future;
+import 'dart:async' show Future;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:venera_nas/foundation/comic_type.dart';
@@ -98,5 +98,3 @@ class CachedImageProvider
   @override
   String get key => url + (sourceKey ?? "") + (cid ?? "");
 }
-
-

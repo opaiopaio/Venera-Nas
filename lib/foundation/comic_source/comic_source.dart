@@ -1,4 +1,4 @@
-﻿library;
+library;
 
 import 'dart:async';
 import 'dart:collection';
@@ -535,5 +535,3 @@ class ArchiveDownloader {
 
   const ArchiveDownloader(this.getArchives, this.getDownloadUrl);
 }
-
-

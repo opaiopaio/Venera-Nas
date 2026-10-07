@@ -398,5 +398,3 @@ Future<void> importPicaData(File file) async {
     cacheDir.deleteIgnoreError(recursive: true);
   }
 }
-
-

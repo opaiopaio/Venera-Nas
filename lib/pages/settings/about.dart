@@ -111,7 +111,9 @@ Future<void> checkUpdateUi([
               Button.text(
                 onPressed: () {
                   Navigator.pop(context);
-                  launchUrlString("https://github.com/opaiopaio/Venera-Nas/releases");
+                  launchUrlString(
+                    "https://github.com/opaiopaio/Venera-Nas/releases",
+                  );
                 },
                 child: Text("Update".tl),
               ),

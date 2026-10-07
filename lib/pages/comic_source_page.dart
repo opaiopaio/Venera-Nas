@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io' as io;
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -254,10 +254,13 @@ class _BodyState extends State<_Body> {
                 filled: true,
                 fillColor: windowOverlayColor(),
                 border: OutlineInputBorder(
-                  borderRadius: windowOverlayBorderRadius() ??
+                  borderRadius:
+                      windowOverlayBorderRadius() ??
                       BorderRadius.circular(AppRadius.md),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.md,
+                ),
                 suffix: IconButton(
                   onPressed: () => handleAddSource(url),
                   icon: const Icon(Icons.check),
@@ -441,7 +444,10 @@ class _ComicSourceListState extends State<_ComicSourceList> {
       itemBuilder: (context, index) {
         if (index == 0) {
           return Container(
-            margin: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.sm),
+            margin: const EdgeInsets.symmetric(
+              horizontal: AppSpace.sm,
+              vertical: AppSpace.sm,
+            ),
             decoration: BoxDecoration(
               border: Border.all(
                 color: Theme.of(context).colorScheme.outlineVariant,
@@ -463,10 +469,13 @@ class _ComicSourceListState extends State<_ComicSourceList> {
                     filled: true,
                     fillColor: windowOverlayColor(),
                     border: OutlineInputBorder(
-                      borderRadius: windowOverlayBorderRadius() ??
+                      borderRadius:
+                          windowOverlayBorderRadius() ??
                           BorderRadius.circular(AppRadius.md),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.md,
+                    ),
                   ),
                   onChanged: (value) {
                     changed = true;
@@ -995,9 +1004,7 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
                       child: e,
                     ),
                   ),
-                  ..._buildAccount().map(
-                    (e) => WindowOverlayBox(child: e),
-                  ),
+                  ..._buildAccount().map((e) => WindowOverlayBox(child: e)),
                 ],
               ],
             ),
@@ -1471,5 +1478,3 @@ class _LoginPageState extends State<_LoginPage> {
     webview.open();
   }
 }
-
-

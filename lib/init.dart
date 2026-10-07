@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:display_mode/display_mode.dart';
 import 'package:flutter/foundation.dart';
@@ -134,5 +134,3 @@ void checkUpdates() {
   _checkAppUpdates();
   FollowUpdatesService.initChecker();
 }
-
-

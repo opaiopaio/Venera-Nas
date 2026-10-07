@@ -34,5 +34,7 @@ class SmbNotFoundException extends SmbException {
 
 /// Thrown when an SMB operation is attempted while disconnected.
 class SmbNotConnectedException extends SmbException {
-  const SmbNotConnectedException([super.message = 'Not connected to SMB share']);
+  const SmbNotConnectedException([
+    super.message = 'Not connected to SMB share',
+  ]);
 }

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter_qjs/flutter_qjs.dart';
@@ -348,5 +348,3 @@ class ImageDownloadProgress {
     this.imageBytes,
   });
 }
-
-

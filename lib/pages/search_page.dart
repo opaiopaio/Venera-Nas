@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -691,43 +691,46 @@ class _SearchHistoryState extends State<_SearchHistory> {
     return Builder(
       builder: (context) {
         return InkWell(
-          onTap: () {
-            widget.search(appdata.searchHistory[index]);
-          },
-          onLongPress: () {
-            var renderBox = context.findRenderObject() as RenderBox;
-            var offset = renderBox.localToGlobal(Offset.zero);
-            showMenu(
-              Offset(
-                offset.dx + renderBox.size.width / 2 - 121,
-                offset.dy + renderBox.size.height - 8,
-              ),
-            );
-          },
-          onSecondaryTapUp: (details) {
-            showMenu(details.globalPosition);
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              // color: context.colorScheme.surfaceContainer,
-              border: Border(
-                left: BorderSide(
-                  color: context.colorScheme.outlineVariant,
-                  width: 2,
+              onTap: () {
+                widget.search(appdata.searchHistory[index]);
+              },
+              onLongPress: () {
+                var renderBox = context.findRenderObject() as RenderBox;
+                var offset = renderBox.localToGlobal(Offset.zero);
+                showMenu(
+                  Offset(
+                    offset.dx + renderBox.size.width / 2 - 121,
+                    offset.dy + renderBox.size.height - 8,
+                  ),
+                );
+              },
+              onSecondaryTapUp: (details) {
+                showMenu(details.globalPosition);
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  // color: context.colorScheme.surfaceContainer,
+                  border: Border(
+                    left: BorderSide(
+                      color: context.colorScheme.outlineVariant,
+                      width: 2,
+                    ),
+                  ),
                 ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.md,
+                  vertical: AppSpace.sm,
+                ),
+                child: Text(appdata.searchHistory[index], style: ts.s14),
               ),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: AppSpace.sm),
-            child: Text(appdata.searchHistory[index], style: ts.s14),
-          ),
-        ).paddingBottom(
-          // 启用「窗口/按钮背景」时去掉行底部内边距：否则左侧竖条会贴着遮罩上沿、
-          // 下面空出一块；间距改由外层 WindowOverlayBox 的 margin 提供。
-          appdata.settings.customBackgroundActive ? 0 : 8,
-        ).paddingHorizontal(4);
+            )
+            .paddingBottom(
+              // 启用「窗口/按钮背景」时去掉行底部内边距：否则左侧竖条会贴着遮罩上沿、
+              // 下面空出一块；间距改由外层 WindowOverlayBox 的 margin 提供。
+              appdata.settings.customBackgroundActive ? 0 : 8,
+            )
+            .paddingHorizontal(4);
       },
     );
   }
 }
-
-

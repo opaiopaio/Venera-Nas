@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/appdata.dart';
@@ -197,7 +197,11 @@ class _HistoryPageState extends State<HistoryPage> {
       slivers.add(
         SliverToBoxAdapter(
           child: Container(
-            padding: const EdgeInsets.only(left: AppSpace.lg, top: AppSpace.lg, bottom: AppSpace.xs),
+            padding: const EdgeInsets.only(
+              left: AppSpace.lg,
+              top: AppSpace.lg,
+              bottom: AppSpace.xs,
+            ),
             child: Text(
               group.label.tl,
               style: ts.s14.copyWith(
@@ -615,5 +619,3 @@ class _SliverGridComicsNoListenerState
     );
   }
 }
-
-

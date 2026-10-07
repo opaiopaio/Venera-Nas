@@ -103,7 +103,10 @@ extension WidgetExtension on Widget {
       // 用 Material + 圆角裁切，保证 InkWell 的水波纹/悬停高亮也跟随圆角
       // （普通 Container 裁不到 InkWell 画在 Material 上的墨水层）。
       content = Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.xs),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.sm,
+          vertical: AppSpace.xs,
+        ),
         child: Material(
           color: windowOverlayColor(),
           borderRadius: radius,

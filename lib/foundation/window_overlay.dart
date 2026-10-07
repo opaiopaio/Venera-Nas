@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:venera_nas/foundation/app.dart';
@@ -64,7 +64,8 @@ Color? systemContainerColorCache;
 
 /// 「窗口/按钮背景」的圆角半径：`rounded`（默认，12）/ `square`（0，直角）。
 double windowOverlayRadius() =>
-    (appdata.settings['windowOverlayCorner'] as String? ?? 'rounded') == 'square'
+    (appdata.settings['windowOverlayCorner'] as String? ?? 'rounded') ==
+        'square'
     ? AppRadius.none
     : AppRadius.lg;
 
@@ -125,7 +126,11 @@ class WindowOverlayBox extends StatelessWidget {
     if (!appdata.settings.hasWindowOverlay) return child;
     return Padding(
       padding:
-          margin ?? const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.xs),
+          margin ??
+          const EdgeInsets.symmetric(
+            horizontal: AppSpace.sm,
+            vertical: AppSpace.xs,
+          ),
       child: Material(
         color: windowOverlayColor(),
         borderRadius: windowOverlayBorderRadius(),
@@ -157,11 +162,17 @@ BoxDecoration? secondaryPageDecoration() {
   final fit = appdata.settings['backgroundImageFit'] as String? ?? 'cover';
   if (fit == 'repeat') {
     return BoxDecoration(
-      image: DecorationImage(image: FileImage(file), repeat: ImageRepeat.repeat),
+      image: DecorationImage(
+        image: FileImage(file),
+        repeat: ImageRepeat.repeat,
+      ),
     );
   }
   return BoxDecoration(
-    image: DecorationImage(image: FileImage(file), fit: backgroundBoxFitOf(fit)),
+    image: DecorationImage(
+      image: FileImage(file),
+      fit: backgroundBoxFitOf(fit),
+    ),
   );
 }
 
@@ -175,7 +186,8 @@ Color? customSecondarySurfaceColor(ColorScheme scheme) {
   final mode = appdata.settings['secondaryPageMode'] as String? ?? 'opaque';
   final tint = appdata.settings['secondaryPageTint'] as String? ?? 'darken';
   final strength =
-      ((appdata.settings['secondaryPageTintStrength'] as num?)?.toDouble() ?? AppOpacity.tintStrengthDefault)
+      ((appdata.settings['secondaryPageTintStrength'] as num?)?.toDouble() ??
+              AppOpacity.tintStrengthDefault)
           .clamp(0.0, 1.0);
   final tintColor = switch (tint) {
     'lighten' => Colors.white.toOpacity(strength),

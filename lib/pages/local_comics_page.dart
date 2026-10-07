@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/appdata.dart';
@@ -68,13 +68,13 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
     var sort = appdata.implicitData["local_sort"] ?? "name";
     sortType = LocalSortType.fromString(sort);
     final all = LocalManager().getComics(sortType);
-        if (sourceFilter == LocalSourceFilter.localOnly) {
-          comics = all.where((c) => c.comicType == ComicType.local).toList();
-        } else if (sourceFilter == LocalSourceFilter.smbOnly) {
-          comics = all.where((c) => c.comicType == ComicType.smb).toList();
-        } else {
-          comics = all;
-        }
+    if (sourceFilter == LocalSourceFilter.localOnly) {
+      comics = all.where((c) => c.comicType == ComicType.local).toList();
+    } else if (sourceFilter == LocalSourceFilter.smbOnly) {
+      comics = all.where((c) => c.comicType == ComicType.smb).toList();
+    } else {
+      comics = all;
+    }
     LocalManager().addListener(update);
     super.initState();
   }
@@ -1152,6 +1152,5 @@ void showDeleteChaptersPopWindow(BuildContext context, LocalComic comic) {
     ),
   );
 }
-enum LocalSourceFilter { all, localOnly, smbOnly; }
 
-
+enum LocalSourceFilter { all, localOnly, smbOnly }

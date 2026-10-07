@@ -1,4 +1,4 @@
-﻿import 'dart:math';
+import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -547,5 +547,3 @@ class SlidePageTransitionBuilder extends PageTransitionsBuilder {
     );
   }
 }
-
-

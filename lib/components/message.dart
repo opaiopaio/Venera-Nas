@@ -1,4 +1,4 @@
-﻿part of "components.dart";
+part of "components.dart";
 
 void showToast({
   required String message,
@@ -460,7 +460,10 @@ Future<int?> showSelectDialog({
           return ContentDialog(
             title: title,
             content: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg, vertical: AppSpace.md),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpace.lg,
+                vertical: AppSpace.md,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

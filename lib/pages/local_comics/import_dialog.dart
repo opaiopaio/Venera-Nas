@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/appdata.dart';
@@ -51,7 +51,11 @@ class _ImportComicsDialogState extends State<ImportComicsDialog> {
         ).paddingHorizontal(16),
         if (_error != null)
           Padding(
-            padding: const EdgeInsets.only(top: AppSpace.sm, left: AppSpace.lg, right: AppSpace.lg),
+            padding: const EdgeInsets.only(
+              top: AppSpace.sm,
+              left: AppSpace.lg,
+              right: AppSpace.lg,
+            ),
             child: Text(
               _error!,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
@@ -240,8 +244,10 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
       LocalManager().notifyChanges();
       setState(() {
         _isScanning = false;
-        _scanResult = "从 @b 导入了 @a 部漫画"
-            .tlParams({'a': comics.length, 'b': _selectedServer!.name});
+        _scanResult = "从 @b 导入了 @a 部漫画".tlParams({
+          'a': comics.length,
+          'b': _selectedServer!.name,
+        });
       });
     } catch (e) {
       if (!mounted) return;
@@ -262,8 +268,7 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              "未配置 SMB 服务器。请先在 设置 > SMB / NAS 服务器 中添加服务器。"
-                  .tl,
+              "未配置 SMB 服务器。请先在 设置 > SMB / NAS 服务器 中添加服务器。".tl,
             ).paddingHorizontal(16),
             const SizedBox(height: 16),
           ],
@@ -342,9 +347,7 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        LinearProgressIndicator(
-          value: _total > 0 ? _current / _total : null,
-        ),
+        LinearProgressIndicator(value: _total > 0 ? _current / _total : null),
         const SizedBox(height: 16),
         Text("正在扫描...".tl),
         if (_total > 0) Text("$_current / $_total"),
@@ -363,14 +366,6 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
   }
 
   List<Widget> _buildProgressActions() {
-    return [
-      TextButton(
-        onPressed: () {
-        },
-        child: Text("Cancel".tl),
-      ),
-    ];
+    return [TextButton(onPressed: () {}, child: Text("Cancel".tl))];
   }
 }
-
-

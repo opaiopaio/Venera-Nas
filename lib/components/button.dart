@@ -1,4 +1,4 @@
-﻿part of 'components.dart';
+part of 'components.dart';
 
 class HoverBox extends StatefulWidget {
   const HoverBox({
@@ -161,7 +161,8 @@ class _ButtonState extends State<Button> {
 
   @override
   Widget build(BuildContext context) {
-    var padding = widget.padding ?? const EdgeInsets.symmetric(horizontal: AppSpace.lg);
+    var padding =
+        widget.padding ?? const EdgeInsets.symmetric(horizontal: AppSpace.lg);
     var width = widget.width;
     if (width != null) {
       width = width - padding.horizontal;

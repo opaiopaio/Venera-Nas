@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/app_theme.dart';
 
@@ -127,7 +127,12 @@ class _CustomSliderState extends State<CustomSlider> {
     final colorScheme = Theme.of(context).colorScheme;
     final theme = _SliderDefaultsM3(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpace.xl, AppSpace.md, AppSpace.xl, AppSpace.md),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.xl,
+        AppSpace.md,
+        AppSpace.xl,
+        AppSpace.md,
+      ),
       child: widget.max - widget.min > 0
           ? LayoutBuilder(
               builder: (context, constraints) => MouseRegion(
@@ -267,5 +272,3 @@ class _CustomSliderState extends State<CustomSlider> {
     );
   }
 }
-
-

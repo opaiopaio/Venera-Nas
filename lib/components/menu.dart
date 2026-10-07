@@ -1,4 +1,4 @@
-﻿part of "components.dart";
+part of "components.dart";
 
 void showMenuX(BuildContext context, Offset location, List<MenuEntry> entries) {
   Navigator.of(
@@ -52,7 +52,9 @@ class _MenuRoute<T> extends PopupRoute<T> {
           top: top,
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.sm),
+              borderRadius:
+                  windowOverlayBorderRadius() ??
+                  BorderRadius.circular(AppRadius.sm),
               border: context.brightness == Brightness.dark
                   ? Border.all(color: context.colorScheme.outlineVariant)
                   : null,

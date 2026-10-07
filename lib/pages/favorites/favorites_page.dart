@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -198,5 +198,3 @@ abstract interface class FolderList {
 
   void updateFolders();
 }
-
-

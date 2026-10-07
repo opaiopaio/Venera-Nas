@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:venera_nas/foundation/app.dart';
@@ -207,5 +207,3 @@ class ComicImporter {
     }
   }
 }
-
-

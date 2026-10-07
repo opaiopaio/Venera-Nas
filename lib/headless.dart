@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/widgets.dart';
 import 'package:venera_nas/utils/data_sync.dart';
@@ -251,5 +251,3 @@ Future<void> runHeadlessMode(List<String> args) async {
   // Exit after command execution
   exit(0);
 }
-
-

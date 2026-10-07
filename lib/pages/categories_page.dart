@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/appdata.dart';
@@ -253,12 +253,10 @@ class _CategoryPage extends StatelessWidget {
     });
   }
 
-    Widget buildTag(String label, VoidCallback onClick) {
-      // 分类页标签属于「选择/标签 chip」类：统一规格见 components/mask_chip.dart。
-      return MaskChip(text: label, onTap: onClick, withMargin: true);
-    }
+  Widget buildTag(String label, VoidCallback onClick) {
+    // 分类页标签属于「选择/标签 chip」类：统一规格见 components/mask_chip.dart。
+    return MaskChip(text: label, onTap: onClick, withMargin: true);
+  }
 
   bool get enableTranslation => App.locale.languageCode == 'zh';
 }
-
-

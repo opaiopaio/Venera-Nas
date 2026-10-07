@@ -55,7 +55,10 @@ void main() {
 
           final call = src.substring(m.start, end);
           final after = src.substring(end + 1, (end + 16).clamp(0, src.length));
-          final before = src.substring((m.start - 400).clamp(0, src.length), m.start);
+          final before = src.substring(
+            (m.start - 400).clamp(0, src.length),
+            m.start,
+          );
           final lineStart = src.lastIndexOf('\n', m.start) + 1;
           var lineEnd = src.indexOf('\n', m.start);
           if (lineEnd < 0) lineEnd = src.length;

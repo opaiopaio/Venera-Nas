@@ -1,4 +1,4 @@
-﻿part of 'favorites_page.dart';
+part of 'favorites_page.dart';
 
 const _localAllFolderLabel = '^_^[%local_all%]^_^';
 
@@ -84,17 +84,14 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
         comics = manager.allComics();
       } else {
         isLoading = true;
-        manager
-            .allComicsAsync()
-            .minTime(AppMotion.short)
-            .then((value) {
-              if (mounted) {
-                setState(() {
-                  isLoading = false;
-                  comics = value;
-                });
-              }
+        manager.allComicsAsync().minTime(AppMotion.short).then((value) {
+          if (mounted) {
+            setState(() {
+              isLoading = false;
+              comics = value;
             });
+          }
+        });
       }
     } else {
       var folderComics = manager.folderComics(widget.folder);
@@ -904,7 +901,10 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.add, size: AppIconSize.md),
+                                      const Icon(
+                                        Icons.add,
+                                        size: AppIconSize.md,
+                                      ),
                                       const SizedBox(width: 4),
                                       Text("New Folder".tl),
                                     ],

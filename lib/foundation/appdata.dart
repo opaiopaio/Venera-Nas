@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -300,8 +300,10 @@ class Settings with ChangeNotifier {
     'backgroundImage': '', // 背景图片文件名（存于 dataPath/background/）
     'backgroundImageSource': '', // 原始选取路径（设置页显示"真实文件地址与文件名"）
     'backgroundImageOpacity': 1.0, // 背景图片透明度 0.0 - 1.0
-    'backgroundImageFit': 'cover', // cover/contain/fill/fitWidth/fitHeight/none/scaleDown/repeat
-    'windowOverlayColor': 'system', // 窗口/按钮背景色：system / transparent / #RRGGBB（独立于主题色）
+    'backgroundImageFit':
+        'cover', // cover/contain/fill/fitWidth/fitHeight/none/scaleDown/repeat
+    'windowOverlayColor':
+        'system', // 窗口/按钮背景色：system / transparent / #RRGGBB（独立于主题色）
     'windowOverlayOpacity': 1.0, // 窗口表面遮罩不透明度 0.0 - 1.0
     'windowOverlayCorner': 'rounded', // 窗口/按钮背景圆角：rounded / square
     // ── 全局文字（与自定义背景搭配）──
@@ -358,7 +360,6 @@ class Settings with ChangeNotifier {
     if (n == null) return null;
     return 0xFF000000 | n;
   }
-
 
   operator [](String key) {
     return _data[key];
@@ -501,5 +502,3 @@ const legacySourceListUrls = <String>{
   "https://cdn.jsdelivr.net/gh/venera-app/venera-configs@main/index.json",
   "https://cdn.jsdelivr.net/gh/haukuen/venera-configs@main/index.json",
 };
-
-

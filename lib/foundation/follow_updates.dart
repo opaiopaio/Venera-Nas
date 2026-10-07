@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'package:venera_nas/foundation/favorites.dart';
 import 'package:venera_nas/foundation/log.dart';
@@ -214,5 +214,3 @@ Future<String> getUpdatedComicsAsJson(String folder) async {
       .toList();
   return jsonEncode(jsonList);
 }
-
-

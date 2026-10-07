@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -71,7 +71,10 @@ String? globalFontFamily() {
 
 /// 全局字号缩放（0.8 - 1.4，默认 1.0）。
 double globalFontScale() =>
-    ((appdata.settings['globalFontScale'] as num?)?.toDouble() ?? 1.0).clamp(AppTextScale.min, AppTextScale.max);
+    ((appdata.settings['globalFontScale'] as num?)?.toDouble() ?? 1.0).clamp(
+      AppTextScale.min,
+      AppTextScale.max,
+    );
 
 /// 阴影 + 发光。发光用「多层同色、位移为 0、模糊递增」的 Shadow 叠加实现。
 List<Shadow>? globalTextShadows() {
@@ -112,9 +115,7 @@ List<Shadow>? globalTextShadows() {
     for (var i = 4; i >= 1; i--) {
       shadows.add(
         Shadow(
-          color: color.withValues(
-            alpha: strength * (1 - (i - 1) / 4) * 0.6,
-          ),
+          color: color.withValues(alpha: strength * (1 - (i - 1) / 4) * 0.6),
           blurRadius: radius * i / 4,
         ),
       );
@@ -131,7 +132,6 @@ TextStyle? globalTextStyle() {
   if (color == null && family == null && shadows == null) return null;
   return TextStyle(color: color, fontFamily: family, shadows: shadows);
 }
-
 
 /// 把全局文字样式（颜色/字体/**阴影+发光**）合并进整套 [TextTheme]。
 ///

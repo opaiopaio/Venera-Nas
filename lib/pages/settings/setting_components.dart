@@ -805,7 +805,11 @@ class _SettingPartTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return SliverToBoxAdapter(
       child: Container(
-        padding: const EdgeInsets.only(left: AppSpace.lg, top: AppSpace.lg, bottom: AppSpace.sm),
+        padding: const EdgeInsets.only(
+          left: AppSpace.lg,
+          top: AppSpace.lg,
+          bottom: AppSpace.sm,
+        ),
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(

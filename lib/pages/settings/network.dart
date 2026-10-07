@@ -418,8 +418,9 @@ class _SmbServerManagerState extends State<_SmbServerManager> {
     if (raw is! List) return [];
     try {
       return raw
-          .map((e) =>
-              SmbConnection.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map(
+            (e) => SmbConnection.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
           .toList();
     } catch (_) {
       return [];
@@ -427,8 +428,7 @@ class _SmbServerManagerState extends State<_SmbServerManager> {
   }
 
   set servers(List<SmbConnection> value) {
-    appdata.settings['smbServers'] =
-        value.map((e) => e.toJson()).toList();
+    appdata.settings['smbServers'] = value.map((e) => e.toJson()).toList();
     appdata.saveData();
   }
 
@@ -465,7 +465,11 @@ class _SmbServerManagerState extends State<_SmbServerManager> {
     final error = await connection.testConnection();
     if (!mounted) return;
     if (error == null) {
-      showDialogMessage(context, "Test Connection".tl, "Connection successful".tl);
+      showDialogMessage(
+        context,
+        "Test Connection".tl,
+        "Connection successful".tl,
+      );
     } else {
       showDialogMessage(context, "Test Connection".tl, error);
     }
@@ -575,15 +579,9 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
       text: (c?.config.port ?? 445).toString(),
     );
     _shareController = TextEditingController(text: c?.config.share ?? '');
-    _usernameController = TextEditingController(
-      text: c?.config.username ?? '',
-    );
-    _passwordController = TextEditingController(
-      text: c?.config.password ?? '',
-    );
-    _domainController = TextEditingController(
-      text: c?.config.domain ?? '',
-    );
+    _usernameController = TextEditingController(text: c?.config.username ?? '');
+    _passwordController = TextEditingController(text: c?.config.password ?? '');
+    _domainController = TextEditingController(text: c?.config.domain ?? '');
   }
 
   @override
@@ -620,7 +618,11 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
     if (!mounted) return;
     setState(() => _isTesting = false);
     if (error == null) {
-      showDialogMessage(context, "Test Connection".tl, "Connection successful".tl);
+      showDialogMessage(
+        context,
+        "Test Connection".tl,
+        "Connection successful".tl,
+      );
     } else {
       showDialogMessage(context, "Test Connection".tl, error);
     }
@@ -667,8 +669,7 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
       servers.add(connection);
     }
 
-    appdata.settings['smbServers'] =
-        servers.map((e) => e.toJson()).toList();
+    appdata.settings['smbServers'] = servers.map((e) => e.toJson()).toList();
     appdata.saveData();
     Navigator.of(context, rootNavigator: true).pop(true);
   }

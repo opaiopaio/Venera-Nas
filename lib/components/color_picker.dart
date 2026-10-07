@@ -1,4 +1,4 @@
-﻿part of 'components.dart';
+part of 'components.dart';
 
 // 颜色设置值的编码约定：
 //  - 'system'      跟随系统
@@ -117,7 +117,9 @@ class ColorSettingTile extends StatelessWidget {
             width: 26,
             height: 26,
             decoration: BoxDecoration(
-              color: isTransparent ? Colors.white : (preview ?? Colors.transparent),
+              color: isTransparent
+                  ? Colors.white
+                  : (preview ?? Colors.transparent),
               border: Border.all(color: Colors.black, width: 1.5),
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
@@ -173,13 +175,27 @@ class ColorPickerPage extends StatefulWidget {
 
 class _ColorPickerPageState extends State<ColorPickerPage> {
   static const List<Color> _presets = [
-    Color(0xFFF44336), Color(0xFFE91E63), Color(0xFF9C27B0),
-    Color(0xFF673AB7), Color(0xFF3F51B5), Color(0xFF2196F3),
-    Color(0xFF03A9F4), Color(0xFF00BCD4), Color(0xFF009688),
-    Color(0xFF4CAF50), Color(0xFF8BC34A), Color(0xFFCDDC39),
-    Color(0xFFFFEB3B), Color(0xFFFFC107), Color(0xFFFF9800),
-    Color(0xFFFF5722), Color(0xFF795548), Color(0xFF9E9E9E),
-    Color(0xFF607D8B), Color(0xFF000000), Color(0xFFFFFFFF),
+    Color(0xFFF44336),
+    Color(0xFFE91E63),
+    Color(0xFF9C27B0),
+    Color(0xFF673AB7),
+    Color(0xFF3F51B5),
+    Color(0xFF2196F3),
+    Color(0xFF03A9F4),
+    Color(0xFF00BCD4),
+    Color(0xFF009688),
+    Color(0xFF4CAF50),
+    Color(0xFF8BC34A),
+    Color(0xFFCDDC39),
+    Color(0xFFFFEB3B),
+    Color(0xFFFFC107),
+    Color(0xFFFF9800),
+    Color(0xFFFF5722),
+    Color(0xFF795548),
+    Color(0xFF9E9E9E),
+    Color(0xFF607D8B),
+    Color(0xFF000000),
+    Color(0xFFFFFFFF),
   ];
 
   /// 'system' / 'transparent' / null(自定义颜色)
@@ -305,11 +321,7 @@ class _ColorPickerPageState extends State<ColorPickerPage> {
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      presets,
-                      const SizedBox(height: 16),
-                      editor,
-                    ],
+                    children: [presets, const SizedBox(height: 16), editor],
                   ),
           );
         },
@@ -365,7 +377,10 @@ class _ColorPickerPageState extends State<ColorPickerPage> {
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: AppSpace.tiny),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.md,
+          vertical: AppSpace.tiny,
+        ),
         decoration: BoxDecoration(
           color: selected
               ? scheme.primaryContainer
@@ -611,9 +626,12 @@ class _ColorWheelPainter extends CustomPainter {
 
     final markerAngle = hsv.hue * math.pi / 180;
     final markerRadius = hsv.saturation * radius;
-    final marker = center +
-        Offset(math.cos(markerAngle) * markerRadius,
-            math.sin(markerAngle) * markerRadius);
+    final marker =
+        center +
+        Offset(
+          math.cos(markerAngle) * markerRadius,
+          math.sin(markerAngle) * markerRadius,
+        );
     canvas.drawCircle(
       marker,
       6,

@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:venera_nas/foundation/app.dart';
@@ -101,5 +101,3 @@ String? _normalizeProxy(String value) {
 
   return proxy;
 }
-
-

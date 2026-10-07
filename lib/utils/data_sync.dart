@@ -552,5 +552,3 @@ class DataSync with ChangeNotifier {
     }
   }
 }
-
-

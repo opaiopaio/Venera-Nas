@@ -1,4 +1,4 @@
-﻿part of 'comic_page.dart';
+part of 'comic_page.dart';
 
 class _FavoritePanel extends StatefulWidget {
   const _FavoritePanel({
@@ -128,7 +128,10 @@ class _FavoriteListState extends State<_FavoriteList> {
     final divider = widget.hasNetwork
         ? Container(
             height: 1,
-            margin: const EdgeInsets.symmetric(horizontal: AppSpace.lg, vertical: AppSpace.sm),
+            margin: const EdgeInsets.symmetric(
+              horizontal: AppSpace.lg,
+              vertical: AppSpace.sm,
+            ),
             color: context.colorScheme.outlineVariant.withValues(alpha: 0.3),
           )
         : null;
@@ -222,7 +225,12 @@ class _NetworkSectionState extends State<_NetworkSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpace.lg, AppSpace.lg, AppSpace.lg, AppSpace.sm),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.lg,
+            AppSpace.lg,
+            AppSpace.lg,
+            AppSpace.sm,
+          ),
           child: Text(
             "Network Favorites".tl,
             style: ts.s14.copyWith(
@@ -287,7 +295,12 @@ class _NetworkSectionState extends State<_NetworkSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpace.lg, AppSpace.lg, AppSpace.lg, AppSpace.sm),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.lg,
+            AppSpace.lg,
+            AppSpace.lg,
+            AppSpace.sm,
+          ),
           child: Text(
             "Network Favorites".tl,
             style: ts.s14.copyWith(
@@ -365,7 +378,12 @@ class _NetworkSectionState extends State<_NetworkSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpace.lg, AppSpace.lg, AppSpace.lg, AppSpace.sm),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.lg,
+            AppSpace.lg,
+            AppSpace.lg,
+            AppSpace.sm,
+          ),
           child: Text(
             "Network Favorites".tl,
             style: ts.s14.copyWith(
@@ -500,7 +518,12 @@ class _LocalSectionState extends State<_LocalSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpace.lg, AppSpace.lg, AppSpace.lg, AppSpace.sm),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.lg,
+            AppSpace.lg,
+            AppSpace.lg,
+            AppSpace.sm,
+          ),
           child: Text(
             "Local Favorites".tl,
             style: ts.s14.copyWith(
@@ -618,7 +641,10 @@ class _HoverButtonState extends State<_HoverButton> {
         onTap: widget.enabled ? widget.onTap : null,
         child: AnimatedContainer(
           duration: AppMotion.short,
-          padding: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.xs),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.sm,
+            vertical: AppSpace.xs,
+          ),
           decoration: BoxDecoration(
             color: widget.enabled
                 ? (widget.isFavorite

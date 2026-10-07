@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
@@ -286,5 +286,3 @@ class RHttpAdapter implements HttpClientAdapter {
     };
   }
 }
-
-

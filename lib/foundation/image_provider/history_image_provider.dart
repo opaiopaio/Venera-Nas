@@ -1,4 +1,4 @@
-﻿import 'dart:async' show Future;
+import 'dart:async' show Future;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dart_smb2/dart_smb2.dart';
@@ -27,14 +27,14 @@ class HistoryImageProvider
   Future<Uint8List> load(chunkEvents, checkStop) async {
     var url = history.cover;
     if (!url.contains('/')) {
-      var localComic = LocalManager().find(history.id, history.type);
-      if (localComic == null) { // ignore: prefer_conditional_assignment
-        // Try finding by ComicType.smb — history may reference a network
-        // source but the comic was imported as SMB local.
-        localComic = LocalManager().find(history.id, ComicType.smb);
-      }
+      // Try finding by ComicType.smb — history may reference a network
+      // source but the comic was imported as SMB local.
+      final localComic =
+          LocalManager().find(history.id, history.type) ??
+          LocalManager().find(history.id, ComicType.smb);
       if (localComic != null) {
-        if (localComic.comicType == ComicType.smb || localComic.baseDir.startsWith('smb://')) {
+        if (localComic.comicType == ComicType.smb ||
+            localComic.baseDir.startsWith('smb://')) {
           return _loadSmbCover(localComic);
         }
         return localComic.coverFile.readAsBytes();
@@ -96,7 +96,9 @@ class HistoryImageProvider
         if (data.isEmpty) {
           throw "Exception: Empty cover file on SMB.";
         }
-        final compressed = await LocalComicImageProvider.compressCoverImage(data);
+        final compressed = await LocalComicImageProvider.compressCoverImage(
+          data,
+        );
         await CacheManager().writeCache(cacheKey, compressed);
         return Uint8List.fromList(compressed);
       } on Smb2Exception catch (e) {
@@ -120,7 +122,9 @@ class HistoryImageProvider
             if (!e.isDirectory) continue;
             final subEntries = await client.listDirectory(e.path);
             for (final se in subEntries) {
-              if (!se.isFile || !exts.contains(se.extension.toLowerCase())) continue;
+              if (!se.isFile || !exts.contains(se.extension.toLowerCase())) {
+                continue;
+              }
               found = se;
               break;
             }
@@ -129,7 +133,9 @@ class HistoryImageProvider
         }
         if (found == null) rethrow;
         final data = await client.readFile(found.path);
-        final compressed = await LocalComicImageProvider.compressCoverImage(data);
+        final compressed = await LocalComicImageProvider.compressCoverImage(
+          data,
+        );
         await CacheManager().writeCache(cacheKey, compressed);
         return Uint8List.fromList(compressed);
       }

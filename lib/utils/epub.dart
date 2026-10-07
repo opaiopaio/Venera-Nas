@@ -1,4 +1,4 @@
-﻿import 'dart:isolate';
+import 'dart:isolate';
 
 import 'package:uuid/uuid.dart';
 import 'package:venera_nas/foundation/app.dart';
@@ -253,5 +253,3 @@ Future<File> createEpubWithLocalComic(
     }),
   );
 }
-
-

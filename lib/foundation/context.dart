@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:venera_nas/components/components.dart';
 
 import 'app_page_route.dart';
@@ -52,5 +52,3 @@ extension Navigation on BuildContext {
     return color[brightness == Brightness.light ? 800 : 100]!;
   }
 }
-
-

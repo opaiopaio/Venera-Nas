@@ -1,4 +1,4 @@
-﻿import 'dart:typed_data';
+import 'dart:typed_data';
 import 'package:venera_nas/network/app_dio.dart';
 
 class NetworkCache {
@@ -236,5 +236,3 @@ class NetworkCacheManager implements Interceptor {
     return null;
   }
 }
-
-

@@ -1,4 +1,4 @@
-﻿import 'dart:io' as io;
+import 'dart:io' as io;
 
 import 'package:dio/dio.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -228,5 +228,3 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
     onFinished();
   }
 }
-
-

@@ -1,4 +1,4 @@
-﻿import 'dart:collection';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:isolate';
 
@@ -1442,5 +1442,3 @@ class LocalFavoritesManager with ChangeNotifier {
     notifyListeners();
   }
 }
-
-

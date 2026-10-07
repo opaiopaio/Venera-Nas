@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 /// 外观令牌（Design Tokens）——**唯一合法取值来源**。
 ///
@@ -81,8 +81,7 @@ abstract final class AppTopBar {
   static const double boundary = height + extra;
 
   /// 供 `MediaQuery.padding.top` 之外的地方直接取用。
-  static EdgeInsets get boundaryPadding =>
-      const EdgeInsets.only(top: boundary);
+  static EdgeInsets get boundaryPadding => const EdgeInsets.only(top: boundary);
 }
 
 /// 图标尺寸令牌（按实际使用分布定义，只收录常用档）。

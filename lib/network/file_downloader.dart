@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/io.dart';
@@ -321,5 +321,3 @@ class _DownloadBlock {
       downloadedBytes = int.parse(str.split("-")[2]),
       downloading = false;
 }
-
-

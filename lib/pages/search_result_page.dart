@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/appdata.dart';
@@ -515,5 +515,3 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
     );
   }
 }
-
-

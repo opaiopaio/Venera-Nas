@@ -1,4 +1,4 @@
-﻿part of 'reader.dart';
+part of 'reader.dart';
 
 bool _shouldBlockComment(Comment comment) {
   var blockedWords = appdata.settings["blockedCommentWords"] as List;
@@ -209,7 +209,10 @@ class _ChapterCommentsPageState extends State<ChapterCommentsPage> {
       return const SizedBox(height: 0);
     }
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: AppSpace.sm, horizontal: AppSpace.sm),
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpace.sm,
+        horizontal: AppSpace.sm,
+      ),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         border: Border(
@@ -322,7 +325,10 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: AppSpace.sm, horizontal: AppSpace.lg),
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpace.sm,
+        horizontal: AppSpace.lg,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -417,14 +423,20 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
             showBarrier: false,
           );
         },
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.insert_comment_outlined, size: AppIconSize.xs),
-            const SizedBox(width: 8),
-            Text(widget.comment.replyCount.toString()),
-          ],
-        ).padding(const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: AppSpace.xs)),
+        child:
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.insert_comment_outlined, size: AppIconSize.xs),
+                const SizedBox(width: 8),
+                Text(widget.comment.replyCount.toString()),
+              ],
+            ).padding(
+              const EdgeInsets.symmetric(
+                horizontal: AppSpace.md,
+                vertical: AppSpace.xs,
+              ),
+            ),
       ),
     );
   }
@@ -467,27 +479,33 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
             isLiking = false;
           });
         },
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isLiking)
-              const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(),
-              )
-            else if (isLiked)
-              Icon(
-                Icons.favorite,
-                size: AppIconSize.xs,
-                color: context.useTextColor(Colors.red),
-              )
-            else
-              const Icon(Icons.favorite_border, size: AppIconSize.xs),
-            const SizedBox(width: 8),
-            Text(likes.toString()),
-          ],
-        ).padding(const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: AppSpace.xs)),
+        child:
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isLiking)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(),
+                  )
+                else if (isLiked)
+                  Icon(
+                    Icons.favorite,
+                    size: AppIconSize.xs,
+                    color: context.useTextColor(Colors.red),
+                  )
+                else
+                  const Icon(Icons.favorite_border, size: AppIconSize.xs),
+                const SizedBox(width: 8),
+                Text(likes.toString()),
+              ],
+            ).padding(
+              const EdgeInsets.symmetric(
+                horizontal: AppSpace.md,
+                vertical: AppSpace.xs,
+              ),
+            ),
       ),
     );
   }
@@ -694,7 +712,10 @@ class _EmbeddedChapterCommentsPageState
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.sm,
+        vertical: AppSpace.sm,
+      ),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
@@ -796,7 +817,10 @@ class _EmbeddedChapterCommentsPageState
       return const SizedBox(height: 0);
     }
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: AppSpace.sm, horizontal: AppSpace.sm),
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpace.sm,
+        horizontal: AppSpace.sm,
+      ),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         border: Border(

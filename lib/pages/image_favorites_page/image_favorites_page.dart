@@ -1,4 +1,4 @@
-﻿import 'package:flutter/gestures.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -558,5 +558,3 @@ class _ImageFavoritesDialogState extends State<_ImageFavoritesDialog> {
     );
   }
 }
-
-

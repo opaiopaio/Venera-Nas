@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/utils/ext.dart';
 import 'package:venera_nas/utils/io.dart';
@@ -115,5 +115,3 @@ class Log {
     return res;
   }
 }
-
-

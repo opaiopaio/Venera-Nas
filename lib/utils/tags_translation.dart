@@ -1,4 +1,4 @@
-﻿/*
+/*
 数据来自于:
 https://github.com/EhTagTranslation/Database/tree/master/database
 
@@ -247,5 +247,3 @@ class MultipleMap<S, T> {
     return null;
   }
 }
-
-

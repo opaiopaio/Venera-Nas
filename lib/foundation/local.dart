@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:flutter/widgets.dart' show ChangeNotifier;
@@ -324,7 +324,7 @@ class LocalManager with ChangeNotifier {
     _checkNoMedia();
     // SMB download path: from settings or default
     smbPath = (appdata.settings['smbDownloadPath'] ?? '').toString().trim();
-    
+
     await ComicSourceManager().ensureInit();
     restoreDownloadingTasks();
   }
@@ -508,7 +508,10 @@ class LocalManager with ChangeNotifier {
   Future<List<String>> _getSmbImages(LocalComic comic, Object ep) async {
     Log.info('SMB', '_getSmbImages baseDir: ${comic.baseDir}');
     final config = parseSmbConfigFromUrl(comic.baseDir);
-    Log.info('SMB', 'SmbConfig host=${config.host} share=${config.share} username=${config.username}');
+    Log.info(
+      'SMB',
+      'SmbConfig host=${config.host} share=${config.share} username=${config.username}',
+    );
     final client = SmbClient(config: config);
     try {
       await client.connect();
@@ -528,12 +531,26 @@ class LocalManager with ChangeNotifier {
 
       // Log first few entry names for debugging
       for (var i = 0; i < entries.length && i < 5; i++) {
-        Log.info('SMB', '  entry[$i]: name=${entries[i].name} isDir=${entries[i].isDirectory} ext=${entries[i].extension}');
+        Log.info(
+          'SMB',
+          '  entry[$i]: name=${entries[i].name} isDir=${entries[i].isDirectory} ext=${entries[i].extension}',
+        );
       }
 
       const imageExtensions = [
-        'jpg', 'jpeg', 'png', 'webp', 'gif', 'jpe', 'bmp',
-        'pdf', 'cbz', 'zip', 'rar', 'cbr', 'cb7',
+        'jpg',
+        'jpeg',
+        'png',
+        'webp',
+        'gif',
+        'jpe',
+        'bmp',
+        'pdf',
+        'cbz',
+        'zip',
+        'rar',
+        'cbr',
+        'cb7',
       ];
 
       var imageEntries = entries.where((e) {
@@ -634,9 +651,7 @@ class LocalManager with ChangeNotifier {
     // SMB type: use smbPath
     if (type == ComicType.smb) {
       if (smbPath.isEmpty) {
-        throw StateError(
-          '未设置 NAS 下载路径。请先在 设置 > App > 设置 NAS 下载路径 中配置 SMB 地址。',
-        );
+        throw StateError('未设置 NAS 下载路径。请先在 设置 > App > 设置 NAS 下载路径 中配置 SMB 地址。');
       }
       var dir = findValidDirectoryName(smbPath, name);
       return Directory(FilePath.join(smbPath, dir));
@@ -916,5 +931,3 @@ enum LocalSortType {
     return name;
   }
 }
-
-

@@ -1,4 +1,4 @@
-﻿part of 'image_favorites_page.dart';
+part of 'image_favorites_page.dart';
 
 class _ImageFavoritesItem extends StatefulWidget {
   const _ImageFavoritesItem({
@@ -119,7 +119,10 @@ class _ImageFavoritesItemState extends State<_ImageFavoritesItem> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.sm),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpace.sm,
+        vertical: AppSpace.sm,
+      ),
       decoration: BoxDecoration(
         border: Border.all(
           color: Theme.of(context).colorScheme.outlineVariant,
@@ -248,7 +251,10 @@ class _ImageFavoritesItemState extends State<_ImageFavoritesItem> {
           },
         ),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.xxs),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.sm,
+            vertical: AppSpace.xxs,
+          ),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.secondaryContainer,
             borderRadius: BorderRadius.circular(AppRadius.md),

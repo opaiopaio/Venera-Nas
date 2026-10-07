@@ -1,4 +1,4 @@
-﻿part of 'components.dart';
+part of 'components.dart';
 
 class SideBarRoute<T> extends PopupRoute<T> {
   SideBarRoute(
@@ -28,7 +28,8 @@ class SideBarRoute<T> extends PopupRoute<T> {
   bool _barrierSawPointerDown = false;
 
   @override
-  Color? get barrierColor => showBarrier && !appdata.settings.customBackgroundActive
+  Color? get barrierColor =>
+      showBarrier && !appdata.settings.customBackgroundActive
       ? Colors.black54
       : Colors.transparent;
 

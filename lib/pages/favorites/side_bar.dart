@@ -1,4 +1,4 @@
-﻿part of 'favorites_page.dart';
+part of 'favorites_page.dart';
 
 class _LeftBar extends StatefulWidget {
   const _LeftBar({this.favPage, this.onSelected, this.withAppbar = false});
@@ -210,7 +210,10 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
         height: 42,
         alignment: Alignment.centerLeft,
         margin: appdata.settings.customBackgroundActive
-            ? const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.xxs)
+            ? const EdgeInsets.symmetric(
+                horizontal: AppSpace.sm,
+                vertical: AppSpace.xxs,
+              )
             : null,
         decoration: BoxDecoration(
           color: isSelected
@@ -235,7 +238,10 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
             Expanded(child: Text(folderName)),
             Container(
               margin: EdgeInsets.only(right: AppSpace.sm),
-              padding: EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.xxs),
+              padding: EdgeInsets.symmetric(
+                horizontal: AppSpace.sm,
+                vertical: AppSpace.xxs,
+              ),
               decoration: BoxDecoration(
                 color: context.colorScheme.surfaceContainer,
                 borderRadius: BorderRadius.circular(AppRadius.md),
@@ -266,7 +272,10 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
         height: 42,
         alignment: Alignment.centerLeft,
         margin: appdata.settings.customBackgroundActive
-            ? const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.xxs)
+            ? const EdgeInsets.symmetric(
+                horizontal: AppSpace.sm,
+                vertical: AppSpace.xxs,
+              )
             : null,
         decoration: BoxDecoration(
           color: isSelected

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:venera_nas/components/components.dart';
@@ -157,7 +157,10 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
   Widget buildNotConfigured(BuildContext context) {
     return SliverToBoxAdapter(
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.sm),
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppSpace.sm,
+          vertical: AppSpace.sm,
+        ),
         decoration: BoxDecoration(
           color: windowOverlayColor(),
           border: Border.all(
@@ -165,7 +168,8 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
             width: 0.6,
           ),
           borderRadius:
-              windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.md),
+              windowOverlayBorderRadius() ??
+              BorderRadius.circular(AppRadius.md),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,7 +197,10 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
   Widget buildConfigured(BuildContext context) {
     return SliverToBoxAdapter(
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.sm),
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppSpace.sm,
+          vertical: AppSpace.sm,
+        ),
         decoration: BoxDecoration(
           color: windowOverlayColor(),
           border: Border.all(
@@ -201,7 +208,8 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
             width: 0.6,
           ),
           borderRadius:
-              windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.md),
+              windowOverlayBorderRadius() ??
+              BorderRadius.circular(AppRadius.md),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,7 +258,10 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
       slivers: [
         SliverToBoxAdapter(
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: AppSpace.lg, vertical: AppSpace.sm),
+            margin: const EdgeInsets.symmetric(
+              horizontal: AppSpace.lg,
+              vertical: AppSpace.sm,
+            ),
             padding: const EdgeInsets.symmetric(vertical: AppSpace.xs),
             decoration: BoxDecoration(
               border: Border(
@@ -338,7 +349,10 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
       slivers: [
         SliverToBoxAdapter(
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: AppSpace.lg, vertical: AppSpace.sm),
+            margin: const EdgeInsets.symmetric(
+              horizontal: AppSpace.lg,
+              vertical: AppSpace.sm,
+            ),
             padding: const EdgeInsets.symmetric(vertical: AppSpace.xs),
             decoration: BoxDecoration(
               border: Border(
@@ -587,5 +601,3 @@ void updateFollowUpdatesUI() {
   GlobalState.findOrNull<_FollowUpdatesWidgetState>()?.updateCount();
   GlobalState.findOrNull<_FollowUpdatesPageState>()?.updateComics();
 }
-
-

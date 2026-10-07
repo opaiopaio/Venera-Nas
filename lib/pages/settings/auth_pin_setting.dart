@@ -1,4 +1,4 @@
-﻿part of 'settings_page.dart';
+part of 'settings_page.dart';
 
 class AuthPinSetting extends StatefulWidget {
   const AuthPinSetting({super.key});
@@ -75,7 +75,10 @@ class _AuthPinSettingState extends State<AuthPinSetting> {
       body: Align(
         alignment: Alignment.topCenter,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpace.xl, vertical: AppSpace.xl),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.xl,
+            vertical: AppSpace.xl,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

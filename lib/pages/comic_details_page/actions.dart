@@ -1,4 +1,4 @@
-﻿part of 'comic_page.dart';
+part of 'comic_page.dart';
 
 abstract mixin class _ComicPageActions {
   void update();
@@ -146,13 +146,22 @@ abstract mixin class _ComicPageActions {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                RadioListTile<DownloadMode>(title: Text('Local'.tl), value: DownloadMode.local),
-                RadioListTile<DownloadMode>(title: Text('NAS (SMB)'.tl), value: DownloadMode.smb),
+                RadioListTile<DownloadMode>(
+                  title: Text('Local'.tl),
+                  value: DownloadMode.local,
+                ),
+                RadioListTile<DownloadMode>(
+                  title: Text('NAS (SMB)'.tl),
+                  value: DownloadMode.smb,
+                ),
               ],
             ),
           ),
           actions: [
-            FilledButton(onPressed: () => Navigator.of(ctx).pop(result), child: Text('Confirm'.tl)),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(result),
+              child: Text('Confirm'.tl),
+            ),
           ],
         ),
       ),

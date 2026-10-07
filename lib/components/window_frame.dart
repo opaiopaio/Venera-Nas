@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -669,5 +669,3 @@ TransitionBuilder VirtualWindowFrameInit() {
 void debug() {
   ComicSourceManager().reload();
 }
-
-

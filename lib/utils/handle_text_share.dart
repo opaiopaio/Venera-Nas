@@ -1,4 +1,4 @@
-﻿import 'package:flutter/services.dart';
+import 'package:flutter/services.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/pages/aggregated_search_page.dart';
 
@@ -21,5 +21,3 @@ void handleTextShare() async {
     }
   }
 }
-
-

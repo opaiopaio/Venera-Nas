@@ -1,4 +1,4 @@
-﻿part of 'components.dart';
+part of 'components.dart';
 
 ImageProvider? _findImageProvider(Comic comic) {
   ImageProvider image;
@@ -243,7 +243,9 @@ class ComicTile extends StatelessWidget {
           top: 8,
           child: Container(
             height: 24,
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppRadius.sm)),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
             clipBehavior: Clip.antiAlias,
             child: Row(
               children: [
@@ -263,7 +265,9 @@ class ComicTile extends StatelessWidget {
                     height: 24,
                     color: Colors.blue.toOpacity(0.9),
                     constraints: const BoxConstraints(minWidth: 24),
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpace.xs),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.xs,
+                    ),
                     child: Center(
                       child: Text(
                         _buildHistoryProgressText(
@@ -329,13 +333,19 @@ class ComicTile extends StatelessWidget {
         }
 
         return _TapScaleBuilder(
-          borderRadius: windowOverlayBorderRadius() ??
+          borderRadius:
+              windowOverlayBorderRadius() ??
               BorderRadius.circular(AppRadius.lg),
           onTap: _onTap,
           onLongPress: enableLongPressed ? () => _onLongPressed(context) : null,
           onSecondaryTapDown: (detail) => onSecondaryTap(detail, context),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpace.lg, AppSpace.sm, AppSpace.xl, AppSpace.sm),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpace.lg,
+              AppSpace.sm,
+              AppSpace.xl,
+              AppSpace.sm,
+            ),
             child: Row(
               children: [
                 image,
@@ -390,7 +400,8 @@ class ComicTile extends StatelessWidget {
         }
 
         return _TapScaleBuilder(
-          borderRadius: windowOverlayBorderRadius() ??
+          borderRadius:
+              windowOverlayBorderRadius() ??
               BorderRadius.circular(AppRadius.md),
           onTap: _onTap,
           onLongPress: enableLongPressed ? () => _onLongPressed(context) : null,
@@ -433,7 +444,12 @@ class ComicTile extends StatelessWidget {
                               padding: constraints.maxWidth < 80
                                   ? const EdgeInsets.fromLTRB(3, 1, 3, 1)
                                   : constraints.maxWidth < 150
-                                  ? const EdgeInsets.fromLTRB(AppSpace.xs, AppSpace.xxs, AppSpace.xs, AppSpace.xxs)
+                                  ? const EdgeInsets.fromLTRB(
+                                      AppSpace.xs,
+                                      AppSpace.xxs,
+                                      AppSpace.xs,
+                                      AppSpace.xxs,
+                                    )
                                   : const EdgeInsets.fromLTRB(5, 2, 5, 2),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(
@@ -680,7 +696,9 @@ class _ComicDescription extends StatelessWidget {
                       for (var s in tags!)
                         Container(
                           height: 21,
-                          padding: const EdgeInsets.symmetric(horizontal: AppSpace.xs),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.xs,
+                          ),
                           constraints: BoxConstraints(
                             maxWidth: constraints.maxWidth * 0.45,
                           ),
@@ -718,7 +736,8 @@ class _ComicDescription extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (rating != null) StarRating(value: rating!, size: AppIconSize.sm),
+                  if (rating != null)
+                    StarRating(value: rating!, size: AppIconSize.sm),
                   Text(
                     description,
                     style: const TextStyle(fontSize: 12.0),
@@ -730,7 +749,12 @@ class _ComicDescription extends StatelessWidget {
             ),
             if (badge != null)
               Container(
-                padding: const EdgeInsets.fromLTRB(AppSpace.tiny, AppSpace.xs, AppSpace.tiny, AppSpace.xs),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpace.tiny,
+                  AppSpace.xs,
+                  AppSpace.tiny,
+                  AppSpace.xs,
+                ),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.tertiaryContainer,
                   borderRadius: const BorderRadius.all(

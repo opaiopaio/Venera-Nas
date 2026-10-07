@@ -1,4 +1,4 @@
-﻿part of 'components.dart';
+part of 'components.dart';
 
 class PaneItemEntry {
   String label;
@@ -397,7 +397,8 @@ class _SideNaviWidget extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final icon = Icon(enabled ? entry.activeIcon : entry.icon);
     return InkWell(
-      borderRadius: windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.lg),
+      borderRadius:
+          windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.lg),
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
@@ -407,7 +408,9 @@ class _SideNaviWidget extends StatelessWidget {
           // 选中项用主题高亮；未选中项在配置了「窗口/按钮背景」时用该色，
           // 呈现类似鼠标悬停的层次感。
           color: enabled ? colorScheme.primaryContainer : windowOverlayColor(),
-          borderRadius: windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.lg),
+          borderRadius:
+              windowOverlayBorderRadius() ??
+              BorderRadius.circular(AppRadius.lg),
         ),
         child: showTitle
             ? Row(
@@ -435,7 +438,8 @@ class _PaneActionWidget extends StatelessWidget {
     final icon = Icon(entry.icon);
     return InkWell(
       onTap: entry.onTap,
-      borderRadius: windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.lg),
+      borderRadius:
+          windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.lg),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
@@ -443,7 +447,9 @@ class _PaneActionWidget extends StatelessWidget {
         decoration: BoxDecoration(
           // 侧栏左下角的操作项（搜索/设置）同样使用「窗口/按钮背景」。
           color: windowOverlayColor(),
-          borderRadius: windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.lg),
+          borderRadius:
+              windowOverlayBorderRadius() ??
+              BorderRadius.circular(AppRadius.lg),
         ),
         child: showTitle
             ? Row(

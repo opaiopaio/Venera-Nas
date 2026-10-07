@@ -1,4 +1,4 @@
-﻿part of 'components.dart';
+part of 'components.dart';
 
 class Appbar extends StatefulWidget implements PreferredSizeWidget {
   const Appbar({
@@ -80,8 +80,7 @@ class _AppbarState extends State<Appbar> {
     var content = Container(
       decoration: BoxDecoration(
         color: customBackgroundAware(
-          widget.backgroundColor ??
-              context.colorScheme.surface.toOpacity(0.86),
+          widget.backgroundColor ?? context.colorScheme.surface.toOpacity(0.86),
         ),
       ),
       constraints: BoxConstraints(
@@ -110,7 +109,12 @@ class _AppbarState extends State<Appbar> {
           ...?widget.actions?.map(
             (e) => appdata.settings.customBackgroundActive
                 // 启用「窗口/按钮背景」时按钮自带底色块，这里补间距避免贴在一起
-                ? Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpace.tiny), child: e)
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.tiny,
+                    ),
+                    child: e,
+                  )
                 : e,
           ),
           const SizedBox(width: 8),
@@ -221,7 +225,12 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
         ),
         ...?actions?.map(
           (e) => appdata.settings.customBackgroundActive
-              ? Padding(padding: const EdgeInsets.symmetric(horizontal: AppSpace.tiny), child: e)
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.tiny,
+                  ),
+                  child: e,
+                )
               : e,
         ),
         const SizedBox(width: 8),
@@ -302,7 +311,10 @@ class _AppTabBarState extends State<AppTabBar> {
 
   static const _kTabHeight = 48.0;
 
-  static const tabPadding = EdgeInsets.symmetric(horizontal: AppSpace.xxs, vertical: AppSpace.tiny);
+  static const tabPadding = EdgeInsets.symmetric(
+    horizontal: AppSpace.xxs,
+    vertical: AppSpace.tiny,
+  );
 
   static const tabRadius = 8.0;
 
@@ -993,7 +1005,10 @@ class TabActionButton extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: _kTabHeight),
         padding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
         child: IconTheme(
-          data: IconThemeData(size: AppIconSize.md, color: context.colorScheme.primary),
+          data: IconThemeData(
+            size: AppIconSize.md,
+            color: context.colorScheme.primary,
+          ),
           child: Row(
             children: [
               icon,

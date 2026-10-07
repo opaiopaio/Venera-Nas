@@ -1,4 +1,4 @@
-﻿part of 'favorites_page.dart';
+part of 'favorites_page.dart';
 
 Future<bool> _deleteComic(
   String cid,
@@ -413,7 +413,12 @@ class _FolderTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpace.lg, AppSpace.sm, AppSpace.lg, AppSpace.sm),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.lg,
+            AppSpace.sm,
+            AppSpace.lg,
+            AppSpace.sm,
+          ),
           child: Row(
             children: [
               Icon(

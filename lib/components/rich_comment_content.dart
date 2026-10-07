@@ -1,4 +1,4 @@
-﻿import 'dart:collection';
+import 'dart:collection';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -347,5 +347,3 @@ class _RichCommentContentState extends State<RichCommentContent> {
     return content;
   }
 }
-
-

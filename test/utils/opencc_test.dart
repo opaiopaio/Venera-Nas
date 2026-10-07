@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:venera_nas/utils/opencc.dart';
 
 void main() {
@@ -227,5 +227,3 @@ void main() {
     });
   });
 }
-
-

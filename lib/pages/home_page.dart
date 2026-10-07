@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:venera_nas/components/components.dart';
@@ -67,7 +67,11 @@ class _SearchBar extends StatelessWidget {
         // 自适应：最小高度 + 随文字撑开（默认字号外观不变）
         constraints: BoxConstraints(minHeight: App.isMobile ? 52 : 46),
         width: double.infinity,
-        margin: EdgeInsets.only(left: AppSpace.sm, right: AppSpace.sm, bottom: AppSpace.sm),
+        margin: EdgeInsets.only(
+          left: AppSpace.sm,
+          right: AppSpace.sm,
+          bottom: AppSpace.sm,
+        ),
         child: Material(
           color: appdata.settings.customBackgroundActive
               ? windowOverlayColor()
@@ -156,7 +160,10 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
     } else if (syncStatus.isSyncing) {
       child = SliverToBoxAdapter(
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.sm),
+          margin: const EdgeInsets.symmetric(
+            horizontal: AppSpace.sm,
+            vertical: AppSpace.sm,
+          ),
           decoration: BoxDecoration(
             color: windowOverlayColor(),
             border: Border.all(color: Theme.of(context).colorScheme.primary),
@@ -177,7 +184,10 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
     } else if (App.isMobile) {
       child = SliverToBoxAdapter(
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.sm),
+          margin: const EdgeInsets.symmetric(
+            horizontal: AppSpace.sm,
+            vertical: AppSpace.sm,
+          ),
           decoration: BoxDecoration(
             color: windowOverlayColor(),
             border: Border.all(
@@ -188,7 +198,10 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
                 BorderRadius.circular(AppRadius.md),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: AppSpace.sm),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.md,
+              vertical: AppSpace.sm,
+            ),
             child: Row(
               children: [
                 const Icon(Icons.sync),
@@ -251,7 +264,10 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
     } else {
       child = SliverToBoxAdapter(
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.sm),
+          margin: const EdgeInsets.symmetric(
+            horizontal: AppSpace.sm,
+            vertical: AppSpace.sm,
+          ),
           decoration: BoxDecoration(
             color: windowOverlayColor(),
             border: Border.all(
@@ -320,10 +336,7 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
         ),
       );
     }
-    return SliverAnimatedPaintExtent(
-      duration: AppMotion.short,
-      child: child,
-    );
+    return SliverAnimatedPaintExtent(duration: AppMotion.short, child: child);
   }
 
   String buildSyncStatusDetail(DataSyncStatusSnapshot status) {
@@ -469,7 +482,10 @@ class _LocalState extends State<_Local> {
                 child: Row(
                   children: [
                     if (LocalManager().downloadingTasks.first.isPaused)
-                      const Icon(Icons.pause_circle_outline, size: AppIconSize.sm)
+                      const Icon(
+                        Icons.pause_circle_outline,
+                        size: AppIconSize.sm,
+                      )
                     else
                       const _AnimatedDownloadingIcon(),
                     const SizedBox(width: 8),
@@ -555,7 +571,10 @@ class _ComicArchiveWidgetState extends State<_ComicArchiveWidget> {
     final newest = currentFiles.isEmpty ? null : currentFiles.first.modified;
     return SliverToBoxAdapter(
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.sm),
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppSpace.sm,
+          vertical: AppSpace.sm,
+        ),
         decoration: BoxDecoration(
           border: Border.all(
             color: Theme.of(context).colorScheme.outlineVariant,
@@ -1482,5 +1501,3 @@ class _ReadLaterPageState extends State<_ReadLaterPage> {
     );
   }
 }
-
-

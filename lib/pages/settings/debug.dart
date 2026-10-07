@@ -1,4 +1,4 @@
-﻿part of 'settings_page.dart';
+part of 'settings_page.dart';
 
 class DebugPage extends StatefulWidget {
   const DebugPage({super.key});
@@ -46,7 +46,10 @@ class DebugPageState extends State<DebugPage> {
               Container(
                 width: double.infinity,
                 height: 200,
-                margin: const EdgeInsets.symmetric(vertical: AppSpace.sm, horizontal: AppSpace.lg),
+                margin: const EdgeInsets.symmetric(
+                  vertical: AppSpace.sm,
+                  horizontal: AppSpace.lg,
+                ),
                 child: TextField(
                   controller: controller,
                   maxLines: null,
@@ -81,7 +84,10 @@ class DebugPageState extends State<DebugPage> {
               Container(
                 width: double.infinity,
                 height: 200,
-                margin: const EdgeInsets.symmetric(vertical: AppSpace.sm, horizontal: AppSpace.lg),
+                margin: const EdgeInsets.symmetric(
+                  vertical: AppSpace.sm,
+                  horizontal: AppSpace.lg,
+                ),
                 decoration: BoxDecoration(
                   border: Border.all(color: context.colorScheme.outline),
                   borderRadius: BorderRadius.circular(AppRadius.sm),

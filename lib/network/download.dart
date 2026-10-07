@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:isolate';
 
 import 'package:flutter/widgets.dart' show ChangeNotifier;
@@ -92,7 +92,9 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
   String get id => comicId;
 
   @override
-  ComicType get comicType => downloadMode == DownloadMode.smb ? ComicType.smb : ComicType(source.key.hashCode);
+  ComicType get comicType => downloadMode == DownloadMode.smb
+      ? ComicType.smb
+      : ComicType(source.key.hashCode);
 
   String? comicTitle;
 
@@ -236,7 +238,8 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
         smbCfg = _parseSmbConfig(path!);
         smbD = _smbDirFromPath(path!);
         if (comic!.chapters != null) {
-          smbD = '$smbD/${LocalManager.getChapterDirectoryName(_images!.keys.elementAt(_chapter))}';
+          smbD =
+              '$smbD/${LocalManager.getChapterDirectoryName(_images!.keys.elementAt(_chapter))}';
         }
       }
       var task = _ImageDownloadWrapper(
@@ -552,7 +555,9 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
       tags: comic!.tags.entries.expand((e) {
         return e.value.map((v) => "${e.key}:$v");
       }).toList(),
-      directory: actualType == ComicType.smb ? (path ?? '') : Directory(path!).name,
+      directory: actualType == ComicType.smb
+          ? (path ?? '')
+          : Directory(path!).name,
       chapters: comic!.chapters,
       cover: actualType == ComicType.smb && _cover != null
           ? _cover!.split('/').last
@@ -622,8 +627,8 @@ class _ImageDownloadWrapper {
     SmbConfig? smbConfig,
     String? smbDir,
   }) : _isSmbPath = isSmbPath,
-      _smbConfig = smbConfig,
-      _smbDir = smbDir {
+       _smbConfig = smbConfig,
+       _smbDir = smbDir {
     start();
   }
 
@@ -981,7 +986,6 @@ class ArchiveDownloadTask extends DownloadTask {
       createdAt: DateTime.now(),
     );
   }
-
 }
 
 SmbConfig _parseSmbConfig(String url) {
@@ -1004,5 +1008,3 @@ String _smbDirFromPath(String url) {
   if (segments.length <= 1) return '';
   return segments.sublist(1).join('/');
 }
-
-

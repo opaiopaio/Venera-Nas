@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:venera_nas/foundation/comic_type.dart';
 import 'package:venera_nas/foundation/read_later.dart';
 
@@ -32,5 +32,3 @@ void main() {
     expect(selectedComics.containsKey(refreshed), isTrue);
   });
 }
-
-

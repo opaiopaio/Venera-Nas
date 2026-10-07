@@ -1,4 +1,4 @@
-﻿import 'dart:async' show Future;
+import 'dart:async' show Future;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:venera_nas/foundation/app.dart';
@@ -65,5 +65,3 @@ class LocalFavoriteImageProvider
   @override
   String get key => id + intKey.toString();
 }
-
-

@@ -1,4 +1,4 @@
-﻿import 'dart:async' show Future, StreamController, scheduleMicrotask;
+import 'dart:async' show Future, StreamController, scheduleMicrotask;
 import 'dart:convert';
 import 'dart:math';
 import 'dart:ui' as ui show Codec;
@@ -172,5 +172,3 @@ typedef FileDecoderCallback = Future<ui.Codec> Function(Uint8List);
 class _ImageLoadingStopException implements Exception {
   const _ImageLoadingStopException();
 }
-
-

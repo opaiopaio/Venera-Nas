@@ -1,4 +1,4 @@
-﻿part of 'components.dart';
+part of 'components.dart';
 
 class PopUpWidget<T> extends PopupRoute<T> {
   PopUpWidget(this.widget);
@@ -219,8 +219,7 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
         children: [
           if (decoration != null)
             Positioned.fill(child: DecoratedBox(decoration: decoration)),
-          if (tint != null)
-            Positioned.fill(child: ColoredBox(color: tint)),
+          if (tint != null) Positioned.fill(child: ColoredBox(color: tint)),
           content,
         ],
       );

@@ -1,4 +1,4 @@
-﻿part of 'components.dart';
+part of 'components.dart';
 
 class Select extends StatelessWidget {
   const Select({
@@ -61,19 +61,25 @@ class Select extends StatelessWidget {
             }
           });
         },
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                minWidth: minWidth != null ? (minWidth! - 32) : 0,
+        child:
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: minWidth != null ? (minWidth! - 32) : 0,
+                  ),
+                  child: Text(current ?? ' ', style: ts.s14),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.arrow_drop_down, color: context.colorScheme.primary),
+              ],
+            ).padding(
+              const EdgeInsets.symmetric(
+                horizontal: AppSpace.md,
+                vertical: AppSpace.xs,
               ),
-              child: Text(current ?? ' ', style: ts.s14),
             ),
-            const SizedBox(width: 8),
-            Icon(Icons.arrow_drop_down, color: context.colorScheme.primary),
-          ],
-        ).padding(const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: AppSpace.xs)),
       ),
     );
   }
@@ -139,7 +145,12 @@ class _FilterChipFixedWidthState extends State<FilterChipFixedWidth> {
                 ? Theme.of(context).colorScheme.primaryContainer
                 : null,
           ),
-          padding: const EdgeInsets.fromLTRB(AppSpace.md, AppSpace.sm, AppSpace.md, AppSpace.sm),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.md,
+            AppSpace.sm,
+            AppSpace.md,
+            AppSpace.sm,
+          ),
           child: labelWidth == null ? firstBuild() : buildContent(),
         ),
       ),

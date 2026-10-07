@@ -52,7 +52,8 @@ class LocalComicImageProvider
   @override
   Future<Uint8List> load(chunkEvents, checkStop) async {
     // SMB: read cover from remote share
-    if (comic.comicType == ComicType.smb || comic.baseDir.startsWith('smb://')) {
+    if (comic.comicType == ComicType.smb ||
+        comic.baseDir.startsWith('smb://')) {
       return _loadSmbCover();
     }
 
@@ -157,7 +158,9 @@ class LocalComicImageProvider
             if (!e.isDirectory) continue;
             final subEntries = await client.listDirectory(e.path);
             for (final se in subEntries) {
-              if (!se.isFile || !exts.contains(se.extension.toLowerCase())) continue;
+              if (!se.isFile || !exts.contains(se.extension.toLowerCase())) {
+                continue;
+              }
               found = se;
               break;
             }
@@ -179,9 +182,7 @@ class LocalComicImageProvider
   /// Compress cover image for cache storage.
   /// Resize to max 512px and encode as JPEG quality 85.
   /// Runs on a background isolate to avoid blocking the UI thread.
-  static const _imageExtensions = [
-    'jpg', 'jpeg', 'png', 'webp', 'gif', 'jpe',
-  ];
+  static const _imageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'jpe'];
 
   static Future<List<int>> compressCoverImage(Uint8List bytes) {
     return Isolate.run(() {
