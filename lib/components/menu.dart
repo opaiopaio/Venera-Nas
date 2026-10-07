@@ -31,6 +31,10 @@ class _MenuRoute<T> extends PopupRoute<T> {
     Animation<double> animation,
     Animation<double> secondaryAnimation,
   ) {
+    // 建立设置依赖：菜单表面的遮罩色/圆角由设置算出 → 变化时需重建
+    // （本方法是路由的 buildPage，没有自己的 widget 元素；依赖注册在传入的
+    //  context 所属元素上，菜单本身是瞬时弹层，影响面最小但语义正确 ✓）
+    AppSettingsScope.of(context);
     var width = entries.first.icon == null ? 216.0 : 242.0;
     final size = MediaQuery.of(context).size;
     var left = location.dx;
