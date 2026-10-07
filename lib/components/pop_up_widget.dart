@@ -111,6 +111,54 @@ Future<T> showPopUpWidget<T>(BuildContext context, Widget widget) async {
   ).push(PopUpWidget(widget));
 }
 
+/// 二级页面（弹层）的**统一表面**：底层背景图装饰 + 中层色调 + 上层透明内容层。
+///
+/// `PopUpWidgetScaffold`（完整二级页）与 `ContentDialog`（输入框 / 确认框 / 消息框）
+/// 共用，保证**所有**二级菜单都跟随「二级页面样式 / 色调 / 强度」，圆角跟随
+/// 「窗口/按钮背景」的直角/圆角设置。
+///
+/// - 二级页面体系未启用（样式 = `off`）时，`secondaryPageDecoration()` 与
+///   `customSecondarySurfaceColor()` 均为 null → 退回**主题表面色**（零回归 ✓）。
+/// - 依赖 `AppSettingsScope`：设置一改即时重建（见 `11-refresh-mechanism.md`）。
+class SecondaryPageSurface extends StatelessWidget {
+  const SecondaryPageSurface({
+    super.key,
+    required this.child,
+    this.borderRadius,
+  });
+
+  final Widget child;
+
+  /// 不传则跟随圆角设置（默认 `AppRadius.md`）。
+  final BorderRadius? borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    AppSettingsScope.of(context);
+    final decoration = secondaryPageDecoration();
+    final tint = customSecondarySurfaceColor(context.colorScheme);
+    final radius =
+        borderRadius ??
+        windowOverlayBorderRadius() ??
+        BorderRadius.circular(AppRadius.md);
+    return ClipRRect(
+      borderRadius: radius,
+      child: Stack(
+        children: [
+          if (decoration != null)
+            Positioned.fill(child: DecoratedBox(decoration: decoration)),
+          if (tint != null) Positioned.fill(child: ColoredBox(color: tint)),
+          if (decoration == null && tint == null)
+            Positioned.fill(
+              child: ColoredBox(color: context.colorScheme.surface),
+            ),
+          Material(color: Colors.transparent, child: child),
+        ],
+      ),
+    );
+  }
+}
+
 class PopUpWidgetScaffold extends StatefulWidget {
   const PopUpWidgetScaffold({
     required this.title,

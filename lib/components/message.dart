@@ -310,30 +310,11 @@ class ContentDialog extends StatelessWidget {
         ],
       ),
     );
-    // 二级页面**统一表面**（与 `PopUpWidgetScaffold` 同一套分层叠加）：
-    //   底层：背景图装饰（有背景图时）  中层：色调层（无图时为实色）
-    //   上层：透明 Material 承内容（避免"半透明 Material 底色"被当实色渲染）
-    // → 让输入框/确认框/消息框等二级菜单也跟随「二级页面样式/色调/强度」✓
-    final decoration = secondaryPageDecoration();
-    final tint = customSecondarySurfaceColor(context.colorScheme);
+    // 二级页面**统一表面**（抽自 `SecondaryPageSurface`，与 `PopUpWidgetScaffold` 同一套）：
+    // → 输入框/确认框/消息框等二级菜单都跟随「二级页面样式/色调/强度」✓
     final radius =
         windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.md);
-    final surface = ClipRRect(
-      borderRadius: radius,
-      child: Stack(
-        children: [
-          if (decoration != null)
-            Positioned.fill(child: DecoratedBox(decoration: decoration)),
-          if (tint != null) Positioned.fill(child: ColoredBox(color: tint)),
-          // 二级页面体系未启用时退回主题表面色（零回归）
-          if (decoration == null && tint == null)
-            Positioned.fill(
-              child: ColoredBox(color: context.colorScheme.surface),
-            ),
-          Material(color: Colors.transparent, child: content),
-        ],
-      ),
-    );
+    final surface = SecondaryPageSurface(borderRadius: radius, child: content);
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: radius,
