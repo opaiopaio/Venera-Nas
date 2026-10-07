@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:flutter/widgets.dart' show ChangeNotifier;
@@ -181,6 +181,8 @@ class LocalComic with HistoryMixin implements Comic {
 }
 
 class LocalManager with ChangeNotifier {
+  /// 供外部（如 SMB 导入流程）触发监听者刷新。
+  void notifyChanges() => notifyListeners();
   static LocalManager? _instance;
 
   LocalManager._();

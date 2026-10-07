@@ -4,8 +4,6 @@ import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/appdata.dart';
 import 'package:venera_nas/foundation/local.dart';
 import 'package:venera_nas/foundation/log.dart';
-import 'package:venera_nas/network/smb/smb_client.dart';
-import 'package:venera_nas/network/smb/smb_config.dart';
 import 'package:venera_nas/network/smb/smb_connection.dart';
 import 'package:venera_nas/utils/comic_import.dart';
 import 'package:venera_nas/utils/import_comic.dart';
@@ -185,7 +183,6 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
   SmbConnection? _selectedServer;
   String _rootPath = '';
   bool _isScanning = false;
-  bool _cancelled = false;
   int _current = 0;
   int _total = 0;
   String? _scanResult;
@@ -225,7 +222,6 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
 
     setState(() {
       _isScanning = true;
-      _cancelled = false;
       _current = 0;
       _total = 0;
       _scanResult = null;
@@ -240,7 +236,7 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
       );
 
       if (!mounted) return;
-      LocalManager().notifyListeners();
+      LocalManager().notifyChanges();
       setState(() {
         _isScanning = false;
         _scanResult = "从 @b 导入了 @a 部漫画"
@@ -306,7 +302,7 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         DropdownButtonFormField<SmbConnection>(
-          value: _selectedServer,
+          initialValue: _selectedServer,
           decoration: InputDecoration(
             labelText: "服务器".tl,
             border: const OutlineInputBorder(),
@@ -369,7 +365,6 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
     return [
       TextButton(
         onPressed: () {
-          setState(() => _cancelled = true);
         },
         child: Text("Cancel".tl),
       ),

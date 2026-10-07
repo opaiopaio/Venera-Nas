@@ -1,4 +1,4 @@
-part of 'comic_page.dart';
+﻿part of 'comic_page.dart';
 
 abstract mixin class _ComicPageActions {
   void update();
@@ -177,7 +177,7 @@ abstract mixin class _ComicPageActions {
       int selected = -1;
       bool isLoading = false;
       bool isGettingLink = false;
-      final value = await showDialog<DownloadMode>(
+      await showDialog<DownloadMode>(
         context: App.rootContext,
         builder: (context) {
           return StatefulBuilder(

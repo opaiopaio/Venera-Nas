@@ -1,4 +1,4 @@
-part of 'components.dart';
+﻿part of 'components.dart';
 
 class PopUpWidget<T> extends PopupRoute<T> {
   PopUpWidget(this.widget);
@@ -50,9 +50,7 @@ class PopUpWidget<T> extends PopupRoute<T> {
             key: _innerKey,
             onGenerateRoute: (settings) =>
                 MaterialPageRoute(builder: (context) => widget),
-            onPopPage: (route, result) {
-              return route.didPop(result);
-            },
+            onDidRemovePage: (page) {},
           ),
         ),
       ),

@@ -236,7 +236,7 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
         smbCfg = _parseSmbConfig(path!);
         smbD = _smbDirFromPath(path!);
         if (comic!.chapters != null) {
-          smbD = '$smbD/' + LocalManager.getChapterDirectoryName(_images!.keys.elementAt(_chapter));
+          smbD = '$smbD/${LocalManager.getChapterDirectoryName(_images!.keys.elementAt(_chapter))}';
         }
       }
       var task = _ImageDownloadWrapper(

@@ -17,7 +17,6 @@ import 'package:venera_nas/foundation/js_engine.dart';
 import 'package:venera_nas/foundation/local.dart';
 import 'package:venera_nas/foundation/log.dart';
 import 'package:venera_nas/network/app_dio.dart';
-import 'package:venera_nas/network/smb/smb_client.dart';
 import 'package:venera_nas/network/smb/smb_config.dart';
 import 'package:venera_nas/network/smb/smb_connection.dart';
 import 'package:venera_nas/utils/auth_storage.dart';
