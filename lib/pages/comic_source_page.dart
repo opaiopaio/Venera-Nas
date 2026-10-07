@@ -979,7 +979,16 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
             child: Column(
               children: [
                 if (_isExpanded) ...[
-                  ...buildSourceSettings(),
+                  // 源设置行统一走遮罩体系：任何源（含新增/新字段）都自动适配
+                  ...buildSourceSettings().map(
+                    (e) => WindowOverlayBox(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.sm,
+                        vertical: AppSpace.xxs,
+                      ),
+                      child: e,
+                    ),
+                  ),
                   ..._buildAccount(),
                 ],
               ],
