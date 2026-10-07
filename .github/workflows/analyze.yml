@@ -18,4 +18,6 @@ jobs:
       - run: flutter pub get
       - run: dart format --set-exit-if-changed .
       - run: flutter analyze --fatal-infos
+      # 外观规则守卫（棘轮：只许降不许升）+ 遮罩入口守卫（在 flutter test 内）
+      - run: dart run tool/appearance_guard.dart
       - run: flutter test

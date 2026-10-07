@@ -455,6 +455,42 @@ class Settings with ChangeNotifier {
     notifyListeners();
   }
 
+  /// 读取设置值的**三级优先级唯一入口**：漫画专属 → 设备专属 → 全局。
+  ///
+  /// 设置组件（`_SwitchSetting` / `_SliderSetting` / `SelectSetting` 系）此前各自
+  /// 内联这段三分支判定，现收口于此，避免同一逻辑散落多处。
+  dynamic readSettingValue({
+    required String key,
+    String? comicId,
+    String? comicSource,
+    bool useDeviceSettings = false,
+  }) {
+    if (comicId != null) {
+      return getReaderSetting(comicId, comicSource!, key);
+    }
+    if (useDeviceSettings) {
+      return getDeviceReaderSetting(key);
+    }
+    return this[key];
+  }
+
+  /// 写入设置值（与 [readSettingValue] 对称的三级优先级）。
+  void writeSettingValue({
+    required String key,
+    required dynamic value,
+    String? comicId,
+    String? comicSource,
+    bool useDeviceSettings = false,
+  }) {
+    if (comicId != null) {
+      setReaderSetting(comicId, comicSource!, key, value);
+    } else if (useDeviceSettings) {
+      setDeviceReaderSetting(key, value);
+    } else {
+      this[key] = value;
+    }
+  }
+
   String _getOrCreateDeviceId() {
     var deviceId = _data['deviceId'] as String;
     if (deviceId.isNotEmpty) {

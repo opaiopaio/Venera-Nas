@@ -18,6 +18,7 @@ void main() {
     '_SliderSetting',
     '_DoubleLineSelectSettings',
     '_EndSelectorSelectSetting',
+    '_MultiPagesFilter',
   ];
 
   test('lib/pages 下共享设置组件的调用点都已接入遮罩', () {

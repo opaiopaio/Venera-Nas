@@ -37,15 +37,12 @@ class _SwitchSetting extends StatefulWidget {
 class _SwitchSettingState extends State<_SwitchSetting> {
   @override
   Widget build(BuildContext context) {
-    var value = widget.comicId != null
-        ? appdata.settings.getReaderSetting(
-            widget.comicId!,
-            widget.comicSource!,
-            widget.settingKey,
-          )
-        : widget.useDeviceSettings
-        ? appdata.settings.getDeviceReaderSetting(widget.settingKey)
-        : appdata.settings[widget.settingKey];
+    var value = appdata.settings.readSettingValue(
+      key: widget.settingKey,
+      comicId: widget.comicId,
+      comicSource: widget.comicSource,
+      useDeviceSettings: widget.useDeviceSettings,
+    );
 
     assert(value is bool);
 
@@ -56,18 +53,13 @@ class _SwitchSettingState extends State<_SwitchSetting> {
         value: value,
         onChanged: (value) {
           setState(() {
-            if (widget.comicId != null) {
-              appdata.settings.setReaderSetting(
-                widget.comicId!,
-                widget.comicSource!,
-                widget.settingKey,
-                value,
-              );
-            } else if (widget.useDeviceSettings) {
-              appdata.settings.setDeviceReaderSetting(widget.settingKey, value);
-            } else {
-              appdata.settings[widget.settingKey] = value;
-            }
+            appdata.settings.writeSettingValue(
+              key: widget.settingKey,
+              value: value,
+              comicId: widget.comicId,
+              comicSource: widget.comicSource,
+              useDeviceSettings: widget.useDeviceSettings,
+            );
           });
           appdata.saveData().then((_) {
             widget.onChanged?.call();
@@ -191,15 +183,12 @@ class _DoubleLineSelectSettings extends StatefulWidget {
 class _DoubleLineSelectSettingsState extends State<_DoubleLineSelectSettings> {
   @override
   Widget build(BuildContext context) {
-    var value = widget.comicId != null
-        ? appdata.settings.getReaderSetting(
-            widget.comicId!,
-            widget.comicSource!,
-            widget.settingKey,
-          )
-        : widget.useDeviceSettings
-        ? appdata.settings.getDeviceReaderSetting(widget.settingKey)
-        : appdata.settings[widget.settingKey];
+    var value = appdata.settings.readSettingValue(
+      key: widget.settingKey,
+      comicId: widget.comicId,
+      comicSource: widget.comicSource,
+      useDeviceSettings: widget.useDeviceSettings,
+    );
 
     final content = ListTile(
       title: Row(
@@ -261,21 +250,13 @@ class _DoubleLineSelectSettingsState extends State<_DoubleLineSelectSettings> {
         ).then((value) {
           if (value != null) {
             setState(() {
-              if (widget.comicId != null) {
-                appdata.settings.setReaderSetting(
-                  widget.comicId!,
-                  widget.comicSource!,
-                  widget.settingKey,
-                  value,
-                );
-              } else if (widget.useDeviceSettings) {
-                appdata.settings.setDeviceReaderSetting(
-                  widget.settingKey,
-                  value,
-                );
-              } else {
-                appdata.settings[widget.settingKey] = value;
-              }
+              appdata.settings.writeSettingValue(
+                key: widget.settingKey,
+                value: value,
+                comicId: widget.comicId,
+                comicSource: widget.comicSource,
+                useDeviceSettings: widget.useDeviceSettings,
+              );
             });
             appdata.saveData();
             widget.onChanged?.call();
@@ -329,15 +310,12 @@ class _EndSelectorSelectSettingState extends State<_EndSelectorSelectSetting> {
   @override
   Widget build(BuildContext context) {
     var options = widget.optionTranslation;
-    var value = widget.comicId != null
-        ? appdata.settings.getReaderSetting(
-            widget.comicId!,
-            widget.comicSource!,
-            widget.settingKey,
-          )
-        : widget.useDeviceSettings
-        ? appdata.settings.getDeviceReaderSetting(widget.settingKey)
-        : appdata.settings[widget.settingKey];
+    var value = appdata.settings.readSettingValue(
+      key: widget.settingKey,
+      comicId: widget.comicId,
+      comicSource: widget.comicSource,
+      useDeviceSettings: widget.useDeviceSettings,
+    );
     final content = ListTile(
       title: Row(
         children: [
@@ -376,18 +354,13 @@ class _EndSelectorSelectSettingState extends State<_EndSelectorSelectSetting> {
         onTap: (index) {
           setState(() {
             var value = options.keys.elementAt(index);
-            if (widget.comicId != null) {
-              appdata.settings.setReaderSetting(
-                widget.comicId!,
-                widget.comicSource!,
-                widget.settingKey,
-                value,
-              );
-            } else if (widget.useDeviceSettings) {
-              appdata.settings.setDeviceReaderSetting(widget.settingKey, value);
-            } else {
-              appdata.settings[widget.settingKey] = value;
-            }
+            appdata.settings.writeSettingValue(
+              key: widget.settingKey,
+              value: value,
+              comicId: widget.comicId,
+              comicSource: widget.comicSource,
+              useDeviceSettings: widget.useDeviceSettings,
+            );
           });
           appdata.saveData();
           widget.onChanged?.call();
@@ -476,36 +449,23 @@ class _SliderSettingState extends State<_SliderSetting> {
   void _setValue(double value) {
     final normalizedValue = _valueForSettings(value);
     // int / double 的写入路径**完全一致**：原先 if (is int) 两份一模一样的分支已合并
-    if (widget.comicId != null) {
-      appdata.settings.setReaderSetting(
-        widget.comicId!,
-        widget.comicSource!,
-        widget.settingsIndex,
-        normalizedValue,
-      );
-    } else if (widget.useDeviceSettings) {
-      appdata.settings.setDeviceReaderSetting(
-        widget.settingsIndex,
-        normalizedValue,
-      );
-    } else {
-      appdata.settings[widget.settingsIndex] = normalizedValue;
-    }
+    appdata.settings.writeSettingValue(
+      key: widget.settingsIndex,
+      value: normalizedValue,
+      comicId: widget.comicId,
+      comicSource: widget.comicSource,
+      useDeviceSettings: widget.useDeviceSettings,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    var value =
-        (widget.comicId != null
-                ? appdata.settings.getReaderSetting(
-                    widget.comicId!,
-                    widget.comicSource!,
-                    widget.settingsIndex,
-                  )
-                : widget.useDeviceSettings
-                ? appdata.settings.getDeviceReaderSetting(widget.settingsIndex)
-                : appdata.settings[widget.settingsIndex])
-            .toDouble();
+    var value = (appdata.settings.readSettingValue(
+      key: widget.settingsIndex,
+      comicId: widget.comicId,
+      comicSource: widget.comicSource,
+      useDeviceSettings: widget.useDeviceSettings,
+    )).toDouble();
     value = _normalizeValue(value);
     final content = ListTile(
       title: Text(widget.title, softWrap: true, maxLines: 2),
@@ -575,6 +535,7 @@ class _MultiPagesFilter extends StatefulWidget {
     required this.title,
     required this.settingsIndex,
     required this.pages,
+    this.masked = false,
   });
 
   final String title;
@@ -583,6 +544,10 @@ class _MultiPagesFilter extends StatefulWidget {
 
   // key - name
   final Map<String, String> pages;
+
+  /// 是否由组件自身补一层遮罩：本组件**只在弹层里渲染**（`_PopupWindowSetting`
+  /// 的 builder 或 `showPopUpWidget`），弹层里的每一行都需要单独接遮罩。
+  final bool masked;
 
   @override
   State<_MultiPagesFilter> createState() => _MultiPagesFilterState();
@@ -677,7 +642,7 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
       ),
     );
 
-    return ListTile(
+    final content = ListTile(
       title: Text(widget.pages[key] ?? "(Invalid) $key"),
       key: Key(key),
       trailing: Row(
@@ -685,6 +650,7 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
         children: [removeButton, const Icon(Icons.drag_handle)],
       ),
     );
+    return maskIfNeeded(widget.masked, content);
   }
 
   void showAddDialog() {

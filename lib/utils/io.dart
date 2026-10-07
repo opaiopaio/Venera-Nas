@@ -71,7 +71,13 @@ extension FileSystemEntityExt on FileSystemEntity {
 
 extension FileExtension on File {
   /// Get the file extension, not including the dot.
-  String get extension => path.split('.').last;
+  ///
+  /// **必须小写**：所有调用方都拿它跟小写列表比较 ——
+  /// `import_comic.dart` 的 `supportedExtensions`/`imageExtensions`、
+  /// `local_comic_image.dart` 的 `_imageExtensions`、`epub.dart` 的
+  /// `FileType.fromExtension` 等；此前 `foo.JPG` 会漏判（SMB 侧的
+  /// `SmbEntry.extension` 早已小写化，两侧行为也因此统一）。
+  String get extension => path.split('.').last.toLowerCase();
 
   /// Copy the file to the specified path using memory.
   ///

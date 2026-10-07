@@ -189,6 +189,7 @@ Widget setExplorePagesWidget() {
     title: "Explore Pages".tl,
     settingsIndex: "explore_pages",
     pages: pages,
+    masked: true,
   );
 }
 
@@ -203,6 +204,7 @@ Widget setCategoryPagesWidget() {
     title: "Category Pages".tl,
     settingsIndex: "categories",
     pages: pages,
+    masked: true,
   );
 }
 
@@ -217,6 +219,7 @@ Widget setFavoritesPagesWidget() {
     title: "Network Favorite Pages".tl,
     settingsIndex: "favorites",
     pages: pages,
+    masked: true,
   );
 }
 
@@ -231,6 +234,7 @@ Widget setSearchSourcesWidget() {
     title: "Search Sources".tl,
     settingsIndex: "searchSources",
     pages: pages,
+    masked: true,
   );
 }
 
