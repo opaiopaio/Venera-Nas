@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -9,7 +9,10 @@ import 'package:venera_nas/foundation/comic_source/comic_source.dart';
 import 'package:venera_nas/foundation/text_style_settings.dart';
 import 'package:window_manager/window_manager.dart';
 
-const _kTitleBarHeight = 36.0;
+/// 自绘窗口标题栏高度（供侧栏等让位使用）。
+const kTitleBarHeight = 36.0;
+
+const _kTitleBarHeight = kTitleBarHeight;
 
 class WindowFrameController extends InheritedWidget {
   /// Whether the window frame is hidden.
