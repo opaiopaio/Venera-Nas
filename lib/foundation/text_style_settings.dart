@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -134,9 +134,6 @@ TextStyle? globalTextStyle() {
   return TextStyle(color: color, fontFamily: family, shadows: shadows);
 }
 
-/// 是否有任何全局文字设置被启用（用于按钮前景色等"全控制"注入）。
-bool get globalTextActive =>
-    globalTextStyle() != null || globalFontScale() != 1.0;
 
 /// 把全局文字样式（颜色/字体/**阴影+发光**）合并进整套 [TextTheme]。
 ///

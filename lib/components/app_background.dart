@@ -7,16 +7,8 @@ part of 'components.dart';
 class AppBackground extends StatelessWidget {
   const AppBackground({super.key});
 
-  /// 图片绝对路径（[name] 为文件名）。
-  static String? imagePath(String? name) => backgroundImagePath(name);
-
   /// 是否启用了自定义背景（有图片 或 底色非透明）。
   static bool get isActive => appdata.settings.backgroundFeatureActive;
-
-  /// 当前背景图片文件（未设置或文件不存在时返回 null）。
-  static File? currentImageFile() => currentBackgroundImageFile();
-
-  static BoxFit boxFitOf(String fit) => backgroundBoxFitOf(fit);
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +24,8 @@ class AppBackground extends StatelessWidget {
 
     Widget layer = ColoredBox(color: base);
 
+    // 图片路径/BoxFit 逻辑统一在 foundation/window_overlay.dart，
+    // 避免此处与二级页面各写一份。
     final file = currentBackgroundImageFile();
     if (file != null) {
       Widget img;
@@ -47,7 +41,7 @@ class AppBackground extends StatelessWidget {
       } else {
         img = Image.file(
           file,
-          fit: boxFitOf(fit),
+          fit: backgroundBoxFitOf(fit),
           width: double.infinity,
           height: double.infinity,
           gaplessPlayback: true,

@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -356,21 +356,6 @@ class Settings with ChangeNotifier {
     return 0xFF000000 | n;
   }
 
-  /// 窗口遮罩色的 ARGB 值（未设置/非法/透明时返回 0 = 完全透明）。
-  int get windowOverlayColorValue {
-    final v = this['windowOverlayColor'] as String? ?? 'transparent';
-    if (!v.startsWith('#') || v.length != 7) return 0;
-    final n = int.tryParse(v.substring(1), radix: 16);
-    if (n == null) return 0;
-    final opacity =
-        ((this['windowOverlayOpacity'] as num?)?.toDouble() ?? 1.0).clamp(
-          0.0,
-          1.0,
-        );
-    final alpha = (opacity * 255).round();
-    if (alpha <= 0) return 0;
-    return (alpha << 24) | n;
-  }
 
   operator [](String key) {
     return _data[key];
