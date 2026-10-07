@@ -81,9 +81,20 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  /// 主题级设置（字体颜色/字体/字号/阴影、主题色、语言…）是在本 State 的 `build`
+  /// 里算进 `MaterialApp.theme`/`textScaler`/`locale` 的 —— 它们位于
+  /// `AppSettingsScope` **之上**，scope 的依赖传播覆盖不到 ✗。
+  /// 所以这里**直接订阅设置**：设置一变就重建本 State → 主题级选项即时生效
+  /// （历史实现靠 `forceRebuild()` 里的 `setState` 达成，删遍历时被一并删掉了，
+  /// 导致"字体相关所有选项失效"的回归）。
+  void _onSettingsChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void initState() {
     App.registerForceRebuild(forceRebuild);
+    appdata.settings.addListener(_onSettingsChanged);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     WidgetsBinding.instance.addObserver(this);
     checkUpdates();
@@ -93,6 +104,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       });
     }
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    appdata.settings.removeListener(_onSettingsChanged);
+    super.dispose();
   }
 
   bool isAuthPageActive = false;

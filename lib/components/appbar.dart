@@ -182,10 +182,12 @@ class _HeaderSurfaceState extends State<_HeaderSurface> {
           Positioned.fill(
             child: ColoredBox(color: context.colorScheme.surface),
           ),
-          if (AppBackground.isActive)
-            // 背景切片：**只画不布局**的自绘（见 [_HeaderBackground] 注释 ——
-            // 以前用"整窗尺寸的子项 + OverflowBox/Transform"会在合成层把页面
-            // 画成"左右两半 + 中间一条可滚动的背景带"，是严重渲染 bug 的根因）。
+          if (AppBackground.isActive && ModalRoute.of(context) is! PopupRoute)
+            // 背景切片：**只画不布局**的自绘（见 [_HeaderBackground] 注释）。
+            //
+            // ⚠️ 弹层（`PopupRoute`）里**不画图片切片**：弹层顶栏在出场动画/变换下
+            // 位置测不准（曾表现为"二级菜单的顶栏出现背景图顶部的图形"），
+            // 此时退回不透明底色即可（内容同样被实心挡住）。
             Positioned.fill(
               child: _HeaderBackground(
                 image: _bgImage,
