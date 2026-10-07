@@ -67,7 +67,7 @@ class _SearchBar extends StatelessWidget {
         // 自适应：最小高度 + 随文字撑开（默认字号外观不变）
         constraints: BoxConstraints(minHeight: App.isMobile ? 52 : 46),
         width: double.infinity,
-        margin: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.sm),
+        margin: EdgeInsets.only(left: AppSpace.sm, right: AppSpace.sm, bottom: AppSpace.sm),
         child: Material(
           color: appdata.settings.customBackgroundActive
               ? windowOverlayColor()

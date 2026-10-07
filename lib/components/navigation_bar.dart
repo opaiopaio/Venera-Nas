@@ -344,7 +344,7 @@ class NaviPaneState extends State<NaviPane>
           children: [
             DragToMoveArea(
               // 顶部让位由 WindowFrame 的全局边界统一处理（内容整体已在标题栏之下）。
-              child: SizedBox(height: 16 + MediaQuery.of(context).padding.top),
+              child: SizedBox(height: MediaQuery.of(context).padding.top),
             ),
             ...List<Widget>.generate(
               widget.paneItems.length,
