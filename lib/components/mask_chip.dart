@@ -1,4 +1,4 @@
-part of 'components.dart';
+﻿part of 'components.dart';
 
 /// 「选择 / 标签 chip」类的**唯一实现**。
 ///
@@ -65,9 +65,10 @@ class MaskChip extends StatelessWidget {
                 horizontal: AppSpace.lg,
                 vertical: AppSpace.sm,
               ),
-              child: Center(
-                child: Text(text, textAlign: TextAlign.center),
-              ),
+              // ⚠️ 不要用 Center/Align：它会**横向撑满可用宽度**，
+              // 在 Wrap 里会让每个 chip 变成整行宽条（曾经的 bug）。
+              // 高度由"内边距 + 文字行高"决定（minHeight 32 仅在必要时兜底）。
+              child: Text(text, textAlign: TextAlign.center),
             ),
           ),
         ),
