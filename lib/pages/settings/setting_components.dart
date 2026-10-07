@@ -9,6 +9,7 @@ class _SwitchSetting extends StatefulWidget {
     this.comicId,
     this.comicSource,
     this.useDeviceSettings = false,
+    this.masked = false,
   });
 
   final String title;
@@ -24,6 +25,10 @@ class _SwitchSetting extends StatefulWidget {
   final String? comicSource;
 
   final bool useDeviceSettings;
+
+  /// 是否由组件自身补一层遮罩：用于**不经过 `toSliver()`** 的独立设置行
+  /// （例如 `SliverAnimatedVisibility` 内部的行）。默认 false，保持零回归。
+  final bool masked;
 
   @override
   State<_SwitchSetting> createState() => _SwitchSettingState();
@@ -44,7 +49,7 @@ class _SwitchSettingState extends State<_SwitchSetting> {
 
     assert(value is bool);
 
-    return ListTile(
+    final content = ListTile(
       title: Text(widget.title),
       subtitle: widget.subtitle == null ? null : Text(widget.subtitle!),
       trailing: Switch(
@@ -70,6 +75,7 @@ class _SwitchSettingState extends State<_SwitchSetting> {
         },
       ),
     );
+    return maskIfNeeded(widget.masked, content);
   }
 }
 
@@ -84,6 +90,7 @@ class SelectSetting extends StatelessWidget {
     this.comicId,
     this.comicSource,
     this.useDeviceSettings = false,
+    this.masked = false,
   });
 
   final String title;
@@ -102,6 +109,10 @@ class SelectSetting extends StatelessWidget {
 
   final bool useDeviceSettings;
 
+  /// 是否由组件自身补一层遮罩：用于**不经过 `toSliver()`** 的独立设置行
+  /// （例如 `SliverAnimatedVisibility` 内部的行）。默认 false，保持零回归。
+  final bool masked;
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -118,6 +129,7 @@ class SelectSetting extends StatelessWidget {
               comicId: comicId,
               comicSource: comicSource,
               useDeviceSettings: useDeviceSettings,
+              masked: masked,
             );
           } else {
             return _EndSelectorSelectSetting(
@@ -129,6 +141,7 @@ class SelectSetting extends StatelessWidget {
               comicId: comicId,
               comicSource: comicSource,
               useDeviceSettings: useDeviceSettings,
+              masked: masked,
             );
           }
         },
@@ -147,6 +160,7 @@ class _DoubleLineSelectSettings extends StatefulWidget {
     this.comicId,
     this.comicSource,
     this.useDeviceSettings = false,
+    this.masked = false,
   });
 
   final String title;
@@ -164,6 +178,10 @@ class _DoubleLineSelectSettings extends StatefulWidget {
   final String? comicSource;
 
   final bool useDeviceSettings;
+
+  /// 是否由组件自身补一层遮罩：用于**不经过 `toSliver()`** 的独立设置行
+  /// （例如 `SliverAnimatedVisibility` 内部的行）。默认 false，保持零回归。
+  final bool masked;
 
   @override
   State<_DoubleLineSelectSettings> createState() =>
@@ -183,7 +201,7 @@ class _DoubleLineSelectSettingsState extends State<_DoubleLineSelectSettings> {
         ? appdata.settings.getDeviceReaderSetting(widget.settingKey)
         : appdata.settings[widget.settingKey];
 
-    return ListTile(
+    final content = ListTile(
       title: Row(
         children: [
           Text(widget.title),
@@ -265,6 +283,7 @@ class _DoubleLineSelectSettingsState extends State<_DoubleLineSelectSettings> {
         });
       },
     );
+    return maskIfNeeded(widget.masked, content);
   }
 }
 
@@ -278,6 +297,7 @@ class _EndSelectorSelectSetting extends StatefulWidget {
     this.comicId,
     this.comicSource,
     this.useDeviceSettings = false,
+    this.masked = false,
   });
 
   final String title;
@@ -295,6 +315,10 @@ class _EndSelectorSelectSetting extends StatefulWidget {
   final String? comicSource;
 
   final bool useDeviceSettings;
+
+  /// 是否由组件自身补一层遮罩：用于**不经过 `toSliver()`** 的独立设置行
+  /// （例如 `SliverAnimatedVisibility` 内部的行）。默认 false，保持零回归。
+  final bool masked;
 
   @override
   State<_EndSelectorSelectSetting> createState() =>
@@ -314,7 +338,7 @@ class _EndSelectorSelectSettingState extends State<_EndSelectorSelectSetting> {
         : widget.useDeviceSettings
         ? appdata.settings.getDeviceReaderSetting(widget.settingKey)
         : appdata.settings[widget.settingKey];
-    return ListTile(
+    final content = ListTile(
       title: Row(
         children: [
           Text(widget.title),
@@ -370,6 +394,7 @@ class _EndSelectorSelectSettingState extends State<_EndSelectorSelectSetting> {
         },
       ),
     );
+    return maskIfNeeded(widget.masked, content);
   }
 }
 
@@ -387,6 +412,7 @@ class _SliderSetting extends StatefulWidget {
     this.comicId,
     this.comicSource,
     this.useDeviceSettings = false,
+    this.masked = false,
   });
 
   final String title;
@@ -412,6 +438,10 @@ class _SliderSetting extends StatefulWidget {
   final String? comicSource;
 
   final bool useDeviceSettings;
+
+  /// 是否由组件自身补一层遮罩：用于**不经过 `toSliver()`** 的独立设置行
+  /// （例如 `SliverAnimatedVisibility` 内部的行）。默认 false，保持零回归。
+  final bool masked;
 
   @override
   State<_SliderSetting> createState() => _SliderSettingState();
@@ -494,7 +524,7 @@ class _SliderSettingState extends State<_SliderSetting> {
                 : appdata.settings[widget.settingsIndex])
             .toDouble();
     value = _normalizeValue(value);
-    return ListTile(
+    final content = ListTile(
       title: Text(widget.title, softWrap: true, maxLines: 2),
       trailing: Text(_displayValue(value), style: ts.s12),
       subtitle: Column(
@@ -524,6 +554,7 @@ class _SliderSettingState extends State<_SliderSetting> {
         ],
       ),
     );
+    return maskIfNeeded(widget.masked, content);
   }
 }
 

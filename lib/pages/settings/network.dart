@@ -1,4 +1,4 @@
-﻿part of 'settings_page.dart';
+part of 'settings_page.dart';
 
 class NetworkSettings extends StatefulWidget {
   const NetworkSettings({super.key});
@@ -322,8 +322,13 @@ class __DNSOverridesState extends State<_DNSOverrides> {
             _SwitchSetting(
               title: "Enable DNS Overrides".tl,
               settingKey: "enableDnsOverrides",
+              masked: true,
             ),
-            _SwitchSetting(title: "Server Name Indication", settingKey: "sni"),
+            _SwitchSetting(
+              title: "Server Name Indication",
+              settingKey: "sni",
+              masked: true,
+            ),
             const SizedBox(height: 8),
             Container(
               height: 1,

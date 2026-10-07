@@ -887,84 +887,80 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
       slivers: [
         SliverPadding(padding: const EdgeInsets.only(top: AppSpace.lg)),
         SliverToBoxAdapter(
-          child: ListTile(
-            tileColor: windowOverlayColor(),
-            shape: RoundedRectangleBorder(
-              borderRadius:
-                  windowOverlayBorderRadius() ??
-                  BorderRadius.circular(AppRadius.md),
-            ),
-            onTap: () => setState(() => _isExpanded = !_isExpanded),
-            title: Row(
-              children: [
-                Icon(
-                  _isExpanded ? Icons.expand_less : Icons.expand_more,
-                  size: AppIconSize.md,
-                ),
-                const SizedBox(width: 4),
-                Text(source.name, style: ts.s18),
-                const SizedBox(width: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpace.sm,
-                    vertical: AppSpace.xxs,
+          child: WindowOverlayBox(
+            child: ListTile(
+              onTap: () => setState(() => _isExpanded = !_isExpanded),
+              title: Row(
+                children: [
+                  Icon(
+                    _isExpanded ? Icons.expand_less : Icons.expand_more,
+                    size: AppIconSize.md,
                   ),
-                  decoration: BoxDecoration(
-                    color: context.colorScheme.surfaceContainer,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  child: Text(
-                    source.version,
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                ),
-                if (hasUpdate)
-                  Tooltip(
-                    message: newVersion,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.tiny,
-                        vertical: AppSpace.xxs,
-                      ),
-                      decoration: BoxDecoration(
-                        color: context.colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                      child: Text(
-                        "New Version".tl,
-                        style: const TextStyle(fontSize: 13),
-                      ),
+                  const SizedBox(width: 4),
+                  Text(source.name, style: ts.s18),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.sm,
+                      vertical: AppSpace.xxs,
                     ),
-                  ).paddingLeft(4),
-              ],
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Tooltip(
-                  message: "Edit".tl,
-                  child: IconButton(
-                    onPressed: () => widget.edit(source),
-                    icon: const Icon(Icons.edit_note),
+                    decoration: BoxDecoration(
+                      color: context.colorScheme.surfaceContainer,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    child: Text(
+                      source.version,
+                      style: const TextStyle(fontSize: 13),
+                    ),
                   ),
-                ),
-                const SizedBox(width: AppSpace.sm),
-                Tooltip(
-                  message: "Update".tl,
-                  child: IconButton(
-                    onPressed: () => widget.update(source),
-                    icon: const Icon(Icons.update),
+                  if (hasUpdate)
+                    Tooltip(
+                      message: newVersion,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.tiny,
+                          vertical: AppSpace.xxs,
+                        ),
+                        decoration: BoxDecoration(
+                          color: context.colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                        child: Text(
+                          "New Version".tl,
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ).paddingLeft(4),
+                ],
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Tooltip(
+                    message: "Edit".tl,
+                    child: IconButton(
+                      onPressed: () => widget.edit(source),
+                      icon: const Icon(Icons.edit_note),
+                    ),
                   ),
-                ),
-                const SizedBox(width: AppSpace.sm),
-                Tooltip(
-                  message: "Delete".tl,
-                  child: IconButton(
-                    onPressed: () => widget.delete(source),
-                    icon: const Icon(Icons.delete),
+                  const SizedBox(width: AppSpace.sm),
+                  Tooltip(
+                    message: "Update".tl,
+                    child: IconButton(
+                      onPressed: () => widget.update(source),
+                      icon: const Icon(Icons.update),
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: AppSpace.sm),
+                  Tooltip(
+                    message: "Delete".tl,
+                    child: IconButton(
+                      onPressed: () => widget.delete(source),
+                      icon: const Icon(Icons.delete),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -999,7 +995,9 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
                       child: e,
                     ),
                   ),
-                  ..._buildAccount(),
+                  ..._buildAccount().map(
+                    (e) => WindowOverlayBox(child: e),
+                  ),
                 ],
               ],
             ),

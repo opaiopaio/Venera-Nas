@@ -253,6 +253,7 @@ class _ReaderSettingsState extends State<ReaderSettings> {
                 "The number of pic in screen for landscape (Only Gallery Mode)"
                     .tl,
             settingsIndex: "readerScreenPicNumberForLandscape",
+            masked: true,
             interval: 1,
             min: 1,
             max: 5,
@@ -272,6 +273,7 @@ class _ReaderSettingsState extends State<ReaderSettings> {
                 "The number of pic in screen for portrait (Only Gallery Mode)"
                     .tl,
             settingsIndex: "readerScreenPicNumberForPortrait",
+            masked: true,
             interval: 1,
             min: 1,
             max: 5,
@@ -291,6 +293,7 @@ class _ReaderSettingsState extends State<ReaderSettings> {
           child: _SwitchSetting(
             title: "Show single image on first page".tl,
             settingKey: "showSingleImageOnFirstPage",
+            masked: true,
             onChanged: () {
               widget.onChanged?.call("showSingleImageOnFirstPage");
             },
@@ -304,6 +307,7 @@ class _ReaderSettingsState extends State<ReaderSettings> {
           child: _SliderSetting(
             title: "Mouse scroll speed".tl,
             settingsIndex: "readerScrollSpeed",
+            masked: true,
             interval: 0.1,
             min: 0.5,
             max: 3,
@@ -342,6 +346,7 @@ class _ReaderSettingsState extends State<ReaderSettings> {
           child: SelectSetting(
             title: "Long press zoom position".tl,
             settingKey: "longPressZoomPosition",
+            masked: true,
             optionTranslation: {
               "press": "Press position".tl,
               "center": "Screen center".tl,
@@ -450,6 +455,7 @@ class _ReaderSettingsState extends State<ReaderSettings> {
           child: _SwitchSetting(
             title: "Show Comments at Chapter End".tl,
             settingKey: "showChapterCommentsAtEnd",
+            masked: true,
             onChanged: () {
               widget.onChanged?.call("showChapterCommentsAtEnd");
             },
@@ -523,6 +529,7 @@ class __CustomImageProcessingState extends State<_CustomImageProcessing> {
           _SwitchSetting(
             title: "Enable".tl,
             settingKey: "enableCustomImageProcessing",
+            masked: true,
           ),
           Expanded(
             child: Container(

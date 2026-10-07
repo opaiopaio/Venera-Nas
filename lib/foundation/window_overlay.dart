@@ -136,6 +136,14 @@ class WindowOverlayBox extends StatelessWidget {
   }
 }
 
+/// 按需遮罩：`masked` 为 true 时包一层 [WindowOverlayBox]（与 `toSliver()` 同一入口，
+/// 内边距 / 圆角 / 裁切完全一致），否则**原样返回**（零回归）。
+///
+/// 用途：那些**不经过 `toSliver()`** 的独立设置行（例如 `SliverAnimatedVisibility`
+/// 内部的行、`Column` 里直接铺的行）需要显式声明 `masked: true` 才会被遮罩体系覆盖。
+Widget maskIfNeeded(bool masked, Widget child, {EdgeInsetsGeometry? margin}) =>
+    masked ? WindowOverlayBox(margin: margin, child: child) : child;
+
 // ─────────────────────────── ③ 二级页面 ───────────────────────────
 
 /// 二级页面（弹层）的背景装饰：**有背景图时以背景图为准**（图优先于背景色），
