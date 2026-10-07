@@ -267,7 +267,7 @@ class _BodyState extends State<_Body> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                FilledButton.tonalIcon(
+                TextButton.icon(
                   icon: Icon(Icons.article_outlined),
                   label: Text("Comic Source list".tl),
                   onPressed: () {
@@ -277,12 +277,12 @@ class _BodyState extends State<_Body> {
                     );
                   },
                 ),
-                FilledButton.tonalIcon(
+                TextButton.icon(
                   icon: Icon(Icons.file_open_outlined),
                   label: Text("Use a config file".tl),
                   onPressed: _selectFile,
                 ),
-                FilledButton.tonalIcon(
+                TextButton.icon(
                   icon: Icon(Icons.help_outline),
                   label: Text("Help".tl),
                   onPressed: help,
@@ -780,7 +780,7 @@ class _CheckUpdatesButtonState extends State<_CheckUpdatesButton> {
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton.tonalIcon(
+    return TextButton.icon(
       icon: isLoading
           ? SizedBox(
               width: 18,
