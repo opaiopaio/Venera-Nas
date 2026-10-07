@@ -327,8 +327,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       textButtonTheme: TextButtonThemeData(style: overlayButtonStyle),
       outlinedButtonTheme: OutlinedButtonThemeData(style: overlayButtonStyle),
     );
-    // 全局文字（字体 + 颜色）：注入主题文字与图标，做到"大致全控制"。
-    // 注：FilledButton 等"实色主操作按钮"的前景保留自身配色，避免与实色底冲突不可读。
+    // 全局文字（字体 + 颜色）：注入主题文字，做到"大致全控制"。
+    // 注 1：FilledButton 等"实色主操作按钮"的前景保留自身配色，避免与实色底冲突不可读。
+    // 注 2：**不要**把全局文字色注入 `iconTheme` ✗ —— 那会让侧栏/设置等处的**图标**
+    //       跟着文字变色（实测反馈："侧边栏按钮和设置按钮的图标也变色了" ✗）；
+    //       图标应保持主题自身的前景色。
     if (gStyle != null) {
       final fg = gStyle.color;
       theme = theme.copyWith(
@@ -347,7 +350,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             displayColor: fg,
           ),
         ),
-        iconTheme: fg == null ? null : theme.iconTheme.copyWith(color: fg),
       );
     }
     return theme;

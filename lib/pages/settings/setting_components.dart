@@ -594,41 +594,45 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
   Widget build(BuildContext context) {
     var tiles = keys.map((e) => buildItem(e)).toList();
 
-    var view = ReorderableBuilder<String>(
-      key: reorderWidgetKey,
-      scrollController: scrollController,
-      longPressDelay: App.isDesktop
-          ? const Duration(milliseconds: 100)
-          : const Duration(milliseconds: 500),
-      dragChildBoxDecoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainer,
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 5,
-            offset: Offset(0, 2),
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      onReorder: (reorderFunc) {
-        setState(() {
-          keys = List.from(reorderFunc(keys));
-        });
-      },
-      children: tiles,
-      builder: (children) {
-        return GridView(
-          key: _key,
-          controller: scrollController,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 1,
-            mainAxisExtent: 48,
-          ),
-          children: children,
-        );
-      },
-    );
+    // 防御：列表为空时不要把空 children 交给 `ReorderableBuilder`
+    // （该包某些版本会在 `initChildren` 里对空/缺 key 的子项崩溃 ✗）。
+    Widget view = tiles.isEmpty
+        ? const SizedBox.shrink()
+        : ReorderableBuilder<String>(
+            key: reorderWidgetKey,
+            scrollController: scrollController,
+            longPressDelay: App.isDesktop
+                ? const Duration(milliseconds: 100)
+                : const Duration(milliseconds: 500),
+            dragChildBoxDecoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainer,
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 5,
+                  offset: Offset(0, 2),
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            onReorder: (reorderFunc) {
+              setState(() {
+                keys = List.from(reorderFunc(keys));
+              });
+            },
+            children: tiles,
+            builder: (children) {
+              return GridView(
+                key: _key,
+                controller: scrollController,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 1,
+                  mainAxisExtent: 48,
+                ),
+                children: children,
+              );
+            },
+          );
 
     return PopUpWidgetScaffold(
       title: widget.title,
@@ -659,13 +663,19 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
 
     final content = ListTile(
       title: Text(widget.pages[key] ?? "(Invalid) $key"),
-      key: Key(key),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [removeButton, const Icon(Icons.drag_handle)],
       ),
     );
-    return maskIfNeeded(widget.masked, content);
+    // ⚠️ `ReorderableBuilder` 要求**交给它的最外层子项**带 `Key`（该包 controller 里
+    // 对 `key!` 做空断言，缺失即崩："Null check operator used on a null value" ✗）。
+    // 早前 `Key(key)` 放在 `ListTile` 上、外层又被 `maskIfNeeded`（`WindowOverlayBox`）
+    // 包住 → 最外层无 key → 点开这些设置页必崩 ✗。故 key 必须放在**包装之后的最外层** ✓。
+    return KeyedSubtree(
+      key: Key(key),
+      child: maskIfNeeded(widget.masked, content),
+    );
   }
 
   void showAddDialog() {
