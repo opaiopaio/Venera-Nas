@@ -354,7 +354,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                     _sessionAuthenticated = true;
                     Navigator.of(context).pop();
                     isAuthPageActive = false;
-                    forceRebuild();
+                    // 这是 **状态变化**（不是设置变化）：直接 setState 重建本 State
+                    // 的子树即可（原先靠 forceRebuild() 的全树遍历，已废弃）。
+                    setState(() {});
                   },
                 ),
               ),
