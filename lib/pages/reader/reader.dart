@@ -823,7 +823,10 @@ abstract mixin class _ReaderWindow {
     if (!App.isDesktop) return;
     windowFrame.removeCloseListener(onWindowClose);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      windowFrame.setWindowFrameBackgroundTransparent(false);
+      // ⚠️ 必须恢复成「当前背景设置是否启用」而不是写死 false：
+      // 写死 false 会让原生窗口底色变成不透明（白）→ 退出阅读/图片后
+      // Windows 那条顶栏（程序名 + 窗口按钮）变纯白，背景图不再透出 ✗
+      windowFrame.setWindowFrameBackgroundTransparent(AppBackground.isActive);
     });
   }
 }
