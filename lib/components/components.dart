@@ -48,6 +48,7 @@ part 'flyout.dart';
 part 'layout.dart';
 part 'loading.dart';
 part 'menu.dart';
+part 'mask_chip.dart';
 part 'message.dart';
 part 'navigation_bar.dart';
 part 'pop_up_widget.dart';

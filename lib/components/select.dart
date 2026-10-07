@@ -268,28 +268,7 @@ class OptionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: _fastAnimationDuration,
-      decoration: BoxDecoration(
-        color: isSelected
-            ? context.colorScheme.secondaryContainer
-            : windowOverlayColor(),
-        border: isSelected
-            ? Border.all(color: context.colorScheme.secondaryContainer)
-            : Border.all(color: context.colorScheme.outline),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg, vertical: AppSpace.tiny),
-            child: Text(text),
-          ),
-        ),
-      ),
-    );
+    // 同类 chip 统一规格（内边距/最小高度/圆角/文字居中/选中态）见 mask_chip.dart。
+    return MaskChip(text: text, selected: isSelected, onTap: onTap);
   }
 }

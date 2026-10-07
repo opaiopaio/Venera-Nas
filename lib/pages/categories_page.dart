@@ -1,7 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/foundation/app.dart';
-import 'package:venera_nas/foundation/app_theme.dart';
 import 'package:venera_nas/foundation/appdata.dart';
 import 'package:venera_nas/foundation/comic_source/comic_source.dart';
 import 'package:venera_nas/pages/ranking_page.dart';
@@ -254,35 +253,10 @@ class _CategoryPage extends StatelessWidget {
     });
   }
 
-  Widget buildTag(String label, VoidCallback onClick) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-      child: Builder(
-        builder: (context) {
-          // 启用「窗口/按钮背景」时圆角跟随「圆角样式」设置。
-          final radius =
-              (appdata.settings.customBackgroundActive
-                  ? windowOverlayBorderRadius()
-                  : null) ??
-              const BorderRadius.all(Radius.circular(AppRadius.md));
-          return Material(
-            borderRadius: radius,
-            // 分类页的按钮/主题标签属于「窗口与控件」体系：跟随**遮罩色**与不透明度，
-            // 圆角也跟随设置（不是由主题色控制）。
-            color: windowOverlayColor(),
-            child: InkWell(
-              borderRadius: radius,
-              onTap: onClick,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: Text(label),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
+    Widget buildTag(String label, VoidCallback onClick) {
+      // 分类页标签属于「选择/标签 chip」类：统一规格见 components/mask_chip.dart。
+      return MaskChip(text: label, onTap: onClick, withMargin: true);
+    }
 
   bool get enableTranslation => App.locale.languageCode == 'zh';
 }
