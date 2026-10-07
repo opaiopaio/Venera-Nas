@@ -310,9 +310,33 @@ class ContentDialog extends StatelessWidget {
         ],
       ),
     );
+    // 二级页面**统一表面**（与 `PopUpWidgetScaffold` 同一套分层叠加）：
+    //   底层：背景图装饰（有背景图时）  中层：色调层（无图时为实色）
+    //   上层：透明 Material 承内容（避免"半透明 Material 底色"被当实色渲染）
+    // → 让输入框/确认框/消息框等二级菜单也跟随「二级页面样式/色调/强度」✓
+    final decoration = secondaryPageDecoration();
+    final tint = customSecondarySurfaceColor(context.colorScheme);
+    final radius =
+        windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.md);
+    final surface = ClipRRect(
+      borderRadius: radius,
+      child: Stack(
+        children: [
+          if (decoration != null)
+            Positioned.fill(child: DecoratedBox(decoration: decoration)),
+          if (tint != null) Positioned.fill(child: ColoredBox(color: tint)),
+          // 二级页面体系未启用时退回主题表面色（零回归）
+          if (decoration == null && tint == null)
+            Positioned.fill(
+              child: ColoredBox(color: context.colorScheme.surface),
+            ),
+          Material(color: Colors.transparent, child: content),
+        ],
+      ),
+    );
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: radius,
         side: context.brightness == Brightness.dark
             ? BorderSide(color: context.colorScheme.outlineVariant)
             : BorderSide.none,
@@ -322,7 +346,7 @@ class ContentDialog extends StatelessWidget {
           : const EdgeInsets.symmetric(horizontal: AppSpace.lg),
       elevation: 2,
       shadowColor: context.colorScheme.shadow,
-      backgroundColor: context.colorScheme.surface,
+      backgroundColor: Colors.transparent,
       child: AnimatedSize(
         duration: AppMotion.short,
         alignment: Alignment.topCenter,
@@ -336,7 +360,7 @@ class ContentDialog extends StatelessWidget {
               removeTop: true,
               removeBottom: true,
               context: context,
-              child: content,
+              child: surface,
             ),
           ),
         ),
