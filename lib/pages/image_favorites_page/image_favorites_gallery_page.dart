@@ -244,8 +244,8 @@ class _ImageFavoritesGalleryPageState extends State<ImageFavoritesGalleryPage> {
                     color: Theme.of(context).colorScheme.surface.toOpacity(0.7),
                   ),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 2,
+                    horizontal: AppSpace.xs,
+                    vertical: AppSpace.xxs,
                   ),
                   child: Text(
                     pageText,
@@ -277,7 +277,7 @@ class _ImageFavoritesGalleryPageState extends State<ImageFavoritesGalleryPage> {
               return calculated < 1 ? 1 : calculated;
             })();
             return SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpace.sm),
               sliver: SliverGrid(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) => buildGridItem(index),

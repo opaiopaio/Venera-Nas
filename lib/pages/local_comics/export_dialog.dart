@@ -6,6 +6,7 @@ import 'package:venera_nas/foundation/log.dart';
 import 'package:venera_nas/utils/comic_export.dart';
 import 'package:venera_nas/utils/io.dart';
 import 'package:venera_nas/utils/translations.dart';
+import 'package:venera_nas/foundation/app_theme.dart';
 
 /// The scope of comics to export.
 enum ExportScope {
@@ -81,7 +82,7 @@ class _ExportComicsDialogState extends State<ExportComicsDialog> {
         ),
         if (_error != null)
           Padding(
-            padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
+            padding: const EdgeInsets.only(top: AppSpace.sm, left: AppSpace.lg, right: AppSpace.lg),
             child: Text(
               _error!,
               style: TextStyle(color: Theme.of(context).colorScheme.error),

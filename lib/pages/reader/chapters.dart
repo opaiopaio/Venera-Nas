@@ -212,7 +212,7 @@ class _ChapterListTile extends StatelessWidget {
       onTap: onTap,
       child: Container(
         height: 48,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg),
         decoration: BoxDecoration(
           border: Border(
             left: BorderSide(

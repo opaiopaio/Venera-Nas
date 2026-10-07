@@ -1,4 +1,4 @@
-part of 'components.dart';
+﻿part of 'components.dart';
 
 class CodeEditor extends StatefulWidget {
   const CodeEditor({super.key, this.initialValue, this.onChanged});
@@ -128,7 +128,7 @@ class _CodeEditorState extends State<CodeEditor> {
                               style: TextStyle(height: 1.5, fontSize: 14),
                               decoration: InputDecoration(
                                 border: InputBorder.none,
-                                contentPadding: EdgeInsets.all(8),
+                                contentPadding: EdgeInsets.all(AppSpace.sm),
                               ),
                               onChanged: (value) {
                                 widget.onChanged?.call(value);

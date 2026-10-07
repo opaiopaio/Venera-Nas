@@ -300,7 +300,7 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
       ],
     );
 
-    yield const SliverPadding(padding: EdgeInsets.only(top: 8));
+    yield const SliverPadding(padding: EdgeInsets.only(top: AppSpace.sm));
 
     yield SliverLazyToBoxAdapter(
       child: Row(
@@ -475,8 +475,8 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
             ).paddingHorizontal(16).paddingVertical(8),
           if (history != null)
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              margin: const EdgeInsets.symmetric(horizontal: AppSpace.lg, vertical: AppSpace.sm),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: AppSpace.tiny),
               decoration: BoxDecoration(
                 color: context.colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(24),
@@ -541,7 +541,7 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
         children: [
           ListTile(title: Text("Description".tl)),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg),
             child: SelectableText(comic.description!).fixWidth(double.infinity),
           ),
           const SizedBox(height: 16),
@@ -588,7 +588,7 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
 
       final borderRadius = BorderRadius.circular(AppRadius.lg);
 
-      const padding = EdgeInsets.symmetric(horizontal: 16, vertical: 6);
+      const padding = EdgeInsets.symmetric(horizontal: AppSpace.lg, vertical: AppSpace.tiny);
 
       if (onTap != null) {
         return Material(
@@ -855,7 +855,7 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 36,
-      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpace.xs, vertical: AppSpace.tiny),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         border: Border.all(

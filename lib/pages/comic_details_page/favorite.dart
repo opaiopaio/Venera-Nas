@@ -128,7 +128,7 @@ class _FavoriteListState extends State<_FavoriteList> {
     final divider = widget.hasNetwork
         ? Container(
             height: 1,
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            margin: const EdgeInsets.symmetric(horizontal: AppSpace.lg, vertical: AppSpace.sm),
             color: context.colorScheme.outlineVariant.withValues(alpha: 0.3),
           )
         : null;
@@ -222,7 +222,7 @@ class _NetworkSectionState extends State<_NetworkSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          padding: const EdgeInsets.fromLTRB(AppSpace.lg, AppSpace.lg, AppSpace.lg, AppSpace.sm),
           child: Text(
             "Network Favorites".tl,
             style: ts.s14.copyWith(
@@ -238,7 +238,7 @@ class _NetworkSectionState extends State<_NetworkSection> {
                 title: Container(
                   height: 20,
                   width: double.infinity,
-                  margin: const EdgeInsets.only(right: 16),
+                  margin: const EdgeInsets.only(right: AppSpace.lg),
                   child: FractionallySizedBox(
                     widthFactor: _skeletonWidths[index],
                     alignment: Alignment.centerLeft,
@@ -287,7 +287,7 @@ class _NetworkSectionState extends State<_NetworkSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          padding: const EdgeInsets.fromLTRB(AppSpace.lg, AppSpace.lg, AppSpace.lg, AppSpace.sm),
           child: Text(
             "Network Favorites".tl,
             style: ts.s14.copyWith(
@@ -304,8 +304,8 @@ class _NetworkSectionState extends State<_NetworkSection> {
               if (isFavorite)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
+                    horizontal: AppSpace.sm,
+                    vertical: AppSpace.xs,
                   ),
                   decoration: BoxDecoration(
                     color: context.colorScheme.primaryContainer,
@@ -365,7 +365,7 @@ class _NetworkSectionState extends State<_NetworkSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          padding: const EdgeInsets.fromLTRB(AppSpace.lg, AppSpace.lg, AppSpace.lg, AppSpace.sm),
           child: Text(
             "Network Favorites".tl,
             style: ts.s14.copyWith(
@@ -394,8 +394,8 @@ class _NetworkSectionState extends State<_NetworkSection> {
                 if (isAdded)
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+                      horizontal: AppSpace.sm,
+                      vertical: AppSpace.xs,
                     ),
                     decoration: BoxDecoration(
                       color: context.colorScheme.primaryContainer,
@@ -500,7 +500,7 @@ class _LocalSectionState extends State<_LocalSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          padding: const EdgeInsets.fromLTRB(AppSpace.lg, AppSpace.lg, AppSpace.lg, AppSpace.sm),
           child: Text(
             "Local Favorites".tl,
             style: ts.s14.copyWith(
@@ -520,8 +520,8 @@ class _LocalSectionState extends State<_LocalSection> {
                 if (isAdded)
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+                      horizontal: AppSpace.sm,
+                      vertical: AppSpace.xs,
                     ),
                     decoration: BoxDecoration(
                       color: context.colorScheme.primaryContainer,
@@ -618,7 +618,7 @@ class _HoverButtonState extends State<_HoverButton> {
         onTap: widget.enabled ? widget.onTap : null,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.xs),
           decoration: BoxDecoration(
             color: widget.enabled
                 ? (widget.isFavorite

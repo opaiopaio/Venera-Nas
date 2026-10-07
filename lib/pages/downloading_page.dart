@@ -175,7 +175,7 @@ class _DownloadTaskTileState extends State<_DownloadTaskTile> {
   Widget build(BuildContext context) {
     return Container(
       height: 136,
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: AppSpace.sm, horizontal: AppSpace.md),
       child: Row(
         children: [
           Container(

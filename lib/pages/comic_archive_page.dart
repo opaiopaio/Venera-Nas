@@ -4,6 +4,7 @@ import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/utils/comic_backup.dart';
 import 'package:venera_nas/utils/io.dart';
 import 'package:venera_nas/utils/translations.dart';
+import 'package:venera_nas/foundation/app_theme.dart';
 
 class ComicArchivePage extends StatefulWidget {
   const ComicArchivePage({super.key});
@@ -112,7 +113,7 @@ class _ComicArchivePageState extends State<ComicArchivePage> {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(AppSpace.md),
         child: Row(
           children: [
             Expanded(

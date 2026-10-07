@@ -2,6 +2,7 @@
 import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/utils/translations.dart';
+import 'package:venera_nas/foundation/app_theme.dart';
 
 class PinPad extends StatefulWidget {
   const PinPad({
@@ -151,7 +152,7 @@ class PinPadState extends State<PinPad> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(slotCount, (i) {
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpace.sm),
                     child: _buildDot(i < _input.length),
                   );
                 }),
@@ -201,7 +202,7 @@ class PinPadState extends State<PinPad> {
       children: [
         for (int r = 0; r < 4; r++)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(vertical: AppSpace.xs),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: keys.sublist(r * 3, r * 3 + 3),

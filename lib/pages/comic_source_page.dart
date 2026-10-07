@@ -252,7 +252,7 @@ class _BodyState extends State<_Body> {
               decoration: InputDecoration(
                 hintText: "URL",
                 border: const UnderlineInputBorder(),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                contentPadding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
                 suffix: IconButton(
                   onPressed: () => handleAddSource(url),
                   icon: const Icon(Icons.check),
@@ -436,7 +436,7 @@ class _ComicSourceListState extends State<_ComicSourceList> {
       itemBuilder: (context, index) {
         if (index == 0) {
           return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            margin: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.sm),
             decoration: BoxDecoration(
               border: Border.all(
                 color: Theme.of(context).colorScheme.outlineVariant,
@@ -456,7 +456,7 @@ class _ComicSourceListState extends State<_ComicSourceList> {
                   decoration: InputDecoration(
                     hintText: "URL",
                     border: const UnderlineInputBorder(),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
                   ),
                   onChanged: (value) {
                     changed = true;
@@ -875,7 +875,7 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
 
     return SliverMainAxisGroup(
       slivers: [
-        SliverPadding(padding: const EdgeInsets.only(top: 16)),
+        SliverPadding(padding: const EdgeInsets.only(top: AppSpace.lg)),
         SliverToBoxAdapter(
           child: ListTile(
             onTap: () => setState(() => _isExpanded = !_isExpanded),
@@ -890,8 +890,8 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
                 const SizedBox(width: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
+                    horizontal: AppSpace.sm,
+                    vertical: AppSpace.xxs,
                   ),
                   decoration: BoxDecoration(
                     color: context.colorScheme.surfaceContainer,
@@ -907,8 +907,8 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
                     message: newVersion,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
+                        horizontal: AppSpace.tiny,
+                        vertical: AppSpace.xxs,
                       ),
                       decoration: BoxDecoration(
                         color: context.colorScheme.primaryContainer,
@@ -952,7 +952,7 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
         ),
         SliverToBoxAdapter(
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 8),
+            margin: const EdgeInsets.symmetric(horizontal: AppSpace.sm),
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
@@ -1183,7 +1183,7 @@ class _LoginPageState extends State<_LoginPage> {
       appBar: const Appbar(title: Text('')),
       body: Center(
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpace.lg),
           constraints: const BoxConstraints(maxWidth: 400),
           child: AutofillGroup(
             child: Column(

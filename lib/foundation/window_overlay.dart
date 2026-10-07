@@ -125,7 +125,7 @@ class WindowOverlayBox extends StatelessWidget {
     if (!appdata.settings.hasWindowOverlay) return child;
     return Padding(
       padding:
-          margin ?? const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          margin ?? const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.xs),
       child: Material(
         color: windowOverlayColor(),
         borderRadius: windowOverlayBorderRadius(),

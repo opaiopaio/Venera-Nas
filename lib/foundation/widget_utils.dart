@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:venera_nas/foundation/appdata.dart';
 import 'package:venera_nas/foundation/window_overlay.dart';
+import 'package:venera_nas/foundation/app_theme.dart';
 
 extension WidgetExtension on Widget {
   Widget padding(EdgeInsetsGeometry padding) {
@@ -104,7 +105,7 @@ extension WidgetExtension on Widget {
       // 用 Material + 圆角裁切，保证 InkWell 的水波纹/悬停高亮也跟随圆角
       // （普通 Container 裁不到 InkWell 画在 Material 上的墨水层）。
       content = Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.xs),
         child: Material(
           color: windowOverlayColor(),
           borderRadius: BorderRadius.circular(radius),

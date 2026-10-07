@@ -93,8 +93,8 @@ class _ComicThumbnailsState extends State<_ComicThumbnails> {
             }
             return Padding(
               padding: context.width < changePoint
-                  ? const EdgeInsets.all(4)
-                  : const EdgeInsets.all(8),
+                  ? const EdgeInsets.all(AppSpace.xs)
+                  : const EdgeInsets.all(AppSpace.sm),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [

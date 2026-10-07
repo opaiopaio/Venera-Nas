@@ -139,7 +139,7 @@ class _FilterChipFixedWidthState extends State<FilterChipFixedWidth> {
                 ? Theme.of(context).colorScheme.primaryContainer
                 : null,
           ),
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+          padding: const EdgeInsets.fromLTRB(AppSpace.md, AppSpace.sm, AppSpace.md, AppSpace.sm),
           child: labelWidth == null ? firstBuild() : buildContent(),
         ),
       ),

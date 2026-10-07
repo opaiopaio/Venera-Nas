@@ -24,6 +24,7 @@ import 'foundation/app_page_route.dart';
 import 'foundation/appdata.dart';
 import 'headless.dart';
 import 'init.dart';
+import 'package:venera_nas/foundation/app_theme.dart';
 
 void main(List<String> args) {
   if (args.contains('--headless')) {
@@ -265,7 +266,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       // 让按钮的底色方块更小、彼此不粘连。
       minimumSize: const WidgetStatePropertyAll(Size(36, 36)),
       padding: const WidgetStatePropertyAll(
-        EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.xs),
       ),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       shape: WidgetStatePropertyAll(

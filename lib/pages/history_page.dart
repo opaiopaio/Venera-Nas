@@ -197,7 +197,7 @@ class _HistoryPageState extends State<HistoryPage> {
       slivers.add(
         SliverToBoxAdapter(
           child: Container(
-            padding: const EdgeInsets.only(left: 16, top: 16, bottom: 4),
+            padding: const EdgeInsets.only(left: AppSpace.lg, top: AppSpace.lg, bottom: AppSpace.xs),
             child: Text(
               group.label.tl,
               style: ts.s14.copyWith(
@@ -607,7 +607,7 @@ class _SliverGridComicsNoListenerState
                 : null,
             borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
-          margin: const EdgeInsets.all(4),
+          margin: const EdgeInsets.all(AppSpace.xs),
           child: comic,
         );
       }, childCount: comics.length),

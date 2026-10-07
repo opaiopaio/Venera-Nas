@@ -50,8 +50,8 @@ class _ToastOverlay extends StatelessWidget {
             child: IntrinsicWidth(
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  vertical: 6,
-                  horizontal: 16,
+                  vertical: AppSpace.tiny,
+                  horizontal: AppSpace.lg,
                 ),
                 constraints: BoxConstraints(maxWidth: context.width - 32),
                 child: Row(
@@ -318,8 +318,8 @@ class ContentDialog extends StatelessWidget {
             : BorderSide.none,
       ),
       insetPadding: context.width < 400
-          ? const EdgeInsets.symmetric(horizontal: 4)
-          : const EdgeInsets.symmetric(horizontal: 16),
+          ? const EdgeInsets.symmetric(horizontal: AppSpace.xs)
+          : const EdgeInsets.symmetric(horizontal: AppSpace.lg),
       elevation: 2,
       shadowColor: context.colorScheme.shadow,
       backgroundColor: context.colorScheme.surface,
@@ -460,7 +460,7 @@ Future<int?> showSelectDialog({
           return ContentDialog(
             title: title,
             content: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg, vertical: AppSpace.md),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

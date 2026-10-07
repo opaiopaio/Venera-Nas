@@ -652,7 +652,7 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
 
   Widget buildItem(String key) {
     Widget removeButton = Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.only(right: AppSpace.sm),
       child: IconButton(
         onPressed: () {
           setState(() {
@@ -791,7 +791,7 @@ class _SettingPartTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return SliverToBoxAdapter(
       child: Container(
-        padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8),
+        padding: const EdgeInsets.only(left: AppSpace.lg, top: AppSpace.lg, bottom: AppSpace.sm),
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(

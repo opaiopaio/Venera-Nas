@@ -554,7 +554,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
               duration: const Duration(milliseconds: 200),
               child: autoSync
                   ? Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(AppSpace.sm),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.primaryContainer,
                         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -753,7 +753,7 @@ class _BackupWebdavSettingState extends State<_BackupWebdavSetting> {
             ),
             const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(AppSpace.sm),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(AppRadius.md),

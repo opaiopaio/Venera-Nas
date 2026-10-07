@@ -526,7 +526,7 @@ class __CustomImageProcessingState extends State<_CustomImageProcessing> {
           ),
           Expanded(
             child: Container(
-              margin: EdgeInsets.all(8),
+              margin: EdgeInsets.all(AppSpace.sm),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 border: Border.all(color: context.colorScheme.outlineVariant),

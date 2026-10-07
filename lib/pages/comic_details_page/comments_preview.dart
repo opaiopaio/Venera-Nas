@@ -102,7 +102,7 @@ class _CommentWidget extends StatelessWidget {
     return Container(
       height: double.infinity,
       margin: const EdgeInsets.fromLTRB(16, 8, 0, 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg, vertical: AppSpace.sm),
       width: 324,
       decoration: BoxDecoration(
         color: context.colorScheme.surfaceContainerLow,

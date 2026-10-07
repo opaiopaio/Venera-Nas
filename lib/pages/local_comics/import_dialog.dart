@@ -9,6 +9,7 @@ import 'package:venera_nas/utils/comic_import.dart';
 import 'package:venera_nas/utils/import_comic.dart';
 import 'package:venera_nas/utils/io.dart';
 import 'package:venera_nas/utils/translations.dart';
+import 'package:venera_nas/foundation/app_theme.dart';
 
 /// A dialog that allows the user to import comics from a .venera-comics file.
 ///
@@ -50,7 +51,7 @@ class _ImportComicsDialogState extends State<ImportComicsDialog> {
         ).paddingHorizontal(16),
         if (_error != null)
           Padding(
-            padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
+            padding: const EdgeInsets.only(top: AppSpace.sm, left: AppSpace.lg, right: AppSpace.lg),
             child: Text(
               _error!,
               style: TextStyle(color: Theme.of(context).colorScheme.error),

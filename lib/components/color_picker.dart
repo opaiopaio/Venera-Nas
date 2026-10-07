@@ -293,7 +293,7 @@ class _ColorPickerPageState extends State<ColorPickerPage> {
           final presets = _buildPresets(context);
           final editor = _buildEditor(context);
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpace.lg),
             child: wide
                 ? Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -365,7 +365,7 @@ class _ColorPickerPageState extends State<ColorPickerPage> {
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: AppSpace.tiny),
         decoration: BoxDecoration(
           color: selected
               ? scheme.primaryContainer

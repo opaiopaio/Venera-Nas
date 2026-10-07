@@ -111,7 +111,7 @@ class _NormalComicChaptersState extends State<_NormalComicChapters> {
                   (i + 1).toString(),
                 );
                 return Padding(
-                  padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
+                  padding: const EdgeInsets.fromLTRB(AppSpace.xs, AppSpace.xs, AppSpace.xs, AppSpace.xs),
                   child: Material(
                     color: context.colorScheme.surfaceContainer,
                     borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -119,7 +119,7 @@ class _NormalComicChaptersState extends State<_NormalComicChapters> {
                       onTap: () => state.read(i + 1),
                       borderRadius: BorderRadius.circular(AppRadius.xl),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpace.sm),
                         child: Center(
                           child: Text(
                             value,
@@ -142,7 +142,7 @@ class _NormalComicChaptersState extends State<_NormalComicChapters> {
                 maxCrossAxisExtent: 250,
                 itemHeight: 48,
               ),
-            ).sliverPadding(const EdgeInsets.symmetric(horizontal: 8)),
+            ).sliverPadding(const EdgeInsets.symmetric(horizontal: AppSpace.sm)),
             if (!canShowAll)
               SliverToBoxAdapter(
                 child: Align(
@@ -293,7 +293,7 @@ class _GroupedComicChaptersState extends State<_GroupedComicChapters>
                 tabs: chapters.groups.map((e) => Tab(text: e)).toList(),
               ),
             ),
-            SliverPadding(padding: const EdgeInsets.only(top: 8)),
+            SliverPadding(padding: const EdgeInsets.only(top: AppSpace.sm)),
             SliverGrid(
               delegate: SliverChildBuilderDelegate(childCount: length, (
                 context,
@@ -321,7 +321,7 @@ class _GroupedComicChaptersState extends State<_GroupedComicChapters>
                       history!.readEpisode.contains(rawIndex);
                 }
                 return Padding(
-                  padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
+                  padding: const EdgeInsets.fromLTRB(AppSpace.xs, AppSpace.xs, AppSpace.xs, AppSpace.xs),
                   child: Material(
                     color: context.colorScheme.surfaceContainerLow,
                     borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -329,7 +329,7 @@ class _GroupedComicChaptersState extends State<_GroupedComicChapters>
                       onTap: () => state.read(chapterIndex + 1),
                       borderRadius: BorderRadius.circular(AppRadius.lg),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpace.sm),
                         child: Center(
                           child: Text(
                             value,
@@ -352,7 +352,7 @@ class _GroupedComicChaptersState extends State<_GroupedComicChapters>
                 maxCrossAxisExtent: 250,
                 itemHeight: 48,
               ),
-            ).sliverPadding(const EdgeInsets.symmetric(horizontal: 8)),
+            ).sliverPadding(const EdgeInsets.symmetric(horizontal: AppSpace.sm)),
             if (!canShowAll)
               SliverToBoxAdapter(
                 child: Align(

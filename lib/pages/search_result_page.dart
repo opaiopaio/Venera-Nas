@@ -8,6 +8,7 @@ import 'package:venera_nas/pages/search_page.dart';
 import 'package:venera_nas/utils/ext.dart';
 import 'package:venera_nas/utils/tags_translation.dart';
 import 'package:venera_nas/utils/translations.dart';
+import 'package:venera_nas/foundation/app_theme.dart';
 
 class SearchResultPage extends StatefulWidget {
   const SearchResultPage({
@@ -339,7 +340,7 @@ class _SuggestionsState extends State<_Suggestions> {
         ),
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg),
             itemCount: widget.controller.suggestions.length,
             itemBuilder: (context, index) =>
                 buildItem(widget.controller.suggestions[index]),
@@ -436,7 +437,7 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
       content: Column(
         children: [
           ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            contentPadding: const EdgeInsets.symmetric(horizontal: AppSpace.lg),
             title: Text("Search in".tl),
           ),
           Wrap(
@@ -505,7 +506,7 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,

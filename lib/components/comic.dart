@@ -335,7 +335,7 @@ class ComicTile extends StatelessWidget {
           onLongPress: enableLongPressed ? () => _onLongPressed(context) : null,
           onSecondaryTapDown: (detail) => onSecondaryTap(detail, context),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 24, 8),
+            padding: const EdgeInsets.fromLTRB(AppSpace.lg, AppSpace.sm, AppSpace.xl, AppSpace.sm),
             child: Row(
               children: [
                 image,
@@ -433,7 +433,7 @@ class ComicTile extends StatelessWidget {
                               padding: constraints.maxWidth < 80
                                   ? const EdgeInsets.fromLTRB(3, 1, 3, 1)
                                   : constraints.maxWidth < 150
-                                  ? const EdgeInsets.fromLTRB(4, 2, 4, 2)
+                                  ? const EdgeInsets.fromLTRB(AppSpace.xs, AppSpace.xxs, AppSpace.xs, AppSpace.xxs)
                                   : const EdgeInsets.fromLTRB(5, 2, 5, 2),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(
@@ -730,7 +730,7 @@ class _ComicDescription extends StatelessWidget {
             ),
             if (badge != null)
               Container(
-                padding: const EdgeInsets.fromLTRB(6, 4, 6, 4),
+                padding: const EdgeInsets.fromLTRB(AppSpace.tiny, AppSpace.xs, AppSpace.tiny, AppSpace.xs),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.tertiaryContainer,
                   borderRadius: const BorderRadius.all(

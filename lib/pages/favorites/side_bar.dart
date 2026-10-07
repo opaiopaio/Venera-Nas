@@ -120,7 +120,7 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
 
   Widget buildLocalTitle() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: AppSpace.sm),
       child: Row(
         children: [
           Icon(Icons.local_activity, color: context.colorScheme.secondary),
@@ -160,8 +160,8 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
 
   Widget buildNetworkTitle() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.symmetric(vertical: AppSpace.md),
+      margin: const EdgeInsets.only(top: AppSpace.sm),
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(
@@ -210,7 +210,7 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
         height: 42,
         alignment: Alignment.centerLeft,
         margin: appdata.settings.customBackgroundActive
-            ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2)
+            ? const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.xxs)
             : null,
         decoration: BoxDecoration(
           color: isSelected
@@ -229,13 +229,13 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
                   ),
                 ),
         ),
-        padding: const EdgeInsets.only(left: 16),
+        padding: const EdgeInsets.only(left: AppSpace.lg),
         child: Row(
           children: [
             Expanded(child: Text(folderName)),
             Container(
-              margin: EdgeInsets.only(right: 8),
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              margin: EdgeInsets.only(right: AppSpace.sm),
+              padding: EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.xxs),
               decoration: BoxDecoration(
                 color: context.colorScheme.surfaceContainer,
                 borderRadius: BorderRadius.circular(AppRadius.md),
@@ -266,7 +266,7 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
         height: 42,
         alignment: Alignment.centerLeft,
         margin: appdata.settings.customBackgroundActive
-            ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2)
+            ? const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.xxs)
             : null,
         decoration: BoxDecoration(
           color: isSelected
@@ -285,7 +285,7 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
                   ),
                 ),
         ),
-        padding: const EdgeInsets.only(left: 16),
+        padding: const EdgeInsets.only(left: AppSpace.lg),
         child: Text(data.title),
       ),
     );

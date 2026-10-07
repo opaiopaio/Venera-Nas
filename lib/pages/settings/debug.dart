@@ -46,7 +46,7 @@ class DebugPageState extends State<DebugPage> {
               Container(
                 width: double.infinity,
                 height: 200,
-                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                margin: const EdgeInsets.symmetric(vertical: AppSpace.sm, horizontal: AppSpace.lg),
                 child: TextField(
                   controller: controller,
                   maxLines: null,
@@ -55,7 +55,7 @@ class DebugPageState extends State<DebugPage> {
                   textAlignVertical: TextAlignVertical.top,
                   decoration: InputDecoration(
                     border: const OutlineInputBorder(),
-                    contentPadding: const EdgeInsets.all(8),
+                    contentPadding: const EdgeInsets.all(AppSpace.sm),
                   ),
                 ),
               ),
@@ -81,7 +81,7 @@ class DebugPageState extends State<DebugPage> {
               Container(
                 width: double.infinity,
                 height: 200,
-                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                margin: const EdgeInsets.symmetric(vertical: AppSpace.sm, horizontal: AppSpace.lg),
                 decoration: BoxDecoration(
                   border: Border.all(color: context.colorScheme.outline),
                   borderRadius: BorderRadius.circular(AppRadius.sm),

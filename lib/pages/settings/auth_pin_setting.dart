@@ -75,7 +75,7 @@ class _AuthPinSettingState extends State<AuthPinSetting> {
       body: Align(
         alignment: Alignment.topCenter,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpace.xl, vertical: AppSpace.xl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

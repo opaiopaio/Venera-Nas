@@ -6,6 +6,7 @@ import 'package:venera_nas/components/pin_pad.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/utils/auth_storage.dart';
 import 'package:venera_nas/utils/translations.dart';
+import 'package:venera_nas/foundation/app_theme.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key, this.onSuccessfulAuth});
@@ -102,7 +103,7 @@ class _AuthPageState extends State<AuthPage> {
         child: Center(
           child: _usePin
               ? Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(AppSpace.xl),
                   child: PinPad(
                     key: _pinKey,
                     title: "Enter PIN".tl,

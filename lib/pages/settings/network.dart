@@ -1,4 +1,4 @@
-part of 'settings_page.dart';
+﻿part of 'settings_page.dart';
 
 class NetworkSettings extends StatefulWidget {
   const NetworkSettings({super.key});
@@ -327,7 +327,7 @@ class __DNSOverridesState extends State<_DNSOverrides> {
             const SizedBox(height: 8),
             Container(
               height: 1,
-              margin: EdgeInsets.symmetric(horizontal: 8),
+              margin: EdgeInsets.symmetric(horizontal: AppSpace.sm),
               color: context.colorScheme.outlineVariant,
             ),
             for (var i = 0; i < overrides.length; i++) buildOverride(i),
@@ -355,7 +355,7 @@ class __DNSOverridesState extends State<_DNSOverrides> {
     return Container(
       key: ValueKey(index),
       height: 48,
-      margin: EdgeInsets.symmetric(horizontal: 8),
+      margin: EdgeInsets.symmetric(horizontal: AppSpace.sm),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(color: context.colorScheme.outlineVariant),
@@ -522,7 +522,7 @@ class _SmbServerManagerState extends State<_SmbServerManager> {
               ),
             ),
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppSpace.md),
             child: SizedBox(
               width: double.infinity,
               child: Button.filled(

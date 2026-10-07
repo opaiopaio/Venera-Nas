@@ -161,7 +161,7 @@ class _ButtonState extends State<Button> {
 
   @override
   Widget build(BuildContext context) {
-    var padding = widget.padding ?? const EdgeInsets.symmetric(horizontal: 16);
+    var padding = widget.padding ?? const EdgeInsets.symmetric(horizontal: AppSpace.lg);
     var width = widget.width;
     if (width != null) {
       width = width - padding.horizontal;
@@ -345,7 +345,7 @@ class _IconButtonState extends State<_IconButton> {
                   : null,
               borderRadius: BorderRadius.circular((iconSize + 12) / 2),
             ),
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(AppSpace.tiny),
             child: icon,
           ),
         ),

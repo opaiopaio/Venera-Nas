@@ -143,7 +143,7 @@ class _CommentsPageState extends State<CommentsPage> {
                             const SizedBox(height: 8),
                             Container(
                               alignment: Alignment.centerLeft,
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(AppSpace.lg),
                               decoration: BoxDecoration(
                                 border: Border(
                                   top: BorderSide(
@@ -193,7 +193,7 @@ class _CommentsPageState extends State<CommentsPage> {
       return const SizedBox(height: 0);
     }
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: AppSpace.sm, horizontal: AppSpace.sm),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         border: Border(
@@ -222,7 +222,7 @@ class _CommentsPageState extends State<CommentsPage> {
             ),
             if (sending)
               const Padding(
-                padding: EdgeInsets.all(8),
+                padding: EdgeInsets.all(AppSpace.sm),
                 child: SizedBox(
                   width: 24,
                   height: 24,
@@ -308,7 +308,7 @@ class _CommentTileState extends State<_CommentTile> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: AppSpace.sm, horizontal: AppSpace.lg),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -374,7 +374,7 @@ class _CommentTileState extends State<_CommentTile> {
 
   Widget buildReply() {
     return Container(
-      margin: const EdgeInsets.only(left: 8),
+      margin: const EdgeInsets.only(left: AppSpace.sm),
       decoration: BoxDecoration(
         border: Border.all(
           color: Theme.of(context).colorScheme.outlineVariant,
@@ -402,7 +402,7 @@ class _CommentTileState extends State<_CommentTile> {
             const SizedBox(width: 8),
             Text(widget.comment.replyCount.toString()),
           ],
-        ).padding(const EdgeInsets.symmetric(horizontal: 12, vertical: 4)),
+        ).padding(const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: AppSpace.xs)),
       ),
     );
   }
@@ -415,7 +415,7 @@ class _CommentTileState extends State<_CommentTile> {
 
   Widget buildLike() {
     return Container(
-      margin: const EdgeInsets.only(left: 8),
+      margin: const EdgeInsets.only(left: AppSpace.sm),
       decoration: BoxDecoration(
         border: Border.all(
           color: Theme.of(context).colorScheme.outlineVariant,
@@ -467,7 +467,7 @@ class _CommentTileState extends State<_CommentTile> {
             const SizedBox(width: 8),
             Text(likes.toString()),
           ],
-        ).padding(const EdgeInsets.symmetric(horizontal: 12, vertical: 4)),
+        ).padding(const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: AppSpace.xs)),
       ),
     );
   }
@@ -528,7 +528,7 @@ class _CommentTileState extends State<_CommentTile> {
     }
 
     return Container(
-      margin: const EdgeInsets.only(left: 8),
+      margin: const EdgeInsets.only(left: AppSpace.sm),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(

@@ -119,7 +119,7 @@ class _ImageFavoritesItemState extends State<_ImageFavoritesItem> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.sm),
       decoration: BoxDecoration(
         border: Border.all(
           color: Theme.of(context).colorScheme.outlineVariant,
@@ -190,7 +190,7 @@ class _ImageFavoritesItemState extends State<_ImageFavoritesItem> {
               ? Theme.of(context).colorScheme.primaryContainer
               : null,
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpace.xs),
         child: Column(
           children: [
             Container(
@@ -248,7 +248,7 @@ class _ImageFavoritesItemState extends State<_ImageFavoritesItem> {
           },
         ),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.xxs),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.secondaryContainer,
             borderRadius: BorderRadius.circular(AppRadius.md),
