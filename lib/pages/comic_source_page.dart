@@ -965,7 +965,7 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
         ),
         SliverToBoxAdapter(
           child: AnimatedSize(
-            duration: const Duration(milliseconds: 200),
+            duration: AppMotion.short,
             curve: Curves.easeInOut,
             alignment: Alignment.topCenter,
             child: Column(

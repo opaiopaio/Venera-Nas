@@ -25,7 +25,7 @@ class _HoverBoxState extends State<HoverBox> {
       onExit: (_) => setState(() => isHover = false),
       cursor: SystemMouseCursors.click,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: AppMotion.short,
         decoration: BoxDecoration(
           color: isHover
               ? Theme.of(context).colorScheme.surfaceContainerLow

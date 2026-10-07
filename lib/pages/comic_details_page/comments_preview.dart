@@ -37,7 +37,7 @@ class _CommentsPartState extends State<_CommentsPart> {
                   onPressed: () {
                     scrollController.animateTo(
                       scrollController.position.pixels - 340,
-                      duration: const Duration(milliseconds: 200),
+                      duration: AppMotion.short,
                       curve: Curves.ease,
                     );
                   },
@@ -47,7 +47,7 @@ class _CommentsPartState extends State<_CommentsPart> {
                   onPressed: () {
                     scrollController.animateTo(
                       scrollController.position.pixels + 340,
-                      duration: const Duration(milliseconds: 200),
+                      duration: AppMotion.short,
                       curve: Curves.ease,
                     );
                   },

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/appdata.dart';
@@ -9,6 +9,7 @@ import 'package:venera_nas/pages/comic_source_page.dart';
 import 'package:venera_nas/pages/settings/settings_page.dart';
 import 'package:venera_nas/utils/ext.dart';
 import 'package:venera_nas/utils/translations.dart';
+import 'package:venera_nas/foundation/design_tokens.dart';
 
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});
@@ -334,7 +335,7 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
     if (scrollController.hasClients) {
       scrollController.animateTo(
         scrollController.position.minScrollExtent,
-        duration: const Duration(milliseconds: 200),
+        duration: AppMotion.short,
         curve: Curves.easeInOut,
       );
     }

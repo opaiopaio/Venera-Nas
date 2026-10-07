@@ -32,6 +32,7 @@ void main(List<String> args) {
     var n = 0;
     for (final f in root.listSync(recursive: true).whereType<File>()) {
       if (!f.path.endsWith('.dart')) continue;
+      if (f.path.endsWith('design_tokens.dart')) continue; // 令牌定义本身不计入硬编码
       final text = f.readAsStringSync();
       n += entry.value.allMatches(text).length;
     }

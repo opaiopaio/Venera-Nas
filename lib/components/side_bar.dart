@@ -153,7 +153,7 @@ class SideBarRoute<T> extends PopupRoute<T> {
   }
 
   @override
-  Duration get transitionDuration => const Duration(milliseconds: 300);
+  Duration get transitionDuration => AppMotion.medium;
 
   @override
   Widget buildTransitions(

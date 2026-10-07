@@ -554,7 +554,7 @@ class _GalleryModeState extends State<_GalleryMode>
     }
     return controller.animateToPage(
       page,
-      duration: const Duration(milliseconds: 200),
+      duration: AppMotion.short,
       curve: Curves.ease,
     );
   }
@@ -650,7 +650,7 @@ class _GalleryModeState extends State<_GalleryMode>
     if (event is KeyRepeatEvent && keyRepeatTimer == null) {
       keyRepeatTimer = Timer.periodic(
         reader.enablePageAnimation(reader.cid, reader.type)
-            ? const Duration(milliseconds: 200)
+            ? AppMotion.short
             : const Duration(milliseconds: 50),
         (timer) {
           if (!mounted) {
@@ -765,7 +765,7 @@ class _ContinuousModeState extends State<_ContinuousMode>
 
   void delayedSetIsScrolling(bool value) {
     Future.delayed(
-      const Duration(milliseconds: 300),
+      AppMotion.medium,
       () => delayedIsScrolling = value,
     );
   }
@@ -1141,7 +1141,7 @@ class _ContinuousModeState extends State<_ContinuousMode>
   Future<void> animateToPage(int page) {
     return itemScrollController.scrollTo(
       index: page,
-      duration: const Duration(milliseconds: 200),
+      duration: AppMotion.short,
       curve: Curves.ease,
     );
   }
@@ -1247,13 +1247,13 @@ class _ContinuousModeState extends State<_ContinuousMode>
     if (forward == true) {
       scrollController.animateTo(
         scrollController.offset + context.height * 0.25,
-        duration: const Duration(milliseconds: 200),
+        duration: AppMotion.short,
         curve: Curves.ease,
       );
     } else if (forward == false) {
       scrollController.animateTo(
         scrollController.offset - context.height * 0.25,
-        duration: const Duration(milliseconds: 200),
+        duration: AppMotion.short,
         curve: Curves.ease,
       );
     }

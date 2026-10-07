@@ -551,7 +551,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
             ),
             const SizedBox(height: 16),
             AnimatedSize(
-              duration: const Duration(milliseconds: 200),
+              duration: AppMotion.short,
               child: autoSync
                   ? Container(
                       padding: const EdgeInsets.all(AppSpace.sm),

@@ -351,7 +351,7 @@ class _AppScrollBarState extends State<AppScrollBar> {
               right: 0,
               child: AnimatedOpacity(
                 opacity: _isVisible ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 200),
+                duration: AppMotion.short,
                 child: MouseRegion(
                   cursor: SystemMouseCursors.click,
                   onEnter: (_) => _showScrollbar(),

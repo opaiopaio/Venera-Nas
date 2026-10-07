@@ -324,7 +324,7 @@ class ContentDialog extends StatelessWidget {
       shadowColor: context.colorScheme.shadow,
       backgroundColor: context.colorScheme.surface,
       child: AnimatedSize(
-        duration: const Duration(milliseconds: 200),
+        duration: AppMotion.short,
         alignment: Alignment.topCenter,
         child: IntrinsicWidth(
           child: ConstrainedBox(

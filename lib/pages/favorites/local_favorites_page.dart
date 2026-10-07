@@ -86,7 +86,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
         isLoading = true;
         manager
             .allComicsAsync()
-            .minTime(const Duration(milliseconds: 200))
+            .minTime(AppMotion.short)
             .then((value) {
               if (mounted) {
                 setState(() {
@@ -104,7 +104,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
         isLoading = true;
         manager
             .getFolderComicsAsync(widget.folder)
-            .minTime(const Duration(milliseconds: 200))
+            .minTime(AppMotion.short)
             .then((value) {
               if (mounted) {
                 setState(() {

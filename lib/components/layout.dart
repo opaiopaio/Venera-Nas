@@ -1,4 +1,4 @@
-part of 'components.dart';
+﻿part of 'components.dart';
 
 class SliverGridViewWithFixedItemHeight extends StatelessWidget {
   const SliverGridViewWithFixedItemHeight({
@@ -179,7 +179,7 @@ class SliverAnimatedVisibility extends StatelessWidget {
 
     return SliverToBoxAdapter(
       child: AnimatedSize(
-        duration: const Duration(milliseconds: 200),
+        duration: AppMotion.short,
         curve: Curves.easeInOut,
         alignment: Alignment.topCenter,
         child: child,

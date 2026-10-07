@@ -117,7 +117,7 @@ class _MenuRoute<T> extends PopupRoute<T> {
   }
 
   @override
-  Duration get transitionDuration => const Duration(milliseconds: 200);
+  Duration get transitionDuration => AppMotion.short;
 
   @override
   Widget buildTransitions(

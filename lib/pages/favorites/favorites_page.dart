@@ -90,7 +90,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
             left: context.width <= _kTwoPanelChangeWidth ? -_kLeftBarWidth : 0,
             top: 0,
             bottom: 0,
-            duration: const Duration(milliseconds: 200),
+            duration: AppMotion.short,
             child: (const _LeftBar()).fixWidth(_kLeftBarWidth),
           ),
           Positioned(
