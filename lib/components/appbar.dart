@@ -82,10 +82,6 @@ class _AppbarState extends State<Appbar> {
 
 enum AppbarStyle { blur, shadow }
 
-/// **A/B 定位开关（临时）**：顶栏内是否绘制"整窗背景切片"。
-/// 用于排查"点弹层后页面被切成左右两半、中间背景可滚动"的鬼影来源。
-bool headerBackgroundSliceEnabled = false;
-
 /// 顶栏底：**不透明的「背景切片」**。
 ///
 /// 启用自定义背景（背景图/底色）时，顶栏直接画出与全窗背景**同一份**的
@@ -116,18 +112,62 @@ class _HeaderSurfaceState extends State<_HeaderSurface> {
   /// 顶栏左上角在窗口坐标里的位置。首帧未知 → 先只画不透明兜底，下一帧补背景。
   Offset? _offsetInWindow;
 
+  /// 背景图（自绘用）。用 `ImageStream` 解析后缓存，**同一张图不重复解析**。
+  ui.Image? _bgImage;
+  ImageStream? _bgStream;
+  ImageStreamListener? _bgListener;
+  String? _bgPath;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _resolveBackgroundImage();
+  }
+
+  @override
+  void dispose() {
+    if (_bgStream != null && _bgListener != null) {
+      _bgStream!.removeListener(_bgListener!);
+    }
+    super.dispose();
+  }
+
+  void _resolveBackgroundImage() {
+    if (!AppBackground.isActive) {
+      _bgImage = null;
+      return;
+    }
+    final file = currentBackgroundImageFile();
+    if (file == null) {
+      _bgImage = null;
+      return;
+    }
+    if (_bgPath == file.path && _bgImage != null) return;
+    _bgPath = file.path;
+    final stream = FileImage(
+      file,
+    ).resolve(createLocalImageConfiguration(context));
+    if (_bgStream != null && _bgListener != null) {
+      _bgStream!.removeListener(_bgListener!);
+    }
+    _bgListener = ImageStreamListener((info, _) {
+      if (!mounted) return;
+      setState(() => _bgImage = info.image);
+    }, onError: (_, _) {});
+    _bgStream = stream..addListener(_bgListener!);
+  }
+
   @override
   Widget build(BuildContext context) {
     // 建立设置依赖：背景切片/毛玻璃/圆角随设置变化时精准重建
     AppSettingsScope.of(context);
-    final size = MediaQuery.sizeOf(context);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final box = context.findRenderObject();
       if (box is! RenderBox || !box.hasSize) return;
-      final offset = box.localToGlobal(Offset.zero);
-      if (offset != _offsetInWindow) {
-        setState(() => _offsetInWindow = offset);
+      final measured = box.localToGlobal(Offset.zero);
+      if (measured != _offsetInWindow) {
+        setState(() => _offsetInWindow = measured);
       }
     });
     final offset = _offsetInWindow;
@@ -142,25 +182,14 @@ class _HeaderSurfaceState extends State<_HeaderSurface> {
           Positioned.fill(
             child: ColoredBox(color: context.colorScheme.surface),
           ),
-          if (headerBackgroundSliceEnabled &&
-              AppBackground.isActive &&
-              offset != null)
-            // 背景切片：子项是**整窗**尺寸，但这里用 OverflowBox + Transform 摆放 ——
-            // 它**不参与父级尺寸计算**，任何约束环境下都不会影响顶栏布局，
-            // 也不会进入外层滚动区（历史 bug：它把弹层滚动区撑成了"中间那条背景"）。
-            OverflowBox(
-              minWidth: 0,
-              maxWidth: double.infinity,
-              minHeight: 0,
-              maxHeight: double.infinity,
-              alignment: Alignment.topLeft,
-              child: Transform.translate(
-                offset: Offset(-offset.dx, -offset.dy),
-                child: SizedBox(
-                  width: size.width,
-                  height: size.height,
-                  child: const AppBackground(),
-                ),
+          if (AppBackground.isActive)
+            // 背景切片：**只画不布局**的自绘（见 [_HeaderBackground] 注释 ——
+            // 以前用"整窗尺寸的子项 + OverflowBox/Transform"会在合成层把页面
+            // 画成"左右两半 + 中间一条可滚动的背景带"，是严重渲染 bug 的根因）。
+            Positioned.fill(
+              child: _HeaderBackground(
+                image: _bgImage,
+                offsetInWindow: offset ?? Offset.zero,
               ),
             ),
           widget.body,
@@ -168,6 +197,105 @@ class _HeaderSurfaceState extends State<_HeaderSurface> {
       ),
     );
   }
+}
+
+/// 顶栏的「背景切片」：**只画不布局**。
+///
+/// 与全窗背景层逐像素对齐：把**整窗矩形**（`(-顶栏在窗口里的偏移, 窗口尺寸)`）
+/// 交给 [paintImage] 画，再由外层 `ClipRect` 裁到顶栏范围内。
+///
+/// ⚠️ **历史严重 bug**：这里以前是"整窗尺寸的子项 + `OverflowBox`/`Transform`"。
+/// 即使它不参与布局，也会在**绘制/合成**层把 Windows 上的页面画成
+/// "左右两半 + 中间一条能上下滚动的背景带"。
+/// **任何往顶栏里塞整窗尺寸子项的做法都必须避免** —— 只能画，不能布局。
+class _HeaderBackground extends StatelessWidget {
+  const _HeaderBackground({required this.image, required this.offsetInWindow});
+
+  final ui.Image? image;
+
+  final Offset offsetInWindow;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final fitSetting =
+        appdata.settings['backgroundImageFit'] as String? ?? 'cover';
+    final base =
+        resolveColorSettingValue(
+          appdata.settings['backgroundColor'] as String? ?? 'transparent',
+        ) ??
+        scheme.surface;
+    final opacity =
+        ((appdata.settings['backgroundImageOpacity'] as num?)?.toDouble() ??
+                1.0)
+            .clamp(0.0, 1.0);
+    return CustomPaint(
+      painter: _HeaderBackgroundPainter(
+        image: image,
+        offsetInWindow: offsetInWindow,
+        windowSize: MediaQuery.sizeOf(context),
+        baseColor: base,
+        opacity: opacity,
+        fit: backgroundBoxFitOf(fitSetting),
+        isRepeat: fitSetting == 'repeat',
+      ),
+    );
+  }
+}
+
+class _HeaderBackgroundPainter extends CustomPainter {
+  _HeaderBackgroundPainter({
+    required this.image,
+    required this.offsetInWindow,
+    required this.windowSize,
+    required this.baseColor,
+    required this.opacity,
+    required this.fit,
+    required this.isRepeat,
+  });
+
+  final ui.Image? image;
+  final Offset offsetInWindow;
+  final Size windowSize;
+  final Color baseColor;
+  final double opacity;
+  final BoxFit fit;
+  final bool isRepeat;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // 底色（与全窗背景层同源）
+    canvas.drawRect(Offset.zero & size, Paint()..color = baseColor);
+    final img = image;
+    if (img == null) return;
+    // 整窗矩形平移到顶栏坐标系 → 与全窗背景逐像素对齐
+    final rect = Rect.fromLTWH(
+      -offsetInWindow.dx,
+      -offsetInWindow.dy,
+      windowSize.width,
+      windowSize.height,
+    );
+    paintImage(
+      canvas: canvas,
+      rect: rect,
+      image: img,
+      fit: isRepeat ? BoxFit.none : fit,
+      repeat: isRepeat ? ImageRepeat.repeat : ImageRepeat.noRepeat,
+      alignment: isRepeat ? Alignment.topLeft : Alignment.center,
+      opacity: opacity,
+      filterQuality: FilterQuality.medium,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_HeaderBackgroundPainter old) =>
+      old.image != image ||
+      old.offsetInWindow != offsetInWindow ||
+      old.windowSize != windowSize ||
+      old.baseColor != baseColor ||
+      old.opacity != opacity ||
+      old.fit != fit ||
+      old.isRepeat != isRepeat;
 }
 
 class SliverAppbar extends StatelessWidget {
