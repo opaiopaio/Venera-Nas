@@ -121,19 +121,69 @@ class _AppbarState extends State<Appbar> {
         ],
       ).paddingTop(context.padding.top),
     );
-    if (widget.style == AppbarStyle.shadow) {
-      return Material(
-        color: customBackgroundAware(context.colorScheme.surface),
-        elevation: _scrolledUnder ? 2 : 0,
-        child: content,
-      );
-    } else {
-      return BlurEffect(blur: _scrolledUnder ? 15 : 0, child: content);
-    }
+    return _OverlapTransition(
+      overlapped: _scrolledUnder,
+      builder: (context, t) {
+        if (widget.style == AppbarStyle.shadow) {
+          return Material(
+            color: customBackgroundAware(context.colorScheme.surface),
+            elevation: _OverlapTransition.elevation * t,
+            child: content,
+          );
+        }
+        // blur 样式：着色（透明底 Material 的 surfaceTint）+ 毛玻璃，两者同步渐入。
+        // 启用自定义背景时 BlurEffect 会自行跳过，但**着色仍在** → 不再"没效果"。
+        return BlurEffect(
+          blur: _OverlapTransition.blur * t,
+          child: Material(
+            color: Colors.transparent,
+            elevation: _OverlapTransition.elevation * t,
+            child: content,
+          ),
+        );
+      },
+    );
   }
 }
 
 enum AppbarStyle { blur, shadow }
+
+/// 顶栏「内容滚到下方」时的**统一过渡**：把原来的布尔瞬切改成平滑插值。
+///
+/// 背景（为什么需要它）：
+/// 1. 原来 `_scrolledUnder` / `shrinkOffset` 一变就把 `elevation: 0→2`、
+///    `blur: 0→15` 直接瞬切，观感生硬；
+/// 2. `blur` 样式在有自定义背景（背景图/底色）时会被 [BlurEffect] **整体跳过**
+///    （它故意不糊背景图）→ 那些页面**完全没有**滚动压暗效果。
+///
+/// 现在统一为：**着色始终生效**（M3 的 surfaceTint 会随 `elevation` 叠加，
+/// 与背景图不冲突），毛玻璃只在 `blur` 样式且未启用自定义背景时叠加；
+/// 两者都由 `t`(0→1) 驱动，随 [AppMotion.short] 平滑过渡。
+class _OverlapTransition extends StatelessWidget {
+  const _OverlapTransition({required this.overlapped, required this.builder});
+
+  /// 内容是否已滚到顶栏下方。
+  final bool overlapped;
+
+  /// 用插值后的 `t` 构建顶栏表面。
+  final Widget Function(BuildContext context, double t) builder;
+
+  /// 滚到下方时叠加的抬升高度（M3 据此叠 surfaceTint 并投影）。
+  static const double elevation = 2;
+
+  /// 毛玻璃强度（仅 `blur` 样式、且未启用自定义背景时可见）。
+  static const double blur = 15;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: overlapped ? 1 : 0),
+      duration: AppMotion.short,
+      curve: AppMotion.standard,
+      builder: (context, t, _) => builder(context, t),
+    );
+  }
+}
 
 class SliverAppbar extends StatelessWidget {
   const SliverAppbar({
@@ -237,30 +287,39 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
       ],
     ).paddingTop(topPadding);
 
-    if (style == AppbarStyle.blur) {
-      return SizedBox.expand(
-        child: BlurEffect(
-          blur: 15,
-          child: Material(
-            color: customBackgroundAware(
-              context.colorScheme.surface.toOpacity(0.86),
+    // shrinkOffset 与 overlapsContent 任一表明"内容已滚到顶栏下方"都算
+    // （原来只认 shrinkOffset，导致部分页面在该状态反而没有压暗）。
+    final overlapped = shrinkOffset > 0 || overlapsContent;
+
+    return _OverlapTransition(
+      overlapped: overlapped,
+      builder: (context, t) {
+        if (style == AppbarStyle.blur) {
+          return SizedBox.expand(
+            child: BlurEffect(
+              // 保持原来的"常驻毛玻璃"观感；着色随滚动渐入
+              blur: _OverlapTransition.blur,
+              child: Material(
+                color: customBackgroundAware(
+                  context.colorScheme.surface.toOpacity(0.86),
+                ),
+                elevation: _OverlapTransition.elevation * t,
+                borderRadius: BorderRadius.circular(radius),
+                child: body,
+              ),
             ),
-            elevation: 0,
+          );
+        }
+        return SizedBox.expand(
+          child: Material(
+            color: customBackgroundAware(context.colorScheme.surface),
+            elevation: _OverlapTransition.elevation * t,
             borderRadius: BorderRadius.circular(radius),
             child: body,
           ),
-        ),
-      );
-    } else {
-      return SizedBox.expand(
-        child: Material(
-          color: customBackgroundAware(context.colorScheme.surface),
-          elevation: shrinkOffset == 0 ? 0 : 2,
-          borderRadius: BorderRadius.circular(radius),
-          child: body,
-        ),
-      );
-    }
+        );
+      },
+    );
   }
 
   @override
