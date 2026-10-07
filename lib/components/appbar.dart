@@ -83,40 +83,68 @@ enum AppbarStyle { blur, shadow }
 /// 顶栏底：**不透明的「背景切片」**。
 ///
 /// 启用自定义背景（背景图/底色）时，顶栏直接画出与全窗背景**同一份**的
-/// [AppBackground]（整窗尺寸平移到顶栏位置、按顶栏裁切）：
-/// 静止时与"透明露出背景"的外观完全一致，而内容滚上来会被**实心挡住**
-/// ——不需要任何滚动过渡/遮罩/动画效果。
+/// [AppBackground]：按**自己在窗口里的真实位置**（`localToGlobal`）平移整窗尺寸的
+/// 背景层 —— 横向（侧栏/双栏偏移）与纵向（标题栏让位）都能**严格对齐、无缝**；
+/// 静止时与"透明露出背景"外观一致，内容滚上来则被**实心挡住**，没有任何动画效果。
 ///
 /// 未启用背景时退回主题表面色，保证顶栏**始终不透明**。
 /// 只有 `blur` 样式且未启用背景时才保留原来的毛玻璃观感。
 Widget _headerSurface(BuildContext context, AppbarStyle style, Widget body) {
-  final size = MediaQuery.sizeOf(context);
-  // 顶栏顶部在窗口坐标里的位置：桌面自绘窗口把页面整体下移了标题栏高度，
-  // 移动端没有这层让位（顶栏就在窗口顶部）。
-  final topInWindow = App.isDesktop ? AppTopBar.height : 0.0;
-  Widget surface = ClipRect(
-    child: Stack(
-      children: [
-        // 不透明兜底（背景底色可能是半透明的）
-        Positioned.fill(child: ColoredBox(color: context.colorScheme.surface)),
-        if (AppBackground.isActive)
-          Positioned(
-            top: -topInWindow,
-            left: 0,
-            child: SizedBox(
-              width: size.width,
-              height: size.height,
-              child: const AppBackground(),
-            ),
-          ),
-        body,
-      ],
-    ),
-  );
+  Widget surface = _HeaderSurface(body: body);
   if (style == AppbarStyle.blur && !AppBackground.isActive) {
     surface = BlurEffect(blur: 15, child: surface);
   }
   return surface;
+}
+
+class _HeaderSurface extends StatefulWidget {
+  const _HeaderSurface({required this.body});
+
+  final Widget body;
+
+  @override
+  State<_HeaderSurface> createState() => _HeaderSurfaceState();
+}
+
+class _HeaderSurfaceState extends State<_HeaderSurface> {
+  /// 顶栏左上角在窗口坐标里的位置。首帧未知 → 先只画不透明兜底，下一帧补背景。
+  Offset? _offsetInWindow;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final box = context.findRenderObject();
+      if (box is! RenderBox || !box.hasSize) return;
+      final offset = box.localToGlobal(Offset.zero);
+      if (offset != _offsetInWindow) {
+        setState(() => _offsetInWindow = offset);
+      }
+    });
+    final offset = _offsetInWindow;
+    return ClipRect(
+      child: Stack(
+        children: [
+          // 不透明兜底（背景底色可能是半透明的）
+          Positioned.fill(
+            child: ColoredBox(color: context.colorScheme.surface),
+          ),
+          if (AppBackground.isActive && offset != null)
+            Positioned(
+              left: -offset.dx,
+              top: -offset.dy,
+              child: SizedBox(
+                width: size.width,
+                height: size.height,
+                child: const AppBackground(),
+              ),
+            ),
+          widget.body,
+        ],
+      ),
+    );
+  }
 }
 
 class SliverAppbar extends StatelessWidget {
