@@ -994,7 +994,7 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
                     (e) => WindowOverlayBox(
                       margin: const EdgeInsets.symmetric(
                         horizontal: AppSpace.sm,
-                        vertical: AppSpace.xxs,
+                        vertical: AppSpace.xs,
                       ),
                       child: e,
                     ),
