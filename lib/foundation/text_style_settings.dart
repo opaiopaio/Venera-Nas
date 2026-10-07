@@ -100,3 +100,31 @@ TextStyle? globalTextStyle() {
 /// 是否有任何全局文字设置被启用（用于按钮前景色等"全控制"注入）。
 bool get globalTextActive =>
     globalTextStyle() != null || globalFontScale() != 1.0;
+
+/// 把全局文字样式（颜色/字体/**阴影+发光**）合并进整套 [TextTheme]。
+///
+/// 必要性：`DefaultTextStyle` 只能覆盖 `Text` 这类默认样式文本；
+/// 按钮、标签栏、列表项等控件的文字来自**主题文字样式**，必须在这里注入，
+/// 否则它们的阴影/发光不会生效。
+TextTheme decorateTextTheme(TextTheme base) {
+  final style = globalTextStyle();
+  if (style == null) return base;
+  TextStyle? m(TextStyle? s) => s?.merge(style);
+  return base.copyWith(
+    displayLarge: m(base.displayLarge),
+    displayMedium: m(base.displayMedium),
+    displaySmall: m(base.displaySmall),
+    headlineLarge: m(base.headlineLarge),
+    headlineMedium: m(base.headlineMedium),
+    headlineSmall: m(base.headlineSmall),
+    titleLarge: m(base.titleLarge),
+    titleMedium: m(base.titleMedium),
+    titleSmall: m(base.titleSmall),
+    bodyLarge: m(base.bodyLarge),
+    bodyMedium: m(base.bodyMedium),
+    bodySmall: m(base.bodySmall),
+    labelLarge: m(base.labelLarge),
+    labelMedium: m(base.labelMedium),
+    labelSmall: m(base.labelSmall),
+  );
+}

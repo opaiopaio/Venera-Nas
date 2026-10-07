@@ -300,15 +300,20 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     if (gStyle != null) {
       final fg = gStyle.color;
       theme = theme.copyWith(
-        textTheme: theme.textTheme.apply(
-          fontFamily: gStyle.fontFamily,
-          bodyColor: fg,
-          displayColor: fg,
+        // 颜色/字体/**阴影/发光** 注入整套主题文字（按钮、标签栏等控件的文字才会生效）
+        textTheme: decorateTextTheme(
+          theme.textTheme.apply(
+            fontFamily: gStyle.fontFamily,
+            bodyColor: fg,
+            displayColor: fg,
+          ),
         ),
-        primaryTextTheme: theme.primaryTextTheme.apply(
-          fontFamily: gStyle.fontFamily,
-          bodyColor: fg,
-          displayColor: fg,
+        primaryTextTheme: decorateTextTheme(
+          theme.primaryTextTheme.apply(
+            fontFamily: gStyle.fontFamily,
+            bodyColor: fg,
+            displayColor: fg,
+          ),
         ),
         iconTheme: fg == null ? null : theme.iconTheme.copyWith(color: fg),
       );
@@ -442,10 +447,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               // 全局文字：字号缩放 + 颜色/字体/阴影/发光（未配置时不干预，零回归）
               final textScale = globalFontScale();
               if (textScale != 1.0) {
+                // 上限 1.25：继续放大（1.4）会把固定高度的窗口标题栏等界面挤压变形。
                 widget = MediaQuery(
-                  data: MediaQuery.of(
-                    context,
-                  ).copyWith(textScaler: TextScaler.linear(textScale)),
+                  data: MediaQuery.of(context).copyWith(
+                    textScaler: TextScaler.linear(
+                      textScale.clamp(0.8, 1.25),
+                    ),
+                  ),
                   child: widget,
                 );
               }
