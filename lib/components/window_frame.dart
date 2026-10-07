@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/text_style_settings.dart';
 import 'package:window_manager/window_manager.dart';
 
 const _kTitleBarHeight = 36.0;
@@ -110,7 +111,13 @@ class _WindowFrameState extends State<WindowFrame> {
             data: MediaQuery.of(context).copyWith(
               padding: isWindowFrameHidden
                   ? null
-                  : const EdgeInsets.only(top: _kTitleBarHeight),
+                  : EdgeInsets.only(
+                      // 顶部边界：标题栏（程序名/窗口按钮）预留高度**随字号缩放**，
+                      // 字号放大时页面区域自动下移，UI 永远不会顶进标题栏。
+                      top:
+                          _kTitleBarHeight *
+                          globalFontScale().clamp(1.0, 1.4),
+                    ),
             ),
             child: widget.child,
           ),

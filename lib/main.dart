@@ -447,6 +447,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               }
 
               // 全局文字：字号缩放 + 颜色/字体/阴影/发光（未配置时不干预，零回归）
+              // 全局文字与字号缩放（桌面端也启用；标题栏预留高度会随字号一起放大，
+              // 见 components/window_frame.dart 的"顶部边界"处理）。
               final textScale = globalFontScale();
               if (textScale != 1.0) {
                 // 上限 1.25：继续放大（1.4）会把固定高度的窗口标题栏等界面挤压变形。
