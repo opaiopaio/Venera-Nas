@@ -411,7 +411,8 @@ class _AppTabBarState extends State<AppTabBar> {
     );
     return Container(
       key: tabBarKey,
-      height: _kTabHeight,
+      // 自适应：最小高度 + 随文字（字号缩放）撑开，默认字号外观不变
+      constraints: const BoxConstraints(minHeight: _kTabHeight),
       width: double.infinity,
       decoration: widget.withUnderLine
           ? BoxDecoration(
@@ -983,7 +984,7 @@ class TabActionButton extends StatelessWidget {
       onTap: onPressed,
       borderRadius: radius,
       child: Container(
-        height: _kTabHeight,
+        constraints: const BoxConstraints(minHeight: _kTabHeight),
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: IconTheme(
           data: IconThemeData(size: 20, color: context.colorScheme.primary),

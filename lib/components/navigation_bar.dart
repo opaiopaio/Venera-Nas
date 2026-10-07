@@ -403,7 +403,7 @@ class _SideNaviWidget extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        height: 38,
+        constraints: const BoxConstraints(minHeight: 38),
         decoration: BoxDecoration(
           // 选中项用主题高亮；未选中项在配置了「窗口/按钮背景」时用该色，
           // 呈现类似鼠标悬停的层次感。
@@ -444,7 +444,7 @@ class _PaneActionWidget extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        height: 38,
+        constraints: const BoxConstraints(minHeight: 38),
         decoration: BoxDecoration(
           // 侧栏左下角的操作项（搜索/设置）同样使用「窗口/按钮背景」。
           color: windowOverlayColor(),

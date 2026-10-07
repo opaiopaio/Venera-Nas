@@ -62,7 +62,8 @@ class _SearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return SliverToBoxAdapter(
       child: Container(
-        height: App.isMobile ? 52 : 46,
+        // 自适应：最小高度 + 随文字撑开（默认字号外观不变）
+        constraints: BoxConstraints(minHeight: App.isMobile ? 52 : 46),
         width: double.infinity,
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         child: Material(
