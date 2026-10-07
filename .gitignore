@@ -62,3 +62,6 @@ doc-private/
 # 本地归档与发行产物（不进版本库，也不污染 D:\Project 根目录）
 /_archive/
 /dist/
+
+# 工作区素材夹（用户素材，不并入项目）
+/_materials/
