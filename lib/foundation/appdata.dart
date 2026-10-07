@@ -321,12 +321,10 @@ class Settings with ChangeNotifier {
   /// ② 窗口与控件体系是否启用（填充 或 形状任一被配置）。
   bool get windowOverlayEnabled => hasWindowOverlay || cornerStyleActive;
 
-  /// ③ 二级页面体系是否启用：相关设置**偏离默认值**即启用（完全独立于 ①②）。
+  /// ③ 二级页面体系是否启用：**除显式选择「关闭(off)」外一律生效**。
+  /// （旧逻辑用"偏离默认值"判定，导致 `不透明+加深+0.22` 这组默认值被判为未启用）
   bool get secondaryPageFeatureActive =>
-      (this['secondaryPageMode'] as String? ?? 'opaque') != 'opaque' ||
-      (this['secondaryPageTint'] as String? ?? 'darken') != 'darken' ||
-      ((this['secondaryPageTintStrength'] as num?)?.toDouble() ?? 0.22) !=
-          0.22;
+      (this['secondaryPageMode'] as String? ?? 'opaque') != 'off';
 
   /// 兼容旧调用：任一体系启用。
   bool get customBackgroundActive =>

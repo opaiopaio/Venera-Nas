@@ -112,6 +112,7 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
           optionTranslation: {
             "opaque": "Opaque (cover)".tl,
             "transparent": "Translucent".tl,
+            "off": "Off".tl,
           },
           onChanged: () => App.forceRebuild(),
         ).toSliver(),
