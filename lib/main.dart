@@ -452,6 +452,25 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               );
             };
             if (widget != null) {
+              // 全局文字：字号缩放 + 颜色/字体/阴影/发光（未配置时不干预，零回归）
+              //
+              // ⚠️ **必须在这里（最靠内）先包上 `textScaler`**：
+              // 下面"桌面端顶部让位"等处还会用 `MediaQuery.of(builderContext).copyWith(...)`
+              // 再造一层 MediaQuery（那时的 context 仍是**未缩放**的 1.0 ✗）。
+              // 由于"最近的祖先获胜"，若 scaler 包在外面就会被那层覆盖掉 →
+              // 表现为**调字号完全没反应**（实测确认：包装层内 19.6、页面仍是 14.0 ✗）。
+              final textScale = globalFontScale();
+              if (textScale != 1.0) {
+                widget = MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    textScaler: TextScaler.linear(
+                      AppTextScale.clamp(textScale),
+                    ),
+                  ),
+                  child: widget,
+                );
+              }
+
               /// 如果无法检测到状态栏高度设定指定高度
               /// https://github.com/flutter/flutter/issues/161086
               var isPaddingCheckError =
@@ -493,21 +512,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 );
               }
 
-              // 全局文字：字号缩放 + 颜色/字体/阴影/发光（未配置时不干预，零回归）
-              // 全局文字与字号缩放（桌面端也启用；标题栏预留高度会随字号一起放大，
-              // 见 components/window_frame.dart 的"顶部边界"处理）。
-              final textScale = globalFontScale();
-              if (textScale != 1.0) {
-                // 上限 1.25：继续放大（1.4）会把固定高度的窗口标题栏等界面挤压变形。
-                widget = MediaQuery(
-                  data: MediaQuery.of(context).copyWith(
-                    textScaler: TextScaler.linear(
-                      AppTextScale.clamp(textScale),
-                    ),
-                  ),
-                  child: widget,
-                );
-              }
               final gTextStyle = globalTextStyle();
               if (gTextStyle != null) {
                 widget = DefaultTextStyle.merge(
