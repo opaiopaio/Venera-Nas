@@ -84,7 +84,9 @@ class _AppbarState extends State<Appbar> {
               context.colorScheme.surface.toOpacity(0.86),
         ),
       ),
-      height: _kAppBarHeight + context.padding.top,
+      constraints: BoxConstraints(
+        minHeight: _kAppBarHeight + context.padding.top,
+      ),
       child: Row(
         children: [
           const SizedBox(width: 8),
@@ -253,10 +255,12 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  double get maxExtent => _kAppBarHeight + topPadding;
+  double get maxExtent =>
+      (_kAppBarHeight + topPadding) * globalFontScale().clamp(1.0, 1.4);
 
   @override
-  double get minExtent => _kAppBarHeight + topPadding;
+  double get minExtent =>
+      (_kAppBarHeight + topPadding) * globalFontScale().clamp(1.0, 1.4);
 
   @override
   bool shouldRebuild(SliverPersistentHeaderDelegate oldDelegate) {
@@ -800,7 +804,7 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     return Container(
-      height: _kAppBarHeight + topPadding,
+      constraints: BoxConstraints(minHeight: _kAppBarHeight + topPadding),
       width: double.infinity,
       padding: EdgeInsets.only(top: topPadding),
       decoration: BoxDecoration(
@@ -855,10 +859,12 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  double get maxExtent => _kAppBarHeight + topPadding;
+  double get maxExtent =>
+      (_kAppBarHeight + topPadding) * globalFontScale().clamp(1.0, 1.4);
 
   @override
-  double get minExtent => _kAppBarHeight + topPadding;
+  double get minExtent =>
+      (_kAppBarHeight + topPadding) * globalFontScale().clamp(1.0, 1.4);
 
   @override
   bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
@@ -907,7 +913,7 @@ class _SearchBarState extends State<AppSearchBar> with _SearchBarMixin {
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
     return Container(
-      height: _kAppBarHeight + topPadding,
+      constraints: BoxConstraints(minHeight: _kAppBarHeight + topPadding),
       width: double.infinity,
       padding: EdgeInsets.only(top: topPadding),
       decoration: BoxDecoration(

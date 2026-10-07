@@ -265,7 +265,7 @@ class NaviPaneState extends State<NaviPane>
       color: customBackgroundAware(null),
       child: Container(
         padding: const EdgeInsets.only(left: 16, right: 16),
-        height: _kTopBarHeight,
+        constraints: const BoxConstraints(minHeight: _kTopBarHeight),
         width: double.infinity,
         child: Row(
           children: [
@@ -294,7 +294,7 @@ class NaviPaneState extends State<NaviPane>
       textStyle: Theme.of(context).textTheme.labelSmall,
       elevation: 0,
       child: Container(
-        height: _kBottomBarHeight,
+        constraints: const BoxConstraints(minHeight: _kBottomBarHeight),
         decoration: BoxDecoration(
           border: Border(
             top: BorderSide(

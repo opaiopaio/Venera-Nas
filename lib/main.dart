@@ -453,7 +453,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 widget = MediaQuery(
                   data: MediaQuery.of(context).copyWith(
                     textScaler: TextScaler.linear(
-                      textScale.clamp(0.8, 1.25),
+                      textScale.clamp(0.8, 1.4),
                     ),
                   ),
                   child: widget,

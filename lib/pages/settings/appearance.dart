@@ -245,6 +245,22 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
           max: 1.0,
           onChanged: () => App.forceRebuild(),
         ).toSliver(),
+        ListTile(
+          title: Text("Reset".tl),
+          trailing: const Icon(Icons.restart_alt),
+          onTap: () async {
+            appdata.settings['globalTextColor'] = 'system';
+            appdata.settings['globalFontFamily'] = 'system';
+            appdata.settings['globalFontFile'] = '';
+            appdata.settings['globalFontSource'] = '';
+            appdata.settings['globalFontScale'] = 1.0;
+            appdata.settings['textShadowEnabled'] = false;
+            appdata.settings['textGlowEnabled'] = false;
+            await appdata.saveData();
+            await loadCustomFont();
+            App.forceRebuild();
+          },
+        ).toSliver(),
         _SettingPartTitle(title: "Comic Display".tl, icon: Icons.grid_view),
         SelectSetting(
           title: "Display mode of comic tile".tl,
