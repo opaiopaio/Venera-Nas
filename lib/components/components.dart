@@ -63,3 +63,4 @@ part 'code.dart';
 part 'home_section_card.dart';
 part 'color_picker.dart';
 part 'app_background.dart';
+part 'background_slice.dart';
