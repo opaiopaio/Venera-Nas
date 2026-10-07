@@ -35,6 +35,8 @@ void main(List<String> args) {
       () async {
         WidgetsFlutterBinding.ensureInitialized();
         await init();
+        // 加载自定义字体文件（若已配置）
+        await loadCustomFont();
         runApp(const MyApp());
         if (App.isDesktop) {
           await windowManager.ensureInitialized();

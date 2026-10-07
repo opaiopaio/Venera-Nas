@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:venera_nas/components/components.dart';
@@ -214,16 +214,7 @@ class DataSync with ChangeNotifier {
       }
     }
 
-    var srcBg = Directory(FilePath.join(App.dataPath, 'background'));
-    if (srcBg.existsSync()) {
-      var dstBg = Directory(FilePath.join(_backupDir, 'background'));
-      dstBg.createSync(recursive: true);
-      for (var f in srcBg.listSync()) {
-        if (f is File) {
-          f.copySync(FilePath.join(_backupDir, 'background', f.name));
-        }
-      }
-    }
+    // 背景图/自定义字体不进备份（跨设备不通用），原文件也不会被同步覆盖。
   }
 
   Future<void> _restoreBackup() async {
@@ -271,18 +262,7 @@ class DataSync with ChangeNotifier {
       }
     }
 
-    var srcBg = Directory(FilePath.join(_backupDir, 'background'));
-    if (srcBg.existsSync()) {
-      var dstBg = Directory(FilePath.join(App.dataPath, 'background'));
-      dstBg.deleteIfExistsSync(recursive: true);
-      dstBg.createSync(recursive: true);
-      for (var f in srcBg.listSync()) {
-        if (f is File) {
-          f.copySync(FilePath.join(App.dataPath, 'background', f.name));
-        }
-      }
-    }
-
+    // 背景图/自定义字体不进备份（同上）。
     await HistoryManager().init();
     await LocalFavoritesManager().init();
     await ReadLaterManager().init();

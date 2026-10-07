@@ -305,6 +305,7 @@ class Settings with ChangeNotifier {
     'globalTextColor': 'system', // system / transparent / #RRGGBB（system=跟随系统）
     'globalFontFamily': '', // 空 = 跟随系统；否则字体名
     'globalFontFile': '', // 自定义字体文件（ttf/otf，存 dataPath/fonts/）
+    'globalFontSource': '', // 自定义字体的原始选取路径（设置页显示真实地址）
     'globalFontScale': 1.0, // 全局字号缩放 0.8 - 1.4
     'textShadowEnabled': false, // 文字阴影开关
     'textShadowColor': '#000000', // 阴影颜色

@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:sqlite3/sqlite3.dart';
@@ -79,15 +79,9 @@ Future<File> exportAppData([bool sync = true]) async {
         zipFile.addFile("comic_source/${file.name}", file.path);
       }
     }
-    // 自定义背景图片
-    var backgroundDir = Directory(FilePath.join(dataPath, "background"));
-    if (backgroundDir.existsSync()) {
-      for (var file in backgroundDir.listSync()) {
-        if (file is File) {
-          zipFile.addFile("background/${file.name}", file.path);
-        }
-      }
-    }
+    // 说明：背景图 / 自定义字体**不进备份**。
+    // 原因：手机竖屏、电脑横屏，图片与字体在多设备间不通用，且会造成同步冲突；
+    // 备份只保留"设置"本身（appdata.json 等）。缺失的资源由对应的"失效引用自动清理"兜底。
     zipFile.close();
   });
   return cacheFile;
@@ -210,18 +204,7 @@ Future<void> importAppData(
       }
       await ComicSourceManager().reload();
     }
-    // 自定义背景图片
-    var bgCacheDir = Directory(FilePath.join(cacheDirPath, "background"));
-    if (bgCacheDir.existsSync()) {
-      var bgDir = Directory(FilePath.join(App.dataPath, "background"));
-      bgDir.deleteIfExistsSync(recursive: true);
-      bgDir.createSync(recursive: true);
-      for (var file in bgCacheDir.listSync()) {
-        if (file is File) {
-          await file.copy(FilePath.join(bgDir.path, file.name));
-        }
-      }
-    }
+    // 说明：背景图 / 自定义字体不进备份（跨设备不通用），故此处不做还原。
     // 确保所有 manager 的监听者收到数据变更通知
     HistoryManager().notifyChanges();
     LocalFavoritesManager().notifyChanges();

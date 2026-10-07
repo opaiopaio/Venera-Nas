@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/appdata.dart';
 
 /// 全局文字样式（颜色 / 字体 / 阴影 / 发光 / 字号缩放）。
@@ -25,8 +29,41 @@ Color? globalTextColor() {
   return _parse(v, Colors.black);
 }
 
+/// 自定义字体目录 / 文件绝对路径。
+String get customFontDir => '${App.dataPath}/fonts';
+
+String? customFontPath(String? name) =>
+    (name == null || name.isEmpty) ? null : '$customFontDir/$name';
+
+/// 运行期加载成功的自定义字体族名（`loadCustomFont()` 写入）。
+String? customFontFamilyName;
+
+/// 运行期加载自定义字体文件（ttf/otf/ttc）。
+///
+/// 应用启动、切换字体、导入备份后都应调用一次。
+Future<void> loadCustomFont() async {
+  customFontFamilyName = null;
+  final name = (appdata.settings['globalFontFile'] ?? '').toString();
+  final path = customFontPath(name);
+  if (path == null) return;
+  final file = File(path);
+  if (!file.existsSync()) return;
+  try {
+    final bytes = await file.readAsBytes();
+    const family = 'VeneraCustomFont';
+    final loader = FontLoader(family)
+      ..addFont(Future.value(ByteData.view(Uint8List.fromList(bytes).buffer)));
+    await loader.load();
+    customFontFamilyName = family;
+  } catch (_) {
+    customFontFamilyName = null;
+  }
+}
+
 /// 全局字体名；`null`/空 表示跟随系统。
+/// 优先使用**已加载的自定义字体文件**，其次才是系统字体名。
 String? globalFontFamily() {
+  if (customFontFamilyName != null) return customFontFamilyName;
   final v = (appdata.settings['globalFontFamily'] ?? '').toString();
   return (v.isEmpty || v == 'system') ? null : v;
 }

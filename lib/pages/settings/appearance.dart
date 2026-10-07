@@ -166,6 +166,7 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
             App.forceRebuild();
           },
         ).toSliver(),
+        const _FontFileTile().toSliver(),
         _SliderSetting(
           title: "Font scale".tl,
           settingsIndex: "globalFontScale",
@@ -267,6 +268,88 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
         ).toSliver(),
       ],
     );
+  }
+}
+
+/// 自定义字体文件设置行：选择 / 清除。
+class _FontFileTile extends StatelessWidget {
+  const _FontFileTile();
+
+  static const _exts = ['ttf', 'otf', 'ttc'];
+
+  @override
+  Widget build(BuildContext context) {
+    final name = (appdata.settings['globalFontFile'] ?? '').toString();
+    final path = customFontPath(name);
+    final file = (path != null && File(path).existsSync()) ? File(path) : null;
+    final source = (appdata.settings['globalFontSource'] ?? '').toString();
+    return ListTile(
+      title: Text("Custom font file".tl),
+      subtitle: file == null
+          ? null
+          : Text(
+              source.isEmpty ? file.path : source,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextButton(
+            onPressed: () => _pick(context),
+            child: Text("Select file".tl),
+          ),
+          if (file != null) ...[
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: "Clear".tl,
+              onPressed: _clear,
+            ),
+          ],
+          const SizedBox(width: 4),
+        ],
+      ),
+      onTap: () => _pick(context),
+    );
+  }
+
+  Future<void> _pick(BuildContext context) async {
+    final result = await selectFile(ext: _exts);
+    if (result == null) return;
+    try {
+      final dir = Directory(customFontDir);
+      if (!dir.existsSync()) dir.createSync(recursive: true);
+      final ext = result.path.split('.').last.toLowerCase();
+      final name = 'custom.$ext';
+      File(result.path).copySync('${dir.path}/$name');
+      appdata.settings['globalFontFile'] = name;
+      appdata.settings['globalFontSource'] = result.path;
+      await appdata.saveData();
+      await loadCustomFont();
+      App.forceRebuild();
+    } catch (e) {
+      if (context.mounted) context.showMessage(message: e.toString());
+    }
+  }
+
+  Future<void> _clear() async {
+    try {
+      final dir = Directory(customFontDir);
+      if (dir.existsSync()) {
+        for (final entity in dir.listSync()) {
+          if (entity is File) entity.deleteSync();
+        }
+      }
+    } catch (_) {}
+    appdata.settings['globalFontFile'] = '';
+    appdata.settings['globalFontSource'] = '';
+    await appdata.saveData();
+    await loadCustomFont();
+    App.forceRebuild();
   }
 }
 
