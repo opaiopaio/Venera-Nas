@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:venera_nas/foundation/appdata.dart';
 import 'package:venera_nas/foundation/window_overlay.dart';
 import 'package:venera_nas/foundation/app_theme.dart';
@@ -97,18 +97,16 @@ extension WidgetExtension on Widget {
     // （默认透明/未配置时保持原样，零回归）。
     Widget content = this;
     if (appdata.settings.hasWindowOverlay) {
+      // 圆角统一走唯一入口（直角 → 0 / 圆角 → lg），不再自己判定 windowOverlayCorner
       final radius =
-          (appdata.settings['windowOverlayCorner'] as String? ?? 'rounded') ==
-              'square'
-          ? 0.0
-          : 12.0;
+          windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.lg);
       // 用 Material + 圆角裁切，保证 InkWell 的水波纹/悬停高亮也跟随圆角
       // （普通 Container 裁不到 InkWell 画在 Material 上的墨水层）。
       content = Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpace.sm, vertical: AppSpace.xs),
         child: Material(
           color: windowOverlayColor(),
-          borderRadius: BorderRadius.circular(radius),
+          borderRadius: radius,
           clipBehavior: Clip.antiAlias,
           child: content,
         ),

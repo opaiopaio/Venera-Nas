@@ -1,4 +1,4 @@
-﻿part of 'settings_page.dart';
+part of 'settings_page.dart';
 
 class _SwitchSetting extends StatefulWidget {
   const _SwitchSetting({
@@ -475,38 +475,21 @@ class _SliderSettingState extends State<_SliderSetting> {
 
   void _setValue(double value) {
     final normalizedValue = _valueForSettings(value);
-    if (normalizedValue is int) {
-      if (widget.comicId != null) {
-        appdata.settings.setReaderSetting(
-          widget.comicId!,
-          widget.comicSource!,
-          widget.settingsIndex,
-          normalizedValue,
-        );
-      } else if (widget.useDeviceSettings) {
-        appdata.settings.setDeviceReaderSetting(
-          widget.settingsIndex,
-          normalizedValue,
-        );
-      } else {
-        appdata.settings[widget.settingsIndex] = normalizedValue;
-      }
+    // int / double 的写入路径**完全一致**：原先 if (is int) 两份一模一样的分支已合并
+    if (widget.comicId != null) {
+      appdata.settings.setReaderSetting(
+        widget.comicId!,
+        widget.comicSource!,
+        widget.settingsIndex,
+        normalizedValue,
+      );
+    } else if (widget.useDeviceSettings) {
+      appdata.settings.setDeviceReaderSetting(
+        widget.settingsIndex,
+        normalizedValue,
+      );
     } else {
-      if (widget.comicId != null) {
-        appdata.settings.setReaderSetting(
-          widget.comicId!,
-          widget.comicSource!,
-          widget.settingsIndex,
-          normalizedValue,
-        );
-      } else if (widget.useDeviceSettings) {
-        appdata.settings.setDeviceReaderSetting(
-          widget.settingsIndex,
-          normalizedValue,
-        );
-      } else {
-        appdata.settings[widget.settingsIndex] = normalizedValue;
-      }
+      appdata.settings[widget.settingsIndex] = normalizedValue;
     }
   }
 

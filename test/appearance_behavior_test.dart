@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:venera_nas/foundation/app_theme.dart';
 import 'package:venera_nas/foundation/appdata.dart';
 import 'package:venera_nas/foundation/text_style_settings.dart';
 import 'package:venera_nas/foundation/window_overlay.dart';
@@ -142,6 +143,26 @@ void main() {
       appdata.settings['backgroundColor'] = 'transparent';
       appdata.settings['backgroundImage'] = 'background.jpg';
       expect(customBackgroundAware(Colors.red), Colors.transparent);
+    });
+  });
+
+  group('⑤ 按需遮罩 maskIfNeeded（设置行遮罩入口）', () {
+    const child = SizedBox.shrink();
+
+    test('masked = false → 原样返回同一个 widget（零回归）', () {
+      expect(identical(maskIfNeeded(false, child), child), isTrue);
+    });
+
+    test('masked = true → 包一层 WindowOverlayBox，child 原样透传', () {
+      final w = maskIfNeeded(true, child);
+      expect(w, isA<WindowOverlayBox>());
+      expect(identical((w as WindowOverlayBox).child, child), isTrue);
+    });
+
+    test('masked = true → margin 透传给 WindowOverlayBox', () {
+      const margin = EdgeInsets.only(top: AppSpace.xs);
+      final w = maskIfNeeded(true, child, margin: margin) as WindowOverlayBox;
+      expect(w.margin, margin);
     });
   });
 }
