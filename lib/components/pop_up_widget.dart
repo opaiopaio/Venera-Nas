@@ -146,7 +146,9 @@ class SecondaryPageSurface extends StatelessWidget {
       child: Stack(
         children: [
           if (decoration != null)
-            Positioned.fill(child: DecoratedBox(decoration: decoration)),
+            // 与全窗背景**逐像素对齐**的切片（此前是 `DecorationImage` 按自身盒子
+            // fit → 小弹窗看到的是**缩略图** ✗）。只画不布局，见 [BackgroundSlice]。
+            const Positioned.fill(child: BackgroundSlice()),
           if (tint != null) Positioned.fill(child: ColoredBox(color: tint)),
           if (decoration == null && tint == null)
             Positioned.fill(
