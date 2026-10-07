@@ -343,14 +343,8 @@ class NaviPaneState extends State<NaviPane>
         child: Column(
           children: [
             DragToMoveArea(
-              // 顶部边界：桌面端让出「标题栏高度 + 6」（标题栏本身不随字号缩放，
-              // 故这里不再乘字号系数，避免留白过大）。
-              child: SizedBox(
-                height: math.max(
-                  16 + MediaQuery.of(context).padding.top,
-                  App.isDesktop ? kTitleBarHeight + 6 : 0,
-                ),
-              ),
+              // 顶部让位由 WindowFrame 的全局边界统一处理（内容整体已在标题栏之下）。
+              child: SizedBox(height: 16 + MediaQuery.of(context).padding.top),
             ),
             ...List<Widget>.generate(
               widget.paneItems.length,

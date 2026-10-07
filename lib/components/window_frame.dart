@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/comic_source/comic_source.dart';
-import 'package:venera_nas/foundation/text_style_settings.dart';
 import 'package:window_manager/window_manager.dart';
 
 /// 自绘窗口标题栏高度（供侧栏等让位使用）。
@@ -112,15 +111,9 @@ class _WindowFrameState extends State<WindowFrame> {
         Positioned.fill(
           child: MediaQuery(
             data: MediaQuery.of(context).copyWith(
-              padding: isWindowFrameHidden
-                  ? null
-                  : EdgeInsets.only(
-                      // 顶部边界：标题栏（程序名/窗口按钮）预留高度**随字号缩放**，
-                      // 字号放大时页面区域自动下移，UI 永远不会顶进标题栏。
-                      top:
-                          _kTitleBarHeight *
-                          globalFontScale().clamp(1.0, 1.4),
-                    ),
+              // 顶部让位由 main.dart 的全局边界统一处理（在背景层之上、页面之下），
+              // 这里清零，避免与全局边界重复让位。
+              padding: MediaQuery.of(context).padding.copyWith(top: 0),
             ),
             child: widget.child,
           ),

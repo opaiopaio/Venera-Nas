@@ -436,6 +436,21 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 );
               }
 
+              // 全局顶部边界：桌面端页面内容整体让出窗口标题栏高度，
+              // 放在**背景层之上、页面之下**——背景仍铺满全窗（含标题栏区域），
+              // 而所有页面（滚动/固定栏）都无法进入标题栏。
+              if (App.isDesktop) {
+                widget = Padding(
+                  padding: const EdgeInsets.only(top: kTitleBarHeight),
+                  child: MediaQuery(
+                    data: MediaQuery.of(context).copyWith(
+                      padding: MediaQuery.of(context).padding.copyWith(top: 0),
+                    ),
+                    child: widget,
+                  ),
+                );
+              }
+
               if (AppBackground.isActive) {
                 // 自定义背景：垫在所有内容之下，并让页面透出。
                 widget = Stack(
