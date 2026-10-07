@@ -380,10 +380,10 @@ class _CommentTileState extends State<_CommentTile> {
           color: Theme.of(context).colorScheme.outlineVariant,
           width: 0.6,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         onTap: () {
           showSideBar(
             context,
@@ -421,10 +421,10 @@ class _CommentTileState extends State<_CommentTile> {
           color: Theme.of(context).colorScheme.outlineVariant,
           width: 0.6,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         onTap: () async {
           if (isLiking) return;
           setState(() {
@@ -530,7 +530,7 @@ class _CommentTileState extends State<_CommentTile> {
     return Container(
       margin: const EdgeInsets.only(left: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(
           color: Theme.of(context).colorScheme.outlineVariant,
           width: 0.6,

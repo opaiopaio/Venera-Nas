@@ -20,6 +20,7 @@ import 'package:venera_nas/utils/io.dart';
 import 'package:venera_nas/utils/tags_translation.dart';
 import 'package:venera_nas/utils/translations.dart';
 import 'package:venera_nas/foundation/design_tokens.dart';
+import 'package:venera_nas/foundation/app_theme.dart';
 
 part "image_favorites_item.dart";
 
@@ -307,7 +308,7 @@ class _ImageFavoritesPageState extends State<ImageFavoritesPage> {
     Widget body = Scrollbar(
       controller: scrollController,
       thickness: App.isDesktop ? 8 : 12,
-      radius: const Radius.circular(8),
+      radius: const Radius.circular(AppRadius.md),
       interactive: true,
       child: ScrollConfiguration(
         behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
@@ -401,7 +402,7 @@ class _ImageFavoritesDialogState extends State<_ImageFavoritesDialog> {
   @override
   Widget build(BuildContext context) {
     Widget tabBar = Material(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: AppTabBar(
         key: PageStorageKey(optionTypes),
         tabs: optionTypes.map((e) => Tab(text: e.tl, key: Key(e))).toList(),

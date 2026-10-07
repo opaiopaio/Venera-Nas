@@ -396,10 +396,10 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
           color: Theme.of(context).colorScheme.outlineVariant,
           width: 0.6,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         onTap: () {
           // Get the parent page's widget to access comicTitle and chapterTitle
           var parentState = context
@@ -441,10 +441,10 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
           color: Theme.of(context).colorScheme.outlineVariant,
           width: 0.6,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         onTap: () async {
           if (isLiking) return;
           setState(() {
@@ -548,7 +548,7 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
     return Container(
       margin: const EdgeInsets.only(left: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(
           color: Theme.of(context).colorScheme.outlineVariant,
           width: 0.6,

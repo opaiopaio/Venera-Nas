@@ -15,6 +15,7 @@ import 'package:venera_nas/utils/ext.dart';
 import 'package:venera_nas/utils/io.dart';
 import 'package:venera_nas/utils/translations.dart';
 import 'package:venera_nas/foundation/design_tokens.dart';
+import 'package:venera_nas/foundation/app_theme.dart';
 
 class ComicSourcePage extends StatelessWidget {
   const ComicSourcePage({super.key});
@@ -441,7 +442,7 @@ class _ComicSourceListState extends State<_ComicSourceList> {
                 color: Theme.of(context).colorScheme.outlineVariant,
                 width: 0.6,
               ),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -894,7 +895,7 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
                   ),
                   decoration: BoxDecoration(
                     color: context.colorScheme.surfaceContainer,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Text(
                     source.version,
@@ -911,7 +912,7 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
                       ),
                       decoration: BoxDecoration(
                         color: context.colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                       child: Text(
                         "New Version".tl,

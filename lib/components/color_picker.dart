@@ -119,7 +119,7 @@ class ColorSettingTile extends StatelessWidget {
             decoration: BoxDecoration(
               color: isTransparent ? Colors.white : (preview ?? Colors.transparent),
               border: Border.all(color: Colors.black, width: 1.5),
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             clipBehavior: Clip.antiAlias,
             child: isTransparent

@@ -384,7 +384,7 @@ class _LogsPageState extends State<LogsPage> {
                             context,
                           ).colorScheme.surfaceContainerHighest,
                           borderRadius: const BorderRadius.all(
-                            Radius.circular(16),
+                            Radius.circular(AppRadius.xl),
                           ),
                         ),
                         child: Padding(
@@ -401,7 +401,7 @@ class _LogsPageState extends State<LogsPage> {
                             Theme.of(context).colorScheme.primaryContainer,
                           ][logToShow[index].level.index],
                           borderRadius: const BorderRadius.all(
-                            Radius.circular(16),
+                            Radius.circular(AppRadius.xl),
                           ),
                         ),
                         child: Padding(
@@ -557,7 +557,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                       child: Row(
                         children: [
@@ -756,7 +756,7 @@ class _BackupWebdavSettingState extends State<_BackupWebdavSetting> {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Row(
                 children: [

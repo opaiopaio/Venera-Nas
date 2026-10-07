@@ -1,4 +1,4 @@
-part of 'components.dart';
+﻿part of 'components.dart';
 
 class HoverBox extends StatefulWidget {
   const HoverBox({
@@ -207,7 +207,7 @@ class _ButtonState extends State<Button> {
           constraints: const BoxConstraints(minWidth: 76, minHeight: 32),
           decoration: BoxDecoration(
             color: buttonColor,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.xl),
             boxShadow:
                 (isHover &&
                     !isLoading &&

@@ -30,6 +30,7 @@ import 'package:venera_nas/utils/tags_translation.dart';
 import 'package:venera_nas/utils/translations.dart';
 import 'dart:math' as math;
 import 'package:venera_nas/foundation/design_tokens.dart';
+import 'package:venera_nas/foundation/app_theme.dart';
 
 part 'comments_page.dart';
 
@@ -314,7 +315,7 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
               child: Container(
                 decoration: BoxDecoration(
                   color: context.colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   boxShadow: [
                     BoxShadow(
                       color: context.colorScheme.outlineVariant,
@@ -585,7 +586,7 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
         color = context.colorScheme.surfaceContainerLow;
       }
 
-      final borderRadius = BorderRadius.circular(12);
+      final borderRadius = BorderRadius.circular(AppRadius.lg);
 
       const padding = EdgeInsets.symmetric(horizontal: 16, vertical: 6);
 
@@ -1133,7 +1134,7 @@ class _ComicPageLoadingPlaceHolder extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: context.colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           boxShadow: [
             BoxShadow(
               color: context.colorScheme.outlineVariant,

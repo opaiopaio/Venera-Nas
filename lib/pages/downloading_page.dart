@@ -8,6 +8,7 @@ import 'package:venera_nas/utils/background_download.dart';
 import 'package:venera_nas/utils/io.dart';
 import 'package:venera_nas/utils/translations.dart';
 import 'package:venera_nas/foundation/design_tokens.dart';
+import 'package:venera_nas/foundation/app_theme.dart';
 
 class DownloadingPage extends StatefulWidget {
   const DownloadingPage({super.key});
@@ -181,7 +182,7 @@ class _DownloadTaskTileState extends State<_DownloadTaskTile> {
             width: 82,
             height: double.infinity,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               color: context.colorScheme.primaryContainer,
             ),
             clipBehavior: Clip.antiAlias,

@@ -1,4 +1,4 @@
-part of 'settings_page.dart';
+﻿part of 'settings_page.dart';
 
 class DebugPage extends StatefulWidget {
   const DebugPage({super.key});
@@ -84,7 +84,7 @@ class DebugPageState extends State<DebugPage> {
                 margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                 decoration: BoxDecoration(
                   border: Border.all(color: context.colorScheme.outline),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: SingleChildScrollView(child: Text(result).paddingAll(4)),
               ),

@@ -8,6 +8,7 @@ import 'package:venera_nas/foundation/appdata.dart';
 import 'package:venera_nas/foundation/image_provider/cached_image.dart';
 import 'package:venera_nas/utils/app_links.dart';
 import 'package:venera_nas/utils/ext.dart';
+import 'package:venera_nas/foundation/app_theme.dart';
 
 /// A widget that displays comment content with support for rich text formatting.
 ///
@@ -318,7 +319,7 @@ class _RichCommentContentState extends State<RichCommentContent> {
             children: images.map((e) {
               Widget image = Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   color: Theme.of(context).colorScheme.surfaceContainerLow,
                 ),
                 width: 100,

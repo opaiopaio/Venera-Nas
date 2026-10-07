@@ -3,7 +3,7 @@
 /// 外观令牌（Design Tokens）——**唯一合法取值来源**。
 ///
 /// 背景 / 遮罩 / 文字 / 形状 / 动效 的所有常量都在这里定义，
-/// 业务代码不要写字面量（如 `BorderRadius.circular(12)`、`Duration(milliseconds: 200)`、
+/// 业务代码不要写字面量（如 `BorderRadius.circular(AppRadius.lg)`、`Duration(milliseconds: 200)`、
 /// `withOpacity(0.35)`），一律引用本文件或 `app_theme.dart` 中的令牌。
 ///
 /// 命名与刻度参考 Material 3（借鉴上游 `v1.16.0` 的 `AppMotion`/`AppRadius` 做法）。

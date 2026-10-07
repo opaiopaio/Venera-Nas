@@ -1,4 +1,4 @@
-part of 'components.dart';
+﻿part of 'components.dart';
 
 class SideBarRoute<T> extends PopupRoute<T> {
   SideBarRoute(
@@ -99,7 +99,7 @@ class SideBarRoute<T> extends PopupRoute<T> {
     body = Container(
       decoration: BoxDecoration(
         borderRadius: showSideBar
-            ? const BorderRadius.horizontal(left: Radius.circular(16))
+            ? const BorderRadius.horizontal(left: Radius.circular(AppRadius.xl))
             : null,
         color: Theme.of(context).colorScheme.surfaceTint,
         boxShadow: context.brightness == ui.Brightness.dark

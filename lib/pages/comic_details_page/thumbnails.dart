@@ -1,4 +1,4 @@
-part of 'comic_page.dart';
+﻿part of 'comic_page.dart';
 
 class _ComicThumbnails extends StatefulWidget {
   const _ComicThumbnails();
@@ -101,16 +101,16 @@ class _ComicThumbnailsState extends State<_ComicThumbnails> {
                   Expanded(
                     child: InkWell(
                       onTap: () => state.read(null, index + 1),
-                      borderRadius: const BorderRadius.all(Radius.circular(8)),
+                      borderRadius: const BorderRadius.all(Radius.circular(AppRadius.md)),
                       child: Container(
                         foregroundDecoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                           border: Border.all(
                             color: Theme.of(context).colorScheme.outline,
                           ),
                         ),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         width: double.infinity,
                         height: double.infinity,

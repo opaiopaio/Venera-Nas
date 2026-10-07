@@ -570,7 +570,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
                       padding: const EdgeInsets.fromLTRB(6, 2, 6, 0),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.tertiaryContainer,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                       child: Center(child: Text(text)),
                     ).paddingLeft(16),
@@ -836,7 +836,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.xl),
           ),
           child: Icon(
             lastValue == 1
@@ -853,7 +853,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
           height: 58,
           child: Material(
             color: Theme.of(context).colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.xl),
             elevation: 2,
             child: InkWell(
               onTap: () {
@@ -864,7 +864,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
                 }
                 setFloatingButton(0);
               },
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.xl),
               child: Center(
                 child: Icon(
                   _getArrowIcon(isReversed, showFloatingButtonValue),
@@ -1211,7 +1211,7 @@ class _SelectImageOverlayContentState
             height: 42,
             decoration: BoxDecoration(
               color: context.colorScheme.surface,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(color: context.colorScheme.outlineVariant),
             ),
             child: Row(

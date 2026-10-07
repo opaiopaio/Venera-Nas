@@ -7,6 +7,7 @@ import 'package:venera_nas/foundation/comic_type.dart';
 import 'package:venera_nas/foundation/history.dart';
 import 'package:venera_nas/utils/ext.dart';
 import 'package:venera_nas/utils/translations.dart';
+import 'package:venera_nas/foundation/app_theme.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -604,7 +605,7 @@ class _SliverGridComicsNoListenerState
                     context,
                   ).colorScheme.secondaryContainer.toOpacity(0.72)
                 : null,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           margin: const EdgeInsets.all(4),
           child: comic,

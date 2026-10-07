@@ -1,4 +1,4 @@
-part of "components.dart";
+﻿part of "components.dart";
 
 void showToast({
   required String message,
@@ -38,7 +38,7 @@ class _ToastOverlay extends StatelessWidget {
         alignment: Alignment.bottomCenter,
         child: Material(
           color: Theme.of(context).colorScheme.inverseSurface,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           elevation: 2,
           textStyle: ts.withColor(
             Theme.of(context).colorScheme.onInverseSurface,
@@ -312,7 +312,7 @@ class ContentDialog extends StatelessWidget {
     );
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         side: context.brightness == Brightness.dark
             ? BorderSide(color: context.colorScheme.outlineVariant)
             : BorderSide.none,

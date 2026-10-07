@@ -1,4 +1,4 @@
-part of 'comic_page.dart';
+﻿part of 'comic_page.dart';
 
 class _CommentsPart extends StatefulWidget {
   const _CommentsPart({required this.comments, required this.showMore});
@@ -106,7 +106,7 @@ class _CommentWidget extends StatelessWidget {
       width: 324,
       decoration: BoxDecoration(
         color: context.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Column(
         children: [
