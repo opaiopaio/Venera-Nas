@@ -1,8 +1,10 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/app_theme.dart';
 import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/design_tokens.dart';
 
 /// 「窗口/按钮/选项背景」与全局背景相关的**通用 helper**。
 ///
@@ -63,8 +65,8 @@ Color? systemContainerColorCache;
 /// 「窗口/按钮背景」的圆角半径：`rounded`（默认，12）/ `square`（0，直角）。
 double windowOverlayRadius() =>
     (appdata.settings['windowOverlayCorner'] as String? ?? 'rounded') == 'square'
-    ? 0
-    : 12;
+    ? AppRadius.none
+    : AppRadius.lg;
 
 /// 「窗口/按钮背景」的圆角（未启用时返回 null，保持原样式）。
 BorderRadius? windowOverlayBorderRadius() => appdata.settings.cornerStyleActive
@@ -165,8 +167,7 @@ Color? customSecondarySurfaceColor(ColorScheme scheme) {
   final mode = appdata.settings['secondaryPageMode'] as String? ?? 'opaque';
   final tint = appdata.settings['secondaryPageTint'] as String? ?? 'darken';
   final strength =
-      ((appdata.settings['secondaryPageTintStrength'] as num?)?.toDouble() ??
-              0.22)
+      ((appdata.settings['secondaryPageTintStrength'] as num?)?.toDouble() ?? AppOpacity.tintStrengthDefault)
           .clamp(0.0, 1.0);
   final tintColor = switch (tint) {
     'lighten' => Colors.white.toOpacity(strength),

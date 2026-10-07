@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/design_tokens.dart';
 
 /// 全局文字样式（颜色 / 字体 / 阴影 / 发光 / 字号缩放）。
 ///
@@ -70,10 +71,7 @@ String? globalFontFamily() {
 
 /// 全局字号缩放（0.8 - 1.4，默认 1.0）。
 double globalFontScale() =>
-    ((appdata.settings['globalFontScale'] as num?)?.toDouble() ?? 1.0).clamp(
-      0.8,
-      1.4,
-    );
+    ((appdata.settings['globalFontScale'] as num?)?.toDouble() ?? 1.0).clamp(AppTextScale.min, AppTextScale.max);
 
 /// 阴影 + 发光。发光用「多层同色、位移为 0、模糊递增」的 Shadow 叠加实现。
 List<Shadow>? globalTextShadows() {

@@ -1,15 +1,16 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/foundation/design_tokens.dart';
 import 'package:venera_nas/foundation/comic_source/comic_source.dart';
 import 'package:window_manager/window_manager.dart';
 
 /// 自绘窗口标题栏高度（供侧栏等让位使用）。
-const kTitleBarHeight = 36.0;
+const kTitleBarHeight = AppTopBar.height;
 
 const _kTitleBarHeight = kTitleBarHeight;
 

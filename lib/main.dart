@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:desktop_webview_window/desktop_webview_window.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flex_seed_scheme/flex_seed_scheme.dart';
@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/design_tokens.dart';
 import 'package:venera_nas/foundation/log.dart';
 import 'package:venera_nas/foundation/text_style_settings.dart';
 import 'package:venera_nas/pages/auth_page.dart';
@@ -470,7 +471,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 widget = MediaQuery(
                   data: MediaQuery.of(context).copyWith(
                     textScaler: TextScaler.linear(
-                      textScale.clamp(0.8, 1.4),
+                      AppTextScale.clamp(textScale),
                     ),
                   ),
                   child: widget,
