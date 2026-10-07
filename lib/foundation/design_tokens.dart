@@ -34,7 +34,7 @@ abstract final class AppOpacity {
 ///
 /// 取自上游 `v1.16.0` 的 `AppMotion` 约定，用于统一动画手感。
 abstract final class AppMotion {
-  /// 小元件（chip / button / 标签）：200ms。
+  /// 小元件（chip / button / 标签）：200ms。  /// 小元件（chip / button / 标签）：200ms。
   static const Duration short = Duration(milliseconds: 200);
 
   /// 中等元件（侧栏项 / 卡片 / 弹层）：300ms。
@@ -80,7 +80,7 @@ abstract final class AppTopBar {
   /// 页面内容顶部让位高度（= height + extra）。
   static const double boundary = height + extra;
 
-  /// 供 `MediaQuery.padding.top` 之外的地方直接取用。
+  /// 供 `MediaQuery.padding.top` 之外的地方直接取用。  /// 供 `MediaQuery.padding.top` 之外的地方直接取用。
   static EdgeInsets get boundaryPadding => const EdgeInsets.only(top: boundary);
 }
 

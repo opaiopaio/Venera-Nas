@@ -28,53 +28,6 @@ class Appbar extends StatefulWidget implements PreferredSizeWidget {
 }
 
 class _AppbarState extends State<Appbar> {
-  ScrollNotificationObserverState? _scrollNotificationObserver;
-  bool _scrolledUnder = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _scrollNotificationObserver?.removeListener(_handleScrollNotification);
-    _scrollNotificationObserver = ScrollNotificationObserver.maybeOf(context);
-    _scrollNotificationObserver?.addListener(_handleScrollNotification);
-  }
-
-  @override
-  void dispose() {
-    if (_scrollNotificationObserver != null) {
-      _scrollNotificationObserver!.removeListener(_handleScrollNotification);
-      _scrollNotificationObserver = null;
-    }
-    super.dispose();
-  }
-
-  void _handleScrollNotification(ScrollNotification notification) {
-    if (notification is ScrollUpdateNotification &&
-        defaultScrollNotificationPredicate(notification)) {
-      final bool oldScrolledUnder = _scrolledUnder;
-      final ScrollMetrics metrics = notification.metrics;
-      switch (metrics.axisDirection) {
-        case AxisDirection.up:
-          // Scroll view is reversed
-          _scrolledUnder = metrics.extentAfter > 0;
-        case AxisDirection.down:
-          _scrolledUnder = metrics.extentBefore > 0;
-        case AxisDirection.right:
-        case AxisDirection.left:
-          // Scrolled under is only supported in the vertical axis, and should
-          // not be altered based on horizontal notifications of the same
-          // predicate since it could be a 2D scroller.
-          break;
-      }
-
-      if (_scrolledUnder != oldScrolledUnder) {
-        setState(() {
-          // React to a change in MaterialState.scrolledUnder
-        });
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     var content = Container(
@@ -121,68 +74,49 @@ class _AppbarState extends State<Appbar> {
         ],
       ).paddingTop(context.padding.top),
     );
-    return _OverlapTransition(
-      overlapped: _scrolledUnder,
-      builder: (context, t) {
-        if (widget.style == AppbarStyle.shadow) {
-          return Material(
-            color: customBackgroundAware(context.colorScheme.surface),
-            elevation: _OverlapTransition.elevation * t,
-            child: content,
-          );
-        }
-        // blur 样式：着色（透明底 Material 的 surfaceTint）+ 毛玻璃，两者同步渐入。
-        // 启用自定义背景时 BlurEffect 会自行跳过，但**着色仍在** → 不再"没效果"。
-        return BlurEffect(
-          blur: _OverlapTransition.blur * t,
-          child: Material(
-            color: Colors.transparent,
-            elevation: _OverlapTransition.elevation * t,
-            child: content,
-          ),
-        );
-      },
-    );
+    return _headerSurface(context, widget.style, content);
   }
 }
 
 enum AppbarStyle { blur, shadow }
 
-/// 顶栏「内容滚到下方」时的**统一过渡**：把原来的布尔瞬切改成平滑插值。
+/// 顶栏底：**不透明的「背景切片」**。
 ///
-/// 背景（为什么需要它）：
-/// 1. 原来 `_scrolledUnder` / `shrinkOffset` 一变就把 `elevation: 0→2`、
-///    `blur: 0→15` 直接瞬切，观感生硬；
-/// 2. `blur` 样式在有自定义背景（背景图/底色）时会被 [BlurEffect] **整体跳过**
-///    （它故意不糊背景图）→ 那些页面**完全没有**滚动压暗效果。
+/// 启用自定义背景（背景图/底色）时，顶栏直接画出与全窗背景**同一份**的
+/// [AppBackground]（整窗尺寸平移到顶栏位置、按顶栏裁切）：
+/// 静止时与"透明露出背景"的外观完全一致，而内容滚上来会被**实心挡住**
+/// ——不需要任何滚动过渡/遮罩/动画效果。
 ///
-/// 现在统一为：**着色始终生效**（M3 的 surfaceTint 会随 `elevation` 叠加，
-/// 与背景图不冲突），毛玻璃只在 `blur` 样式且未启用自定义背景时叠加；
-/// 两者都由 `t`(0→1) 驱动，随 [AppMotion.short] 平滑过渡。
-class _OverlapTransition extends StatelessWidget {
-  const _OverlapTransition({required this.overlapped, required this.builder});
-
-  /// 内容是否已滚到顶栏下方。
-  final bool overlapped;
-
-  /// 用插值后的 `t` 构建顶栏表面。
-  final Widget Function(BuildContext context, double t) builder;
-
-  /// 滚到下方时叠加的抬升高度（M3 据此叠 surfaceTint 并投影）。
-  static const double elevation = 2;
-
-  /// 毛玻璃强度（仅 `blur` 样式、且未启用自定义背景时可见）。
-  static const double blur = 15;
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0, end: overlapped ? 1 : 0),
-      duration: AppMotion.short,
-      curve: AppMotion.standard,
-      builder: (context, t, _) => builder(context, t),
-    );
+/// 未启用背景时退回主题表面色，保证顶栏**始终不透明**。
+/// 只有 `blur` 样式且未启用背景时才保留原来的毛玻璃观感。
+Widget _headerSurface(BuildContext context, AppbarStyle style, Widget body) {
+  final size = MediaQuery.sizeOf(context);
+  // 顶栏顶部在窗口坐标里的位置：桌面自绘窗口把页面整体下移了标题栏高度，
+  // 移动端没有这层让位（顶栏就在窗口顶部）。
+  final topInWindow = App.isDesktop ? AppTopBar.height : 0.0;
+  Widget surface = ClipRect(
+    child: Stack(
+      children: [
+        // 不透明兜底（背景底色可能是半透明的）
+        Positioned.fill(child: ColoredBox(color: context.colorScheme.surface)),
+        if (AppBackground.isActive)
+          Positioned(
+            top: -topInWindow,
+            left: 0,
+            child: SizedBox(
+              width: size.width,
+              height: size.height,
+              child: const AppBackground(),
+            ),
+          ),
+        body,
+      ],
+    ),
+  );
+  if (style == AppbarStyle.blur && !AppBackground.isActive) {
+    surface = BlurEffect(blur: 15, child: surface);
   }
+  return surface;
 }
 
 class SliverAppbar extends StatelessWidget {
@@ -287,39 +221,7 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
       ],
     ).paddingTop(topPadding);
 
-    // shrinkOffset 与 overlapsContent 任一表明"内容已滚到顶栏下方"都算
-    // （原来只认 shrinkOffset，导致部分页面在该状态反而没有压暗）。
-    final overlapped = shrinkOffset > 0 || overlapsContent;
-
-    return _OverlapTransition(
-      overlapped: overlapped,
-      builder: (context, t) {
-        if (style == AppbarStyle.blur) {
-          return SizedBox.expand(
-            child: BlurEffect(
-              // 保持原来的"常驻毛玻璃"观感；着色随滚动渐入
-              blur: _OverlapTransition.blur,
-              child: Material(
-                color: customBackgroundAware(
-                  context.colorScheme.surface.toOpacity(0.86),
-                ),
-                elevation: _OverlapTransition.elevation * t,
-                borderRadius: BorderRadius.circular(radius),
-                child: body,
-              ),
-            ),
-          );
-        }
-        return SizedBox.expand(
-          child: Material(
-            color: customBackgroundAware(context.colorScheme.surface),
-            elevation: _OverlapTransition.elevation * t,
-            borderRadius: BorderRadius.circular(radius),
-            child: body,
-          ),
-        );
-      },
-    );
+    return SizedBox.expand(child: _headerSurface(context, style, body));
   }
 
   @override
