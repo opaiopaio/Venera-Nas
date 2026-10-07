@@ -161,6 +161,12 @@ class _HeaderSurfaceState extends State<_HeaderSurface> {
   Widget build(BuildContext context) {
     // 建立设置依赖：背景切片/毛玻璃/圆角随设置变化时精准重建
     AppSettingsScope.of(context);
+
+    // ⚠️ **弹层（二级菜单）直接返回内容，不画任何底**：
+    // 弹层自身有表面与圆角（`PopUpWidgetScaffold` 的 secondaryPageDecoration），
+    // 在这里画不透明底色会把弹层顶部压成**直角** ✗，画背景切片则会盖住弹层表面 ✗
+    // （均为用户实测报告）。加这层底之前的行为就是"内容直接铺在弹层表面上" ✓
+    if (ModalRoute.of(context) is PopupRoute) return widget.body;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final box = context.findRenderObject();
@@ -182,12 +188,9 @@ class _HeaderSurfaceState extends State<_HeaderSurface> {
           Positioned.fill(
             child: ColoredBox(color: context.colorScheme.surface),
           ),
-          if (AppBackground.isActive && ModalRoute.of(context) is! PopupRoute)
+          if (AppBackground.isActive)
             // 背景切片：**只画不布局**的自绘（见 [_HeaderBackground] 注释）。
-            //
-            // ⚠️ 弹层（`PopupRoute`）里**不画图片切片**：弹层顶栏在出场动画/变换下
-            // 位置测不准（曾表现为"二级菜单的顶栏出现背景图顶部的图形"），
-            // 此时退回不透明底色即可（内容同样被实心挡住）。
+            // 仅用于**页面**顶栏；弹层在上面已提前返回（不画切片/底色）。
             Positioned.fill(
               child: _HeaderBackground(
                 image: _bgImage,
