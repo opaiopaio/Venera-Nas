@@ -51,7 +51,9 @@ Future<void> loadCustomFont() async {
   if (!file.existsSync()) return;
   try {
     final bytes = await file.readAsBytes();
-    const family = 'VeneraCustomFont';
+    // 族名必须**每次唯一**：`FontLoader` 用同一个族名重复注册时，引擎可能仍命中
+    // 已注册的旧字体 → 表现为"换了自定义字体不生效"（与换背景图同类的缓存问题）。
+    final family = 'VeneraCustomFont_${DateTime.now().millisecondsSinceEpoch}';
     final loader = FontLoader(family)
       ..addFont(Future.value(ByteData.view(Uint8List.fromList(bytes).buffer)));
     await loader.load();

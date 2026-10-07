@@ -337,7 +337,12 @@ class _FontFileTile extends StatelessWidget {
       final dir = Directory(customFontDir);
       if (!dir.existsSync()) dir.createSync(recursive: true);
       final ext = result.path.split('.').last.toLowerCase();
-      final name = 'custom.$ext';
+      // 清掉旧字体，只保留一份（与背景图同样的处理）
+      for (final entity in dir.listSync()) {
+        if (entity is File) entity.deleteSync();
+      }
+      // 文件名也用**唯一名**：与背景图同理，避免任何按路径复用旧文件
+      final name = 'custom_${DateTime.now().millisecondsSinceEpoch}.$ext';
       File(result.path).copySync('${dir.path}/$name');
       appdata.settings['globalFontFile'] = name;
       appdata.settings['globalFontSource'] = result.path;
