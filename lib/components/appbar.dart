@@ -30,6 +30,8 @@ class Appbar extends StatefulWidget implements PreferredSizeWidget {
 class _AppbarState extends State<Appbar> {
   @override
   Widget build(BuildContext context) {
+    // 建立设置依赖：顶栏底色/毛玻璃随设置变化时精准重建
+    AppSettingsScope.of(context);
     var content = Container(
       decoration: BoxDecoration(
         color: customBackgroundAware(
@@ -112,6 +114,8 @@ class _HeaderSurfaceState extends State<_HeaderSurface> {
 
   @override
   Widget build(BuildContext context) {
+    // 建立设置依赖：背景切片/毛玻璃/圆角随设置变化时精准重建
+    AppSettingsScope.of(context);
     final size = MediaQuery.sizeOf(context);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;

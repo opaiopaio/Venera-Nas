@@ -14,6 +14,7 @@ import 'package:venera_nas/foundation/app_theme.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/app_page_route.dart';
 import 'package:venera_nas/foundation/appdata.dart';
+import 'package:venera_nas/foundation/app_settings_scope.dart';
 import 'package:venera_nas/foundation/window_overlay.dart';
 import 'package:venera_nas/foundation/text_style_settings.dart';
 // 让 components 的使用者也能直接用遮罩/圆角 helper

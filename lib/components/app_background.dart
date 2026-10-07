@@ -12,6 +12,9 @@ class AppBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 建立设置依赖：底色/背景图/透明度/显示方式变化时由框架精准重建本层
+    // （取代 `App.forceRebuild()` 的整树遍历）。
+    AppSettingsScope.of(context);
     final scheme = Theme.of(context).colorScheme;
     final bgColorValue =
         appdata.settings['backgroundColor'] as String? ?? 'transparent';

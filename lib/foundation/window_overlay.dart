@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/app_theme.dart';
+import 'package:venera_nas/foundation/app_settings_scope.dart';
 import 'package:venera_nas/foundation/appdata.dart';
 import 'package:venera_nas/foundation/design_tokens.dart';
 
@@ -123,6 +124,9 @@ class WindowOverlayBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 建立设置依赖：设置变化时由框架**精准重建本控件**
+    // （取代 `App.forceRebuild()` 的整树 markNeedsBuild 遍历，后者会导致鬼影）。
+    AppSettingsScope.of(context);
     if (!appdata.settings.hasWindowOverlay) return child;
     return Padding(
       padding:
