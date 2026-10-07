@@ -71,12 +71,16 @@ class _MenuRoute<T> extends PopupRoute<T> {
               ],
             ),
             child: BlurEffect(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
+              borderRadius:
+                  windowOverlayBorderRadius() ??
+                  BorderRadius.circular(AppRadius.sm),
               child: Material(
                 color: appdata.settings.customBackgroundActive
                     ? windowOverlayColor()
                     : context.colorScheme.surface.toOpacity(0.92),
-                borderRadius: BorderRadius.circular(AppRadius.sm),
+                borderRadius:
+                    windowOverlayBorderRadius() ??
+                    BorderRadius.circular(AppRadius.sm),
                 child: Container(
                   width: width,
                   padding: const EdgeInsets.symmetric(
