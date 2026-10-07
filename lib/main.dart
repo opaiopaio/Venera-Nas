@@ -5,6 +5,7 @@ import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:venera_nas/foundation/app_settings_scope.dart';
 import 'package:venera_nas/foundation/comic_source/comic_source.dart';
 import 'package:venera_nas/foundation/design_tokens.dart';
 import 'package:venera_nas/foundation/log.dart';
@@ -500,12 +501,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                   ),
                 );
               }
-              return _SystemUiProvider(
-                Material(
-                  color: (App.isLinux || AppBackground.isActive)
-                      ? Colors.transparent
-                      : null,
-                  child: widget,
+              // 设置变化的**唯一正确通路**：把设置 scope 挂在 Navigator 之上
+              // （本 builder 的 widget 就是 Navigator），弹层/路由内容都是它的后代
+              // → 声明依赖的控件由框架精准重建，取代 forceRebuild() 的全树遍历。
+              return AppSettingsScope(
+                child: _SystemUiProvider(
+                  Material(
+                    color: (App.isLinux || AppBackground.isActive)
+                        ? Colors.transparent
+                        : null,
+                    child: widget,
+                  ),
                 ),
               );
             }
