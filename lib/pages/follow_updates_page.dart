@@ -227,16 +227,16 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                TextButton(
+                // P8：标准 `TextButton` → 应用自绘 `Button`（与右侧「立即检查」同一实现 ✓）
+                Button.normal(
                   onPressed: showSelector,
                   child: Text("Change Folder".tl),
                 ),
-                const SizedBox(width: 8),
-                // 启用「窗口/按钮背景」时用遮罩形式（TextButton 已由主题注入底色），
-                // P8：统一用应用自己的 `Button`（内置遮罩底色/全局文字色/胶囊/40 高 ✓），
+                const SizedBox(width: AppSpace.sm),
+                // P8：统一用应用自己的 `Button`（内置遮罩底色/全局文字色/胶囊/32 高 ✓），
                 // 因此不再需要"是否启用自定义背景"的分支 ✗（原先 tonal 配色不跟随主题 ✗）。
                 Button.normal(onPressed: checkNow, child: Text("Check Now".tl)),
-                const SizedBox(width: 16),
+                const SizedBox(width: AppSpace.lg),
               ],
             ),
             const SizedBox(height: 16),
