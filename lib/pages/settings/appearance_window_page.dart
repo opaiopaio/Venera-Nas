@@ -117,6 +117,32 @@ class AppearanceWindowPage extends StatelessWidget {
               max: 1.0,
               onChanged: () => App.forceRebuild(),
             ).toSliver(),
+            // ⭐ AF1（用户要求 ✓）：**顶栏「漫画源」按钮**（分类/发现页顶部那一排 ✓ + 「+ 加号」✓）
+            // 独立可控 ✓ —— 颜色（跟随系统=跟主题 / 透明 / 自定义 ✓）+ 不透明度 ✓。
+            // 取值入口：`foundation/window_overlay.dart` 的 `sourceTabOverlayColor()` ✓；
+            // 应用点：`components/appbar.dart` 的 chip 填色与「+ 加号」填色 ✓。
+            _SettingPartTitle(title: "Top source buttons".tl, icon: Icons.tab),
+            ColorSettingTile(
+              title: "Source buttons color".tl,
+              settingValue:
+                  (appdata.settings['sourceTabOverlayColor'] ?? 'system')
+                      .toString(),
+              allowSystem: true,
+              allowTransparent: true,
+              onPicked: (value) async {
+                appdata.settings['sourceTabOverlayColor'] = value;
+                await appdata.saveData();
+                App.forceRebuild();
+              },
+            ).toSliver(),
+            _SliderSetting(
+              title: "Source buttons opacity".tl,
+              settingsIndex: "sourceTabOverlayOpacity",
+              interval: 0.05,
+              min: 0.0,
+              max: 1.0,
+              onChanged: () => App.forceRebuild(),
+            ).toSliver(),
             SelectSetting(
               title: "Corner style".tl,
               settingKey: "windowOverlayCorner",
