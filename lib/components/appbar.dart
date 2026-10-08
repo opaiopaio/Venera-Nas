@@ -373,7 +373,11 @@ class _AppTabBarState extends State<AppTabBar> {
       // tag/按钮色** ✓ = M3 的 **`secondaryContainer`** ✓（本项目最初"跟随主题"的标签/按钮
       // 就是用的它 ✓）。**不跟随自定义按钮色** ✗（`buttonOverlayColor` 那套 ✗），
       // 也不是 `primaryContainer` ✗（用户表述澄清 ✓）。
-      color: Theme.of(context).colorScheme.secondaryContainer,
+      // ⭐ AE1（用户要求 ✓）：**指示条**颜色改为"主题色但**更浅一档**" ✓ ——
+      // 原先与 chip 底色同为 `secondaryContainer` ✗ → 完全看不见 ✗（用户实测 ✓）。
+      color: Theme.of(
+        context,
+      ).colorScheme.primary.withValues(alpha: AppOpacity.hint),
       padding: tabPadding,
       radius: tabRadius,
     );
@@ -408,7 +412,10 @@ class _AppTabBarState extends State<AppTabBar> {
               ? const ClampingScrollPhysics()
               : physics,
           child: CustomPaint(
-            painter: painter,
+            // ⭐ AE1（用户实测 ✓）：指示条原先用 `painter:` ✗ → **画在子控件之下** ✗，
+            // 被 chip 自身的 `Material` 底色盖住 ✗（用户："这个条被覆盖了" ✓）。
+            // 改用 `foregroundPainter:` ✓ → 画在 chip **之上** ✓ = "显示在选中的按钮上" ✓。
+            foregroundPainter: painter,
             child: _TabRow(
               callback: _tabLayoutCallback,
               children: List.generate(widget.tabs.length, buildTab)
@@ -643,14 +650,14 @@ class _IndicatorPainter extends CustomPainter {
     if (offsets == null || itemHeight == null) {
       return;
     }
-    final double index = controller.index.toDouble();
-    final double value = controller.animation!.value;
-    final bool ltr = index > value;
-    final int from = (ltr ? value.floor() : value.ceil()).clamp(0, maxTabIndex);
-    final int to = (ltr ? from + 1 : from - 1).clamp(0, maxTabIndex);
-    final Rect fromRect = indicatorRect(size, from);
-    final Rect toRect = indicatorRect(size, to);
-    _currentRect = Rect.lerp(fromRect, toRect, (value - from).abs());
+    // ⭐ AE1（用户要求 ✓）：切换动画由"**左右滑动过去**"✗ 改为"**从下面蹦上来**"✓ ——
+    // X 直接落到**目标 chip**（`controller.index` ✓，不再跨 chip 水平插值 ✗）；
+    // Y 由下方弹入 ✓，用 `Curves.easeOutBack`（带回弹 ✓）驱动 ✓ → 有"蹦"的手感 ✓。
+    final double t = controller.animation!.value.clamp(0.0, 1.0);
+    final double eased = Curves.easeOutBack.transform(t);
+    final double jump = itemHeight ?? 0;
+    final Rect target = indicatorRect(size, controller.index);
+    _currentRect = target.translate(0, (1 - eased) * jump);
     final Paint paint = Paint()..color = color;
     final RRect rrect = RRect.fromRectAndCorners(
       _currentRect!,
