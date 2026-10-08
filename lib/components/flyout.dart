@@ -106,12 +106,17 @@ class FlyoutState extends State<Flyout> {
         barrierDismissible: true,
         opaque: false,
         // ⭐ N2 收尾（2026-10-09 用户实测"开关无变化"✓）：**必须显式把路由自身的遮罩设透明** ✗→✓ ——
-        // `PageRouteBuilder` 继承 `ModalRoute`，其 `barrierColor` **默认是 `Colors.black54`** ✗，
-        // 而这里原先**没有覆写** ✗ → 于是暗罩有**两层**：① 路由默认的 54% 黑（不读开关 ✗）
+        // `PageRouteBuilder` 继承 `ModalRoute`，其 `barrierColor` **默认是 `Color(0x80000000)`**
+        // （≈50% 黑 ✓；**复查修正** ✗：此处原注释写成 `Colors.black54`（54%）不准确 ✓），
+        // 而这里原先**没有覆写** ✗ → 于是暗罩有**两层**：① 路由默认那层 ~50% 黑（**不读开关** ✗）
         // ② 下方自绘的 30% 黑（已跟随 `secondaryMenuDim` ✓）→ **上面那层永远在暗** ✗
         // → 用户"关掉菜单变暗 / 关掉总开关"都**看不出变化** ✗（实测反馈 ✓）。
         // 现改为：路由层透明 ✓、**只保留下面这层跟随开关的自绘遮罩** ✓（淡入动画也保留 ✓）。
-        // 注 ✓：`barrierColor: Colors.transparent`（而非 null ✗）→ 点击外部关闭的**命中区域仍在** ✓。
+        // ⚠️ **复查修正** ✗：原注释写"（而非 null ✗）→ 命中区域仍在"的**因果不成立** ✗ ——
+        // 点击外部关闭与 `barrierColor` **无关** ✓（barrier 组件始终由 `ModalRoute` 建立 ✓，
+        // `barrierDismissible: true` ✓ 即生效 ✓）；真正拦住"点透到下层"的是
+        // 下面那个 `GestureDetector(behavior: HitTestBehavior.opaque)` ✓（见本文件后段 ✓）。
+        // 因此这里传 `Colors.transparent` 的唯一目的是**去掉视觉暗罩** ✓，不是为了命中 ✓。
         barrierColor: Colors.transparent,
         transitionDuration: _fastAnimationDuration,
         reverseTransitionDuration: _fastAnimationDuration,

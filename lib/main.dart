@@ -352,7 +352,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     // `foundation/window_overlay.dart` 的 `applySystemContainerColorFor(...)` ✓ ——
     // 因为 `getTheme` 是 App State 的**实例方法** ✗、单测调不到 ✓，
     // 这正是 B1 这类 bug 能溜过去的**根因缺口** ✓；抽到 foundation 层后由
-    // `test/ap1_static_regression_test.dart` 直接覆盖 ✓。
+    // **`test/ap1_brightness_cache_test.dart`**（T-B1-1 ×3 / T-B1-2 ✓）**直接覆盖行为** ✓，
+    // 另有 `test/ap1_static_regression_test.dart` 做静态断言 ✓。
+    // ⚠️ **复查修正** ✗：此处原注释把"对应测试"只指向了 `ap1_static_regression_test.dart`（**那是静态断言** ✓），
+    // 而 B1 的**行为**守护其实在 `ap1_brightness_cache_test.dart` ✓ —— 已改正 ✓。
     applySystemContainerColorFor(
       brightness: brightness,
       systemContainerHigh: scheme.surfaceContainerHigh,
