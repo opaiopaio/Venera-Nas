@@ -186,12 +186,19 @@ class SecondaryPageSurface extends StatelessWidget {
     final tinted = !followTheme && popupStyle;
     final decoration = secondaryPageDecoration();
     final tint = customSecondarySurfaceColor(context.colorScheme);
-    // ⭐ T1（用户截图反馈 ✓）：**弹层一律要有不透明底** ✓ —— 用户明确要求
-    // "二级窗口**遮挡下面的内容**" ✓（不管有没有背景图/纯色底 ✓）。
-    // 之前按 `!backgroundFeatureActive` 排除 ✗ → 有背景时整页式页面（探索页面/分类页面…）
-    // **完全透明透出壁纸** ✗（截图实测 ✓）。
-    // 现在：**底恒在最下层** ✓，背景切片/色调只在其上**叠加** ✓（顺序见下 ✓）。
+    // ⭐ T1/U1（用户反馈 ✓）：**弹层一律有底** ✓（保证"遮挡下面内容" ✓，与背景体系无关 ✓）。
     final needSurface = true;
+    // ⭐ U1（用户反馈 ✓）：底**按模式给透明度** ✓，色调**混入底**而不是叠蒙层 ✗。
+    // - `opaque`（不透明 ✓）→ 不透明主题表面色 ✓（遮挡 ✓）；
+    // - `transparent`（半透明 ✓）→ 用 `AppOpacity.hint` ✓ 的底 ✓，**透出下层内容** ✓
+    //   （用户实测："切换成半透明，二级窗口就变白底了，不会透出来" ✗）；
+    // - 色调用 `Color.alphaBlend` **混进底色** ✓ → `darken` = **更深的面板** ✓、
+    //   `lighten` = 更浅的面板 ✓（用户实测："变深一打开就变灰色界面" ✗ = 不透明白底 + 黑色蒙层 ✗）。
+    final mode = appdata.settings['secondaryPageMode'] as String? ?? 'opaque';
+    final translucent = mode == 'transparent';
+    var base = context.colorScheme.surface;
+    if (tint != null) base = Color.alphaBlend(tint, base);
+    if (translucent) base = base.withValues(alpha: AppOpacity.hint);
     final radius =
         borderRadius ??
         windowOverlayBorderRadius() ??
@@ -200,16 +207,15 @@ class SecondaryPageSurface extends StatelessWidget {
       children: [
         // ⭐ S1：**不透明底必须在最底层** ✓ —— 放在色调/装饰之后会**盖住色调** ✗
         //（用户实测："打开加深也不会变深" ✗）。
-        if (needSurface)
-          Positioned.fill(
-            child: ColoredBox(color: context.colorScheme.surface),
-          ),
-        if (decoration != null && tinted)
+        if (needSurface) Positioned.fill(child: ColoredBox(color: base)),
+        if (decoration != null && tinted) ...[
           // 与全窗背景**逐像素对齐**的切片（此前是 `DecorationImage` 按自身盒子
           // fit → 小弹窗看到的是**缩略图** ✗）。只画不布局，见 [BackgroundSlice]。
           const Positioned.fill(child: BackgroundSlice()),
-        if (tint != null && tinted)
-          Positioned.fill(child: ColoredBox(color: tint)),
+          // 有**壁纸切片**时，色调叠在**切片之上** ✓（语义 = 把壁纸调深/调浅 ✓，
+          // 这是原本的语义 ✓）；无切片时色调已**混入底色** ✓（见上 ✓），不重复叠 ✗。
+          if (tint != null) Positioned.fill(child: ColoredBox(color: tint)),
+        ],
         Material(color: Colors.transparent, child: child),
       ],
     );
