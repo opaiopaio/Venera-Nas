@@ -428,21 +428,25 @@ Color menuSurfaceColor() {
   return base.toOpacity(opacity);
 }
 
-Color? customSecondarySurfaceColor(ColorScheme scheme) {
-  // ⭐ O1（用户澄清 ✓）：二级页面「跟随系统主题」时**只让色调不生效** ✓ ——
-  // 默认态必须**不做色调调整** ✓，但**遮挡下面内容** ✓（`secondaryPageFeatureActive` 仍为 true ✓）
-  // 且**突出二级菜单** ✓（`secondaryMenuDim` 默认 true ✓）都属于"回到最初默认" ✓。
-  if (appdata.settings['secondaryPageFollowTheme'] == true) return null;
-  if (!appdata.settings.secondaryPageFeatureActive) return null;
-  final mode = appdata.settings['secondaryPageMode'] as String? ?? 'opaque';
-  final tint = appdata.settings['secondaryPageTint'] as String? ?? 'darken';
-  final strength =
-      ((appdata.settings['secondaryPageTintStrength'] as num?)?.toDouble() ??
-              AppOpacity.tintStrengthDefault)
-          .clamp(0.0, 1.0);
+/// ⭐ AR1（用户要求 ✓，2026-10-09）：把「二级页面/菜单的**表面色合成**」抽成**可传参**的纯函数 ✓，
+/// 供「二级页面弹窗」与「上下文菜单」**共用同一实现** ✓ ——
+/// 用户要求菜单"**学习二级页面弹窗的背景和样式复刻上去**（透明/不透明，变暗/变浅）"✓；
+/// 共用一处才能保证**真同构** ✓、避免两套实现各自漂移 ✗（项目 E1 的原则 ✓）。
+///
+/// ⚠️ 与 [customSecondarySurfaceColor] 的分工 ✓：本函数**不含**二级页面自己的两个门禁 ✗
+///（`secondaryPageFollowTheme` / `secondaryPageFeatureActive` ✓）—— 门禁由各调用点决定 ✓；
+/// 传入 `mode`（`opaque`/`transparent`/`off` ✓）、`tint`（`darken`/`lighten`/其它=无色调 ✓）、
+/// `strength`（0..1 ✓，内部 clamp ✓）即得**成品色** ✓。
+Color secondarySurfaceColorFor({
+  required ColorScheme scheme,
+  required String mode,
+  required String tint,
+  required double strength,
+}) {
+  final s = strength.clamp(0.0, 1.0);
   final tintColor = switch (tint) {
-    'lighten' => Colors.white.toOpacity(strength),
-    'darken' => Colors.black.toOpacity(strength),
+    'lighten' => Colors.white.toOpacity(s),
+    'darken' => Colors.black.toOpacity(s),
     _ => Colors.transparent,
   };
   // ① **有背景图** ✓ → 底由**壁纸切片**（`BackgroundSlice`）负责 ✓，
@@ -458,4 +462,22 @@ Color? customSecondarySurfaceColor(ColorScheme scheme) {
   return mode == 'transparent'
       ? blended.withValues(alpha: AppOpacity.hint)
       : blended;
+}
+
+Color? customSecondarySurfaceColor(ColorScheme scheme) {
+  // ⭐ O1（用户澄清 ✓）：二级页面「跟随系统主题」时**只让色调不生效** ✓ ——
+  // 默认态必须**不做色调调整** ✓，但**遮挡下面内容** ✓（`secondaryPageFeatureActive` 仍为 true ✓）
+  // 且**突出二级菜单** ✓（`secondaryMenuDim` 默认 true ✓）都属于"回到最初默认" ✓。
+  if (appdata.settings['secondaryPageFollowTheme'] == true) return null;
+  if (!appdata.settings.secondaryPageFeatureActive) return null;
+  // ⭐ AR1：合成逻辑已抽到 [secondarySurfaceColorFor] ✓（菜单与二级页面**共用** ✓）；
+  // 本函数只负责"门禁 + 读取二级页面自己的设置" ✓ → **行为与抽取前逐字等价** ✓。
+  return secondarySurfaceColorFor(
+    scheme: scheme,
+    mode: appdata.settings['secondaryPageMode'] as String? ?? 'opaque',
+    tint: appdata.settings['secondaryPageTint'] as String? ?? 'darken',
+    strength:
+        (appdata.settings['secondaryPageTintStrength'] as num?)?.toDouble() ??
+        AppOpacity.tintStrengthDefault,
+  );
 }
