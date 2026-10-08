@@ -75,29 +75,31 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
         // 整行可点 ✓ 且**受「窗口背景」遮罩控制** ✓（此前用裸标题行 ✗：只有文字/箭头能点 ✗、
         // 且没有遮罩底色 ✗ = 用户所说"很诡异"✗）。
         ListTile(
+          // ⭐ AM1（用户要求 ✓）：**保留区块图标** ✓（原 `_SettingPartTitle` 的样子 ✓）；
+          // 图标颜色不写死 ✓ → 由 `listTileTheme` 统一（跟随「图标颜色」设置 ✓）。
+          leading: const Icon(Icons.wallpaper, size: AppIconSize.lg),
           title: Text("Background".tl),
-          subtitle: Text("Image, color, opacity and fit".tl),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.to(() => const AppearanceBackgroundPage()),
         ).toSliver(),
         // ⭐ N1：本区块已迁到**独立子页** ✓（`appearance_window_page.dart` ✓）—— 设置项与 key 完全不变 ✓，仅换位置 ✓。
         ListTile(
+          leading: const Icon(Icons.widgets, size: AppIconSize.lg),
           title: Text("Window & controls".tl),
-          subtitle: Text("Window and button overlays".tl),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.to(() => const AppearanceWindowPage()),
         ).toSliver(),
         // ⭐ N1：本区块已迁到**独立子页** ✓（`appearance_secondary_page.dart` ✓）—— 设置项与 key 完全不变 ✓，仅换位置 ✓。
         ListTile(
+          leading: const Icon(Icons.layers, size: AppIconSize.lg),
           title: Text("Popup overlays".tl),
-          subtitle: Text("Style and tint for pop-up overlays".tl),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.to(() => const AppearanceSecondaryPage()),
         ).toSliver(),
         // ⭐ N1：本区块已迁到**独立子页** ✓（`appearance_text_page.dart` ✓）—— 设置项与 key 完全不变 ✓，仅换位置 ✓。
         ListTile(
+          leading: const Icon(Icons.text_fields, size: AppIconSize.lg),
           title: Text("Text".tl),
-          subtitle: Text("Font, color, scale, shadow and glow".tl),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.to(() => const AppearanceTextPage()),
         ).toSliver(),
