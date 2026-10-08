@@ -106,6 +106,14 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
           onChanged: () => App.forceRebuild(),
         ).toSliver(),
         _SettingPartTitle(title: "Window & controls".tl, icon: Icons.widgets),
+        // ⭐ N1：本页总开关 ✓（用户规格：每个子页一个「是否跟随系统主题设置」✓，默认**开** ✓）。
+        // 开 = 本页所有自定义项**不参与渲染** ✓（回到最初干净默认 ✓）；关 = 才启用下面的自定义 ✓。
+        _SwitchSetting(
+          title: "Follow system theme".tl,
+          subtitle: "On: use the default look; Off: customize below".tl,
+          settingKey: "windowOverlayFollowTheme",
+          onChanged: () => App.forceRebuild(),
+        ).toSliver(),
         ColorSettingTile(
           // H3 改名 ✓：原来叫「窗口/按钮背景颜色」✗ —— 现在按钮有**独立**设置了 ✓，
           // 这一项只管**窗口**（面板/卡片/设置行/侧栏/顶栏 ✓），名实相符 ✓。
@@ -203,6 +211,13 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
           onChanged: () => App.forceRebuild(),
         ).toSliver(),
         _SettingPartTitle(title: "Secondary page".tl, icon: Icons.layers),
+        // ⭐ N1：二级页面页总开关 ✓（默认开 = 用默认弹层 ✓；关才启用样式/背景/对比强度 ✓）
+        _SwitchSetting(
+          title: "Follow system theme".tl,
+          subtitle: "On: use the default look; Off: customize below".tl,
+          settingKey: "secondaryPageFollowTheme",
+          onChanged: () => App.forceRebuild(),
+        ).toSliver(),
         // ⭐ E1-①：「突出二级菜单」✓ —— 语义属于**二级页面** ✓（原先误放在「窗口与控件」区块 ✗，
         // 用户指出后归位 ✓）；开启后二级菜单/弹层点开时**周围变暗** ✓；
         // 关闭则与其它二级菜单一致（**无暗罩** ✓）；未设置时保持原有行为 ✓（零回归 ✓）。
@@ -242,6 +257,13 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
           onChanged: () => App.forceRebuild(),
         ).toSliver(),
         _SettingPartTitle(title: "Text".tl, icon: Icons.text_fields),
+        // ⭐ N1：文字页总开关 ✓（默认开 = 主题字体/颜色/字号 ✓；关才启用下面各项 ✓）
+        _SwitchSetting(
+          title: "Follow system theme".tl,
+          subtitle: "On: use the default look; Off: customize below".tl,
+          settingKey: "textFollowTheme",
+          onChanged: () => App.forceRebuild(),
+        ).toSliver(),
         ColorSettingTile(
           title: "Text color".tl,
           settingValue: (appdata.settings['globalTextColor'] ?? 'system')
