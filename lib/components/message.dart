@@ -130,7 +130,7 @@ void showDialogMessage(BuildContext context, String title, String message) {
     builder: (context) => ContentDialog(
       title: title,
       content: Text(message).paddingHorizontal(16),
-      actions: [FilledButton(onPressed: context.pop, child: Text("OK".tl))],
+      actions: [Button.normal(onPressed: context.pop, child: Text("OK".tl))],
     ),
   );
 }
@@ -149,12 +149,14 @@ Future<void> showConfirmDialog({
       title: title,
       content: Text(content).paddingHorizontal(16).paddingVertical(8),
       actions: [
-        FilledButton(
+        Button.normal(
           onPressed: () {
             context.pop();
             onConfirm();
           },
-          style: FilledButton.styleFrom(backgroundColor: btnColor),
+          // H2：语义色例外 ✓ —— 原 `FilledButton.styleFrom(backgroundColor: btnColor)`
+          // 改为自绘 `Button` 的 `color:` ✓（显式色优先 ✓，危险/强调按钮保持原色 ✓）。
+          color: btnColor,
           child: Text(confirmText.tl),
         ),
       ],
@@ -244,7 +246,7 @@ LoadingDialogController showLoadingDialog(
               backgroundColor: context.colorScheme.surfaceContainer,
             ).paddingHorizontal(16).paddingVertical(16),
             actions: [
-              FilledButton(
+              Button.normal(
                 onPressed: allowCancel
                     ? () {
                         controller.close();
@@ -491,14 +493,14 @@ Future<int?> showSelectDialog({
               ),
             ),
             actions: [
-              TextButton(
+              Button.normal(
                 onPressed: () {
                   current = null;
                   context.pop();
                 },
                 child: Text('Cancel'.tl),
               ),
-              FilledButton(
+              Button.normal(
                 onPressed: current == null ? null : context.pop,
                 child: Text('Confirm'.tl),
               ),

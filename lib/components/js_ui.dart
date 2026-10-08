@@ -84,7 +84,7 @@ mixin class JsUiApi {
     }
     if (actions.isEmpty) {
       actions.add(
-        TextButton(
+        Button.normal(
           onPressed: () {
             dialogContext?.pop();
           },
@@ -240,7 +240,7 @@ class _JSCallbackButtonState extends State<_JSCallbackButton> {
     return switch (widget.style) {
       // P8：不再自带样式 ✓ —— 形状/尺寸/内边距/底色/文字色统一由主题的 `pillButtonStyle`
       // 提供（胶囊 + 遮罩底 + 全局文字色 + 居中 + 40 高 ✓）；此处曾写死圆角矩形 + `Size(36,36)` ✗。
-      "filled" => FilledButton(
+      "filled" => Button.normal(
         onPressed: onClick,
         child: isLoading
             ? CircularProgressIndicator(
@@ -248,18 +248,18 @@ class _JSCallbackButtonState extends State<_JSCallbackButton> {
               ).fixWidth(18).fixHeight(18)
             : Text(widget.text),
       ),
-      "danger" => FilledButton(
+      "danger" => Button.normal(
         onPressed: onClick,
-        style: ButtonStyle(
-          backgroundColor: WidgetStateProperty.all(context.colorScheme.error),
-        ),
+        // H2：语义色例外 ✓ —— JS UI 的 danger 按钮保持 `colorScheme.error` ✓
+        //（原为 `style: ButtonStyle(backgroundColor: ...error)` ✗ → 改用自绘 `color:` ✓）。
+        color: context.colorScheme.error,
         child: isLoading
             ? CircularProgressIndicator(
                 strokeWidth: 1.4,
               ).fixWidth(18).fixHeight(18)
             : Text(widget.text),
       ),
-      _ => TextButton(
+      _ => Button.normal(
         onPressed: onClick,
         child: isLoading
             ? CircularProgressIndicator(

@@ -50,7 +50,7 @@ class NetworkError extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 3,
           ),
-          TextButton(
+          Button.normal(
             onPressed: () {
               saveFile(
                 data: utf8.encode(Log().toString()),
@@ -62,7 +62,7 @@ class NetworkError extends StatelessWidget {
           const SizedBox(height: 8),
           if (retry != null)
             if (cfe != null)
-              FilledButton(
+              Button.normal(
                 onPressed: () => passCloudflare(
                   CloudflareException.fromString(message)!,
                   retry!,
@@ -74,7 +74,7 @@ class NetworkError extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (action != null) action!.paddingRight(8),
-                  FilledButton(
+                  Button.normal(
                     onPressed: retry,
                     child: Text(buttonText ?? 'Retry'.tl),
                   ),

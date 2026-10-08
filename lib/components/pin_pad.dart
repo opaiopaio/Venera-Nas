@@ -167,7 +167,7 @@ class PinPadState extends State<PinPad> {
             const SizedBox(height: 16),
             SizedBox(
               width: _keypadWidth,
-              child: FilledButton(
+              child: Button.normal(
                 onPressed: _input.length >= widget.minLength && !_isSubmitting
                     ? _submit
                     : null,
