@@ -105,6 +105,14 @@ class FlyoutState extends State<Flyout> {
         fullscreenDialog: true,
         barrierDismissible: true,
         opaque: false,
+        // ⭐ N2 收尾（2026-10-09 用户实测"开关无变化"✓）：**必须显式把路由自身的遮罩设透明** ✗→✓ ——
+        // `PageRouteBuilder` 继承 `ModalRoute`，其 `barrierColor` **默认是 `Colors.black54`** ✗，
+        // 而这里原先**没有覆写** ✗ → 于是暗罩有**两层**：① 路由默认的 54% 黑（不读开关 ✗）
+        // ② 下方自绘的 30% 黑（已跟随 `secondaryMenuDim` ✓）→ **上面那层永远在暗** ✗
+        // → 用户"关掉菜单变暗 / 关掉总开关"都**看不出变化** ✗（实测反馈 ✓）。
+        // 现改为：路由层透明 ✓、**只保留下面这层跟随开关的自绘遮罩** ✓（淡入动画也保留 ✓）。
+        // 注 ✓：`barrierColor: Colors.transparent`（而非 null ✗）→ 点击外部关闭的**命中区域仍在** ✓。
+        barrierColor: Colors.transparent,
         transitionDuration: _fastAnimationDuration,
         reverseTransitionDuration: _fastAnimationDuration,
         pageBuilder: (context, animation, secondaryAnimation) {
