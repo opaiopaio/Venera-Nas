@@ -638,11 +638,13 @@ class _IndicatorPainter extends CustomPainter {
     assert(tabIndex <= maxTabIndex);
     var (tabLeft, tabRight) = (offsets![tabIndex], offsets![tabIndex + 1]);
 
-    // ⭐ AI1（用户要求 ✓）：**完整长度** ✓ —— 条铺满按钮**整个底部** ✓（"底下整个都是深色条"✓）；
-    // **不出框** ✓ 改由 `paint` 里按**按钮自身圆角裁切**保证 ✓（不再是靠左右内缩 ✗）。
+    // ⭐ AI1 续（用户反馈 ✓）：y 由固定 `_kTabHeight - 3.6` ✗ 改为**贴齐按钮真正的底边** ✓
+    //（用实测的 `itemHeight` ✓ = 该行 chip 的实际高度 ✓）→ 条成为按钮**底边那一整条** ✓，
+    // 不再浮在上方被圆角裁出两侧空隙 ✗（用户："不是完整贴边" ✗）。
+    final double chipBottom = (itemHeight ?? _AppTabBarState._kTabHeight) - 3;
     var rect = Rect.fromLTWH(
       tabLeft + padding.left,
-      _AppTabBarState._kTabHeight - 3.6,
+      chipBottom,
       tabRight - tabLeft - padding.horizontal,
       3,
     );
