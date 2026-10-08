@@ -656,11 +656,13 @@ class _IndicatorPainter extends CustomPainter {
     if (offsets == null || itemHeight == null) {
       return;
     }
-    // ⭐ AF1（用户要求 ✓）：改为**在按钮内部的"浮现"** ✓ ——
-    // 条在原位由底部**长出来**（高度 0 → 满 ✓），不再整条从下方蹦入 ✗；
-    // 曲线用 `Curves.easeOutCubic`（**无回弹** ✓）→ 修掉此前 `easeOutBack` 回弹**越界**✗
-    // 造成的"动画有 bug"✗。
-    final double t = controller.animation!.value.clamp(0.0, 1.0);
+    // ⭐ AH1（用户反馈 ✓）：**修动画方向 bug** —— 原先直接把 `controller.animation.value`
+    // 当进度 ✗，而它的**方向随切换方向变** ✗：往后切时是 `1 → 0` ✗ → 条反而"缩回去"✗
+    //（用户实测："第一个按钮动画是**反的（消失）**"✗）。改为按**到目标索引的距离**归一化 ✓：
+    // 停稳时 = 1 ✓（条满高 ✓）；切换过程中 = 0 → 1 ✓ → **无论方向都播一次"由底浮现"** ✓
+    //（"每次切换必播"✓，不再有反向 ✗ / 僵硬闪现 ✗）。
+    final double raw = controller.animation!.value;
+    final double t = (1 - (raw - controller.index).abs()).clamp(0.0, 1.0);
     final double eased = Curves.easeOutCubic.transform(t);
     final Rect target = indicatorRect(size, controller.index);
     final double h = target.height * eased;
