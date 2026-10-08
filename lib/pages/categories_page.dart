@@ -119,7 +119,8 @@ class _CategoriesPageState extends State<CategoriesPage>
               return Tab(text: title, key: Key(e));
             }).toList(),
             actionButton: TabActionButton(
-              icon: const Icon(Icons.add),
+              // ⭐ AA1（用户要求 ✓）：加号**更粗** ✓（`add_rounded` 视觉字重更重 ✓）
+              icon: const Icon(Icons.add_rounded),
               onPressed: addPage,
             ),
           ).paddingTop(context.padding.top),

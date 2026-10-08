@@ -147,7 +147,8 @@ class _ExplorePageState extends State<ExplorePage>
         tabs: pages.map((e) => buildTab(e)).toList(),
         controller: controller,
         actionButton: TabActionButton(
-          icon: const Icon(Icons.add),
+          // ⭐ AA1（用户要求 ✓）：加号**更粗** ✓（`add_rounded` ✓）
+          icon: const Icon(Icons.add_rounded),
           onPressed: addPage,
         ),
       ),
