@@ -63,17 +63,30 @@ BoxFit backgroundBoxFitOf(String fit) => switch (fit) {
 /// 因此缓存一份供 [windowOverlayColor] 使用。
 Color? systemContainerColorCache;
 
-/// 「窗口/按钮背景」的圆角半径：`rounded`（默认，12）/ `square`（0，直角）。
-double windowOverlayRadius() =>
-    (appdata.settings['windowOverlayCorner'] as String? ?? 'rounded') ==
-        'square'
-    ? AppRadius.none
-    : AppRadius.lg;
+/// ⭐ Y1（用户反馈 ✓）：**跟随系统主题**（=「窗口与控件」总开关关闭 ✓）时，
+/// **忽略直角/圆角设置** ✗ → 恒用**默认圆角**（`AppRadius.lg` = 12 ✓）。
+/// 用户原话 ✓："窗口与控件的设置在关闭之后，直角圆角的遮罩控制会被**保留** ✗，
+/// 而不是回到默认状态 ✓，我想要关闭之后默认为**圆角**遮罩 ✓"。
+double windowOverlayRadius() {
+  if (appdata.settings['windowOverlayFollowTheme'] == true) {
+    return AppRadius.lg; // 默认圆角 ✓
+  }
+  return (appdata.settings['windowOverlayCorner'] as String? ?? 'rounded') ==
+          'square'
+      ? AppRadius.none
+      : AppRadius.lg;
+}
 
 /// 「窗口/按钮背景」的圆角（未启用时返回 null，保持原样式）。
-BorderRadius? windowOverlayBorderRadius() => appdata.settings.cornerStyleActive
-    ? BorderRadius.circular(windowOverlayRadius())
-    : null;
+/// ⭐ Y1：跟随主题时同样**恒为默认圆角** ✓（忽略 `windowOverlayCorner` 设置 ✗）。
+BorderRadius? windowOverlayBorderRadius() {
+  if (appdata.settings['windowOverlayFollowTheme'] == true) {
+    return BorderRadius.circular(AppRadius.lg);
+  }
+  return appdata.settings.cornerStyleActive
+      ? BorderRadius.circular(windowOverlayRadius())
+      : null;
+}
 
 /// 「窗口/按钮背景」色 —— **独立于主题色**，单独配置：
 /// - `transparent` → 透明（无填充）
