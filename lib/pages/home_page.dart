@@ -886,6 +886,10 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                             vertical: AppSpace.xs,
                           ),
                           decoration: BoxDecoration(
+                            // ⭐ F1-①：本胶囊底色走「标签颜色」统一入口 ✓
+                            // （跟随遮罩 `windowOverlayColor()` / 跟随主题 `secondaryContainer` ✓），
+                            // 原先**只有描边、没有填充** ✗ → 不受「标签颜色」设置控制 ✗（用户实测反馈 ✓）。
+                            color: tagFillColor(context),
                             border: Border.all(
                               color: context.colorScheme.outlineVariant,
                             ),
