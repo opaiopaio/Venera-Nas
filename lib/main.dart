@@ -348,16 +348,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     // 原先此处**无条件**写同一个全局变量 ✗，而 `MaterialApp` 会先求值 `theme`(light ✓)、
     // 后求值 `darkTheme`(dark ✓) → **暗色恒覆盖亮色** ✓ → 亮色界面的窗口/胶囊/图标/标签四项
     // `system` 遮罩全部拿到**近黑灰** ✗（用户反馈"黑不溜秋"的**真根因** ✓）。
-    // 生效亮度 = `theme_mode`（system 时取平台亮度 ✓）。
-    final themeMode = appdata.settings['theme_mode'] ?? 'system';
-    final platformDark =
-        WidgetsBinding.instance.platformDispatcher.platformBrightness ==
-        Brightness.dark;
-    final effectiveDark =
-        themeMode == 'dark' || (themeMode == 'system' && platformDark);
-    if (brightness == (effectiveDark ? Brightness.dark : Brightness.light)) {
-      systemContainerColorCache = scheme.surfaceContainerHigh;
-    }
+    // ⭐ 2026-10-09 抽函数（**仅为可测性** ✓，行为完全不变 ✓）：判定逻辑移到
+    // `foundation/window_overlay.dart` 的 `applySystemContainerColorFor(...)` ✓ ——
+    // 因为 `getTheme` 是 App State 的**实例方法** ✗、单测调不到 ✓，
+    // 这正是 B1 这类 bug 能溜过去的**根因缺口** ✓；抽到 foundation 层后由
+    // `test/ap1_static_regression_test.dart` 直接覆盖 ✓。
+    applySystemContainerColorFor(
+      brightness: brightness,
+      systemContainerHigh: scheme.surfaceContainerHigh,
+    );
     // ⭐ Q1 修正（用户反馈 ✓）：先用过 `secondaryContainer` ✗（深色主题下偏深 → "深很多" ✗）、
     // 又用过 `surfaceContainerHighest` ✗（**几乎中性、不随种子色变化** ✗，深色下即深灰 →
     // "黑不溜秋、不随主题色变动" ✗）。正解 = M3 的 **fixed 系色** ✓：

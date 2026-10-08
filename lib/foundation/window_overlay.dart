@@ -130,6 +130,30 @@ double? _cachedOpacity;
 Color? _cachedSystemColor;
 Color? _cachedResult;
 
+/// ⭐ B1（审计 AP1-B1 ✓）：把"**按当前生效亮度**写入系统容器色缓存"这一步抽成**可单测**的函数 ✓。
+///
+/// 背景 ✓：B1 的 bug 是"`getTheme()` 对 light / dark **各写一次**同一个全局缓存 ✗ →
+/// 后求值的暗色恒覆盖亮色 ✗ → 亮色下四项 `system` 遮罩拿到近黑灰 ✗"。
+/// 修法是"**只让当前生效亮度的那次调用写入**" ✓，但该逻辑原先**内联在 App State 的方法里** ✗
+/// → 测试无从覆盖 ✓（实测：`getTheme` 是实例方法，单测调不到 ✓）＝ 这正是 B1 能溜过去的**根因缺口** ✓。
+/// 抽到这里后 ✓：`main.dart` 的 `getTheme()` 调用它 ✓，测试可以**直接覆盖**这条路径 ✓。
+///
+/// 生效亮度 = `theme_mode`（`system` 时取平台亮度 ✓）。
+void applySystemContainerColorFor({
+  required Brightness brightness,
+  required Color systemContainerHigh,
+}) {
+  final themeMode = appdata.settings['theme_mode'] ?? 'system';
+  final platformDark =
+      WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+      Brightness.dark;
+  final effectiveDark =
+      themeMode == 'dark' || (themeMode == 'system' && platformDark);
+  if (brightness == (effectiveDark ? Brightness.dark : Brightness.light)) {
+    systemContainerColorCache = systemContainerHigh;
+  }
+}
+
 /// ⭐ H3（2026-10-08）：**按钮背景**的统一入口 ✓ —— 与「窗口背景」**分离** ✓。
 ///
 /// 原先面板与按钮都用 `windowOverlayColor()` ✗（像素级完全相同 ✓）→
