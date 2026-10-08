@@ -520,8 +520,10 @@ class _AppTabBarState extends State<AppTabBar> {
         // ⭐ AA1（用户要求 ✓）：**可见 chip 的间距/高度由这里决定** ✗（上面的 `tabPadding`
         // 在这条"自定义背景"分支**被覆盖** ✗ —— 这就是"改了 tabPadding 却看不到变化"✗ 的真因 ✓）。
         // 用户实测要求 ✓：左右间距各 +5px、按钮高度 −4px → `left/right: 2 → 7` ✓、`bottom: 11 → 7` ✓。
+        // ⭐ AA1（用户实测 ✓）：左右间距 +5px ✓；高度再收 ✓（`bottom` 由 11 收到 3 ✓ = 比原
+        // 再扁一截 ✓，"太厚了" ✗）；上方 1px 保留（原有 5px 上移语义 ✓）。
         child: tab,
-      ).padding(const EdgeInsets.only(left: 7, right: 7, top: 1, bottom: 7));
+      ).padding(const EdgeInsets.only(left: 7, right: 7, top: 1, bottom: 3));
     }
     return tab.padding(tabPadding);
   }
@@ -990,8 +992,6 @@ class TabActionButton extends StatelessWidget {
 
   final void Function() onPressed;
 
-  static const _kTabHeight = AppTopBar.actionHeight; // AA1：令牌化（原裸数字 ✗）
-
   @override
   Widget build(BuildContext context) {
     // 启用「窗口/按钮背景」时，与标签一样带圆角底色（圆角跟随设置）。
@@ -1002,7 +1002,9 @@ class TabActionButton extends StatelessWidget {
       onTap: onPressed,
       borderRadius: radius,
       child: Container(
-        constraints: const BoxConstraints(minHeight: _kTabHeight),
+        // ⭐ AA1（用户实测 ✓）：**去掉 46 的槽位高度** ✗ —— 它比漫画源 chip 高 ✗ 导致加号按钮
+        // 偏高、与 chip 不对齐 ✗。去掉后高度 = 内容（图标 `AppIconSize.lg` = 24 ✓）+ 上下内边距
+        // （此处为 0 ✓）= 24 ✓，与 chip（文字高度 + 上下 1/3 ✓）一致 ✓ → **自然对齐** ✓。
         padding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
         child: IconTheme(
           data: IconThemeData(
