@@ -631,9 +631,12 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
               return GridView(
                 key: _key,
                 controller: scrollController,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 1,
-                  mainAxisExtent: 48,
+                  // ⚠️ 行高必须**跟随字号缩放** ✓ —— 写死 48 ✗ 在字号放大时会把
+                  // `ListTile` 挤扁 → 文字/图标贴底、不在遮罩里垂直居中 ✗（用户实测 ✓）。
+                  mainAxisExtent:
+                      48 * MediaQuery.textScalerOf(context).scale(1.0),
                 ),
                 children: children,
               );
@@ -644,10 +647,10 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
       title: widget.title,
       tailing: [
         if (keys.length < widget.pages.length)
-          TextButton.icon(
-            label: Text("Add".tl),
-            icon: const Icon(Icons.add),
+          // P8：标准 `TextButton.icon` → 应用自绘 `Button` + `pillLabel` ✓（一套体系 ✓）
+          Button.normal(
             onPressed: showAddDialog,
+            child: pillLabel(Icons.add, "Add".tl),
           ),
       ],
       body: view,
@@ -664,6 +667,10 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
           });
         },
         icon: const Icon(Icons.delete_outline),
+        // 紧凑化 ✓：`IconButton` 默认 48×48 ✗ 会把行撑得比行高还高 →
+        // `ListTile` 内容贴底、不在遮罩里垂直居中 ✗（用户实测 ✓）；与图片收藏的网格按钮同法 ✓。
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
       ),
     );
 
