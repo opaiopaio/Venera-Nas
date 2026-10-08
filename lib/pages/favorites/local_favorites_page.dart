@@ -884,7 +884,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                             return SizedBox(
                               height: 36,
                               child: Center(
-                                child: TextButton(
+                                child: Button.normal(
                                   onPressed: () {
                                     newFolder().then((v) {
                                       setState(() {
@@ -948,7 +948,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                       ),
                     ),
                     Center(
-                      child: FilledButton(
+                      child: Button.normal(
                         onPressed: () {
                           if (selectedLocalFolders.isEmpty) {
                             return;
@@ -1356,7 +1356,7 @@ class _LocalFavoritesFilterDialogState
         ),
       ),
       actions: [
-        FilledButton(
+        Button.normal(
           onPressed: () {
             appdata.implicitData["local_favorites_read_filter"] = readFilter;
             appdata.implicitData["local_favorites_sort"] = sortSelect;

@@ -207,11 +207,11 @@ class _BodyState extends State<_Body> {
             title: "Reload Configs",
             content: const SizedBox.shrink(),
             actions: [
-              TextButton(
+              Button.normal(
                 onPressed: () => Navigator.pop(context),
                 child: const Text("cancel"),
               ),
-              TextButton(
+              Button.normal(
                 onPressed: () async {
                   await ComicSourceManager().reload();
                   ComicSourceManager().notifyStateChange();
@@ -499,7 +499,7 @@ class _ComicSourceListState extends State<_ComicSourceList> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    TextButton(
+                    Button.normal(
                       onPressed: () {
                         launchUrlString(
                           "https://github.com/opaiopaio/Venera-Nas/blob/main/doc/comic_source.md",
@@ -507,10 +507,7 @@ class _ComicSourceListState extends State<_ComicSourceList> {
                       },
                       child: Text("Help".tl),
                     ),
-                    FilledButton.tonal(
-                      onPressed: load,
-                      child: Text("Refresh".tl),
-                    ),
+                    Button.normal(onPressed: load, child: Text("Refresh".tl)),
                     const SizedBox(width: 16),
                   ],
                 ),
@@ -766,7 +763,7 @@ class _CheckUpdatesButtonState extends State<_CheckUpdatesButton> {
           title: "Updates".tl,
           content: Text(text).paddingHorizontal(16),
           actions: [
-            FilledButton(
+            Button.normal(
               onPressed: () {
                 doUpdate = true;
                 context.pop();
@@ -1282,7 +1279,7 @@ class _LoginPageState extends State<_LoginPage> {
                   ),
                 const SizedBox(height: 24),
                 if (widget.config.loginWebsite != null)
-                  TextButton(
+                  Button.normal(
                     onPressed: () {
                       if (App.isLinux) {
                         loginWithWebview2();
@@ -1294,7 +1291,7 @@ class _LoginPageState extends State<_LoginPage> {
                   ),
                 const SizedBox(height: 8),
                 if (widget.config.registerWebsite != null)
-                  TextButton(
+                  Button.normal(
                     onPressed: () =>
                         launchUrlString(widget.config.registerWebsite!),
                     child: Row(

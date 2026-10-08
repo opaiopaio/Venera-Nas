@@ -355,7 +355,7 @@ class _MultiFolderFavoritesPageState extends State<_MultiFolderFavoritesPage> {
                 height: 60,
                 width: double.infinity,
                 child: Center(
-                  child: TextButton(
+                  child: Button.normal(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [

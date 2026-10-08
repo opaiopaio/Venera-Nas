@@ -406,14 +406,14 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
               ),
               actions: [
                 if (appdata.settings["followUpdatesFolder"] != null)
-                  TextButton(
+                  Button.normal(
                     onPressed: () {
                       disable();
                       context.pop();
                     },
                     child: Text("Disable".tl),
                   ),
-                FilledButton(
+                Button.normal(
                   onPressed: selectedFolder == null
                       ? null
                       : () {

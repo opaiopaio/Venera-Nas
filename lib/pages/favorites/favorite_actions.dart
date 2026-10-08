@@ -31,7 +31,7 @@ Future<void> newFolder() async {
               ],
             ).paddingHorizontal(16),
             actions: [
-              TextButton(
+              Button.normal(
                 child: Text("Import from file".tl),
                 onPressed: () async {
                   var file = await selectFile(ext: ['json']);
@@ -48,7 +48,7 @@ Future<void> newFolder() async {
                   context.pop();
                 },
               ).paddingRight(4),
-              FilledButton(
+              Button.normal(
                 onPressed: () {
                   var e = validateFolderName(controller.text);
                   if (e != null) {
@@ -108,7 +108,7 @@ void addFavorite(List<Comic> comics) {
               ),
             ),
             actions: [
-              FilledButton(
+              Button.normal(
                 onPressed: () {
                   if (selectedFolder != null) {
                     for (var comic in comics) {
