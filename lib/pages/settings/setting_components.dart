@@ -46,7 +46,6 @@ class _SwitchSettingState extends State<_SwitchSetting> {
       comicSource: widget.comicSource,
       useDeviceSettings: widget.useDeviceSettings,
     );
-
     assert(value is bool);
 
     final content = ListTile(
@@ -198,7 +197,6 @@ class _DoubleLineSelectSettingsState extends State<_DoubleLineSelectSettings> {
       comicSource: widget.comicSource,
       useDeviceSettings: widget.useDeviceSettings,
     );
-
     final content = ListTile(
       title: Row(
         children: [
@@ -327,6 +325,14 @@ class _EndSelectorSelectSettingState extends State<_EndSelectorSelectSetting> {
       comicId: widget.comicId,
       comicSource: widget.comicSource,
       useDeviceSettings: widget.useDeviceSettings,
+    );
+    // ⚠️ 临时探针（排查设置行文字颜色不跟随，定位后立即删除）
+    Log.info(
+      "ROW_PROBE",
+      "key=${widget.settingKey} "
+          "theme.bodyLarge=${Theme.of(context).textTheme.bodyLarge?.color?.toARGB32()} "
+          "tileTitle=${ListTileTheme.of(context).titleTextStyle?.color?.toARGB32()} "
+          "default=${DefaultTextStyle.of(context).style.color?.toARGB32()}",
     );
     final content = ListTile(
       title: Row(

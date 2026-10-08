@@ -501,7 +501,11 @@ class _LocalState extends State<_Local> {
                 },
               ),
             const Spacer(),
-            Button.outlined(
+            // 卡片内动作按钮（见 doc-private/03-implementation/07-background-and-color-picker.md
+            // 的「同类控件规格表」P6）：与追更页「立即检查 / 立即更改」**同一实现** ——
+            // 标准 `FilledButton.tonal`（次要动作）+ `FilledButton`（主操作），
+            // 形状/底色由主题与设置统一；间距改用 `AppSpace` 令牌 ✓（原先写死 8）。
+            FilledButton.tonal(
               onPressed: () {
                 showDialog(
                   context: context,
@@ -510,8 +514,8 @@ class _LocalState extends State<_Local> {
               },
               child: Text("扫描 NAS".tl),
             ),
-            const SizedBox(width: 8),
-            Button.filled(onPressed: import, child: Text("Import".tl)),
+            const SizedBox(width: AppSpace.sm),
+            FilledButton(onPressed: import, child: Text("Import".tl)),
           ],
         ).paddingHorizontal(AppSpace.lg).paddingVertical(AppSpace.sm),
       ),
