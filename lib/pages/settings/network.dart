@@ -305,15 +305,15 @@ class __DNSOverridesState extends State<_DNSOverrides> {
     return PopUpWidgetScaffold(
       title: "DNS Overrides".tl,
       tailing: [
-        TextButton.icon(
+        // H2 `.icon` 专轮：DNS 覆盖的「Save」→ 自绘 `Button` + `pillLabel` ✓
+        Button.normal(
           onPressed: () async {
             await _save();
             if (context.mounted) {
               context.pop();
             }
           },
-          icon: const Icon(Icons.save),
-          label: Text("Save".tl),
+          child: pillLabel(Icons.save, "Save".tl),
         ),
       ],
       body: SingleChildScrollView(
@@ -337,7 +337,8 @@ class __DNSOverridesState extends State<_DNSOverrides> {
             ),
             for (var i = 0; i < overrides.length; i++) buildOverride(i),
             const SizedBox(height: 8),
-            TextButton.icon(
+            // H2 `.icon` 专轮：DNS 覆盖的「Add」→ 自绘 `Button` + `pillLabel` ✓
+            Button.normal(
               onPressed: () {
                 setState(() {
                   overrides.add((
@@ -346,8 +347,7 @@ class __DNSOverridesState extends State<_DNSOverrides> {
                   ));
                 });
               },
-              icon: const Icon(Icons.add),
-              label: Text("Add".tl),
+              child: pillLabel(Icons.add, "Add".tl),
             ),
           ],
         ),

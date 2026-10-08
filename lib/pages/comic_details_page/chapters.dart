@@ -379,14 +379,18 @@ class _GroupedComicChaptersState extends State<_GroupedComicChapters>
               SliverToBoxAdapter(
                 child: Align(
                   alignment: Alignment.center,
-                  child: TextButton.icon(
-                    icon: const Icon(Icons.arrow_drop_down),
+                  child: Button.normal(
                     onPressed: () {
                       setState(() {
                         showAll = true;
                       });
                     },
-                    label: Text("${"Show all".tl} (${group.length})"),
+                    // H2 `.icon` 专轮：第三处「Show all (n)」（分组版 ✓，文案用 `group.length` ✓）
+                    // → 自绘 `Button` + `pillLabel` ✓
+                    child: pillLabel(
+                      Icons.arrow_drop_down,
+                      "${"Show all".tl} (${group.length})",
+                    ),
                   ).paddingTop(12),
                 ),
               ),
