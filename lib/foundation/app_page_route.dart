@@ -481,6 +481,16 @@ class _BackSwipeRecognizer extends OneSequenceGestureRecognizer {
 }
 
 class SlidePageTransitionBuilder extends PageTransitionsBuilder {
+  /// ⭐ AY1（用户要求 ✓，2026-10-09）：**强制走横切分支** ✓ ——
+  /// 用户原话："**我想让你在有背景、或者说任何情况下，这四个页面都保持横向切入** ✓，
+  /// 且**效果要和设置的横向切入统一，不要搞差分** ✓"。
+  /// 因此这里给 builder 加一个开关 ✓：默认 false（= App 全局原样 ✓，有背景时仍用 fade-through ✓）；
+  /// 「设置 → 外观」四个子页的路由传 `true` ✓ → **任何情况下都走横切** ✓
+  ///（**同一份实现** ✓，只跳过背景分支 ✗ → 不产生第二套转场 ✗）。
+  const SlidePageTransitionBuilder({this.forceSlide = false});
+
+  final bool forceSlide;
+
   @override
   Widget buildTransitions<T>(
     PageRoute<T> route,
@@ -505,7 +515,8 @@ class SlidePageTransitionBuilder extends PageTransitionsBuilder {
     // **正解** ✓：用 **`backgroundFeatureActive`** ✓ —— 它才是"背景图非空 **或** 底色非透明"（= 页面真的会透明 ✓），
     // 与源码上方的注释语义（"自定义背景时页面背景是透明的，横向滑动会让旧页从新页透明区透出来 ✗"）**完全对应** ✓。
     // ⇒ 无背景 → **横向切入** ✓（恢复 App 原本的全局设计 ✓）；有背景 → 保留 fade-through ✓（避免两页叠加 ✗）。
-    final customBg = App.data.settings.backgroundFeatureActive;
+    // ⭐ AY1：`forceSlide` 为 true 时**跳过背景分支** ✓（供「设置 → 外观」四个子页使用 ✓，用户要求任何情况都横切 ✓）。
+    final customBg = !forceSlide && App.data.settings.backgroundFeatureActive;
 
     Widget content = PhysicalModel(
       color: Colors.transparent,

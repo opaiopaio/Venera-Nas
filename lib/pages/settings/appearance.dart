@@ -31,13 +31,14 @@ class SettingsSubPageRoute<T> extends MaterialPageRoute<T> {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    return SlidePageTransitionBuilder().buildTransitions(
-      this,
-      context,
-      animation,
-      secondaryAnimation,
-      child,
-    );
+    // ⭐ AY1（用户要求 ✓，2026-10-09）：传 `forceSlide: true` ✓ ——
+    // 用户原话："**我想让你在有背景、或者说任何情况下，这四个页面都保持横向切入** ✓，
+    // 且**效果要和设置的横向切入统一，不要搞差分** ✓"。
+    // 复用的仍是**同一个** `SlidePageTransitionBuilder` ✓（同一份实现 ✓），
+    // 只把它的**背景分支跳过** ✗ → **任何情况下都走"旧内容不动 + 新内容从右切入"** ✓。
+    return SlidePageTransitionBuilder(
+      forceSlide: true,
+    ).buildTransitions(this, context, animation, secondaryAnimation, child);
   }
 }
 

@@ -34,13 +34,26 @@ void main() {
     final text = stripComments(file.readAsStringSync());
 
     expect(
-      text.contains(
-        'final customBg = App.data.settings.backgroundFeatureActive;',
-      ),
+      text.contains('App.data.settings.backgroundFeatureActive'),
       isTrue,
       reason:
           '转场判据不是 backgroundFeatureActive → 无背景时也会走淡入（用户实测反馈过：'
           '"删掉图片背景+底色透明后仍然淡入"）',
+    );
+    // ⭐ AY1（用户要求 ✓）：四个外观子页要"任何情况都横切" → builder 需有 forceSlide 开关 ✓
+    //（默认 false = App 全局原样 ✓；子页传 true ✓），且「设置 → 外观」必须用上它 ✓。
+    expect(
+      text.contains('forceSlide'),
+      isTrue,
+      reason: '缺少 forceSlide 开关 → 有背景时无法为指定页面强制横切（用户 AY1 要求）',
+    );
+    final appearance = stripComments(
+      File('lib/pages/settings/appearance.dart').readAsStringSync(),
+    );
+    expect(
+      appearance.contains('forceSlide: true'),
+      isTrue,
+      reason: '外观四个子页未启用 forceSlide → 有背景时仍会淡入（不是"任何情况都横切"）',
     );
     expect(
       text.contains('customBackgroundActive'),
