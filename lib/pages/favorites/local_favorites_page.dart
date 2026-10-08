@@ -1087,12 +1087,19 @@ class _ReorderComicsPageState extends State<_ReorderComicsPage> {
   }
 
   Color lightenColor(Color color, double lightenValue) {
-    int red = (_floatToInt8(color.r) + ((255 - color.r) * lightenValue))
-        .round();
-    int green = (_floatToInt8(color.g) * 255 + ((255 - color.g) * lightenValue))
-        .round();
-    int blue = (_floatToInt8(color.b) * 255 + ((255 - color.b) * lightenValue))
-        .round();
+    // ⭐ B3 修复（审计 AP1-B3 ✓）：**三通道统一量纲** ✗→✓ ——
+    // Flutter 3.27+ 的 `color.r/g/b` 是 **0.0–1.0** ✓，而 `_floatToInt8` 返回 **0–255** ✓；
+    // 原先 `green`/`blue` 在 `_floatToInt8` 之后**又乘了 255** ✗（`(255 - color.x)` 也仍是 0–1 量纲 ✗）
+    // → 通道值溢出成垃圾 ✓ → Reorder 拖拽浮层底色算成**粉红** ✗（用户实测 ✓）。
+    // 现统一为"**0–255 基准 + 按 `lightenValue` 向白混**" ✓（同一量纲 ✓，结果钳到 0–255 ✓）。
+    int ch(double v) {
+      final base = _floatToInt8(v);
+      return (base + (255 - base) * lightenValue).round().clamp(0, 255);
+    }
+
+    int red = ch(color.r);
+    int green = ch(color.g);
+    int blue = ch(color.b);
 
     return Color.fromARGB(_floatToInt8(color.a), red, green, blue);
   }
