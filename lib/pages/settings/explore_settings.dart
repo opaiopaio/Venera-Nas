@@ -101,11 +101,8 @@ class _ManageBlockingWordViewState extends State<_ManageBlockingWordView> {
     return PopUpWidgetScaffold(
       title: "Keyword blocking".tl,
       tailing: [
-        TextButton.icon(
-          icon: const Icon(Icons.add),
-          label: Text("Add".tl),
-          onPressed: add,
-        ),
+        // P8：标准 `TextButton.icon` → 应用自绘 `Button` + `pillLabel` ✓（一套体系 ✓）
+        Button.normal(onPressed: add, child: pillLabel(Icons.add, "Add".tl)),
       ],
       body: ListView.builder(
         itemCount: appdata.settings["blockedWords"].length,
@@ -254,11 +251,8 @@ class _ManageBlockingCommentWordViewState
     return PopUpWidgetScaffold(
       title: "Comment keyword blocking".tl,
       tailing: [
-        TextButton.icon(
-          icon: const Icon(Icons.add),
-          label: Text("Add".tl),
-          onPressed: add,
-        ),
+        // P8：标准 `TextButton.icon` → 应用自绘 `Button` + `pillLabel` ✓（一套体系 ✓）
+        Button.normal(onPressed: add, child: pillLabel(Icons.add, "Add".tl)),
       ],
       body: ListView.builder(
         itemCount: appdata.settings["blockedCommentWords"].length,
