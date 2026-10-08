@@ -64,44 +64,43 @@ class AppearanceSecondaryPage extends StatelessWidget {
               max: 0.6,
               onChanged: () => App.forceRebuild(),
             ).toSliver(),
+            // ⭐ AW2（用户 2026-10-09 实测 ✓）：**菜单外观三项必须回到总开关内部** ✗→✓ ——
+            // 用户反馈（截图 ✓）："**弹出式二级页面总开关关闭的情况下，菜单的三个设置子项不会自动隐藏**"✗
+            // —— 真因是上一轮我在"专项复查修复③"里把这三项**移出了** `secondaryPageFollowTheme` 门禁 ✗
+            //（当时以为"隐藏却生效"是不一致 ✗），但**用户明确了正确语义** ✓：
+            // ① 总开关 **ON**（系统主题）⇒ 三项**隐藏** ✓ 且按 `appdata` 的**默认值**生效 ✓
+            //    （不透明遮挡 / 变浅 / 0.22 ✓，见 `foundation/appdata.dart` 的 AW2 注释 ✓）；
+            // ② 总开关 **OFF** ⇒ 三项**显示** ✓ 并可自定义 ✓。
+            // ⇒ 即"**首装即可用**、自定义项默认关闭"✓ 的既定设计 ✓，**隐藏即代表使用默认值** ✓（非缺陷 ✓）。
+            SelectSetting(
+              title: "Menu style".tl,
+              settingKey: "menuSurfaceMode",
+              optionTranslation: {
+                "opaque": "Opaque (cover)".tl,
+                "transparent": "Translucent".tl,
+                "off": "Off".tl,
+              },
+              onChanged: () => App.forceRebuild(),
+            ).toSliver(),
+            SelectSetting(
+              title: "Menu background".tl,
+              settingKey: "menuSurfaceTint",
+              optionTranslation: {
+                "darken": "Darken".tl,
+                "lighten": "Lighten".tl,
+                "none": "No tint".tl,
+              },
+              onChanged: () => App.forceRebuild(),
+            ).toSliver(),
+            _SliderSetting(
+              title: "Menu contrast".tl,
+              settingsIndex: "menuSurfaceTintStrength",
+              interval: 0.02,
+              min: 0.0,
+              max: 0.6,
+              onChanged: () => App.forceRebuild(),
+            ).toSliver(),
           ], // ← N1：二级页面自定义项隐藏到此结束 ✓
-          // ⭐ 复查修复（2026-10-09 ✓）：**菜单外观三项移出上面的总开关** ✗→✓ ——
-          // 专项复查发现 ✗：这三项原先落在 `if (secondaryPageFollowTheme != true)` 内部 ✓
-          //（= "跟随主题时**隐藏**" ✓），但 `components/menu.dart` 读它们时**没有任何门禁** ✗
-          // → 默认态下设置**看不见、却仍然生效** ✗（想改菜单外观还必须先关掉一个
-          // **会同时改变二级页面**的总开关 ✗）→ 违反"隐藏项不应生效"的一致性 ✓。
-          // 现按既定设计（用户原话"把菜单的样式和背景也**复刻**上去"✓ → 菜单属**独立**一类外观 ✓，
-          // 见 changelog AR1 ✓）把它们**移出**该开关 ✓：
-          // **菜单观感完全不变** ✗（读取点与默认值一处未动 ✓），只是设置**在默认态也可见、可改** ✓。
-          // ⚠️ 二级页面自己的三项（样式 / 背景 / 对比度 ✓）**仍留在**该开关内 ✓，语义不变 ✗。
-          SelectSetting(
-            title: "Menu style".tl,
-            settingKey: "menuSurfaceMode",
-            optionTranslation: {
-              "opaque": "Opaque (cover)".tl,
-              "transparent": "Translucent".tl,
-              "off": "Off".tl,
-            },
-            onChanged: () => App.forceRebuild(),
-          ).toSliver(),
-          SelectSetting(
-            title: "Menu background".tl,
-            settingKey: "menuSurfaceTint",
-            optionTranslation: {
-              "darken": "Darken".tl,
-              "lighten": "Lighten".tl,
-              "none": "No tint".tl,
-            },
-            onChanged: () => App.forceRebuild(),
-          ).toSliver(),
-          _SliderSetting(
-            title: "Menu contrast".tl,
-            settingsIndex: "menuSurfaceTintStrength",
-            interval: 0.02,
-            min: 0.0,
-            max: 0.6,
-            onChanged: () => App.forceRebuild(),
-          ).toSliver(),
         ],
       ),
     );

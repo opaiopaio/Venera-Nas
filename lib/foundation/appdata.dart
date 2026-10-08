@@ -338,7 +338,13 @@ class Settings with ChangeNotifier {
     //（`mode` 不透明/半透明/关闭 ✓、`tint` 变暗/变浅/无色调 ✓、`tintStrength` 强度 ✓），
     // 默认值与二级页面一致 ✓ → **默认观感与二级弹窗一致** ✓、开箱即可读 ✓。
     'menuSurfaceMode': 'opaque',
-    'menuSurfaceTint': 'darken',
+    // ⭐ AW2（用户 2026-10-09 指示 ✓）：**首装即可用** ✓ —— 外观的自定义项默认全部关闭 ✓，
+    // 菜单在"系统主题"下的基础配置固定为：**样式 = 不透明（遮挡）** ✓、**背景 = 变浅** ✓、
+    // **色调强度 = 0.22** ✓（用户原话："弹出式二级页面的菜单样式、菜单背景、色调强度，
+    // 应在弹出式二级页面总开关关闭时，系统主题控制下，设置为 样式：不透明（遮挡）、背景：变浅、
+    // 菜单色调强度 0.22"✓）。
+    // ⚠️ 因此 `menuSurfaceTint` 的默认值由 `darken` **改为 `lighten`** ✗→✓（其余两项原已一致 ✓）。
+    'menuSurfaceTint': 'lighten',
     'menuSurfaceTintStrength': AppOpacity.tintStrengthDefault,
     // ⚠️ AQ1 范围收敛（用户 2026-10-09 追加说明 ✓）：**毛玻璃不做** ✗ ——
     // 用户原话："毛玻璃不做了，**和现在的外观设计有冲突** ✗，如果要加毛玻璃**以后再说** ✓。
