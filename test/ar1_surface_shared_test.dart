@@ -145,4 +145,31 @@ void main() {
       reason: '二级页面路径（默认 hasWallpaperSlice: true）行为不得改变',
     );
   });
+
+  test('T-复查⑩：默认态（跟随主题）二级页面走素色、菜单仍可独立配置', () {
+    // ⭐ 复查补强（2026-10-09 ✓）：本文件此前**恒把 `followTheme` 设为 false** ✗（见 `setBothSides` ✓）
+    // → **默认态从未被覆盖** ✗。而默认态正是产品口径"跟随主题即回到干净默认" ✓，
+    // 也是复查修复③ 之后"菜单三项**默认可见、可改**"的场景 ✓，必须锁死：
+    //  ① 二级页面：门禁生效 ⇒ `customSecondarySurfaceColor` 必须返回 **null** ✓（表面退回素色 `surface` ✓）；
+    //  ② 菜单：**没有**这层门禁 ⇒ `secondarySurfaceColorFor(hasWallpaperSlice: false)` 仍返回计算色 ✓
+    //     （= 菜单按自己那三项**独立生效** ✓，这正是 AR1 的既定设计 ✓）。
+    appdata.settings['secondaryPageFollowTheme'] = true;
+    expect(
+      customSecondarySurfaceColor(scheme),
+      isNull,
+      reason: '默认态（跟随主题）二级页面必须走素色 → 应返回 null，否则默认观感会被意外改掉',
+    );
+
+    final menuColor = secondarySurfaceColorFor(
+      scheme: scheme,
+      mode: 'opaque',
+      tint: 'darken',
+      strength: 0.22,
+      hasWallpaperSlice: false,
+    );
+    expect(menuColor.a, 1.0, reason: '默认态下菜单仍须按自己的三项独立生效（不透明 ⇒ alpha 必须为 1.0）');
+
+    // 复位，避免影响其它用例（本文件各用例共享同一 appdata）
+    appdata.settings['secondaryPageFollowTheme'] = false;
+  });
 }
