@@ -91,6 +91,10 @@ void main() {
       const SecondaryPageSurface(
         clip: false,
         fallbackToSurface: false,
+        // ⭐ R1：整页式（`PopUpWidgetScaffold`）传 `popupStyle: false` ✓ ——
+        // 弹出式（默认 true ✓）现在**无条件补不透明底** ✓（R1 修复：色盘等对话框在
+        // "自定义开启"时也必须遮挡 ✓），故本用例必须显式声明自己不是弹出式 ✓。
+        popupStyle: false,
         child: SizedBox(width: 80, height: 40),
       ),
     );
@@ -103,7 +107,31 @@ void main() {
     expect(
       find.descendant(of: surface, matching: find.byType(ColoredBox)),
       findsNothing,
-      reason: 'PopUpWidgetScaffold 不得自行补底色（会盖住路由 decoration 的观感）',
+      reason: '整页式（popupStyle: false）不得自行补底色（会盖住路由 decoration 的观感）',
+    );
+  });
+
+  /// ⭐ R1（用户反馈 ✓）：**弹出式**对话框在"**自定义开启**"（非跟随主题）时，
+  /// 也必须补一层**不透明主题表面色** ✓ —— 否则只叠了半透明色调 → **遮挡失效** ✗
+  ///（用户实测："打开自定义后色盘这部分全部失效" ✓）。
+  testWidgets('弹出式 + 自定义开启：仍补不透明表面色（保证遮挡）', (tester) async {
+    final oldMode = appdata.settings['secondaryPageMode'];
+    final oldFollow = appdata.settings['secondaryPageFollowTheme'];
+    addTearDown(() {
+      appdata.settings['secondaryPageMode'] = oldMode;
+      appdata.settings['secondaryPageFollowTheme'] = oldFollow;
+    });
+    appdata.settings['secondaryPageFollowTheme'] = false; // 自定义开启 ✓
+    appdata.settings['secondaryPageMode'] = 'opaque'; // 体系启用 → tint 非空 ✓
+    await pumpSurface(
+      tester,
+      const SecondaryPageSurface(child: SizedBox(width: 80, height: 40)),
+    );
+    final surface = find.byType(SecondaryPageSurface);
+    expect(
+      find.descendant(of: surface, matching: find.byType(ColoredBox)),
+      findsWidgets,
+      reason: '弹出式必须始终有不透明底（否则遮挡失效）',
     );
   });
 }

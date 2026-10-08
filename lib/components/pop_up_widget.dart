@@ -199,8 +199,13 @@ class SecondaryPageSurface extends StatelessWidget {
         if (tint != null && tinted)
           Positioned.fill(child: ColoredBox(color: tint)),
         if (followTheme ||
+            popupStyle ||
             (fallbackToSurface && decoration == null && tint == null))
-          // 跟随主题 → 主题表面色 ✓（遮挡 ✓）；体系未启用 → 同样兜底（零回归 ✓）。
+          // 三层含义 ✓：
+          // ① 跟随主题 → 主题表面色 ✓（遮挡 ✓，P2）；
+          // ② **弹出式**（R1：色盘等 `ContentDialog` 在**自定义开启**时也必须有**不透明底** ✓ ——
+          //    否则只叠了半透明的色调/装饰 → **遮挡失效** ✗，用户实测色盘"全部失效" ✓）；
+          // ③ 体系未启用 → 兜底补底（零回归 ✓）。
           Positioned.fill(
             child: ColoredBox(color: context.colorScheme.surface),
           ),
