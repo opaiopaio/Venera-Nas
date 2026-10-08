@@ -323,6 +323,11 @@ class _AppTabBarState extends State<AppTabBar> {
 
   var offsets = <double>[];
 
+  /// ⭐ AP1-A3（审计 ✓）：记录**当前已订阅**的 animation ✓ ——
+  /// 便于在重建/更换 controller 前 `removeListener` ✓（原先只 addListener 不 remove ✗
+  /// → 依赖变化/换 controller 时监听**逐次累积** ✓）。
+  Animation<double>? _listenedAnimation;
+
   @override
   void initState() {
     keys = widget.tabs.map((e) => GlobalKey()).toList();
@@ -331,6 +336,11 @@ class _AppTabBarState extends State<AppTabBar> {
 
   @override
   void dispose() {
+    // ⭐ AP1-A3（审计 ✓）：原为空实现 ✗ → 监听与滚动控制器都被泄漏 ✓。
+    // 注意 ✓：`_controller` 可能来自 `DefaultTabController.of(context)`（**宿主所有** ✓）
+    // → **只能 removeListener，不能 dispose** ✗；`scrollController` 是本 State 自建 ✓ → 必须释放 ✓。
+    _listenedAnimation?.removeListener(onTabChanged);
+    scrollController.dispose();
     super.dispose();
   }
 
@@ -348,6 +358,10 @@ class _AppTabBarState extends State<AppTabBar> {
         prevIndex < widget.tabs.length) {
       _controller.index = prevIndex;
     }
+    // ⭐ AP1-A3（审计 ✓）：订阅前先摘掉**旧**监听 ✓（防累积 ✗；行为不变 ✓ ——
+    // `onTabChanged` 内部对同一 index 会提前 return ✓）
+    _listenedAnimation?.removeListener(onTabChanged);
+    _listenedAnimation = _controller.animation;
     _controller.animation!.addListener(onTabChanged);
   }
 
@@ -355,6 +369,10 @@ class _AppTabBarState extends State<AppTabBar> {
   void didUpdateWidget(covariant AppTabBar oldWidget) {
     if (widget.controller != oldWidget.controller) {
       _controller = widget.controller ?? DefaultTabController.of(context);
+      // ⭐ AP1-A3（审计 ✓）：订阅前先摘掉**旧**监听 ✓（防累积 ✗；行为不变 ✓ ——
+      // `onTabChanged` 内部对同一 index 会提前 return ✓）
+      _listenedAnimation?.removeListener(onTabChanged);
+      _listenedAnimation = _controller.animation;
       _controller.animation!.addListener(onTabChanged);
       initPainter();
     }
