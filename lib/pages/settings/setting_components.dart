@@ -782,9 +782,12 @@ class _CallbackSetting extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       title: Text(title),
-      trailing: Button.normal(onPressed: callback, child: Text(actionTitle)),
-      // ⚠️ 原先这里 `.fixHeight(28)` ✗ —— 会把 P8 胶囊压成"窄长条" ✗（用户实测反馈 ✓）；
-      // 高度交给按钮自身的 `minHeight: 44`（P8 规范 ✓）。
+      // P8 胶囊（44 高，与主页「扫描 NAS」同标准 ✓）；⚠️ 行内需要**垂直呼吸** ✗→✓
+      // （不加则胶囊与行的遮罩上下贴边 ✗，实测反馈 ✓）。
+      trailing: Button.normal(
+        onPressed: callback,
+        child: Text(actionTitle),
+      ).paddingVertical(AppSpace.xs),
       onTap: callback,
     );
   }

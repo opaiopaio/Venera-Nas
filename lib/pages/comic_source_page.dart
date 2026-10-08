@@ -861,7 +861,7 @@ class _CallbackSettingState extends State<_CallbackSetting> {
         onPressed: onClick,
         isLoading: isLoading,
         child: Text(buttonText.ts(widget.sourceKey)),
-      ),
+      ).paddingVertical(AppSpace.xs),
     );
   }
 }

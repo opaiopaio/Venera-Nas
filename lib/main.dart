@@ -330,14 +330,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       foregroundColor: overlayFg == null ? null : overlayFgProp(overlayFg),
       // 文字**横纵都居中** ✓
       alignment: Alignment.center,
-      // 胶囊要"胖"一些：实测 36 高度显得细长 ✗ → 抬到 44 ✓；
-      // ⚠️ **不要**给 `ButtonStyle.padding` 加**垂直**内边距 ✗ —— 它会把内容盒压到
-      //    `44 - 2*vertical`（例如 8 → 只剩 28px，正好等于行高 ✗），而 CJK 字的**墨迹高度
-      //    本就略大于行盒** → 文字被**裁切** ✗（实测：除首页两个按钮外全部胶囊文字被裁 ✗）。
-      //    高度由 `minimumSize` 统一保证 ✓，文字自然居中 ✓。
+      // 高度 **44** = 主页「扫描 NAS」实测高度 ✓（用户指定以它为全局标准 ✓）。
+      // "细长"靠**收窄水平内边距**（AppSpace.sm ✓）解决；行内贴边则在**行**侧留呼吸 ✓。
       minimumSize: const WidgetStatePropertyAll(Size(0, 44)),
       padding: const WidgetStatePropertyAll(
-        EdgeInsets.symmetric(horizontal: AppSpace.md),
+        EdgeInsets.symmetric(horizontal: AppSpace.sm),
       ),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       shape: pillShape,
