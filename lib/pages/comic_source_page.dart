@@ -278,25 +278,30 @@ class _BodyState extends State<_Body> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                TextButton.icon(
-                  icon: Icon(Icons.article_outlined),
-                  label: Text("Comic Source list".tl),
+                // P8：统一用应用自绘 `Button` ✓（标准 M3 按钮的变体默认样式会压过主题 ✗，
+                // 无法跟随统一的高度/形状设置 → 视觉上"另一套" ✗）。
+                Button.normal(
                   onPressed: () {
                     showPopUpWidget(
                       App.rootContext,
                       _ComicSourceList(handleAddSource),
                     );
                   },
+                  child: pillLabel(
+                    Icons.article_outlined,
+                    "Comic Source list".tl,
+                  ),
                 ),
-                TextButton.icon(
-                  icon: Icon(Icons.file_open_outlined),
-                  label: Text("Use a config file".tl),
+                Button.normal(
                   onPressed: _selectFile,
+                  child: pillLabel(
+                    Icons.file_open_outlined,
+                    "Use a config file".tl,
+                  ),
                 ),
-                TextButton.icon(
-                  icon: Icon(Icons.help_outline),
-                  label: Text("Help".tl),
+                Button.normal(
                   onPressed: help,
+                  child: pillLabel(Icons.help_outline, "Help".tl),
                 ),
                 _CheckUpdatesButton(),
               ],
@@ -802,16 +807,11 @@ class _CheckUpdatesButtonState extends State<_CheckUpdatesButton> {
 
   @override
   Widget build(BuildContext context) {
-    return TextButton.icon(
-      icon: isLoading
-          ? SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : Icon(Icons.update),
-      label: Text("Check updates".tl),
+    // P8：标准 `TextButton.icon` → 应用自绘 `Button`（一套体系 ✓；`isLoading` 由按钮内置 ✓）
+    return Button.normal(
       onPressed: check,
+      isLoading: isLoading,
+      child: pillLabel(Icons.update, "Check updates".tl),
     );
   }
 }

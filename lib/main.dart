@@ -330,11 +330,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       foregroundColor: overlayFg == null ? null : overlayFgProp(overlayFg),
       // 文字**横纵都居中** ✓
       alignment: Alignment.center,
-      // 高度 **32** ✓ —— 注意：M3 标准按钮（Filled/Text/Outlined）的**变体默认样式**
-      // （`minimumSize: Size(64,40)` 等）会**压过主题注入** ✗，`minimumSize` 对它们无效 ✗；
-      // 但 M3 默认**没有**设置 `visualDensity` ✓（每级 ±4px）→ 用 `vertical: -2` 把标准按钮
-      // 从 40 压到 **32** ✓✓，从而与自绘 `Button` **完全同一高度** ✓（一套体系 ✓）。
-      visualDensity: const VisualDensity(vertical: -2),
+      // 高度 **32** ✓（用户定标 ✓）。
+      // ⚠️ 教训：M3 标准按钮的变体默认样式会压过主题 ✗（`minimumSize` 无效 ✗），
+      // 而用 `visualDensity(vertical:-2)` 强压会把标准按钮压成 **24** ✗（实测 ✗）——
+      // **不要**用主题去改 M3 按钮尺寸 ✗，统一改走应用自绘 `Button`（见 P8 规范 ✓）。
       minimumSize: const WidgetStatePropertyAll(Size(0, 32)),
       padding: const WidgetStatePropertyAll(
         EdgeInsets.symmetric(horizontal: AppSpace.lg),

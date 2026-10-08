@@ -40,6 +40,21 @@ class _HoverBoxState extends State<HoverBox> {
 
 enum ButtonType { filled, outlined, text, normal }
 
+/// P8 胶囊按钮的「图标 + 文字」内容（**统一**图标尺寸与间距 ✓）。
+///
+/// 用于把原先的 `TextButton.icon` / `FilledButton.icon` 等标准 M3 写法替换为
+/// 应用自绘 `Button`（一套体系 ✓）：`Button.normal(child: pillLabel(Icons.x, "文本"))`。
+Widget pillLabel(IconData icon, String text, {double size = AppIconSize.sm}) {
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, size: size),
+      const SizedBox(width: AppSpace.sm),
+      Text(text),
+    ],
+  );
+}
+
 class Button extends StatefulWidget {
   const Button({
     super.key,
@@ -208,8 +223,13 @@ class _ButtonState extends State<Button> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           padding: padding,
-          // P8 胶囊：高度 **32**（与主题注入的标准按钮经 visualDensity 调整后一致 ✓）
-          constraints: const BoxConstraints(minWidth: 64, minHeight: 32),
+          // P8 胶囊：高度**严格 32** ✓（min==max → 内容再大也撑不出去 ✓，
+          // 从而与"标准按钮换算后"的视觉高度可控、可预期 ✓）
+          constraints: const BoxConstraints(
+            minWidth: 64,
+            minHeight: 32,
+            maxHeight: 32,
+          ),
           // P8：胶囊形状 ✓；「窗口/按钮背景」设为直角时退化为直角 ✓（尊重用户形状设置）
           decoration: BoxDecoration(
             color: buttonColor,
