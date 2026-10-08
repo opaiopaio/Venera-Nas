@@ -150,6 +150,14 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
           optionTranslation: {"rounded": "Rounded".tl, "square": "Square".tl},
           onChanged: () => App.forceRebuild(),
         ).toSliver(),
+        // ⭐ E1-①：「突出二级菜单」✓ —— 开启后二级菜单/弹层点开时**周围变暗** ✓；
+        // 关闭则与其它二级菜单一致（**无暗罩** ✓）；未设置时保持原有行为 ✓（零回归 ✓）。
+        // 落点：`components/pop_up_widget.dart` 的 `barrierColor` ✓。
+        _SwitchSetting(
+          title: "Highlight secondary menu".tl,
+          settingKey: "secondaryMenuDim",
+          onChanged: () => App.forceRebuild(),
+        ).toSliver(),
         _SettingPartTitle(title: "Secondary page".tl, icon: Icons.layers),
         SelectSetting(
           title: "Secondary page style".tl,

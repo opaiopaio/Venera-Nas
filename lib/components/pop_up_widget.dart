@@ -8,9 +8,19 @@ class PopUpWidget<T> extends PopupRoute<T> {
   final _innerKey = GlobalKey<NavigatorState>();
 
   @override
-  Color? get barrierColor => appdata.settings.customBackgroundActive
-      ? Colors.transparent
-      : Colors.black54;
+  // ⭐ E1-①：二级菜单的"周围变暗"由外观设置「突出二级菜单」控制 ✓（key `secondaryMenuDim` ✓）：
+  // - `true`  → 强制变暗（`Colors.black54` ✓）；
+  // - `false` → 强制不变暗（`Colors.transparent` ✓，与其它二级菜单一致 ✓）；
+  // - **未设置（默认）** → 保持**原有行为** ✓（有自定义背景时不变暗、否则变暗 ✓，零回归 ✓）。
+  // 用 `Colors.transparent` 而不是 `null` ✓：遮罩仍存在 ✓ → 点击外部关闭依然可用 ✓。
+  Color? get barrierColor {
+    final dim = appdata.settings['secondaryMenuDim'];
+    if (dim == true) return Colors.black54;
+    if (dim == false) return Colors.transparent;
+    return appdata.settings.customBackgroundActive
+        ? Colors.transparent
+        : Colors.black54;
+  }
 
   @override
   bool get barrierDismissible => true;
