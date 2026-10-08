@@ -27,8 +27,25 @@ class Select extends StatelessWidget {
       child: InkWell(
         onTap: () {
           var renderBox = context.findRenderObject() as RenderBox;
-          var offset = renderBox.localToGlobal(Offset.zero);
           var size = renderBox.size;
+          // ⭐ 修复（2026-10-09 用户反馈 ✓）：菜单必须与按钮**紧贴** ✗→✓ ——
+          // 原先用 `RelativeRect.fromLTRB(offset.dx, offset.dy + size.height + 2,
+          // offset.dx + size.height + 2, offset.dy)` ✗：该构造的第 3、4 个参数是
+          // **right / bottom**（= 距 overlay **右缘 / 下缘**的距离 ✓），却被塞进了
+          // `left + 高度` 与 `top` ✗（把 left/top 当 right/bottom 用 ✗）→ 位置被算歪 ✓，
+          // 表现为"**下拉菜单与按钮差一个选项的距离**"✗（用户截图实测 ✓）。
+          // 现改用 Flutter `showMenu` 官方文档的标准算法 ✓：以**锚点矩形**表达位置 ✓
+          //（`ancestor` 取 overlay ✓，保证 `useRootNavigator: true` 下坐标系一致 ✓）。
+          final overlayBox =
+              Overlay.of(context).context.findRenderObject() as RenderBox;
+          final anchorTopLeft = renderBox.localToGlobal(
+            Offset.zero,
+            ancestor: overlayBox,
+          );
+          final anchorBottomRight = renderBox.localToGlobal(
+            renderBox.size.bottomRight(Offset.zero),
+            ancestor: overlayBox,
+          );
           showMenu(
             elevation: 3,
             // ⭐ C6-新③（2026-10-09 审计 ✓）：原为**写死**的亮/暗两色 ✗
@@ -42,11 +59,10 @@ class Select extends StatelessWidget {
               minWidth: size.width,
               maxWidth: size.width,
             ),
-            position: RelativeRect.fromLTRB(
-              offset.dx,
-              offset.dy + size.height + 2,
-              offset.dx + size.height + 2,
-              offset.dy,
+            // ⭐ 修复（2026-10-09 用户反馈 ✓）：改用**锚点矩形**（见上方注释 ✓）。
+            position: RelativeRect.fromRect(
+              Rect.fromPoints(anchorTopLeft, anchorBottomRight),
+              Offset.zero & overlayBox.size,
             ),
             items: values
                 .map(
