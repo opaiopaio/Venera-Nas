@@ -3,6 +3,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:venera_nas/components/pin_pad.dart';
+import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/utils/auth_storage.dart';
 import 'package:venera_nas/utils/translations.dart';
@@ -118,7 +119,7 @@ class _AuthPageState extends State<AuthPage> {
                     const SizedBox(height: 16),
                     Text("Authentication Required".tl),
                     const SizedBox(height: 16),
-                    FilledButton(
+                    Button.normal(
                       onPressed: _authBiometric,
                       child: Text("Continue".tl),
                     ),

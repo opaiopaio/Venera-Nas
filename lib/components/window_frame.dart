@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:venera_nas/foundation/app.dart';
+import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/foundation/design_tokens.dart';
 import 'package:venera_nas/foundation/comic_source/comic_source.dart';
 import 'package:window_manager/window_manager.dart';
@@ -167,7 +168,7 @@ class _WindowFrameState extends State<WindowFrame> {
                             ),
                           ),
                           if (kDebugMode)
-                            const TextButton(
+                            const Button.normal(
                               onPressed: debug,
                               child: Text('Debug'),
                             ),
