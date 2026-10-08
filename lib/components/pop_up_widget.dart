@@ -186,29 +186,30 @@ class SecondaryPageSurface extends StatelessWidget {
     final tinted = !followTheme && popupStyle;
     final decoration = secondaryPageDecoration();
     final tint = customSecondarySurfaceColor(context.colorScheme);
+    // ⭐ S1（用户截图反馈 ✓）：**背景体系启用**（有背景图 ✓ 或背景底色 ✓）时，弹层必须
+    // **透明** ✓ 以露出全局背景 ✗✗ —— 此时**绝不能**补不透明底 ✗，否则会盖住纯色背景 ✗
+    //（用户实测："纯色的背景颜色在二级页面不生效了" ✗）。
+    final needSurface =
+        (followTheme || popupStyle || decoration == null) &&
+        !appdata.settings.backgroundFeatureActive;
     final radius =
         borderRadius ??
         windowOverlayBorderRadius() ??
         BorderRadius.circular(AppRadius.md);
     final stack = Stack(
       children: [
+        // ⭐ S1：**不透明底必须在最底层** ✓ —— 放在色调/装饰之后会**盖住色调** ✗
+        //（用户实测："打开加深也不会变深" ✗）。
+        if (needSurface)
+          Positioned.fill(
+            child: ColoredBox(color: context.colorScheme.surface),
+          ),
         if (decoration != null && tinted)
           // 与全窗背景**逐像素对齐**的切片（此前是 `DecorationImage` 按自身盒子
           // fit → 小弹窗看到的是**缩略图** ✗）。只画不布局，见 [BackgroundSlice]。
           const Positioned.fill(child: BackgroundSlice()),
         if (tint != null && tinted)
           Positioned.fill(child: ColoredBox(color: tint)),
-        if (followTheme ||
-            popupStyle ||
-            // ⭐ R1 补漏（用户截图反馈 ✓）：`decoration == null`（**没有背景图** = 没有不透明
-            // 背景来源 ✓）时也必须补底 ✓ —— 整页式（`PopUpWidgetScaffold`，如**色盘**弹层 ✓）
-            // 的底色原设计由**路由 decoration** 提供 ✗，而 decoration 只在**有背景图**时非空 ✗，
-            // 于是"自定义开启 + 无背景图"时整页式弹层**没有底** ✗ → 透明透出下层内容 ✗
-            //（用户实测：色盘全部失效 ✓）。有背景图时仍由 decoration 负责 ✓（不重复补 ✓）。
-            decoration == null)
-          Positioned.fill(
-            child: ColoredBox(color: context.colorScheme.surface),
-          ),
         Material(color: Colors.transparent, child: child),
       ],
     );
