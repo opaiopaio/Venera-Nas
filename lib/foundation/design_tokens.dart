@@ -77,11 +77,11 @@ abstract final class AppTopBar {
   /// 额外余量：让首行内容不贴标题栏。
   static const double extra = 6;
 
-  /// ⭐ AA1/AB2：顶栏「标签页 / 漫画源」**可见 chip 的高度基准** ✓ ——
-  /// `_IndicatorPainter` 用它算 chip 底板高度（`tabHeight - 3.6` ✓）→ 这是**唯一**
-  /// 决定漫画源按钮大小的量 ✗（内边距/字号都不参与 ✓）。
-  /// 由 48 收至 44 ✓（用户实测："漫画源按钮再扁一点 / 还是这么大" ✗ → 收 4px ✓）。
-  static const double tabHeight = 44;
+  /// ⭐ AB3（用户实测 46px 定位 ✓）：顶栏「标签页 / 漫画源」chip 的高度 ✓ ——
+  /// **真正决定它的是 Flutter `Tab` 的 `height` 参数** ✗（不给就取框架常量 `kTabHeight` = 46 ✗✓）。
+  /// 因此在所有创建 `Tab(...)` 的地方传 `height: AppTopBar.tabHeight` ✓；
+  /// `_IndicatorPainter` 的底板也用同一基准（`- 3.6` ✓）。42 = 比框架默认少 4px ✓。
+  static const double tabHeight = 42;
 
   /// 页面内容顶部让位高度（= height + extra）。
   static const double boundary = height + extra;

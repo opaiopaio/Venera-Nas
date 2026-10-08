@@ -3,6 +3,7 @@ import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/appdata.dart';
 import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/design_tokens.dart';
 import 'package:venera_nas/pages/ranking_page.dart';
 import 'package:venera_nas/pages/settings/settings_page.dart';
 import 'package:venera_nas/utils/ext.dart';
@@ -116,7 +117,8 @@ class _CategoriesPageState extends State<CategoriesPage>
               } catch (e) {
                 //
               }
-              return Tab(text: title, key: Key(e));
+              // ⭐ AB3：chip 高度由 `Tab.height` 决定 ✓（不写就用框架默认 46 ✗）
+              return Tab(text: title, key: Key(e), height: AppTopBar.tabHeight);
             }).toList(),
             actionButton: TabActionButton(
               // ⭐ AA1（用户要求 ✓）：加号**更粗** ✓（`add_rounded` 视觉字重更重 ✓）

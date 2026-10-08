@@ -104,7 +104,12 @@ class _ExplorePageState extends State<ExplorePage>
     var comicSource = ComicSource.all().firstWhere(
       (e) => e.explorePages.any((e) => e.title == i),
     );
-    return Tab(text: i.ts(comicSource.key), key: Key(i));
+    // ⭐ AB3：chip 高度由 `Tab.height` 决定 ✓（不写就用框架默认 46 ✗ —— 与分类页统一 ✓）
+    return Tab(
+      text: i.ts(comicSource.key),
+      key: Key(i),
+      height: AppTopBar.tabHeight,
+    );
   }
 
   Widget buildBody(String i) => Material(
