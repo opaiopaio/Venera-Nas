@@ -414,11 +414,10 @@ class _AppTabBarState extends State<AppTabBar> {
               children: List.generate(widget.tabs.length, buildTab)
                 ..addIfNotNull(
                   widget.actionButton?.padding(
-                    // ⭐ AB1（用户要求 ✓）：加号是**图标按钮** → 遮罩要**四等边（方形）** ✓
-                    //（"不是说直角和圆角" ✗ —— 指的就是四边内边距相等 ✓）。
-                    // 原先这里写死 `only(2, 2, 1, 11)` ✗ 与内层叠加 → 加号**宽扁** ✗。
-                    // 现在外层与内层都用**等边**令牌内边距 ✓ → 方形 ✓；且不再引入裸数字 ✓。
-                    const EdgeInsets.all(AppSpace.xs),
+                    // ⭐ AC1（用户要求 ✓）：**间距统一** ✓ —— 加号与 chip 用**同一个**间距常量 ✓
+                    //（此前是 `EdgeInsets.all(AppSpace.xs)`=4 ✗，与 chip 的 7 不一致 ✗）。
+                    // 方形由 `TabActionButton` 内的 36×36 紧约束保证 ✓，此处只管间距 ✓。
+                    _AppTabBarState.tabItemPadding,
                   ),
                 ),
             ),
@@ -1008,9 +1007,13 @@ class TabActionButton extends StatelessWidget {
       onTap: onPressed,
       borderRadius: radius,
       child: Container(
-        // ⭐ AB1（用户要求 ✓）：**四等边（方形）** ✓ —— 与外层 `.padding` 一起构成
-        // 等边内边距 ✓（外层同样是 `EdgeInsets.all` ✓）→ 方形遮罩 ✓，不再是宽扁 ✗。
-        padding: const EdgeInsets.all(AppSpace.xs),
+        // ⭐ AC1（用户要求 ✓）：加号按钮做成 **36×36 正方形** ✓ —— 边长用与 chip 同一个令牌 ✓
+        //（`AppTopBar.tabHeight` ✓，不写数字 ✗）；`alignment: center` 让图标居中、四边等距 ✓。
+        alignment: Alignment.center,
+        constraints: BoxConstraints.tightFor(
+          width: AppTopBar.tabHeight,
+          height: AppTopBar.tabHeight,
+        ),
         child: IconTheme(
           data: IconThemeData(
             // ⭐ AA1（用户要求 ✓）：**纯图标按钮** ✓ —— 去掉「添加」文字 ✗、图标**更大** ✓；
