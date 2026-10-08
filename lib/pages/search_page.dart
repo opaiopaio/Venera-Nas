@@ -626,7 +626,7 @@ class _SearchHistoryState extends State<_SearchHistory> {
                 return FlyoutContent(
                   title: "Clear Search History".tl,
                   actions: [
-                    FilledButton(
+                    Button.normal(
                       child: Text("Clear".tl),
                       onPressed: () {
                         appdata.clearSearchHistory();

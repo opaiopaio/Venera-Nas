@@ -99,7 +99,7 @@ class _DownloadingPageState extends State<DownloadingPage> {
             Text("${bytesToReadableString(speed)}/s", style: ts.s18.bold),
           const Spacer(),
           if (first?.isPaused == true || first?.isError == true)
-            OutlinedButton(
+            Button.normal(
               child: Row(
                 children: [
                   const Icon(Icons.play_arrow, size: AppIconSize.sm),
@@ -113,7 +113,7 @@ class _DownloadingPageState extends State<DownloadingPage> {
               },
             )
           else if (first != null)
-            OutlinedButton(
+            Button.normal(
               child: Row(
                 children: [
                   const Icon(Icons.pause, size: AppIconSize.sm),

@@ -442,7 +442,7 @@ Iterable<Widget> _buildExplorePagePart(
               ),
               const Spacer(),
               if (part.viewMore != null)
-                TextButton(
+                Button.normal(
                   onPressed: () {
                     var context = App.mainNavigatorKey!.currentContext!;
                     part.viewMore!.jump(context);

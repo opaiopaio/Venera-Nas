@@ -457,7 +457,7 @@ class _ImageFavoritesDialogState extends State<_ImageFavoritesDialog> {
                         children: [
                           ListTile(
                             title: Text("Start Time".tl),
-                            trailing: TextButton(
+                            trailing: Button.normal(
                               onPressed: () async {
                                 final date = await showDatePicker(
                                   context: context,
@@ -480,7 +480,7 @@ class _ImageFavoritesDialogState extends State<_ImageFavoritesDialog> {
                           ),
                           ListTile(
                             title: Text("End Time".tl),
-                            trailing: TextButton(
+                            trailing: Button.normal(
                               onPressed: () async {
                                 final date = await showDatePicker(
                                   context: context,
@@ -524,7 +524,7 @@ class _ImageFavoritesDialogState extends State<_ImageFavoritesDialog> {
         ),
       ),
       actions: [
-        FilledButton(
+        Button.normal(
           onPressed: () {
             appdata.implicitData["image_favorites_sort"] = sortType.value;
             TimeRange timeRange;

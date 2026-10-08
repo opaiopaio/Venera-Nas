@@ -465,7 +465,7 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
           ).fixWidth(double.infinity).paddingHorizontal(16),
           buildSearchOptions(),
           const SizedBox(height: 24),
-          FilledButton(
+          Button.normal(
             child: Text("Confirm".tl),
             onPressed: () {
               context.pop();
