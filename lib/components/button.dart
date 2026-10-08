@@ -161,8 +161,13 @@ class _ButtonState extends State<Button> {
 
   @override
   Widget build(BuildContext context) {
+    // P8 胶囊：默认内边距改为"水平 12 / 垂直 8"，避免又长又细 ✗（高度见下方 constraints ✓）
     var padding =
-        widget.padding ?? const EdgeInsets.symmetric(horizontal: AppSpace.lg);
+        widget.padding ??
+        const EdgeInsets.symmetric(
+          horizontal: AppSpace.md,
+          vertical: AppSpace.sm,
+        );
     var width = widget.width;
     if (width != null) {
       width = width - padding.horizontal;
@@ -205,7 +210,8 @@ class _ButtonState extends State<Button> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           padding: padding,
-          constraints: const BoxConstraints(minWidth: 76, minHeight: 32),
+          // P8 胶囊：抬到 44 高，避免细长 ✗（与主题注入的 `pillButtonStyle` 保持一致 ✓）
+          constraints: const BoxConstraints(minWidth: 76, minHeight: 44),
           // P8：胶囊形状 ✓；「窗口/按钮背景」设为直角时退化为直角 ✓（尊重用户形状设置）
           decoration: BoxDecoration(
             color: buttonColor,

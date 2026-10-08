@@ -333,10 +333,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     final pillButtonStyle = ButtonStyle(
       backgroundColor: WidgetStatePropertyAll(windowOverlayColor()),
       foregroundColor: overlayFg == null ? null : overlayFgProp(overlayFg),
+      // 文字**横纵都居中** ✓
       alignment: Alignment.center,
-      minimumSize: const WidgetStatePropertyAll(Size(0, 36)),
+      // 胶囊要"胖"一些：实测 36 高度显得细长 ✗ → 抬到 44 ✓；
+      // 水平内边距略收（16→12），避免又长又细 ✗。
+      minimumSize: const WidgetStatePropertyAll(Size(0, 44)),
       padding: const WidgetStatePropertyAll(
-        EdgeInsets.symmetric(horizontal: AppSpace.lg, vertical: AppSpace.xs),
+        EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: AppSpace.sm),
       ),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       shape: pillShape,
