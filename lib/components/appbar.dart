@@ -414,15 +414,11 @@ class _AppTabBarState extends State<AppTabBar> {
               children: List.generate(widget.tabs.length, buildTab)
                 ..addIfNotNull(
                   widget.actionButton?.padding(
-                    // 与标签用同样的内边距，保证「添加」按钮与标签对齐。
-                    appdata.settings.customBackgroundActive
-                        ? const EdgeInsets.only(
-                            left: 2,
-                            right: 2,
-                            top: 1,
-                            bottom: 11,
-                          )
-                        : tabPadding,
+                    // ⭐ AB1（用户要求 ✓）：加号是**图标按钮** → 遮罩要**四等边（方形）** ✓
+                    //（"不是说直角和圆角" ✗ —— 指的就是四边内边距相等 ✓）。
+                    // 原先这里写死 `only(2, 2, 1, 11)` ✗ 与内层叠加 → 加号**宽扁** ✗。
+                    // 现在外层与内层都用**等边**令牌内边距 ✓ → 方形 ✓；且不再引入裸数字 ✓。
+                    const EdgeInsets.all(AppSpace.xs),
                   ),
                 ),
             ),
@@ -508,7 +504,7 @@ class _AppTabBarState extends State<AppTabBar> {
                   : context.colorScheme.onSurface,
               fontWeight: FontWeight.w500,
               // 启用「窗口/按钮背景」时把标签文字调大一点。
-              fontSize: appdata.settings.customBackgroundActive ? 16 : null,
+              fontSize: appdata.settings.customBackgroundActive ? 14 : null,
             ),
             child: widget.tabs[i],
           ),
@@ -1012,10 +1008,9 @@ class TabActionButton extends StatelessWidget {
       onTap: onPressed,
       borderRadius: radius,
       child: Container(
-        // ⭐ AA1（用户实测 ✓）：**与漫画源 chip 共用同一套内边距** ✓ ——
-        // 高度 = 图标（`AppIconSize.lg` ✓）＋ 上下 1/3 ✓，与 chip 一致 ✓ → **对齐** ✓；
-        // 水平同为 7 ✓ → 与 chip 的间距一致 ✓（此前用 `AppSpace.md`=12 ✗ → "和加号间距不对" ✗）。
-        padding: _AppTabBarState.tabItemPadding,
+        // ⭐ AB1（用户要求 ✓）：**四等边（方形）** ✓ —— 与外层 `.padding` 一起构成
+        // 等边内边距 ✓（外层同样是 `EdgeInsets.all` ✓）→ 方形遮罩 ✓，不再是宽扁 ✗。
+        padding: const EdgeInsets.all(AppSpace.xs),
         child: IconTheme(
           data: IconThemeData(
             // ⭐ AA1（用户要求 ✓）：**纯图标按钮** ✓ —— 去掉「添加」文字 ✗、图标**更大** ✓；
