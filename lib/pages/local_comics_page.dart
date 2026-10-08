@@ -118,7 +118,7 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
                 ),
               ),
               actions: [
-                FilledButton(
+                Button.normal(
                   onPressed: () {
                     appdata.implicitData["local_sort"] = sortType.value;
                     appdata.writeImplicitData();
@@ -508,14 +508,14 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
               ),
               actions: [
                 if (comics.length == 1 && comics.first.hasChapters)
-                  TextButton(
+                  Button.normal(
                     child: Text("Delete Chapters".tl),
                     onPressed: () {
                       context.pop();
                       showDeleteChaptersPopWindow(context, comics.first);
                     },
                   ),
-                FilledButton(
+                Button.normal(
                   onPressed: () {
                     context.pop();
                     LocalManager().batchDeleteComics(
@@ -607,7 +607,7 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
                     ).paddingHorizontal(16),
               actions: result == null
                   ? [
-                      TextButton(
+                      Button.normal(
                         onPressed: () {
                           setState(() {
                             cancelled = true;
@@ -617,7 +617,7 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
                       ),
                     ]
                   : [
-                      FilledButton(
+                      Button.normal(
                         onPressed: () => Navigator.of(dialogContext).pop(),
                         child: Text("OK".tl),
                       ),
@@ -712,11 +712,11 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
                 ),
               ),
               actions: [
-                TextButton(
+                Button.normal(
                   onPressed: () => Navigator.of(context).pop(),
                   child: Text("Cancel".tl),
                 ),
-                FilledButton(
+                Button.normal(
                   onPressed: () => Navigator.of(context).pop(scope),
                   child: Text("Confirm".tl),
                 ),
@@ -783,7 +783,7 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      TextButton(
+                      Button.normal(
                         onPressed: () {
                           setState(() {
                             if (selectedChapterIds.length == chapters.length) {
@@ -831,7 +831,7 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      FilledButton(
+                      Button.normal(
                         onPressed: selectedChapterIds.isEmpty
                             ? null
                             : () {
@@ -1133,7 +1133,7 @@ void showDeleteChaptersPopWindow(BuildContext context, LocalComic comic) {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    FilledButton(
+                    Button.normal(
                       onPressed: () {
                         Future.delayed(const Duration(milliseconds: 200), () {
                           LocalManager().deleteComicChapters(comic, chapters);

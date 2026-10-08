@@ -109,17 +109,17 @@ class _ExportComicsDialogState extends State<ExportComicsDialog> {
 
   List<Widget> _buildActions() {
     return [
-      TextButton(
+      Button.normal(
         onPressed: () => Navigator.of(context).pop(),
         child: Text("Cancel".tl),
       ),
-      FilledButton(onPressed: _startExport, child: Text("Migrate".tl)),
+      Button.normal(onPressed: _startExport, child: Text("Migrate".tl)),
     ];
   }
 
   List<Widget> _buildProgressActions() {
     return [
-      TextButton(
+      Button.normal(
         onPressed: () {
           setState(() {
             _cancelled = true;

@@ -96,7 +96,7 @@ class _ImportComicsDialogState extends State<ImportComicsDialog> {
         ],
       ),
       actions: [
-        FilledButton(
+        Button.normal(
           onPressed: () => Navigator.of(context).pop(true),
           child: Text("OK".tl),
         ),
@@ -106,17 +106,17 @@ class _ImportComicsDialogState extends State<ImportComicsDialog> {
 
   List<Widget> _buildActions() {
     return [
-      TextButton(
+      Button.normal(
         onPressed: () => Navigator.of(context).pop(),
         child: Text("Cancel".tl),
       ),
-      FilledButton(onPressed: _startImport, child: Text("Select File".tl)),
+      Button.normal(onPressed: _startImport, child: Text("Select File".tl)),
     ];
   }
 
   List<Widget> _buildProgressActions() {
     return [
-      TextButton(
+      Button.normal(
         onPressed: () {
           setState(() {
             _cancelled = true;
@@ -274,7 +274,7 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
           ],
         ),
         actions: [
-          TextButton(
+          Button.normal(
             onPressed: () => Navigator.of(context).pop(),
             child: Text("OK".tl),
           ),
@@ -287,7 +287,7 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
         title: "扫描完成".tl,
         content: Text(_scanResult!).paddingHorizontal(16),
         actions: [
-          FilledButton(
+          Button.normal(
             onPressed: () => Navigator.of(context).pop(true),
             child: Text("OK".tl),
           ),
@@ -357,15 +357,15 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
 
   List<Widget> _buildFormActions() {
     return [
-      TextButton(
+      Button.normal(
         onPressed: () => Navigator.of(context).pop(),
         child: Text("Cancel".tl),
       ),
-      FilledButton(onPressed: _startScan, child: Text("开始扫描".tl)),
+      Button.normal(onPressed: _startScan, child: Text("开始扫描".tl)),
     ];
   }
 
   List<Widget> _buildProgressActions() {
-    return [TextButton(onPressed: () {}, child: Text("Cancel".tl))];
+    return [Button.normal(onPressed: () {}, child: Text("Cancel".tl))];
   }
 }
