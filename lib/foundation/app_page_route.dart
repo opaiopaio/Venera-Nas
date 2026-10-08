@@ -496,7 +496,16 @@ class SlidePageTransitionBuilder extends PageTransitionsBuilder {
         ? secondaryAnimation
         : CurvedAnimation(parent: secondaryAnimation, curve: Curves.ease);
 
-    final customBg = App.data.settings.customBackgroundActive;
+    // ⭐ AX1（用户实测 ✓，2026-10-09）：这里的判据原本用 **`customBackgroundActive`** ✗，
+    // 但该值**恒真** ✗ —— 它 = `backgroundFeatureActive || windowOverlayEnabled || secondaryPageFeatureActive` ✓，
+    // 而 `secondaryPageFeatureActive` 默认就是 `opaque ≠ off` ⇒ **true** ✓（审计 C1 复核结论 ✓：
+    // 这也是"26 处 else 分支不可达"的同一个根因 ✓）→ 于是**即使没有任何背景**也永远走 fade-through ✗，
+    // 用户实测："删掉图片背景 + 颜色背景设透明后，这几个页面**还是淡入**"✓，而他要的是
+    // "**跟随全局设计（横向切入）**"✓。
+    // **正解** ✓：用 **`backgroundFeatureActive`** ✓ —— 它才是"背景图非空 **或** 底色非透明"（= 页面真的会透明 ✓），
+    // 与源码上方的注释语义（"自定义背景时页面背景是透明的，横向滑动会让旧页从新页透明区透出来 ✗"）**完全对应** ✓。
+    // ⇒ 无背景 → **横向切入** ✓（恢复 App 原本的全局设计 ✓）；有背景 → 保留 fade-through ✓（避免两页叠加 ✗）。
+    final customBg = App.data.settings.backgroundFeatureActive;
 
     Widget content = PhysicalModel(
       color: Colors.transparent,
