@@ -546,7 +546,7 @@ class _ComicSourceListState extends State<_ComicSourceList> {
                   await widget.onAdd(url);
                   setState(() {});
                 },
-              ).fixHeight(32);
+              );
 
         var description = json![index]["version"];
         if (json![index]["description"] != null) {
@@ -861,7 +861,7 @@ class _CallbackSettingState extends State<_CallbackSetting> {
         onPressed: onClick,
         isLoading: isLoading,
         child: Text(buttonText.ts(widget.sourceKey)),
-      ).fixHeight(32),
+      ),
     );
   }
 }
