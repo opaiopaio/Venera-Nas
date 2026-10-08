@@ -388,6 +388,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             ? Colors.transparent
             : Colors.black54,
       ),
+      // ⭐ F1-②：分段 tab（`AppTabBar` ✓，图片收藏的「标签/作者/漫画」✓）的**选中文字色**
+      // 继承**全局文字色** ✓ —— 与分类页 tag（`MaskChip` ✓ 不指定文字色、继承环境样式 ✓）
+      // 同一约定 ✓。原先走 M3 默认（主题色 ✗）→ 只改底色时观感"依旧跟随主题" ✗
+      //（用户实测反馈"切换没反应" ✓）。未设置全局文字色时 `gStyle?.color` 为 null ✓
+      // → 不注入 ✓ → 继续走 M3 默认 ✓（零回归 ✓）。
+      tabBarTheme: TabBarThemeData(labelColor: gStyle?.color),
       // ↓ 以下四类 = **胶囊按钮**，统一走 P8 规范（遮罩底色 + 全局文字色 + 居中 + 胶囊 ✓）。
       // `TextButton` 也纳入 ✓ —— 它同样有遮罩底色（`overlayButtonStyle` ✓），
       // 且**垂直内边距 4→8、高度 36→44** 后可彻底消除"文字被压窄/裁切"✗（实测反馈 ✓）。

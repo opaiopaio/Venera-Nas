@@ -900,18 +900,16 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                             children: [
                               Icon(
                                 Icons.update,
-                                color: appIconColor(
-                                  context,
-                                  context.colorScheme.primary,
-                                ),
+                                // F1-①：图标不再写死主题色 ✗ —— 与 `MaskChip`（分类页 tag ✓）同一约定：
+                                // **继承**周边前景色（全局文字色/图标色 ✓）→ 底色切换时才看得出整体变化 ✓
+                                //（原先 icon/text 都是 `colorScheme.primary` ✗ → 改底色后仍"看着像主题色" ✗，
+                                //  用户实测反馈"切换没反应、依旧跟随主题" ✓）。
+                                color: appIconColor(context),
                                 size: AppIconSize.md,
                               ),
                               const SizedBox(width: AppSpace.sm),
                               Text(
                                 "@c updates".tlParams({'c': _availableUpdates}),
-                                style: ts.withColor(
-                                  context.colorScheme.primary,
-                                ),
                               ),
                             ],
                           ),
