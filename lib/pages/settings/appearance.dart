@@ -46,6 +46,21 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
             App.forceRebuild();
           },
         ).toSliver(),
+        // ⭐ A7：全局「图标颜色」✓ —— 控制**全部图标**的颜色 ✓。
+        // 设计约束：**独立于字体颜色** ✗（历史上用文字色染图标是错的 ✗，已从 getTheme 移除 ✓）；
+        // 默认 `system` = **不覆盖** ✓（图标继续跟随主题 ✓），只有显式选色后才注入 ✓；
+        // 各处**显式传 `color:`** 的图标（危险色/白色角标等 ✓）不受影响 ✓（IconTheme 只作兜底 ✓）。
+        ColorSettingTile(
+          title: "Icon Color".tl,
+          settingValue: (appdata.settings['globalIconColor'] ?? 'system')
+              .toString(),
+          allowSystem: true,
+          onPicked: (value) async {
+            appdata.settings['globalIconColor'] = value;
+            await appdata.saveData();
+            App.forceRebuild();
+          },
+        ).toSliver(),
         _SettingPartTitle(title: "Background".tl, icon: Icons.wallpaper),
         const _BackgroundImageTile().toSliver(),
         ColorSettingTile(

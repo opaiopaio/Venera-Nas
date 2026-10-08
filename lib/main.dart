@@ -423,6 +423,29 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ),
       );
     }
+    // ⭐ A7：全局「图标颜色」✓ —— 默认 `system`（或 `transparent`）时 `resolveColorSettingValue`
+    // 返回 null → **不注入** ✗（图标继续跟随主题 ✓）；只有用户**显式选色**后才覆盖 ✓。
+    // ⚠️ **必须同步 `iconButtonTheme`**：`IconButtonThemeData` 优先级高于 `iconTheme` ✗，
+    // 只改 `iconTheme` 会出现"设置了没效果" ✗。
+    // 说明：`IconTheme` 只作**兜底** ✓ —— 各处显式传 `color:` 的图标（危险色/白色角标 ✓）
+    // 保持自身颜色 ✓，不会被本设置误染 ✓；图标尺寸/形状不受影响 ✓。
+    final iconColor = resolveColorSettingValue(
+      appdata.settings['globalIconColor'] as String?,
+    );
+    if (iconColor != null) {
+      theme = theme.copyWith(
+        iconTheme: theme.iconTheme.copyWith(color: iconColor),
+        primaryIconTheme: theme.primaryIconTheme.copyWith(color: iconColor),
+        iconButtonTheme: IconButtonThemeData(
+          style:
+              theme.iconButtonTheme.style?.copyWith(
+                foregroundColor: WidgetStatePropertyAll(iconColor),
+                iconColor: WidgetStatePropertyAll(iconColor),
+              ) ??
+              IconButton.styleFrom(foregroundColor: iconColor),
+        ),
+      );
+    }
     return theme;
   }
 
