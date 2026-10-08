@@ -36,8 +36,18 @@ class Select extends StatelessWidget {
           // 表现为"**下拉菜单与按钮差一个选项的距离**"✗（用户截图实测 ✓）。
           // 现改用 Flutter `showMenu` 官方文档的标准算法 ✓：以**锚点矩形**表达位置 ✓
           //（`ancestor` 取 overlay ✓，保证 `useRootNavigator: true` 下坐标系一致 ✓）。
+          // ⭐ 复查修复（2026-10-09 ✓，本轮专项复查发现 ✗）：**必须取"根 overlay"** ✗→✓ ——
+          // 下面 `showMenu` 传的是 `useRootNavigator: true` ✓（菜单落在**根** navigator 的 overlay ✓），
+          // 而这里原先写 `Overlay.of(context)` ✗ = **最近**的 overlay ✓ —— 本项目里最近 overlay
+          // **一定不是**根 overlay ✓（`components/navigation_bar.dart` 把主 Navigator 放在
+          // `Positioned.fill(left: 72/224)` 内 ✓，设置右栏还有一层内层 Navigator ✓）→
+          // 锚点坐标基于"内层 overlay 原点" ✗ 而菜单按"根 overlay 原点"布局 ✓ → **位置会偏** ✗
+          //（分类筛选、搜索页等左对齐的 Select 最明显 ✓）。
+          // 旧代码用的是不带 `ancestor` 的 `localToGlobal(Offset.zero)` ✓（= 窗口/根坐标 ✓）→
+          // 与我上一轮改成"只算差值"的做法**坐标系必须同源** ✓，故这里改为 `rootOverlay: true` ✓。
           final overlayBox =
-              Overlay.of(context).context.findRenderObject() as RenderBox;
+              Overlay.of(context, rootOverlay: true).context.findRenderObject()
+                  as RenderBox;
           final anchorTopLeft = renderBox.localToGlobal(
             Offset.zero,
             ancestor: overlayBox,
