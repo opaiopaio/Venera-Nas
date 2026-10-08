@@ -292,10 +292,10 @@ class _AppTabBarState extends State<AppTabBar> {
 
   late List<GlobalKey> keys;
 
-  static const _kTabHeight = 48.0;
+  static const _kTabHeight = 44.0; // Z2：48→44（用户实测：按钮太大，小 4px ✓）
 
   static const tabPadding = EdgeInsets.symmetric(
-    horizontal: AppSpace.sm,
+    horizontal: AppSpace.md,
     vertical: AppSpace.tiny,
   );
 
@@ -986,7 +986,7 @@ class TabActionButton extends StatelessWidget {
 
   final void Function() onPressed;
 
-  static const _kTabHeight = 46.0;
+  static const _kTabHeight = 42.0; // Z2：46→42（与上方 tab 同步降 4px ✓）
 
   @override
   Widget build(BuildContext context) {
