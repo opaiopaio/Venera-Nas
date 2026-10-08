@@ -64,6 +64,32 @@ class AppearanceSecondaryPage extends StatelessWidget {
               max: 0.6,
               onChanged: () => App.forceRebuild(),
             ).toSliver(),
+            // ⭐ AQ1（用户要求 ✓，2026-10-09）：**上下文菜单 / 一级弹出菜单**的底色 ✓ ——
+            // 用户原话："给这类菜单加一个外观自定义配置 ✓，比如**底色** ✓、**透明度** ✓……
+            // 现在这个**纯透明状态可视化非常差** ✗，做成和现有弹出式二级菜单一样的**可配置**"✓。
+            // 毛玻璃**不做** ✗（用户追加说明："和现在的外观设计有冲突 ✓，以后再说"✓）。
+            // 落点 ✓：`foundation/window_overlay.dart` 的 `menuSurfaceColor()` ✓；
+            // 应用点 ✓：`components/menu.dart`（「…」按钮那族菜单 ✓）。
+            ColorSettingTile(
+              title: "Menu background color".tl,
+              settingValue: (appdata.settings['menuSurfaceColor'] ?? 'system')
+                  .toString(),
+              allowSystem: true,
+              allowTransparent: true,
+              onPicked: (value) async {
+                appdata.settings['menuSurfaceColor'] = value;
+                await appdata.saveData();
+                App.forceRebuild();
+              },
+            ).toSliver(),
+            _SliderSetting(
+              title: "Menu background opacity".tl,
+              settingsIndex: "menuSurfaceOpacity",
+              interval: 0.02,
+              min: 0.0,
+              max: 1.0,
+              onChanged: () => App.forceRebuild(),
+            ).toSliver(),
           ], // ← N1：二级页面自定义项隐藏到此结束 ✓
         ],
       ),
