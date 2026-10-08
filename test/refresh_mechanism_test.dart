@@ -13,10 +13,15 @@ void main() {
   testWidgets('设置变化 → 依赖 AppSettingsScope 的控件重建（外观即时生效）', (tester) async {
     final oldColor = appdata.settings['windowOverlayColor'];
     final oldOpacity = appdata.settings['windowOverlayOpacity'];
+    // ⭐ N1：本测试验证"**自定义**遮罩色"的刷新链路 ✓ → 先关掉「跟随系统主题」总开关 ✓
+    //（它默认 true ✓，开启时遮罩不参与、`windowOverlayColor()` 恒为透明 ✓ → 断言会失去意义 ✗）。
+    final oldFollow = appdata.settings['windowOverlayFollowTheme'];
     addTearDown(() {
       appdata.settings['windowOverlayColor'] = oldColor;
       appdata.settings['windowOverlayOpacity'] = oldOpacity;
+      appdata.settings['windowOverlayFollowTheme'] = oldFollow;
     });
+    appdata.settings['windowOverlayFollowTheme'] = false;
 
     appdata.settings['windowOverlayColor'] = '#FF0000';
     appdata.settings['windowOverlayOpacity'] = 1.0;

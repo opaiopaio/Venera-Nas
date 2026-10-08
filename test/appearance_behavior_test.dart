@@ -25,6 +25,10 @@ void main() {
     'secondaryPageMode',
     'secondaryPageTint',
     'secondaryPageTintStrength',
+    // ⭐ N1：三个「跟随系统主题」总开关（默认 true）
+    'windowOverlayFollowTheme',
+    'textFollowTheme',
+    'secondaryPageFollowTheme',
   ];
   final original = <String, dynamic>{};
 
@@ -32,6 +36,12 @@ void main() {
     for (final k in touched) {
       original[k] = appdata.settings[k];
     }
+    // ⭐ N1：以下断言测的都是「**自定义**外观」路径 ✓ → 先把三个总开关**显式关掉** ✓
+    //（它们默认值是 true ✓，开启时该页所有自定义项一律不生效 ✓）。
+    // "跟随主题 = 零干预"另有一组测试专门覆盖 ✓（见文件末尾的 N1 组 ✓）。
+    appdata.settings['windowOverlayFollowTheme'] = false;
+    appdata.settings['textFollowTheme'] = false;
+    appdata.settings['secondaryPageFollowTheme'] = false;
     // 固定"跟随系统"色，便于断言
     systemContainerColorCache = const Color(0xFFEADDFF);
   });
@@ -41,6 +51,49 @@ void main() {
       appdata.settings[k] = original[k];
     }
     systemContainerColorCache = null;
+  });
+
+  // ⭐ N1：三个「跟随系统主题」总开关（默认开）—— 开启时该页自定义项一律不生效 ✓，
+  // 三页全开即回到"软件最开始没有任何自定义外观"的状态 ✓（用户明确要求 ✓）。
+  group('⭐ N1 跟随系统主题总开关', () {
+    test('窗口与控件：开 → 四种遮罩全部不参与（透明）且布局判定为未启用', () {
+      appdata.settings['windowOverlayFollowTheme'] = true;
+      appdata.settings['windowOverlayColor'] = '#123456';
+      appdata.settings['windowOverlayOpacity'] = 0.5;
+      appdata.settings['buttonOverlayColor'] = '#123456';
+      appdata.settings['iconOverlayColor'] = '#123456';
+      appdata.settings['tagOverlayColor'] = '#123456';
+      expect(windowOverlayColor(), Colors.transparent);
+      expect(buttonOverlayColor(), Colors.transparent);
+      expect(iconOverlayColor(), Colors.transparent);
+      expect(tagOverlayColor(), Colors.transparent);
+      expect(appdata.settings.hasWindowOverlay, isFalse);
+      expect(appdata.settings.cornerStyleActive, isFalse);
+    });
+
+    test('文字：开 → 颜色/字体/阴影/字号一律零干预', () {
+      appdata.settings['textFollowTheme'] = true;
+      appdata.settings['globalTextColor'] = '#FF0000';
+      appdata.settings['globalFontScale'] = 1.4;
+      appdata.settings['textShadowEnabled'] = true;
+      expect(globalTextColor(), isNull);
+      expect(globalTextShadows(), isNull);
+      expect(globalTextStyle(), isNull);
+      expect(globalFontScale(), 1.0);
+    });
+
+    test('二级页面：开 → 体系不启用', () {
+      appdata.settings['secondaryPageFollowTheme'] = true;
+      expect(appdata.settings.secondaryPageFeatureActive, isFalse);
+    });
+
+    test('开关关闭后，自定义立即恢复生效（与上方 setUp 相反）', () {
+      appdata.settings['windowOverlayFollowTheme'] = false;
+      appdata.settings['windowOverlayColor'] = '#123456';
+      appdata.settings['windowOverlayOpacity'] = 1.0;
+      expect(windowOverlayColor(), isNot(Colors.transparent));
+      expect(appdata.settings.hasWindowOverlay, isTrue);
+    });
   });
 
   group('② 遮罩形状：圆角 / 直角', () {
