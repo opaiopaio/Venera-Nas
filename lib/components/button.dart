@@ -66,13 +66,13 @@ class Button extends StatefulWidget {
     this.padding,
     this.color,
     this.onPressedAt,
-    required this.onPressed,
+    this.onPressed,
   });
 
   const Button.filled({
     super.key,
     required this.child,
-    required this.onPressed,
+    this.onPressed,
     this.width,
     this.height,
     this.padding,
@@ -84,7 +84,7 @@ class Button extends StatefulWidget {
   const Button.outlined({
     super.key,
     required this.child,
-    required this.onPressed,
+    this.onPressed,
     this.width,
     this.height,
     this.padding,
@@ -96,7 +96,7 @@ class Button extends StatefulWidget {
   const Button.text({
     super.key,
     required this.child,
-    required this.onPressed,
+    this.onPressed,
     this.width,
     this.height,
     this.padding,
@@ -108,7 +108,7 @@ class Button extends StatefulWidget {
   const Button.normal({
     super.key,
     required this.child,
-    required this.onPressed,
+    this.onPressed,
     this.width,
     this.height,
     this.padding,
@@ -145,7 +145,7 @@ class Button extends StatefulWidget {
 
   final bool isLoading;
 
-  final void Function() onPressed;
+  final void Function()? onPressed;
 
   final void Function(Offset location)? onPressedAt;
 
@@ -211,25 +211,27 @@ class _ButtonState extends State<Button> {
       onExit: (_) => setState(() => isHover = false),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () {
-          if (isLoading) return;
-          widget.onPressed();
-          if (widget.onPressedAt != null) {
-            var renderBox = context.findRenderObject() as RenderBox;
-            var offset = renderBox.localToGlobal(Offset.zero);
-            widget.onPressedAt!(offset);
-          }
-        },
+        // ⭐ H2：自绘按钮支持**禁用态** ✓ —— `onPressed == null` 即禁用 ✓
+        //（与 M3 的 `onPressed: null` 写法一致 ✓，95 处 M3 替换可**机械**进行 ✓）。
+        onTap: widget.onPressed == null
+            ? null
+            : () {
+                if (isLoading) return;
+                widget.onPressed!();
+                if (widget.onPressedAt != null) {
+                  var renderBox = context.findRenderObject() as RenderBox;
+                  var offset = renderBox.localToGlobal(Offset.zero);
+                  widget.onPressedAt!(offset);
+                }
+              },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           padding: padding,
-          // P8 胶囊：高度**严格 32** ✓（min==max → 内容再大也撑不出去 ✓，
-          // 从而与"标准按钮换算后"的视觉高度可控、可预期 ✓）
-          constraints: const BoxConstraints(
-            minWidth: 64,
-            minHeight: 32,
-            maxHeight: 32,
-          ),
+          // P8 胶囊：高度**严格 32** ✓（min==max → 内容再大也撑不出去 ✓）。
+          // ⭐ H2：**去掉 `minWidth: 64` 兜底** ✗ —— 用户明确的规范是
+          // "宽度 = 文字宽度 + 两侧 `AppSpace.lg(16)` 延伸" ✓，短文案（如「OK」）
+          // 不应被撑到 64 宽 ✗。
+          constraints: const BoxConstraints(minHeight: 32, maxHeight: 32),
           // P8：胶囊形状 ✓；「窗口/按钮背景」设为直角时退化为直角 ✓（尊重用户形状设置）
           decoration: BoxDecoration(
             color: buttonColor,
@@ -275,17 +277,24 @@ class _ButtonState extends State<Button> {
     // ─── P8 胶囊按钮规范（doc-private/03-implementation/07-background-and-color-picker.md）───
     // 底色 = **遮罩色**（`windowOverlayColor()` ✓，跟随「窗口/按钮背景颜色 × 不透明度」）。
     // 显式传 `widget.color` 时以显式色为准 ✓（危险操作如"删除"用 error 色的例外 ✓）。
+    // ⭐ H2 禁用态：`onPressed == null` → 整体 **0.38 不透明度** ✓（P8 规范已写明 ✓）。
+    final disabled = widget.onPressed == null;
     final mask = windowOverlayColor();
     if (widget.type == ButtonType.filled) {
       var color = widget.color ?? mask;
+      if (disabled) return color.toOpacity(0.38);
       return isHover ? color.toOpacity(0.9) : color;
     }
     if (widget.type == ButtonType.normal) {
       var color = widget.color ?? mask;
+      if (disabled) return color.toOpacity(0.38);
       return isHover ? color.toOpacity(0.9) : color;
     }
     // outlined / text：底色同样是遮罩色（未配置遮罩即透明 ✓），悬停时略加强 ✓
-    if (widget.color != null) return widget.color!;
+    if (widget.color != null) {
+      return disabled ? widget.color!.toOpacity(0.38) : widget.color!;
+    }
+    if (disabled) return mask.toOpacity(0.38);
     return isHover
         ? mask.toOpacity(mask.a >= 1 ? 1 : 0.5 + mask.a * 0.5)
         : mask;
@@ -298,11 +307,17 @@ class _ButtonState extends State<Button> {
     // 例外：显式传 `widget.color`（危险操作等）时用 `onPrimary` 保证对比度 ✓。
     // ⚠️ 图标（`IconTheme`）与 `iconButtonTheme` **不接**全局文字色 ✗（否则图标跟着变色）。
     final global = globalTextColor();
-    if (widget.color != null) return context.colorScheme.onPrimary;
-    if (widget.type == ButtonType.outlined || widget.type == ButtonType.text) {
-      return global ?? context.colorScheme.primary;
+    // ⭐ H2 禁用态：文字与图标一并降到 **0.38 不透明度** ✓（P8 规范 ✓）
+    final Color base;
+    if (widget.color != null) {
+      base = context.colorScheme.onPrimary;
+    } else if (widget.type == ButtonType.outlined ||
+        widget.type == ButtonType.text) {
+      base = global ?? context.colorScheme.primary;
+    } else {
+      base = global ?? context.colorScheme.onSurface;
     }
-    return global ?? context.colorScheme.onSurface;
+    return widget.onPressed == null ? base.toOpacity(0.38) : base;
   }
 }
 
