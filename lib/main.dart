@@ -420,6 +420,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           titleTextStyle: titleStyle,
           subtitleTextStyle: subStyle,
           leadingAndTrailingTextStyle: subStyle,
+          // ⭐ B1/B2（用户实测：侧栏「本地/网络」、主页「同步数据」刷新图标
+          // 始终"固定黑"、不随「图标颜色」变化 ✗）真因：
+          // `ThemeData` 在**构造时**就把 `ListTileThemeData.iconColor` 烘焙成
+          // `colorScheme.onSurfaceVariant`（近黑 ✗），之后 `copyWith(textTheme:)`
+          // **不会重算** ✗ —— 与之前 `listTileTheme` 文字色是同一个坑 ✓。
+          // ListTile 的 leading/trailing 图标由 `ListTileThemeData.iconColor` 决定 ✗，
+          // 优先级**高于** `iconTheme` ✗ → 不显式接上，图标就永远是黑色 ✗。
+          iconColor:
+              resolveColorSettingValue(
+                appdata.settings['globalIconColor'] as String?,
+              ) ??
+              theme.iconTheme.color,
         ),
       );
     }
