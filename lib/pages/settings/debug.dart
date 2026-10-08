@@ -27,7 +27,11 @@ class DebugPageState extends State<DebugPage> {
         _CallbackSetting(
           title: "Open Log".tl,
           callback: () {
-            context.to(() => const LogsPage());
+            // ⭐ AO1（同款修法 ✓）：推在**当前（右栏内层）Navigator** ✓ 而非根 Navigator 的全屏弹层 ✗
+            // → 左侧设置栏不被遮 ✓，点其它设置项一次即切换 ✓。
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const LogsPage()));
           },
           actionTitle: 'Open'.tl,
         ).toSliver(),

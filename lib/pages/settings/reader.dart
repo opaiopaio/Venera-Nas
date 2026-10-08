@@ -418,7 +418,10 @@ class _ReaderSettingsState extends State<ReaderSettings> {
         ).toSliver(),
         _CallbackSetting(
           title: "Custom Image Processing".tl,
-          callback: () => context.to(() => _CustomImageProcessing()),
+          // ⭐ AO1（同款修法 ✓）：内层 Navigator push ✓（不再用全屏弹层 ✗）
+          callback: () => Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => _CustomImageProcessing())),
           actionTitle: "Edit".tl,
         ).toSliver(),
         _SliderSetting(
