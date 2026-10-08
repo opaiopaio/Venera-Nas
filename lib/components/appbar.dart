@@ -295,7 +295,7 @@ class _AppTabBarState extends State<AppTabBar> {
   static const _kTabHeight = 48.0;
 
   static const tabPadding = EdgeInsets.symmetric(
-    horizontal: AppSpace.xxs,
+    horizontal: AppSpace.sm,
     vertical: AppSpace.tiny,
   );
 
@@ -355,7 +355,11 @@ class _AppTabBarState extends State<AppTabBar> {
       // 原先写死 `colorScheme.primary` ✗ → 无论设置如何都是主题色 ✗
       // （用户实测：图片收藏「标签/作者/漫画」不随「标签颜色」变化 ✓）。
       // 跟随遮罩 → `windowOverlayColor()` ✓；跟随主题 → `secondaryContainer` ✓。
-      color: tagFillColor(context),
+      // ⭐ Z1（用户选定 A ✓）：顶栏「漫画源」标签（含「+ 添加」✓）**跟随主题色本身** ✓，
+      // **不再跟随标签颜色** ✗（用户实测反馈 ✓：这一排应跟主题 ✓，不跟标签/胶囊按钮色 ✗）。
+      // 用 `primaryContainer` ✓ —— 它由**种子色**直接派生 ✓（当前种子青色 → 青色系 ✓），
+      // 且与胶囊按钮用的 `secondaryFixed` 是**两套**色 ✓（互不牵连 ✓）。
+      color: Theme.of(context).colorScheme.primaryContainer,
       padding: tabPadding,
       radius: tabRadius,
     );
@@ -502,7 +506,11 @@ class _AppTabBarState extends State<AppTabBar> {
     if (appdata.settings.customBackgroundActive) {
       return Material(
         // F1-②：tab 底同样走统一入口 ✓（原先恒 `windowOverlayColor()` ✗ → 不随设置变化 ✓）
-        color: tagFillColor(context),
+        // ⭐ Z1（用户选定 A ✓）：顶栏「漫画源」标签（含「+ 添加」✓）**跟随主题色本身** ✓，
+        // **不再跟随标签颜色** ✗（用户实测反馈 ✓：这一排应跟主题 ✓，不跟标签/胶囊按钮色 ✗）。
+        // 用 `primaryContainer` ✓ —— 它由**种子色**直接派生 ✓（当前种子青色 → 青色系 ✓），
+        // 且与胶囊按钮用的 `secondaryFixed` 是**两套**色 ✓（互不牵连 ✓）。
+        color: Theme.of(context).colorScheme.primaryContainer,
         borderRadius: radius,
         clipBehavior: Clip.antiAlias,
         child: tab,
