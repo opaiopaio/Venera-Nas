@@ -121,9 +121,10 @@ class AppearanceWindowPage extends StatelessWidget {
             // 独立可控 ✓ —— 颜色（跟随系统=跟主题 / 透明 / 自定义 ✓）+ 不透明度 ✓。
             // 取值入口：`foundation/window_overlay.dart` 的 `sourceTabOverlayColor()` ✓；
             // 应用点：`components/appbar.dart` 的 chip 填色与「+ 加号」填色 ✓。
-            _SettingPartTitle(title: "Top source buttons".tl, icon: Icons.tab),
+            // ⭐ AG1（用户要求 ✓）：**去掉组标题行** ✗（用户："这个删掉" ✓），
+            // 颜色项改名为「**发现/分类页漫画源颜色**」✓。
             ColorSettingTile(
-              title: "Source buttons color".tl,
+              title: "Source color on Discover and Categories".tl,
               settingValue:
                   (appdata.settings['sourceTabOverlayColor'] ?? 'system')
                       .toString(),

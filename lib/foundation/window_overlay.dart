@@ -346,7 +346,11 @@ Color? themeSourceTabColorCache;
 ///   恒取 `secondaryContainer` ✓，与其它遮罩（窗口/胶囊/图标按钮/标签 ✓）逻辑一致 ✓。
 Color sourceTabOverlayColor() {
   if (appdata.settings['windowOverlayFollowTheme'] == true) {
-    return themeSourceTabColorCache ?? Colors.transparent;
+    // ⭐ AG1（用户澄清 ✓）：**跟随系统 = 系统的「按钮」颜色** ✓ ——
+    // 即胶囊按钮在跟随主题时所用的 `themeButtonColorCache`（`secondaryFixed` ✓），
+    // **不是**主题容器色 `secondaryContainer` ✗（用户原话："跟随系统是用系统的按钮颜色 ✓，
+    // 懂吗，不是系统主题色 ✗"）。
+    return themeButtonColorCache ?? Colors.transparent;
   }
   final v = (appdata.settings['sourceTabOverlayColor'] ?? 'system').toString();
   if (v == 'transparent') return Colors.transparent;
@@ -357,8 +361,9 @@ Color sourceTabOverlayColor() {
   final n = (v.startsWith('#') && v.length == 7)
       ? int.tryParse(v.substring(1), radix: 16)
       : null;
+  // `system` 同样 = **系统按钮色** ✓（与总开关开启时一致 ✓）。
   final base = n == null
-      ? (themeSourceTabColorCache ?? Colors.transparent)
+      ? (themeButtonColorCache ?? Colors.transparent)
       : Color(0xFF000000 | n);
   return base.toOpacity(opacity);
 }
