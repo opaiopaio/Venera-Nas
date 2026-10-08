@@ -516,7 +516,14 @@ class SlidePageTransitionBuilder extends PageTransitionsBuilder {
     // 与源码上方的注释语义（"自定义背景时页面背景是透明的，横向滑动会让旧页从新页透明区透出来 ✗"）**完全对应** ✓。
     // ⇒ 无背景 → **横向切入** ✓（恢复 App 原本的全局设计 ✓）；有背景 → 保留 fade-through ✓（避免两页叠加 ✗）。
     // ⭐ AY1：`forceSlide` 为 true 时**跳过背景分支** ✓（供「设置 → 外观」四个子页使用 ✓，用户要求任何情况都横切 ✓）。
-    final customBg = !forceSlide && App.data.settings.backgroundFeatureActive;
+    // ⭐ AZ1（用户实测 ✓，2026-10-09）：必须把"**页面是否透明**"与"**是否走 fade 分支**"**拆开** ✗→✓ ——
+    // 上一版我把 `forceSlide` 直接并进 `customBg` ✗ → 强制横切时 `customBg` 变 false ✓，
+    // 于是下面 `Material(color: customBg ? transparent : null)` 取到 **null = 主题表面色（白）** ✗、
+    // `elevation` 变成 **6（带阴影）** ✗ → 用户实测："**有背景的情况下，这四个页面内不显示背景，显示一片空白**"✓（截图 ✓）。
+    // **正解** ✓：① "是否透明"只看 `backgroundFeatureActive` ✓（决定 Material 透明与 elevation ✓）；
+    //            ② "是否走 fade 分支" = `!forceSlide && 透明` ✓（AY1 的强制横切只管**分支选择** ✓）。
+    final transparentPages = App.data.settings.backgroundFeatureActive;
+    final customBg = !forceSlide && transparentPages;
 
     Widget content = PhysicalModel(
       color: Colors.transparent,
@@ -524,9 +531,9 @@ class SlidePageTransitionBuilder extends PageTransitionsBuilder {
       clipBehavior: Clip.hardEdge,
       // 透明色 + elevation>0 会把阴影画进形状内部形成整页暗色遮罩，
       // 自定义背景时必须关掉 elevation（窗口层次改由「窗口遮罩」配置卡片容器）。
-      elevation: customBg ? 0 : 6,
+      elevation: transparentPages ? 0 : 6,
       child: Material(
-        color: customBg ? Colors.transparent : null,
+        color: transparentPages ? Colors.transparent : null,
         child: child,
       ),
     );
