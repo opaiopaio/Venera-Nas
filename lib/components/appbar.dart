@@ -399,7 +399,11 @@ class _AppTabBarState extends State<AppTabBar> {
         Colors.black.withValues(alpha: AppOpacity.selectedTint),
         sourceTabOverlayColor(),
       ),
-      padding: tabPadding,
+      // ⭐ B2 修复（审计 AP1-B2 ✓）：指示条**必须与可见 chip 用同一份内边距** ✗→✓ ——
+      // 原先用 `tabPadding`（左右各 12 ✓）而 chip 实际是 `tabItemPadding`（左右各 7 ✓）
+      // → 条比按钮**每侧短 5px** ✗ = 用户反复反馈的"没贴边 / 两端不对"的**真根因** ✓。
+      // 该字段同时决定 `indicatorRect` 的左右范围与 `paint` 里裁切矩形的范围 ✓ → 同源即一致 ✓。
+      padding: tabItemPadding,
       radius: windowOverlayBorderRadius()?.topLeft.x ?? tabRadius,
     );
     if (old != null && old.offsets != null && old.itemHeight != null) {
