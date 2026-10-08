@@ -469,6 +469,11 @@ class _WebdavSettingState extends State<_WebdavSetting> {
     if (appdata.settings['webdav'] is! List) {
       appdata.settings['webdav'] = [];
     }
+    // ⭐ AP1-A2（审计 ✓）：`autoSync` 的读取**必须在 early-return 之前** ✗→✓ ——
+    // 原先它位于"配置不完整就 return"之后 ✗ → URL 为空/不完整时**永不赋值** ✓，
+    // 而保存路径（空配置）会写 `webdavAutoSync = false` ✓ → 出现"**UI 显示开、存储为关**"✗，
+    // 且用户填好 URL 点继续时又会以 `true` 覆盖 ✓。现提前读取并**显式类型化** ✓。
+    autoSync = (appdata.implicitData['webdavAutoSync'] as bool?) ?? true;
     var configs = appdata.settings['webdav'] as List;
     if (configs.whereType<String>().length != 3) {
       return;
@@ -476,7 +481,6 @@ class _WebdavSettingState extends State<_WebdavSetting> {
     url = configs[0];
     user = configs[1];
     pass = configs[2];
-    autoSync = appdata.implicitData['webdavAutoSync'] ?? true;
   }
 
   void onAutoSyncChanged(bool value) {
