@@ -337,9 +337,17 @@ Color? customSecondarySurfaceColor(ColorScheme scheme) {
     'darken' => Colors.black.toOpacity(strength),
     _ => Colors.transparent,
   };
-  if (mode == 'transparent') return tintColor;
+  // ① **有背景图** ✓ → 底由**壁纸切片**（`BackgroundSlice`）负责 ✓，
+  //    本函数只给"切片之上的色调遮罩" ✓（原语义 ✓，色调作用于**壁纸** ✓）。
   if (currentBackgroundImageFile() != null) return tintColor;
+  // ② **无背景图** ✓ → **以当前背景色为主** ✓：把深浅直接调在**背景色**上 ✓
+  //（用户截图澄清 ✓：背景是**明黄色**，弹层应是"**明黄稍深**"✓，绝不能是**黑色遮罩** ✗）。
   final baseValue = appdata.settings.customBackgroundBaseColorValue;
   final base = baseValue != null ? Color(baseValue) : scheme.surface;
-  return Color.alphaBlend(tintColor, base);
+  final blended = Color.alphaBlend(tintColor, base);
+  // ③ **半透明模式** ✓ → 同一"背景色 ± 深浅"的成品色再给透明度 ✓
+  //（仍是"背景色稍深"的半透面板 ✓，而不是裸黑/白遮罩 ✗）。
+  return mode == 'transparent'
+      ? blended.withValues(alpha: AppOpacity.hint)
+      : blended;
 }

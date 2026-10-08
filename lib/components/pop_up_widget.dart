@@ -199,20 +199,19 @@ class SecondaryPageSurface extends StatelessWidget {
     // 恒用**不透明主题表面色** ✓（有背景图时仍由壁纸切片负责 ✓）。
     // 用户实测："弹出式二级页面的选项会对整页式二级页面造成影响" ✗
     //（根因：上一版只把**色调**限定给弹出式 ✓，**模式没限定** ✗ → 整页式也变半透明 ✗）。
-    final mode = popupStyle
-        ? (appdata.settings['secondaryPageMode'] as String? ?? 'opaque')
-        : 'opaque';
-    final translucent = mode == 'transparent';
+    // （`mode` / `translucent` 已不再在本地使用 ✓ —— 模式判断在
+    //  `customSecondarySurfaceColor()` 内部完成 ✓，这里只消费它的成品色 ✓。）
     // ⭐ V1②（用户反馈 ✓）：`customSecondarySurfaceColor()` 返回的**已经是成品表面色** ✓
     //（`window_overlay.dart` 内部已 `return Color.alphaBlend(tintColor, base)` ✓；
     //  半透明模式 / 有背景图时则返回**色调层本身** ✓）→ 这里**直接当底用** ✓。
     // ⚠️ 之前我又 `alphaBlend(tint, base)` 混了一次 ✗ → **色调叠两遍** ✗ →
     // 无背景时"深浅变得很诡异" ✓（用户实测 ✓）。
-    var base = (popupStyle ? tint : null) ?? context.colorScheme.surface;
-    // 半透明模式 ✓：若自定义色是**全透明**的色调色（如 `tint: none` ✓）→ 退回主题表面色再给透明度 ✓，
-    // 保证"半透明"是**半透明面板** ✓（而不是什么都没有 ✗）。
-    if (translucent && base.a <= 0) base = context.colorScheme.surface;
-    if (translucent) base = base.withValues(alpha: AppOpacity.hint);
+    // ⭐ W1（用户澄清 ✓）：色调**本身就是成品** ✓ ——
+    // 不透明模式下它是"**以当前背景色为主**混出色调"的实色 ✓；
+    // 半透明模式下它是叠在背景上的**遮罩**（泛白 / 发黑 / 不调整=浅白 ✓，见 `window_overlay.dart` ✓）。
+    // → 这里**直接当底用** ✓：不再二次混合 ✗（V1② ✓）、也**不要**擅自改它的透明度 ✗
+    //（那会把用户设的强度冲掉 ✗，U1 的旧做法已废弃 ✗）。
+    final base = (popupStyle ? tint : null) ?? context.colorScheme.surface;
     final radius =
         borderRadius ??
         windowOverlayBorderRadius() ??
