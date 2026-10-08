@@ -282,6 +282,11 @@ class _ButtonState extends State<Button> {
     // ⭐ H3：按钮底色改用**独立入口** `buttonOverlayColor()` ✓ ——
     // 与「窗口背景」分离 ✓（原先与面板同色 ✗ → 叠在同色面板上完全融合 ✗）。
     // 颜色默认跟随窗口色 ✓（零回归 ✓）；不透明度默认自动加强一档 ✓（默认不再融合 ✓）。
+    // ⭐ I1 刷新修复：本 getter 在 `build` 期间求值 ✓ → 在此建立**设置依赖** ✓
+    //（`AppSettingsScope.of(context)` ✓）。原先只读 `appdata.settings` ✗ 而无依赖 ✗ →
+    // 改完「按钮背景颜色/不透明度」后，按钮**要点一下（hover 触发 setState）才同步** ✗
+    //（用户实测反馈 ✓）。有了依赖，设置一变框架即精准重建本按钮 ✓（**不用** forceRebuild ✗）。
+    AppSettingsScope.of(context);
     final mask = buttonOverlayColor();
     if (widget.type == ButtonType.filled) {
       var color = widget.color ?? mask;
@@ -432,9 +437,10 @@ class _MenuButtonState extends State<MenuButton> {
     return Tooltip(
       message: 'more'.tl,
       // 启用「窗口/按钮背景」时给「⋯」按钮一个圆角底色方块。
+      // ⭐ I1：底色走**按钮独立入口** ✓（原先 `windowOverlayColor()` ✗ → 与面板同色、不受「按钮背景」控制 ✗）
       child: appdata.settings.customBackgroundActive
           ? Material(
-              color: windowOverlayColor(),
+              color: buttonOverlayColor(),
               borderRadius: windowOverlayBorderRadius(),
               clipBehavior: Clip.antiAlias,
               child: button,
