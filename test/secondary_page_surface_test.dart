@@ -207,4 +207,35 @@ void main() {
       reason: '⭐ U1：lighten 应得到"更浅的面板"',
     );
   });
+
+  /// ⭐ V1（用户反馈 ✓）：**整页式不受「弹出式二级页面」选项影响** ✓ ——
+  /// 把弹出式的两个开关调到极端（半透明 + 强烈变深 ✓），整页式（`popupStyle: false` ✓）
+  /// 的底必须**恒为不透明主题表面色** ✓（用户实测："弹出式选项会对整页式造成影响" ✗）。
+  testWidgets('V1：整页式不受弹出式的模式/深浅影响（恒不透明）', (tester) async {
+    final oldMode = appdata.settings['secondaryPageMode'];
+    final oldTint = appdata.settings['secondaryPageTint'];
+    final oldStrength = appdata.settings['secondaryPageTintStrength'];
+    final oldFollow = appdata.settings['secondaryPageFollowTheme'];
+    addTearDown(() {
+      appdata.settings['secondaryPageMode'] = oldMode;
+      appdata.settings['secondaryPageTint'] = oldTint;
+      appdata.settings['secondaryPageTintStrength'] = oldStrength;
+      appdata.settings['secondaryPageFollowTheme'] = oldFollow;
+    });
+    appdata.settings['secondaryPageFollowTheme'] = false;
+    appdata.settings['secondaryPageMode'] = 'transparent'; // 极端：半透明 ✓
+    appdata.settings['secondaryPageTint'] = 'darken'; // 极端：强烈变深 ✓
+    appdata.settings['secondaryPageTintStrength'] = 0.6;
+    await pumpSurface(
+      tester,
+      const SecondaryPageSurface(
+        popupStyle: false, // 整页式 ✓
+        fallbackToSurface: false,
+        clip: false,
+        child: SizedBox(width: 80, height: 40),
+      ),
+    );
+    final base = baseColorOf(tester);
+    expect(base.a, 1.0, reason: '⭐ V1：整页式不受弹出式的半透明模式影响（底恒不透明 ✓）');
+  });
 }
