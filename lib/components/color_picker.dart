@@ -83,6 +83,7 @@ class ColorSettingTile extends StatelessWidget {
     required this.onPicked,
     this.allowSystem = false,
     this.allowTransparent = false,
+    this.systemPreview,
   });
 
   final String title;
@@ -96,6 +97,11 @@ class ColorSettingTile extends StatelessWidget {
 
   final bool allowTransparent;
 
+  /// `system` 状态的预览色 ✓ —— 不传则回退 `colorScheme.primary` ✓。
+  /// ⚠️ 必须允许指定：否则「图标颜色」等行的 `system` 预览会取到**主题色** ✗
+  /// （用户实测反馈"图标颜色预览会同步主题颜色" ✗，语义错误 ✓）。
+  final Color? systemPreview;
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -103,7 +109,7 @@ class ColorSettingTile extends StatelessWidget {
     final isSystem = settingValue == 'system';
     Color? preview;
     if (isSystem) {
-      preview = scheme.primary;
+      preview = systemPreview ?? scheme.primary;
     } else if (!isTransparent) {
       preview = resolveColorSettingValue(settingValue) ?? scheme.primary;
     }

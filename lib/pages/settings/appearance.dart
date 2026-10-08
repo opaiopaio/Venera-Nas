@@ -55,6 +55,11 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
           settingValue: (appdata.settings['globalIconColor'] ?? 'system')
               .toString(),
           allowSystem: true,
+          // `system` = 跟随主题 → 预览用**默认图标色**（iconTheme 前景色 ✓），
+          // 不能用 `primary` ✗（那是主题/强调色 ✗，用户实测反馈过 ✓）。
+          systemPreview:
+              Theme.of(context).iconTheme.color ??
+              Theme.of(context).colorScheme.onSurfaceVariant,
           onPicked: (value) async {
             appdata.settings['globalIconColor'] = value;
             await appdata.saveData();
