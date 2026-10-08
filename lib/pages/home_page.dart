@@ -172,7 +172,13 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
                 BorderRadius.circular(AppRadius.md),
           ),
           child: ListTile(
-            leading: const Icon(Icons.sync),
+            // C2：同步图标走统一取色 ✓（未设置时回退**主题强调色** ✓ ——
+            // 与本页其它图标/箭头一致 ✓；之前无显式色 → 落到 `ListTileThemeData.iconColor`
+            // 的兜底近黑色 ✗，观感"固定黑"、与整页不搭 ✗，用户实测反馈 ✓）
+            leading: Icon(
+              Icons.sync,
+              color: appIconColor(context, context.colorScheme.primary),
+            ),
             title: Text(syncStatus.title.tl),
             subtitle: buildSyncStatusSubtitle(syncStatus),
             trailing: const CircularProgressIndicator(
@@ -204,7 +210,11 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
             ),
             child: Row(
               children: [
-                const Icon(Icons.sync),
+                // C2：同上（移动端布局）✓
+                Icon(
+                  Icons.sync,
+                  color: appIconColor(context, context.colorScheme.primary),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -278,7 +288,13 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
                 BorderRadius.circular(AppRadius.md),
           ),
           child: ListTile(
-            leading: const Icon(Icons.sync),
+            // C2：同步图标走统一取色 ✓（未设置时回退**主题强调色** ✓ ——
+            // 与本页其它图标/箭头一致 ✓；之前无显式色 → 落到 `ListTileThemeData.iconColor`
+            // 的兜底近黑色 ✗，观感"固定黑"、与整页不搭 ✗，用户实测反馈 ✓）
+            leading: Icon(
+              Icons.sync,
+              color: appIconColor(context, context.colorScheme.primary),
+            ),
             title: Text(syncStatus.title.tl),
             subtitle: buildSyncStatusSubtitle(syncStatus),
             trailing: Row(
