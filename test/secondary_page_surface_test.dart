@@ -82,9 +82,7 @@ void main() {
     );
   });
 
-  testWidgets('PopUpWidgetScaffold 路径：不裁剪、不补底（形状与底色由路由 decoration 负责）', (
-    tester,
-  ) async {
+  testWidgets('整页式路径：不裁剪；无背景图（decoration 为 null）时必须补底保证遮挡', (tester) async {
     disableSecondaryPageFeature();
     await pumpSurface(
       tester,
@@ -106,8 +104,10 @@ void main() {
     );
     expect(
       find.descendant(of: surface, matching: find.byType(ColoredBox)),
-      findsNothing,
-      reason: '整页式（popupStyle: false）不得自行补底色（会盖住路由 decoration 的观感）',
+      findsWidgets,
+      reason:
+          '⭐ R1：无背景图（decoration == null）时必须补**不透明底** ✓ —— '
+          '否则"自定义开启 + 无背景图"时整页式弹层（如色盘）会透明透出下层内容 ✗（用户截图实测 ✓）',
     );
   });
 
