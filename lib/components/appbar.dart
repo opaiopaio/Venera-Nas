@@ -638,12 +638,13 @@ class _IndicatorPainter extends CustomPainter {
     assert(tabIndex <= maxTabIndex);
     var (tabLeft, tabRight) = (offsets![tabIndex], offsets![tabIndex + 1]);
 
-    // ⭐ AF1（用户要求 ✓）：**条的长度 = 按钮的完整长度** ✓ ——
-    // 去掉原先左右各 12px 的内缩 ✗（用户："条的长度就是按钮的长度" ✓）。
+    // ⭐ AH1（用户实测 ✓）：左右**各内缩** ✓（不贴边 ✗ —— 用户："这个条太丑了 ✗，不要贴两边 ✓"；
+    // 内缩量用 `AppSpace` 令牌 ✓ 不写数字 ✗），且足以**不越过按钮圆角** ✓（不漏到按钮外 ✗）。
+    const inset = AppSpace.sm;
     var rect = Rect.fromLTWH(
-      tabLeft + padding.left,
+      tabLeft + padding.left + inset,
       _AppTabBarState._kTabHeight - 3.6,
-      tabRight - tabLeft - padding.horizontal,
+      tabRight - tabLeft - padding.horizontal - inset * 2,
       3,
     );
 
@@ -670,12 +671,9 @@ class _IndicatorPainter extends CustomPainter {
       h,
     );
     final Paint paint = Paint()..color = color;
-    final RRect rrect = RRect.fromRectAndCorners(
-      _currentRect!,
-      topLeft: Radius.circular(radius),
-      topRight: Radius.circular(radius),
-    );
-    canvas.drawRRect(rrect, paint);
+    // ⭐ AH1（用户要求 ✓）：**直角** ✓ —— 去掉圆角 ✗（用户："这个线不要做圆角了" ✓），
+    // 直接画矩形 ✓（不再用 `RRect`/`Radius.circular` ✗）。
+    canvas.drawRect(_currentRect!, paint);
   }
 
   @override
