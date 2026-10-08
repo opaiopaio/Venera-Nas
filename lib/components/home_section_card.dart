@@ -1,4 +1,4 @@
-﻿part of 'components.dart';
+part of 'components.dart';
 
 class HomeSectionCard extends StatelessWidget {
   const HomeSectionCard({
@@ -68,7 +68,8 @@ class HomeSectionCard extends StatelessWidget {
                 vertical: AppSpace.xxs,
               ),
               decoration: BoxDecoration(
-                color: context.colorScheme.secondaryContainer,
+                // D1：计数角标属"小标签"同类 ✓ → 走统一入口（可切跟随遮罩/主题 ✓）
+                color: tagFillColor(context),
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: Text(count.toString(), style: ts.s12),

@@ -264,7 +264,8 @@ class _ImageFavoritesItemState extends State<_ImageFavoritesItem> {
             vertical: AppSpace.xxs,
           ),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.secondaryContainer,
+            // D1：n/m 计数角标属"小标签"同类 ✓ → 统一入口 ✓
+            color: tagFillColor(context),
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: Text(

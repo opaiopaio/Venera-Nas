@@ -870,7 +870,8 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                             vertical: AppSpace.xxs,
                           ),
                           decoration: BoxDecoration(
-                            color: context.colorScheme.secondaryContainer,
+                            // D1：首页标签走统一入口 ✓（可切跟随遮罩/主题 ✓）
+                            color: tagFillColor(context),
                             borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                           child: Text(e),
