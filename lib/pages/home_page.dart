@@ -501,12 +501,11 @@ class _LocalState extends State<_Local> {
                 },
               ),
             const Spacer(),
-            // 卡片内动作按钮（见 doc-private/03-implementation/07-background-and-color-picker.md
-            // 的「同类控件规格表」P6）：与追更页「立即检查 / 立即更改」**同一实现** ——
-            // 两个按钮统一为 **`FilledButton.tonal`（tonal 胶囊）** ✓（用户要求同款样式）；
-            // 形状/底色由 M3 主题统一（`FilledButton.tonal` = `secondaryContainer` 底 +
-            // `onSecondaryContainer` 字 ✓），间距用 `AppSpace` 令牌 ✓（原先写死 8）。
-            FilledButton.tonal(
+            // P8：动作按钮统一用**应用自己的 `Button`**（唯一实现 ✓）——
+            // 高度 40 / 遮罩底色 / 全局文字色 / 文字居中 / 胶囊 全部内置 ✓，
+            // 与设置页等处**完全同款**（此前用 `FilledButton.tonal` 走 M3 默认，
+            // 与主题注入存在差异 ✗ → 用户实测"主页 32、其余 40"不一致 ✗）。
+            Button.normal(
               onPressed: () {
                 showDialog(
                   context: context,
@@ -516,7 +515,7 @@ class _LocalState extends State<_Local> {
               child: Text("扫描 NAS".tl),
             ),
             const SizedBox(width: AppSpace.sm),
-            FilledButton.tonal(onPressed: import, child: Text("Import".tl)),
+            Button.normal(onPressed: import, child: Text("Import".tl)),
           ],
         ).paddingHorizontal(AppSpace.lg).paddingVertical(AppSpace.sm),
       ),

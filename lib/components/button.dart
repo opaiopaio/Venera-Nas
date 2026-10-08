@@ -161,11 +161,11 @@ class _ButtonState extends State<Button> {
 
   @override
   Widget build(BuildContext context) {
-    // P8 胶囊：水平内边距 `AppSpace.sm(8)` ✓（收窄以免"细长" ✗）；**不要**加垂直内边距 ✗ ——
-    // 下方 `height = widget.height - padding.vertical` 会把调用方给的高度"吃掉" → 文字被裁 ✗。
-    // 高度统一由 `constraints.minHeight: 36` 保证 ✓（44 会与行/遮罩上下贴边 ✗）。
+    // P8 胶囊：水平内边距 **AppSpace.lg(16)** ✓（撤回此前的收窄 ✗）；**不要**加垂直内边距 ✗
+    // （`height = widget.height - padding.vertical` 会吃掉调用方高度 → 文字被裁 ✗）。
+    // 高度统一由 `constraints.minHeight: 40` 保证 ✓。
     var padding =
-        widget.padding ?? const EdgeInsets.symmetric(horizontal: AppSpace.sm);
+        widget.padding ?? const EdgeInsets.symmetric(horizontal: AppSpace.lg);
     var width = widget.width;
     if (width != null) {
       width = width - padding.horizontal;
@@ -208,8 +208,8 @@ class _ButtonState extends State<Button> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           padding: padding,
-          // P8 胶囊：高度 **44** = 主页「扫描 NAS」标准 ✓（用户指定以它为全局基准 ✓）
-          constraints: const BoxConstraints(minWidth: 64, minHeight: 44),
+          // P8 胶囊：高度 **32**（与主题注入的标准按钮经 visualDensity 调整后一致 ✓）
+          constraints: const BoxConstraints(minWidth: 64, minHeight: 32),
           // P8：胶囊形状 ✓；「窗口/按钮背景」设为直角时退化为直角 ✓（尊重用户形状设置）
           decoration: BoxDecoration(
             color: buttonColor,

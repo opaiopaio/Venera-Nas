@@ -8,7 +8,6 @@ import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/js_engine.dart';
 
 import 'components.dart';
-import 'package:venera_nas/foundation/app_theme.dart';
 
 mixin class JsUiApi {
   final Map<int, LoadingDialogController> _loadingDialogControllers = {};
@@ -239,18 +238,10 @@ class _JSCallbackButtonState extends State<_JSCallbackButton> {
     // （见 doc-private/03-implementation/11-refresh-mechanism.md）
     AppSettingsScope.of(context);
     return switch (widget.style) {
+      // P8：不再自带样式 ✓ —— 形状/尺寸/内边距/底色/文字色统一由主题的 `pillButtonStyle`
+      // 提供（胶囊 + 遮罩底 + 全局文字色 + 居中 + 40 高 ✓）；此处曾写死圆角矩形 + `Size(36,36)` ✗。
       "filled" => FilledButton(
         onPressed: onClick,
-        style: ButtonStyle(
-          shape: WidgetStatePropertyAll(
-            RoundedRectangleBorder(
-              borderRadius:
-                  windowOverlayBorderRadius() ??
-                  BorderRadius.circular(AppRadius.md),
-            ),
-          ),
-          minimumSize: const WidgetStatePropertyAll(Size(36, 36)),
-        ),
         child: isLoading
             ? CircularProgressIndicator(
                 strokeWidth: 1.4,

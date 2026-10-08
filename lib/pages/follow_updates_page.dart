@@ -183,7 +183,7 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
               style: ts.s16,
             ).paddingHorizontal(16),
             const SizedBox(height: 8),
-            FilledButton.tonal(
+            Button.normal(
               onPressed: showSelector,
               child: Text("Choose Folder".tl),
             ).paddingHorizontal(16).toAlign(Alignment.centerRight),
@@ -233,16 +233,9 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
                 ),
                 const SizedBox(width: 8),
                 // 启用「窗口/按钮背景」时用遮罩形式（TextButton 已由主题注入底色），
-                // 不再跟随主题的 tonal 配色。
-                appdata.settings.customBackgroundActive
-                    ? TextButton(
-                        onPressed: checkNow,
-                        child: Text("Check Now".tl),
-                      )
-                    : FilledButton.tonal(
-                        onPressed: checkNow,
-                        child: Text("Check Now".tl),
-                      ),
+                // P8：统一用应用自己的 `Button`（内置遮罩底色/全局文字色/胶囊/40 高 ✓），
+                // 因此不再需要"是否启用自定义背景"的分支 ✗（原先 tonal 配色不跟随主题 ✗）。
+                Button.normal(onPressed: checkNow, child: Text("Check Now".tl)),
                 const SizedBox(width: 16),
               ],
             ),

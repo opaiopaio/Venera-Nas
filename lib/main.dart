@@ -330,11 +330,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       foregroundColor: overlayFg == null ? null : overlayFgProp(overlayFg),
       // 文字**横纵都居中** ✓
       alignment: Alignment.center,
-      // 高度 **44** = 主页「扫描 NAS」实测高度 ✓（用户指定以它为全局标准 ✓）。
-      // "细长"靠**收窄水平内边距**（AppSpace.sm ✓）解决；行内贴边则在**行**侧留呼吸 ✓。
-      minimumSize: const WidgetStatePropertyAll(Size(0, 44)),
+      // 高度 **32** ✓ —— 注意：M3 标准按钮（Filled/Text/Outlined）的**变体默认样式**
+      // （`minimumSize: Size(64,40)` 等）会**压过主题注入** ✗，`minimumSize` 对它们无效 ✗；
+      // 但 M3 默认**没有**设置 `visualDensity` ✓（每级 ±4px）→ 用 `vertical: -2` 把标准按钮
+      // 从 40 压到 **32** ✓✓，从而与自绘 `Button` **完全同一高度** ✓（一套体系 ✓）。
+      visualDensity: const VisualDensity(vertical: -2),
+      minimumSize: const WidgetStatePropertyAll(Size(0, 32)),
       padding: const WidgetStatePropertyAll(
-        EdgeInsets.symmetric(horizontal: AppSpace.sm),
+        EdgeInsets.symmetric(horizontal: AppSpace.lg),
       ),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       shape: pillShape,
