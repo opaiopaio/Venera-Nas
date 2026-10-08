@@ -40,13 +40,17 @@ class _SwitchSettingState extends State<_SwitchSetting> {
     // 建立设置依赖：外观/设置变化时由框架**精准重建**本控件
     // （取代 App.forceRebuild() 的整树 markNeedsBuild 遍历，后者会导致鬼影）。
     AppSettingsScope.of(context);
-    var value = appdata.settings.readSettingValue(
+    final raw = appdata.settings.readSettingValue(
       key: widget.settingKey,
       comicId: widget.comicId,
       comicSource: widget.comicSource,
       useDeviceSettings: widget.useDeviceSettings,
     );
-    assert(value is bool);
+    // ⚠️ 空安全兜底 ✓：**新增的设置 key 初始并不存在** ✗（`readSettingValue` 返回 null ✓），
+    // 原先这里只有 `assert(value is bool)` ✗ —— 它只在 debug 生效 ✗，release 下 null
+    // 会直接抛 `type 'Null' is not a subtype of type 'bool'` ✗（用户实测：外观页整块红字报错 ✓）。
+    // 现在非 bool 一律按 **false** 处理 ✓（开关默认关闭 ✓），新 key 不再需要预先写默认值 ✓。
+    final value = raw is bool ? raw : false;
 
     final content = ListTile(
       title: Text(widget.title),
