@@ -194,10 +194,17 @@ class SecondaryPageSurface extends StatelessWidget {
     //   （用户实测："切换成半透明，二级窗口就变白底了，不会透出来" ✗）；
     // - 色调用 `Color.alphaBlend` **混进底色** ✓ → `darken` = **更深的面板** ✓、
     //   `lighten` = 更浅的面板 ✓（用户实测："变深一打开就变灰色界面" ✗ = 不透明白底 + 黑色蒙层 ✗）。
-    final mode = appdata.settings['secondaryPageMode'] as String? ?? 'opaque';
+    // ⭐ V1（用户反馈 ✓）：本节的选项（**模式** + **深浅** ✓）**只作用于弹出式** ✓ ——
+    // 整页式（`popupStyle == false` ✓：设置子页 / 探索页面 / 分类页面…）**完全不受影响** ✗，
+    // 恒用**不透明主题表面色** ✓（有背景图时仍由壁纸切片负责 ✓）。
+    // 用户实测："弹出式二级页面的选项会对整页式二级页面造成影响" ✗
+    //（根因：上一版只把**色调**限定给弹出式 ✓，**模式没限定** ✗ → 整页式也变半透明 ✗）。
+    final mode = popupStyle
+        ? (appdata.settings['secondaryPageMode'] as String? ?? 'opaque')
+        : 'opaque';
     final translucent = mode == 'transparent';
     var base = context.colorScheme.surface;
-    if (tint != null) base = Color.alphaBlend(tint, base);
+    if (popupStyle && tint != null) base = Color.alphaBlend(tint, base);
     if (translucent) base = base.withValues(alpha: AppOpacity.hint);
     final radius =
         borderRadius ??
