@@ -146,7 +146,10 @@ class _GroupedChaptersViewState extends State<_GroupedChaptersView>
         Appbar(title: Text("Chapters".tl)),
         AppTabBar(
           controller: tabController,
-          tabs: chapters.groups.map((e) => Tab(text: e)).toList(),
+          // ⭐ C5 修复（审计 AP1-C5 ✓）：补 `height` 令牌 ✓（原先漏传 ✗ → chip 高 46 vs 36 ✗）
+          tabs: chapters.groups
+              .map((e) => Tab(text: e, height: AppTopBar.tabHeight))
+              .toList(),
         ),
         Expanded(
           child: TabViewBody(

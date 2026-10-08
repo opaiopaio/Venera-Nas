@@ -1315,7 +1315,12 @@ class _LocalFavoritesFilterDialogState
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: AppTabBar(
         key: PageStorageKey(optionTypes),
-        tabs: optionTypes.map((e) => Tab(text: e.tl, key: Key(e))).toList(),
+        // ⭐ C5 修复（审计 AP1-C5 ✓）：补 `height` 令牌 ✓（原先漏传 ✗ → chip 高 46 vs 36 ✗）
+        tabs: optionTypes
+            .map(
+              (e) => Tab(text: e.tl, key: Key(e), height: AppTopBar.tabHeight),
+            )
+            .toList(),
       ),
     ).paddingTop(context.padding.top);
     return ContentDialog(

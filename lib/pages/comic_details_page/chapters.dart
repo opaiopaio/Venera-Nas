@@ -303,7 +303,11 @@ class _GroupedComicChaptersState extends State<_GroupedComicChapters>
               child: AppTabBar(
                 withUnderLine: false,
                 controller: tabController,
-                tabs: chapters.groups.map((e) => Tab(text: e)).toList(),
+                // ⭐ C5 修复（审计 AP1-C5 ✓）：补 `height` 令牌 ✓ —— 原先漏传 ✗ →
+                // 该页 chip 高 **46**（`kTabHeight` 默认 ✓）而发现/分类页是 **36** ✗（同类控件跨页不一致 ✓）。
+                tabs: chapters.groups
+                    .map((e) => Tab(text: e, height: AppTopBar.tabHeight))
+                    .toList(),
               ),
             ),
             SliverPadding(padding: const EdgeInsets.only(top: AppSpace.sm)),
