@@ -398,7 +398,13 @@ class _MenuButtonState extends State<MenuButton> {
     // （见 doc-private/03-implementation/11-refresh-mechanism.md）
     AppSettingsScope.of(context);
     final button = Button.icon(
-      icon: const Icon(Icons.more_horiz),
+      // ⭐ C1：`MenuButton` 的「⋯」图标走统一取色 ✓ ——
+      // `Button.icon` 会把自身文字色套给图标 ✗（内部 `IconThemeData(color: textColor)` ✓，
+      // 见本文件 192/345 行 ✓），所以这里显式给 `Icon` 上色 ✓（`Icon` 自身的 `color`
+      // 优先级**高于** `IconTheme` ✓）。未设置全局图标色时传 `null` ✓ →
+      // 回落为原来的"按钮文字色" ✓（观感不变 ✓，用户实测：侧栏与页面右上「⋯」
+      // 一直不跟随图标颜色 ✗，即此处 ✓）。
+      icon: Icon(Icons.more_horiz, color: appIconColor(context)),
       onPressed: () {
         var renderBox = context.findRenderObject() as RenderBox;
         var offset = renderBox.localToGlobal(Offset.zero);

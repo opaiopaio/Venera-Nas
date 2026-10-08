@@ -123,7 +123,12 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
       padding: const EdgeInsets.symmetric(vertical: AppSpace.sm),
       child: Row(
         children: [
-          Icon(Icons.local_activity, color: context.colorScheme.secondary),
+          // C1：侧栏图标走统一取色 ✓（全局「图标颜色」优先，未设置回退 secondary ✓；
+          // 原先写死 secondary ✗ → 用户实测"不跟随图标颜色" ✗）
+          Icon(
+            Icons.local_activity,
+            color: appIconColor(context, context.colorScheme.secondary),
+          ),
           const SizedBox(width: 12),
           Text("Local".tl),
           const Spacer(),
@@ -172,7 +177,11 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
       ),
       child: Row(
         children: [
-          Icon(Icons.cloud, color: context.colorScheme.secondary),
+          // C1：同上 —— 侧栏「网络」小云图标 ✓（原先写死 secondary ✗）
+          Icon(
+            Icons.cloud,
+            color: appIconColor(context, context.colorScheme.secondary),
+          ),
           const SizedBox(width: 12),
           Text("Network".tl),
           const Spacer(),
