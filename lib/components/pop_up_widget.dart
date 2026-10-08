@@ -203,8 +203,15 @@ class SecondaryPageSurface extends StatelessWidget {
         ? (appdata.settings['secondaryPageMode'] as String? ?? 'opaque')
         : 'opaque';
     final translucent = mode == 'transparent';
-    var base = context.colorScheme.surface;
-    if (popupStyle && tint != null) base = Color.alphaBlend(tint, base);
+    // ⭐ V1②（用户反馈 ✓）：`customSecondarySurfaceColor()` 返回的**已经是成品表面色** ✓
+    //（`window_overlay.dart` 内部已 `return Color.alphaBlend(tintColor, base)` ✓；
+    //  半透明模式 / 有背景图时则返回**色调层本身** ✓）→ 这里**直接当底用** ✓。
+    // ⚠️ 之前我又 `alphaBlend(tint, base)` 混了一次 ✗ → **色调叠两遍** ✗ →
+    // 无背景时"深浅变得很诡异" ✓（用户实测 ✓）。
+    var base = (popupStyle ? tint : null) ?? context.colorScheme.surface;
+    // 半透明模式 ✓：若自定义色是**全透明**的色调色（如 `tint: none` ✓）→ 退回主题表面色再给透明度 ✓，
+    // 保证"半透明"是**半透明面板** ✓（而不是什么都没有 ✗）。
+    if (translucent && base.a <= 0) base = context.colorScheme.surface;
     if (translucent) base = base.withValues(alpha: AppOpacity.hint);
     final radius =
         borderRadius ??
