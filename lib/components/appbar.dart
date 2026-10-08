@@ -430,6 +430,9 @@ class _AppTabBarState extends State<AppTabBar> {
       // 自适应：最小高度 + 随文字（字号缩放）撑开，默认字号外观不变
       constraints: const BoxConstraints(minHeight: _kTabHeight),
       width: double.infinity,
+      // ⭐ AD1（用户实测 ✓）：**分割线离按钮再远 4px** ✓ —— 底部内边距把下边框向下推 ✓
+      //（原先线与 chip 贴太近 ✗ "显得有点拥挤" ✗）。用令牌 `AppSpace.xs` ✓ 不写数字 ✗。
+      padding: const EdgeInsets.only(bottom: AppSpace.xs),
       decoration: widget.withUnderLine
           ? BoxDecoration(
               border: Border(
