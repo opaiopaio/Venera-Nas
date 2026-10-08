@@ -123,15 +123,21 @@ class _ImageFavoritesItemState extends State<_ImageFavoritesItem> {
         horizontal: AppSpace.sm,
         vertical: AppSpace.sm,
       ),
+      // P6/P8：面板底色必须走 `windowOverlayColor()` ✓（原先**只有描边、没有填充** ✗ →
+      // 完全不跟随"窗口/控件背景色 + 不透明度" ✗，用户实测反馈 ✓）；
+      // 圆角走 `windowOverlayBorderRadius()` ✓（跟随"圆角/直角"设置 ✓，原先写死 ✗）。
       decoration: BoxDecoration(
+        color: windowOverlayColor(),
         border: Border.all(
           color: Theme.of(context).colorScheme.outlineVariant,
           width: 0.6,
         ),
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius:
+            windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.md),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius:
+            windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.md),
         onSecondaryTapDown: onSecondaryTap,
         onLongPress: onLongPress,
         onTap: () {
@@ -250,8 +256,8 @@ class _ImageFavoritesItemState extends State<_ImageFavoritesItem> {
             );
           },
         ),
-        // 间距：原先网格按钮与「n/m」计数**紧贴** ✗（视觉拥挤，用户实测反馈 ✓）
-        const SizedBox(width: AppSpace.sm),
+        // 间距：用户实测 8 仍偏近 ✓ → 提到 AppSpace.md(12) ✓（+5px ✓）
+        const SizedBox(width: AppSpace.md),
         Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpace.sm,
