@@ -421,6 +421,16 @@ Color secondarySurfaceColorFor({
   //   （修用户反馈："菜单样式=不透明，**有背景时不生效** / 无背景时生效"✗）。
   bool hasWallpaperSlice = true,
 }) {
+  // ⭐ 复查修复（2026-10-09 ✓，本轮专项复查发现 ✗）：**显式实现 `off` 语义** ✗→✓ ——
+  // 原先本函数只对 `transparent` 分支做处理 ✗ → **「关闭(off)」与「不透明(opaque)」渲染逐位相同** ✗
+  //（专项复查中 **4 个 agent 独立确认** ✓；UI 确实提供该选项 ✓，属**用户可见的死选项** ✗）。
+  // **语义与二级弹窗一致** ✓：`off` = **不启用该体系** ✓ → 退回**主题素色** ✓（不叠任何色调 ✓）——
+  // 这正是二级弹窗路径的表现 ✓（它靠调用点门禁 `secondaryPageFeatureActive` 返回 null ✓，
+  // 再由 `PopUpWidgetScaffold` 回退 `context.colorScheme.surface` ✓）。
+  // **安全性** ✓：二级弹窗路径**永远不会**把 `off` 传进来 ✗（`secondaryPageFeatureActive` 已把 off 拦掉 ✓），
+  // 因此本行只影响菜单 ✓，**不改变二级弹窗行为** ✓。
+  if (mode == 'off') return scheme.surface;
+
   final s = strength.clamp(0.0, 1.0);
   final tintColor = switch (tint) {
     'lighten' => Colors.white.toOpacity(s),
