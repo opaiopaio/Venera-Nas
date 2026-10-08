@@ -87,10 +87,10 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
           onTap: () => context.to(() => const AppearanceWindowPage()),
         ).toSliver(),
         // ⭐ N1：本区块已迁到**独立子页** ✓（`appearance_secondary_page.dart` ✓）—— 设置项与 key 完全不变 ✓，仅换位置 ✓。
-        _SettingPartTitle(title: "Secondary page".tl, icon: Icons.layers),
+        _SettingPartTitle(title: "Popup overlays".tl, icon: Icons.layers),
         ListTile(
-          title: Text("Secondary page".tl),
-          subtitle: Text("Secondary page style and tint".tl),
+          title: Text("Popup overlays".tl),
+          subtitle: Text("Style and tint for pop-up overlays".tl),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.to(() => const AppearanceSecondaryPage()),
         ).toSliver(),

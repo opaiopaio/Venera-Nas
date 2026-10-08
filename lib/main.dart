@@ -345,12 +345,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     // 这样遮罩色与由主题色控制的 tag/滑条颜色能区分开。
     // ⚠️ 此处禁止调用 Theme.of（主题尚未建立会启动异常）。
     systemContainerColorCache = scheme.surfaceContainerHigh;
-    // ⭐ O1/P1：把**主题的按钮/标签色**缓存给 `window_overlay.dart` 的 helpers ✓ ——
-    // 供「跟随系统主题」时的胶囊按钮与标签使用 ✓（默认态它们**跟随主题颜色** ✓，不是透明 ✗）。
-    // P1 修正（用户反馈 ✓）：原先取 `secondaryContainer` ✗ → 在自定义主题下**比主题色深很多** ✗
-    // → 改为 `surfaceContainerHighest` ✓：比面板/卡片用的 `surfaceContainerHigh` **浅一档** ✓，
-    // 满足用户要求"按钮标签比主题色稍浅、至少要一样" ✓。
-    themeButtonColorCache = scheme.surfaceContainerHighest;
+    // ⭐ Q1 修正（用户反馈 ✓）：先用过 `secondaryContainer` ✗（深色主题下偏深 → "深很多" ✗）、
+    // 又用过 `surfaceContainerHighest` ✗（**几乎中性、不随种子色变化** ✗，深色下即深灰 →
+    // "黑不溜秋、不随主题色变动" ✗）。正解 = M3 的 **fixed 系色** ✓：
+    // `secondaryFixed` **跟随种子色** ✓ 且**明暗主题下都保持浅色** ✓（正是 M3 为"固定浅色容器"设计的 ✓）。
+    themeButtonColorCache = scheme.secondaryFixed;
     final gStyle = globalTextStyle();
     var theme = ThemeData(
       colorScheme: scheme,

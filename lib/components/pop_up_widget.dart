@@ -147,6 +147,7 @@ class SecondaryPageSurface extends StatelessWidget {
     this.borderRadius,
     this.fallbackToSurface = true,
     this.clip = true,
+    this.popupStyle = true,
   });
 
   final Widget child;
@@ -164,12 +165,25 @@ class SecondaryPageSurface extends StatelessWidget {
   /// `PopUpWidgetScaffold` 的形状/圆角由路由 decoration 提供 → 传 `false`（等价迁移）✓
   final bool clip;
 
+  /// ⭐ Q2（用户反馈 ✓）：是否**弹出式**二级页面（`ContentDialog` / 菜单这类**小浮层** ✓）。
+  /// - `true`（**默认** ✓，`ContentDialog` 等）→ 叠加**色调加深**与背景装饰 ✓；
+  /// - `false`（`PopUpWidgetScaffold` = **整页式**二级页面 ✓）→ **不叠加** ✗。
+  ///
+  /// 用户要求 ✓："色调加深只作用给**弹窗式**二级页面，而不是给**整页式**这种" ✓
+  ///（正式名参考：弹出式 = Dialog / Modal Overlay / PopupRoute ✓；
+  ///  整页式 = Full-screen route / Pushed page ✓）。
+  final bool popupStyle;
+
   @override
   Widget build(BuildContext context) {
     AppSettingsScope.of(context);
     // ⭐ P2（用户反馈 ✓）：**跟随系统主题**时 —— 不画背景切片 ✗、不做色调 ✗、
     // 强制补一层**主题表面色** ✓（= 遮挡下面内容 ✓，且不调色不变深 ✓）。
     final followTheme = appdata.settings['secondaryPageFollowTheme'] == true;
+    // ⭐ P2：跟随主题 → 不画切片/不做色调，强制补主题表面色 ✓（= 遮挡 ✓）
+    // ⭐ Q2：**整页式**（`popupStyle: false`）不叠加色调/背景装饰 ✗ —— 用户要求
+    // "色调加深只作用给弹出式二级页面" ✓；此时它由**自身路由的 decoration** 负责底色 ✓。
+    final tinted = !followTheme && popupStyle;
     final decoration = secondaryPageDecoration();
     final tint = customSecondarySurfaceColor(context.colorScheme);
     final radius =
@@ -178,11 +192,11 @@ class SecondaryPageSurface extends StatelessWidget {
         BorderRadius.circular(AppRadius.md);
     final stack = Stack(
       children: [
-        if (decoration != null && !followTheme)
+        if (decoration != null && tinted)
           // 与全窗背景**逐像素对齐**的切片（此前是 `DecorationImage` 按自身盒子
           // fit → 小弹窗看到的是**缩略图** ✗）。只画不布局，见 [BackgroundSlice]。
           const Positioned.fill(child: BackgroundSlice()),
-        if (tint != null && !followTheme)
+        if (tint != null && tinted)
           Positioned.fill(child: ColoredBox(color: tint)),
         if (followTheme ||
             (fallbackToSurface && decoration == null && tint == null))
@@ -305,6 +319,8 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
     return SecondaryPageSurface(
       fallbackToSurface: false,
       clip: false,
+      // ⭐ Q2：**整页式**二级页面 → 不叠加色调/背景装饰 ✓（用户要求色调只作用于弹出式 ✓）
+      popupStyle: false,
       child: content,
     );
   }

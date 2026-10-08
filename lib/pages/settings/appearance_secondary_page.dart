@@ -1,6 +1,7 @@
 part of 'settings_page.dart';
 
-/// ⭐ N1：外观 →「Secondary page」**独立子页** ✓（用户规格：除「主题」「漫画显示」外全部子页化 ✓）。
+/// ⭐ N1：外观 →「Popup overlays（弹出式二级页面）」**独立子页** ✓
+///（用户规格：除「主题」「漫画显示」外全部子页化 ✓；Q2 用户要求改名为"弹出式二级页面" ✓）。
 ///
 /// 由 appearance.dart **原样搬迁** ✓（脚本搬移 ✓，设置项与其 key **完全不变** ✓）；
 /// 布局沿用 CustomScrollView + 各行 .toSliver() ✓（与搬迁前逐行一致 ✓，
@@ -13,7 +14,7 @@ class AppearanceSecondaryPage extends StatelessWidget {
     // 建立设置依赖 ✓：开关/设置变化后本页即时刷新 ✓（禁止 forceRebuild 整树遍历 ✗）
     AppSettingsScope.of(context);
     return PopUpWidgetScaffold(
-      title: "Secondary page".tl,
+      title: "Popup overlays".tl,
       body: CustomScrollView(
         slivers: [
           // ⭐ N1：二级页面页总开关 ✓（默认开 = 用默认弹层 ✓；关才启用样式/背景/对比强度 ✓）
