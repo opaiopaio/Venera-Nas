@@ -344,7 +344,20 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     // 供「窗口/按钮背景」取"跟随系统"的颜色：用**中性容器色**（不是主题色系），
     // 这样遮罩色与由主题色控制的 tag/滑条颜色能区分开。
     // ⚠️ 此处禁止调用 Theme.of（主题尚未建立会启动异常）。
-    systemContainerColorCache = scheme.surfaceContainerHigh;
+    // ⭐ B1 修复（审计 AP1-B1 ✓）：**只有"当前生效亮度"的那次调用才写缓存** ✗→✓ ——
+    // 原先此处**无条件**写同一个全局变量 ✗，而 `MaterialApp` 会先求值 `theme`(light ✓)、
+    // 后求值 `darkTheme`(dark ✓) → **暗色恒覆盖亮色** ✓ → 亮色界面的窗口/胶囊/图标/标签四项
+    // `system` 遮罩全部拿到**近黑灰** ✗（用户反馈"黑不溜秋"的**真根因** ✓）。
+    // 生效亮度 = `theme_mode`（system 时取平台亮度 ✓）。
+    final themeMode = appdata.settings['theme_mode'] ?? 'system';
+    final platformDark =
+        WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+        Brightness.dark;
+    final effectiveDark =
+        themeMode == 'dark' || (themeMode == 'system' && platformDark);
+    if (brightness == (effectiveDark ? Brightness.dark : Brightness.light)) {
+      systemContainerColorCache = scheme.surfaceContainerHigh;
+    }
     // ⭐ Q1 修正（用户反馈 ✓）：先用过 `secondaryContainer` ✗（深色主题下偏深 → "深很多" ✗）、
     // 又用过 `surfaceContainerHighest` ✗（**几乎中性、不随种子色变化** ✗，深色下即深灰 →
     // "黑不溜秋、不随主题色变动" ✗）。正解 = M3 的 **fixed 系色** ✓：
