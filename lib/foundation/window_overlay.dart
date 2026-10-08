@@ -196,6 +196,44 @@ Color iconOverlayColor() {
   return base.toOpacity(opacity);
 }
 
+/// ⭐ K1（2026-10-08）：**标签（tag/chip）背景**的统一入口 ✓ —— 与「窗口」「按钮」「图标按钮」都**独立** ✓。
+///
+/// 用户诉求 ✓："标签颜色也单独做一个选项，可以设置颜色和透明度，就和按钮遮罩一样，
+/// 放在窗口和控件分类下面" ✓。
+///
+/// 与外观页「标签颜色」开关（`tagColorMode`）的关系 ✓：
+/// - `tagColorMode == 'theme'` → 用 `colorScheme.secondaryContainer` ✓（**不走**本函数 ✓）；
+/// - `tagColorMode == 'overlay'`（默认 ✓）→ 用**本函数** ✓。
+///
+/// 规则 ✓：
+/// - **颜色** `tagOverlayColor`：`system`（**默认** ✓）= 跟随**窗口**色 ✓
+///   （与旧 `overlay` 行为一致 ✓ 颜色零回归 ✓）/ `transparent` / `#RRGGBB` ✓；
+/// - **不透明度** `tagOverlayOpacity`：0..1 ✓（**默认 0.85** ✓，与按钮/图标按钮默认一致 ✓）。
+Color tagOverlayColor() {
+  final v = (appdata.settings['tagOverlayColor'] ?? 'system').toString();
+  if (v == 'transparent') return Colors.transparent;
+
+  final opacity =
+      ((appdata.settings['tagOverlayOpacity'] as num?)?.toDouble() ?? 0.85)
+          .clamp(0.0, 1.0);
+  if (opacity <= 0) return Colors.transparent;
+
+  if (v == 'system') {
+    // 跟随**窗口**色 ✓（旧 overlay 行为 ✓），换成标签自己的不透明度 ✓（toOpacity 是替换 ✓）
+    final win = windowOverlayColor();
+    if (win == Colors.transparent) return Colors.transparent;
+    return win.toOpacity(opacity);
+  }
+
+  final n = (v.startsWith('#') && v.length == 7)
+      ? int.tryParse(v.substring(1), radix: 16)
+      : null;
+  final base = n == null
+      ? (systemContainerColorCache ?? Colors.transparent)
+      : Color(0xFF000000 | n);
+  return base.toOpacity(opacity);
+}
+
 /// 「窗口/按钮背景」的统一方框：启用遮罩时包一层圆角底色（用 `Material` 裁切，
 /// 保证 `InkWell` 墨水也跟随圆角）；未启用时原样返回，零回归。
 class WindowOverlayBox extends StatelessWidget {

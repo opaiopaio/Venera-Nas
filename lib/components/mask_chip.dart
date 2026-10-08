@@ -19,7 +19,9 @@ Color tagFillColor(BuildContext context, {bool selected = false}) {
   if (selected) return scheme.secondaryContainer;
   return appdata.settings['tagColorMode'] == 'theme'
       ? scheme.secondaryContainer
-      : windowOverlayColor();
+      // K1：跟随遮罩模式 → 用**标签独立入口** ✓（颜色默认跟随窗口、不透明度默认 0.85 ✓，
+      // 与「按钮/图标按钮」各自独立 ✓；用户可在「窗口与控件」区块单独设置 ✓）。
+      : tagOverlayColor();
 }
 
 /// 「选择 / 标签 chip」类的**唯一实现**。

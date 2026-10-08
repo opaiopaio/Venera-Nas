@@ -191,6 +191,29 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
           max: 1.0,
           onChanged: () => App.forceRebuild(),
         ).toSliver(),
+        // ⭐ K1：**标签背景**独立控制 ✓（颜色 + 不透明度，与按钮遮罩同形态 ✓）。
+        // ⚠️ 与上方「标签颜色」开关的关系 ✓：模式 = **跟随主题** 时用 `secondaryContainer` ✓（此项不生效 ✓）；
+        // 模式 = **跟随遮罩**（默认 ✓）时用本项 ✓。颜色默认 `system` = 跟随窗口色 ✓（颜色零回归 ✓）。
+        ColorSettingTile(
+          title: "Tag background color".tl,
+          settingValue: (appdata.settings['tagOverlayColor'] ?? 'system')
+              .toString(),
+          allowSystem: true,
+          allowTransparent: true,
+          onPicked: (value) async {
+            appdata.settings['tagOverlayColor'] = value;
+            await appdata.saveData();
+            App.forceRebuild();
+          },
+        ).toSliver(),
+        _SliderSetting(
+          title: "Tag background opacity".tl,
+          settingsIndex: "tagOverlayOpacity",
+          interval: 0.05,
+          min: 0.0,
+          max: 1.0,
+          onChanged: () => App.forceRebuild(),
+        ).toSliver(),
         SelectSetting(
           title: "Corner style".tl,
           settingKey: "windowOverlayCorner",

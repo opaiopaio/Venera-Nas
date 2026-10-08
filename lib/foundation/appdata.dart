@@ -316,6 +316,11 @@ class Settings with ChangeNotifier {
     //（与胶囊默认一致 ✓ → 开箱零视觉变化 ✓，用户可各自调开 ✓）。
     'iconOverlayColor': 'system',
     'iconOverlayOpacity': 0.85,
+    // ⭐ K1：**标签（tag/chip）背景**也独立 ✓ —— `tagOverlayColor` = `system` → 跟随**窗口**色 ✓
+    //（与旧 tagColorMode=overlay 行为一致 ✓ 颜色零回归 ✓）；`tagOverlayOpacity` 默认 0.85 ✓
+    //（与按钮/图标按钮一致 ✓）。仅当「标签颜色」= 跟随遮罩时生效 ✓（跟随主题时用 secondaryContainer ✓）。
+    'tagOverlayColor': 'system',
+    'tagOverlayOpacity': 0.85,
     'windowOverlayCorner': 'rounded', // 窗口/按钮背景圆角：rounded / square
     // ── 全局文字（与自定义背景搭配）──
     'globalTextColor': 'system', // system / transparent / #RRGGBB（system=跟随系统）
