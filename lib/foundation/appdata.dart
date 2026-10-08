@@ -346,6 +346,7 @@ class Settings with ChangeNotifier {
     'secondaryPageTint': 'darken', // 二级页面区分：darken/lighten/none
     'secondaryPageTintStrength': 0.22, // 二级页面区分强度 0.0 - 0.6
     'secondaryPageMode': 'opaque', // 二级页面样式：opaque(不透明遮挡) / transparent(半透明)
+    'secondaryMenuDim': true, // O1：首次打开即"突出二级菜单"（周围变暗 ✓），遮挡照旧 ✓
   };
 
   /// ① 背景体系：是否有背景图 / 背景底色（决定全局背景层、页面透明化、毛玻璃禁用）。
@@ -368,9 +369,10 @@ class Settings with ChangeNotifier {
 
   /// ③ 二级页面体系是否启用：**除显式选择「关闭(off)」外一律生效**。
   /// （旧逻辑用"偏离默认值"判定，导致 `不透明+加深+0.22` 这组默认值被判为未启用）
-  /// ⭐ N1：该页总开关「跟随系统主题」开启时 ✗ → 不启用 ✓（回到默认弹层 ✓）。
+  /// ⭐ O1（用户澄清 ✓）：该页总开关「跟随系统主题」开启时 ✗ **仍然启用** ✓ ——
+  /// 因为默认态必须**遮挡下面内容**（不透明面板 ✓）且**突出**（变暗 ✓）；
+  /// "跟随主题"只让**色调调整**（tint/strength ✓）不生效 ✓，见 `customSecondarySurfaceColor` ✓。
   bool get secondaryPageFeatureActive =>
-      this['secondaryPageFollowTheme'] != true &&
       (this['secondaryPageMode'] as String? ?? 'opaque') != 'off';
 
   /// 兼容旧调用：任一体系启用。

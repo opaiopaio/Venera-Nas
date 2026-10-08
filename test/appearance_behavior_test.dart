@@ -82,9 +82,11 @@ void main() {
       expect(globalFontScale(), 1.0);
     });
 
-    test('二级页面：开 → 体系不启用', () {
+    test('二级页面：开 → **仍然启用**（遮挡照旧 ✓），只让色调调整不生效', () {
       appdata.settings['secondaryPageFollowTheme'] = true;
-      expect(appdata.settings.secondaryPageFeatureActive, isFalse);
+      // O1（用户澄清 ✓）：跟随主题 ≠ 不遮挡 ✗ —— 默认态必须**遮挡下面内容** ✓ 且**突出** ✓，
+      // 只是**不做色调调整**（tint/strength 不生效 ✓，见 customSecondarySurfaceColor ✓）。
+      expect(appdata.settings.secondaryPageFeatureActive, isTrue);
     });
 
     test('开关关闭后，自定义立即恢复生效（与上方 setUp 相反）', () {
