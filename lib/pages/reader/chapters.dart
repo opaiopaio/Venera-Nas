@@ -1,4 +1,4 @@
-﻿part of 'reader.dart';
+part of 'reader.dart';
 
 class _ChaptersView extends StatefulWidget {
   const _ChaptersView(this.reader);
@@ -43,17 +43,17 @@ class _ChaptersViewState extends State<_ChaptersView> {
             actions: [
               Tooltip(
                 message: "Click to change the order".tl,
-                child: TextButton.icon(
-                  icon: Icon(
-                    !desc ? Icons.arrow_upward : Icons.arrow_downward,
-                    size: AppIconSize.sm,
-                  ),
-                  label: Text(!desc ? "Ascending".tl : "Descending".tl),
+                child: Button.normal(
                   onPressed: () {
                     setState(() {
                       desc = !desc;
                     });
                   },
+                  // H2 `.icon` 专轮：标准 `TextButton.icon` → 自绘 `Button` + `pillLabel` ✓
+                  child: pillLabel(
+                    !desc ? Icons.arrow_upward : Icons.arrow_downward,
+                    !desc ? "Ascending".tl : "Descending".tl,
+                  ),
                 ),
               ),
             ],

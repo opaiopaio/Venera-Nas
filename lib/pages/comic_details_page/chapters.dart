@@ -156,14 +156,18 @@ class _NormalComicChaptersState extends State<_NormalComicChapters> {
               SliverToBoxAdapter(
                 child: Align(
                   alignment: Alignment.center,
-                  child: TextButton.icon(
-                    icon: const Icon(Icons.arrow_drop_down),
+                  child: Button.normal(
                     onPressed: () {
                       setState(() {
                         showAll = true;
                       });
                     },
-                    label: Text("${"Show all".tl} (${chapters.length})"),
+                    // H2 `.icon` 专轮：标准 `TextButton.icon` → 自绘 `Button` + `pillLabel` ✓
+                    //（文案含动态数量 ✓ → 拼好字符串再传入 ✓）
+                    child: pillLabel(
+                      Icons.arrow_drop_down,
+                      "${"Show all".tl} (${chapters.length})",
+                    ),
                   ).paddingTop(12),
                 ),
               ),
