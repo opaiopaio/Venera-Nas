@@ -77,9 +77,11 @@ abstract final class AppTopBar {
   /// 额外余量：让首行内容不贴标题栏。
   static const double extra = 6;
 
-  /// ⭐ AA1：顶栏「标签页 / 漫画源」单个标签的**槽位高度** ✓（原为 `appbar.dart` 内的
-  /// 裸数字 ✗ → 令牌化 ✓，既符合"禁止字面量"✓，也让外观守卫棘轮计数**下降** ✓）。
-  static const double tabHeight = 48;
+  /// ⭐ AA1/AB2：顶栏「标签页 / 漫画源」**可见 chip 的高度基准** ✓ ——
+  /// `_IndicatorPainter` 用它算 chip 底板高度（`tabHeight - 3.6` ✓）→ 这是**唯一**
+  /// 决定漫画源按钮大小的量 ✗（内边距/字号都不参与 ✓）。
+  /// 由 48 收至 44 ✓（用户实测："漫画源按钮再扁一点 / 还是这么大" ✗ → 收 4px ✓）。
+  static const double tabHeight = 44;
 
   /// 页面内容顶部让位高度（= height + extra）。
   static const double boundary = height + extra;
