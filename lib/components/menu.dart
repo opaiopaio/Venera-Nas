@@ -75,9 +75,15 @@ class _MenuRoute<T> extends PopupRoute<T> {
                   windowOverlayBorderRadius() ??
                   BorderRadius.circular(AppRadius.sm),
               child: Material(
-                color: appdata.settings.customBackgroundActive
-                    ? windowOverlayColor()
-                    : context.colorScheme.surface.toOpacity(0.92),
+                // ⭐ AQ1(2/3)（用户要求 ✓，2026-10-09）：菜单底色改走**独立统一入口** ✓ ——
+                // 原先写 `customBackgroundActive ? windowOverlayColor() : <主题表面色 · 92% 不透明>` ✗，
+                // 而 `customBackgroundActive` **恒真** ✗（见 `appdata.dart` 的 `cornerStyleActive` ✓
+                // 与 `secondaryPageFeatureActive` 默认 opaque ✓）→ **恒取窗口遮罩色** ✓，
+                // 在"窗口遮罩 = 透明"的设置下菜单就是**全透明** ✗ → 用户反馈"**可视化非常差**"✗。
+                // 现走 `menuSurfaceColor()` ✓：`system`（默认 ✓）= **跟随主题的表面色** ✓
+                // × 0.92 不透明度 ✓ → 开箱即可读 ✓；并可在「外观 → 弹出式二级页面」里
+                // 自行改底色 / 不透明度 ✓（与既有二级页面外观项同构 ✓，保留设计理念 ✓）。
+                color: menuSurfaceColor(),
                 borderRadius:
                     windowOverlayBorderRadius() ??
                     BorderRadius.circular(AppRadius.sm),
