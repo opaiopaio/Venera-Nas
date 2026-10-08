@@ -73,7 +73,9 @@ void main() {
       themeButtonColorCache = null; // 缓存未写入时退回透明（安全兜底 ✓）
       expect(buttonOverlayColor(), Colors.transparent);
       expect(appdata.settings.hasWindowOverlay, isFalse);
-      expect(appdata.settings.cornerStyleActive, isFalse);
+      // ⭐ P1 修正（用户反馈 ✓）：圆角样式**始终生效** ✓ —— 跟随主题时若失效，
+      // 胶囊按钮会变成**直角方块** ✗（形状属于"主题默认"的一部分 ✓）。
+      expect(appdata.settings.cornerStyleActive, isTrue);
     });
 
     test('文字：开 → 颜色/字体/阴影/字号一律零干预', () {

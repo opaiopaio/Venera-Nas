@@ -360,9 +360,10 @@ class Settings with ChangeNotifier {
       this['windowOverlayFollowTheme'] != true &&
       (this['windowOverlayColor'] ?? 'system').toString() != 'transparent';
 
-  /// ②-b **圆角样式是否生效** —— ⭐ N1：受「窗口与控件」页总开关管理 ✓
-  ///（跟随主题时圆角也回到主题默认 ✓，不再是自定义那套 ✓）。
-  bool get cornerStyleActive => this['windowOverlayFollowTheme'] != true;
+  /// ②-b **圆角样式是否生效** —— ⭐ P1 修正（用户反馈 ✓）：**始终生效** ✓。
+  /// 上一版让它在"跟随主题"时失效 ✗ → 胶囊按钮变成**直角方块** ✗（用户实测反馈 ✓）。
+  /// 形状属于"主题默认"的一部分 ✓，不该被总开关关掉 ✓。
+  bool get cornerStyleActive => true;
 
   /// ② 窗口与控件体系是否启用（填充 或 形状任一被配置）。
   bool get windowOverlayEnabled => hasWindowOverlay || cornerStyleActive;
