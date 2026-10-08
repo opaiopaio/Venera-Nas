@@ -677,29 +677,38 @@ class _ComicDescription extends StatelessWidget {
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                if (constraints.maxHeight < 22) {
+                // ⚠️ tag 的高度/行距必须**跟随字号缩放**（`textScaler`）：
+                // 原先写死 21/24/25，字号 1.4 时文字行高 ≈22–24px > 21 ✗ →
+                // 文字被 `Clip.antiAlias` 裁掉、看起来"贴底" ✗（用户实测反馈 ✓）。
+                // 现在按缩放系数等比放大 ✓，chip 用 `minHeight` 自适应 ✓，
+                // 文字由 `Center` **横纵居中** ✓。
+                final scale = MediaQuery.textScalerOf(context).scale(1.0);
+                final tagH = 21 * scale;
+                final rowGap = 24 * scale;
+                final minH = 22 * scale;
+                if (constraints.maxHeight < minH) {
                   return Container();
                 }
-                int cnt = (constraints.maxHeight - 22).toInt() ~/ 25;
+                int cnt = (constraints.maxHeight - minH) ~/ rowGap;
                 return Container(
                   clipBehavior: Clip.antiAlias,
-                  height: 21 + cnt * 24,
+                  height: tagH + cnt * rowGap,
                   width: double.infinity,
                   decoration: const BoxDecoration(),
                   child: Wrap(
                     runAlignment: WrapAlignment.start,
                     clipBehavior: Clip.antiAlias,
-                    crossAxisAlignment: WrapCrossAlignment.end,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     spacing: 4,
                     runSpacing: 3,
                     children: [
                       for (var s in tags!)
                         Container(
-                          height: 21,
                           padding: const EdgeInsets.symmetric(
                             horizontal: AppSpace.xs,
                           ),
                           constraints: BoxConstraints(
+                            minHeight: tagH,
                             maxWidth: constraints.maxWidth * 0.45,
                           ),
                           decoration: BoxDecoration(
