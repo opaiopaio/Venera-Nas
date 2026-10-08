@@ -303,17 +303,44 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ),
       ),
     );
-    // 「文字按钮 / 描边按钮」的前景跟随**全局文字色** ✓（实测反馈："扫描 NAS" 这类
-    // 按钮文字不跟随即此 ✗）。注意：
+    // 「文字按钮 / 描边按钮 / 实色与 tonal 按钮」的前景都跟随**全局文字色** ✓
+    // （实测反馈："扫描 NAS / 导入" 这类按钮文字与字体色不跟随即此 ✗）。
+    // 注意：
     //  - **不要**给 `iconButtonTheme` 接全局文字色 ✗ —— 那会让图标跟着文字变色（已修过一次）；
-    //  - **实色按钮**（`filledButtonTheme` 等）保持自身配色 ✓ —— 蓝底白字才是可读的组合，
-    //    硬套全局文字色会出现"蓝底红字"不可读 ✗。
+    //  - 禁用态保留透明度（`fg @0.38`），避免"看起来可点" ✗。
     final overlayFg = globalTextColor();
+    WidgetStateProperty<Color?>? overlayFgProp(Color fg) =>
+        WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return fg.toOpacity(0.38);
+          }
+          return fg;
+        });
     final overlayTextButtonStyle = overlayFg == null
         ? overlayButtonStyle
         : overlayButtonStyle.copyWith(
-            foregroundColor: WidgetStatePropertyAll(overlayFg),
+            foregroundColor: overlayFgProp(overlayFg),
           );
+    // ─── P8 胶囊按钮规范（见 doc-private/03-implementation/07-background-and-color-picker.md）───
+    // 底色 = 遮罩色（`windowOverlayColor()` ✓）、文字 = 全局文字色（`globalTextColor()` ✓）、
+    // **文字水平+垂直居中** ✓、胶囊形状 ✓、`AppSpace` 令牌化间距 ✓、禁用态 0.38 ✓。
+    // 直角模式（`windowOverlayBorderRadius()` 为 null）下形状退化为直角 ✓，尊重用户的形状设置。
+    final pillShape = windowOverlayBorderRadius() == null
+        ? const WidgetStatePropertyAll<OutlinedBorder>(
+            RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          )
+        : const WidgetStatePropertyAll<OutlinedBorder>(StadiumBorder());
+    final pillButtonStyle = ButtonStyle(
+      backgroundColor: WidgetStatePropertyAll(windowOverlayColor()),
+      foregroundColor: overlayFg == null ? null : overlayFgProp(overlayFg),
+      alignment: Alignment.center,
+      minimumSize: const WidgetStatePropertyAll(Size(0, 36)),
+      padding: const WidgetStatePropertyAll(
+        EdgeInsets.symmetric(horizontal: AppSpace.lg, vertical: AppSpace.xs),
+      ),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      shape: pillShape,
+    );
     final scheme = SeedColorScheme.fromSeeds(
       primaryKey: primary,
       secondaryKey: secondary,
@@ -335,16 +362,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           ? Colors.transparent
           : null,
       iconButtonTheme: IconButtonThemeData(style: overlayButtonStyle),
+      // 文字按钮：无底色（不适用 P8 底色条款 ✓），仅前景跟随全局文字色 ✓
       textButtonTheme: TextButtonThemeData(style: overlayTextButtonStyle),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: overlayTextButtonStyle,
-      ),
+      // ↓ 以下三类 = **胶囊按钮**，统一走 P8 规范（遮罩底色 + 全局文字色 + 居中 + 胶囊 ✓）
+      outlinedButtonTheme: OutlinedButtonThemeData(style: pillButtonStyle),
+      filledButtonTheme: FilledButtonThemeData(style: pillButtonStyle),
+      elevatedButtonTheme: ElevatedButtonThemeData(style: pillButtonStyle),
     );
     // 全局文字（字体 + 颜色）：注入主题文字，做到"大致全控制"。
-    // 注 1：FilledButton 等"实色主操作按钮"的前景保留自身配色，避免与实色底冲突不可读。
-    // 注 2：**不要**把全局文字色注入 `iconTheme` ✗ —— 那会让侧栏/设置等处的**图标**
-    //       跟着文字变色（实测反馈："侧边栏按钮和设置按钮的图标也变色了" ✗）；
-    //       图标应保持主题自身的前景色。
+    // 注 1：所有按钮的**文字**都跟随全局文字色 ✓（text/outlined/filled/tonal ✓，见上方注入）；
+    //       仅 `iconButtonTheme` 与 `iconTheme` 不接 ✓ —— 图标保持主题前景色，
+    //       否则侧栏/设置图标会跟着文字变色 ✗（已踩过一次）。
+    // 注 2：**不要**把全局文字色注入 `iconTheme` ✗（同上）。
     if (gStyle != null) {
       final fg = gStyle.color;
       // ListTile 的标题/副标题样式（全局文字样式自身已含颜色/字体/阴影/发光 ✓）

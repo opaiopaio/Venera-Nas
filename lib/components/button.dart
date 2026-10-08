@@ -206,9 +206,12 @@ class _ButtonState extends State<Button> {
           duration: const Duration(milliseconds: 160),
           padding: padding,
           constraints: const BoxConstraints(minWidth: 76, minHeight: 32),
+          // P8：胶囊形状 ✓；「窗口/按钮背景」设为直角时退化为直角 ✓（尊重用户形状设置）
           decoration: BoxDecoration(
             color: buttonColor,
-            borderRadius: BorderRadius.circular(AppRadius.xl),
+            borderRadius: windowOverlayBorderRadius() == null
+                ? BorderRadius.zero
+                : BorderRadius.circular(AppRadius.full),
             boxShadow:
                 (isHover &&
                     !isLoading &&
@@ -245,43 +248,37 @@ class _ButtonState extends State<Button> {
   }
 
   Color get buttonColor {
+    // ─── P8 胶囊按钮规范（doc-private/03-implementation/07-background-and-color-picker.md）───
+    // 底色 = **遮罩色**（`windowOverlayColor()` ✓，跟随「窗口/按钮背景颜色 × 不透明度」）。
+    // 显式传 `widget.color` 时以显式色为准 ✓（危险操作如"删除"用 error 色的例外 ✓）。
+    final mask = windowOverlayColor();
     if (widget.type == ButtonType.filled) {
-      var color = widget.color ?? context.colorScheme.primary;
-      if (isHover) {
-        return color.toOpacity(0.9);
-      } else {
-        return color;
-      }
+      var color = widget.color ?? mask;
+      return isHover ? color.toOpacity(0.9) : color;
     }
     if (widget.type == ButtonType.normal) {
-      var color = widget.color ?? context.colorScheme.surfaceContainer;
-      if (isHover) {
-        return color.toOpacity(0.9);
-      } else {
-        return color;
-      }
+      var color = widget.color ?? mask;
+      return isHover ? color.toOpacity(0.9) : color;
     }
-    if (isHover) {
-      return context.colorScheme.outline.toOpacity(0.2);
-    }
-    return Colors.transparent;
+    // outlined / text：底色同样是遮罩色（未配置遮罩即透明 ✓），悬停时略加强 ✓
+    if (widget.color != null) return widget.color!;
+    return isHover
+        ? mask.toOpacity(mask.a >= 1 ? 1 : 0.5 + mask.a * 0.5)
+        : mask;
   }
 
   Color get textColor {
-    // 全局文字色优先 ✓：用户设置了「字体颜色」时，**文字/描边按钮**的文字应跟随
-    // （实测反馈："扫描 NAS"、"Import" 这类按钮文字不跟随即此 ✗）。
-    // ⚠️ **实色按钮（filled）保持自身前景**（`onPrimary`）✗→✓ 不改 —— 蓝底白字
-    //    才是可读组合，硬套全局文字色会出现"蓝底红字"不可读。
-    // ⚠️ `iconButtonTheme` 也不接全局文字色（那会连图标一起染色，已修过一次 ✗）。
+    // ─── P8 胶囊按钮规范 ───
+    // **文字统一跟随全局文字色** ✓（用户要求"按钮字体颜色也跟随设置" ✓）。
+    // 由于 P8 底色已改为遮罩色（不再是强调色 ✗），全局文字色在其上可读 ✓。
+    // 例外：显式传 `widget.color`（危险操作等）时用 `onPrimary` 保证对比度 ✓。
+    // ⚠️ 图标（`IconTheme`）与 `iconButtonTheme` **不接**全局文字色 ✗（否则图标跟着变色）。
     final global = globalTextColor();
-    if (widget.type == ButtonType.outlined) {
-      return widget.color ?? global ?? context.colorScheme.primary;
+    if (widget.color != null) return context.colorScheme.onPrimary;
+    if (widget.type == ButtonType.outlined || widget.type == ButtonType.text) {
+      return global ?? context.colorScheme.primary;
     }
-    return widget.type == ButtonType.filled
-        ? context.colorScheme.onPrimary
-        : (widget.type == ButtonType.text
-              ? widget.color ?? global ?? context.colorScheme.primary
-              : global ?? context.colorScheme.onSurface);
+    return global ?? context.colorScheme.onSurface;
   }
 }
 
