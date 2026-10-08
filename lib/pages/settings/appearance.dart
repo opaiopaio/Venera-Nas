@@ -311,7 +311,8 @@ class _FontFileTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextButton(
+          // P8：标准 `TextButton` → 应用自绘 `Button`（一套体系 ✓，高度锁 32 ✓）
+          Button.normal(
             onPressed: () => _pick(context),
             child: Text("Select file".tl),
           ),
@@ -447,7 +448,8 @@ class _BackgroundImageTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextButton(
+          // P8：标准 `TextButton` → 应用自绘 `Button`（一套体系 ✓，高度锁 32 ✓）
+          Button.normal(
             onPressed: () => _pick(context),
             child: Text("Select image".tl),
           ),

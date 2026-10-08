@@ -62,7 +62,8 @@ class DebugPageState extends State<DebugPage> {
                   ),
                 ),
               ),
-              TextButton(
+              // P8：标准 `TextButton` → 应用自绘 `Button`（一套体系 ✓，高度锁 32 ✓）
+              Button.normal(
                 onPressed: () {
                   try {
                     var res = JsEngine().runCode(controller.text, "<debug>");
