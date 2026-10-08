@@ -321,6 +321,11 @@ class Settings with ChangeNotifier {
     //（与按钮/图标按钮一致 ✓）。仅当「标签颜色」= 跟随遮罩时生效 ✓（跟随主题时用 secondaryContainer ✓）。
     'tagOverlayColor': 'system',
     'tagOverlayOpacity': 0.85,
+    // ⭐ AF1（用户要求 ✓）：顶栏「分类/发现页顶部**漫画源按钮**」（含「+ 加号」✓）独立控制 ✓：
+    // `system` = 跟随**主题**（`secondaryContainer` ✓ = 现状外观 ✓ 零回归 ✓）/ `transparent` / `#RRGGBB` ✓；
+    // 不透明度默认 **1** ✓（与现有观感一致 ✓）。仅「窗口与控件」总开关关闭（自定义 ✓）时生效 ✓。
+    'sourceTabOverlayColor': 'system',
+    'sourceTabOverlayOpacity': 1.0,
     // ⭐ N1：「跟随系统主题」总开关 ✓ —— 每个外观子页一个 ✓（默认**开** ✓ = 软件最初那种
     // 没有任何自定义外观的干净默认 ✓）。开启时该页所有自定义项**隐藏且不生效** ✓；
     // 关闭后才参与渲染 ✓。三者全开 = 完全回到最初的默认外观 ✓。

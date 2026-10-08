@@ -350,6 +350,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     // "黑不溜秋、不随主题色变动" ✗）。正解 = M3 的 **fixed 系色** ✓：
     // `secondaryFixed` **跟随种子色** ✓ 且**明暗主题下都保持浅色** ✓（正是 M3 为"固定浅色容器"设计的 ✓）。
     themeButtonColorCache = scheme.secondaryFixed;
+    // ⭐ AF1：顶栏「漫画源」按钮（分类/发现页顶部一排 ✓）的**跟随主题色** = `secondaryContainer` ✓
+    //（= 现状外观 ✓ 零回归 ✓；`sourceTabOverlayColor()` 读取它 ✓）。
+    themeSourceTabColorCache = scheme.secondaryContainer;
     final gStyle = globalTextStyle();
     var theme = ThemeData(
       colorScheme: scheme,

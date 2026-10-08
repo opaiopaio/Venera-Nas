@@ -333,6 +333,36 @@ BoxDecoration? secondaryPageDecoration() {
 /// `systemContainerColorCache` 的既有模式 ✓）。
 Color? themeButtonColorCache;
 
+/// ⭐ AF1：**顶栏「漫画源」按钮**（分类/发现页顶部那一排 ✓，含「+ 加号」✓）的**主题色缓存** ✓ ——
+/// 由 `main.dart` 的 `getTheme()` 写入 `scheme.secondaryContainer` ✓（= 现状外观 ✓ 零回归 ✓）。
+Color? themeSourceTabColorCache;
+
+/// ⭐ AF1（用户要求 ✓）：顶栏「分类/发现页顶部**漫画源按钮**」的统一入口 ✓。
+///
+/// - **颜色** `sourceTabOverlayColor`：`system`（默认 ✓）= 跟随**主题**（`secondaryContainer` ✓，
+///   即用户现有观感 ✓ 零回归 ✓）/ `transparent`（透明 ✓）/ `#RRGGBB`（自定义 ✓）；
+/// - **不透明度** `sourceTabOverlayOpacity`：0..1 ✓（默认 1 ✓）；
+/// - 受「窗口与控件」总开关管理 ✓：`windowOverlayFollowTheme == true`（跟随主题 ✓）时
+///   恒取 `secondaryContainer` ✓，与其它遮罩（窗口/胶囊/图标按钮/标签 ✓）逻辑一致 ✓。
+Color sourceTabOverlayColor() {
+  if (appdata.settings['windowOverlayFollowTheme'] == true) {
+    return themeSourceTabColorCache ?? Colors.transparent;
+  }
+  final v = (appdata.settings['sourceTabOverlayColor'] ?? 'system').toString();
+  if (v == 'transparent') return Colors.transparent;
+  final opacity =
+      ((appdata.settings['sourceTabOverlayOpacity'] as num?)?.toDouble() ?? 1.0)
+          .clamp(0.0, 1.0);
+  if (opacity <= 0) return Colors.transparent;
+  final n = (v.startsWith('#') && v.length == 7)
+      ? int.tryParse(v.substring(1), radix: 16)
+      : null;
+  final base = n == null
+      ? (themeSourceTabColorCache ?? Colors.transparent)
+      : Color(0xFF000000 | n);
+  return base.toOpacity(opacity);
+}
+
 Color? customSecondarySurfaceColor(ColorScheme scheme) {
   // ⭐ O1（用户澄清 ✓）：二级页面「跟随系统主题」时**只让色调不生效** ✓ ——
   // 默认态必须**不做色调调整** ✓，但**遮挡下面内容** ✓（`secondaryPageFeatureActive` 仍为 true ✓）
