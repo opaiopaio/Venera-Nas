@@ -20,7 +20,15 @@ void main(List<String> args) {
   final patterns = <String, RegExp>{
     '硬编码圆角': RegExp(r'BorderRadius\.circular\([0-9]|Radius\.circular\([0-9]'),
     '硬编码时长': RegExp(r'Duration\(milliseconds:\s*[0-9]'),
-    '裸透明度': RegExp(r'\.withOpacity\(0\.[0-9]+\)'),
+    // ⭐ C8 修复（审计 AP1-C8 ✓）：原正则**只认** `.withOpacity(0.x)` ✗ →
+    // `.toOpacity(0.x)`（本项目自加的扩展 ✓）/ `.withValues(alpha: 0.x)`（Flutter 3.27+ 推荐 ✓）/
+    // `.withAlpha(0x33)` **全部漏网** ✗（实测 51 处 ✓）→ 该条铁律此前**零自动化覆盖** ✓。
+    // 本轮**扩正则** ✓，并把**存量**作为新基线**显式记账** ✓（棘轮仍"只许降不许升" ✓ →
+    // 之后每改用一次 `AppOpacity` 令牌，该计数就应下降一格 ✓）。
+    '裸透明度': RegExp(
+      r'\.withOpacity\(0\.[0-9]+\)|\.toOpacity\(0\.[0-9]+\)|'
+      r'\.withValues\(\s*alpha:\s*0\.[0-9]+\s*\)|\.withAlpha\(0x?[0-9a-fA-F]{1,2}\)',
+    ),
     '固定高度': RegExp(r'(?<!\w)height:\s*[0-9]+(\.[0-9]+)?\s*,'),
     '表面色字面量': RegExp(r'color:\s*Colors\.(white|black|grey|gray)'),
     '硬编码图标尺寸': RegExp(r'(?<!\w)(size|iconSize):\s*[0-9]'),
