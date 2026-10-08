@@ -292,14 +292,12 @@ class _AppTabBarState extends State<AppTabBar> {
 
   late List<GlobalKey> keys;
 
-  static const _kTabHeight =
-      48.0; // Z3：回退 Z2 的 48→44 ✗（那是**槽位/行高** ✗，用户要的是按钮大小 ✓）
+  static const _kTabHeight = 48.0;
 
   static const tabPadding = EdgeInsets.symmetric(
     horizontal: AppSpace.md,
-    // ⭐ Z3（用户澄清 ✓）：**按钮本身的大小高度**由这里决定 ✓ ——
-    // `AppSpace.tiny`(6) → `AppSpace.xs`(4) ✓ = 上下各 −2px = **按钮小 4px** ✓
-    //（用户原话："按钮的高度不是按钮位置高度啊，是**按钮大小**高度" ✓）。
+    // ⭐ Z3（用户澄清 ✓）：**按钮本身的大小高度**由这里决定 ✓ —— 垂直内边距
+    // `AppSpace.tiny` → `AppSpace.xs` ✓ = 上下各收一点 = **按钮变小** ✓。
     vertical: AppSpace.xs,
   );
 
@@ -990,7 +988,7 @@ class TabActionButton extends StatelessWidget {
 
   final void Function() onPressed;
 
-  static const _kTabHeight = 46.0; // Z3：回退 Z2 的 46→42 ✗（同上 ✓）
+  static const _kTabHeight = 46.0;
 
   @override
   Widget build(BuildContext context) {
