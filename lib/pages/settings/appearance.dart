@@ -66,27 +66,9 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
             App.forceRebuild();
           },
         ).toSliver(),
-        // ⭐ D1：「标签颜色」模式 ✓ —— 让全项目**小标签（tag/chip）**可切换：
-        // 「跟随遮罩」= `windowOverlayColor()`（与分类页标签一致 ✓，默认 ✓）
-        // 或「跟随主题」= `colorScheme.secondaryContainer`（原样式 ✓）。
-        // 取值 key：`tagColorMode` = `overlay`（默认）/ `theme` ✓。
-        ListTile(
-          title: Text("Tag Color".tl),
-          subtitle: Text("Follow Mask or Theme".tl),
-          trailing: Select(
-            current: appdata.settings['tagColorMode'] == 'theme'
-                ? "Follow Theme".tl
-                : "Follow Mask".tl,
-            values: ["Follow Mask".tl, "Follow Theme".tl],
-            onTap: (index) {
-              appdata.settings['tagColorMode'] = index == 0
-                  ? 'overlay'
-                  : 'theme';
-              appdata.saveData();
-              App.forceRebuild();
-            },
-          ),
-        ).toSliver(),
+        // ⭐ L1：「标签颜色」模式开关（跟随遮罩 / 跟随主题 ✓，key `tagColorMode`）
+        // 已按用户要求**删除** ✗ —— 标签底色改由下方「标签背景颜色 / 不透明度」**独立控制** ✓
+        //（想用主题色时，把「标签背景颜色」显式设成对应颜色即可 ✓）。
         _SettingPartTitle(title: "Background".tl, icon: Icons.wallpaper),
         const _BackgroundImageTile().toSliver(),
         ColorSettingTile(

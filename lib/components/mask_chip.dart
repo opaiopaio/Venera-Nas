@@ -17,11 +17,11 @@ Color tagFillColor(BuildContext context, {bool selected = false}) {
   AppSettingsScope.of(context);
   final scheme = context.colorScheme;
   if (selected) return scheme.secondaryContainer;
-  return appdata.settings['tagColorMode'] == 'theme'
-      ? scheme.secondaryContainer
-      // K1：跟随遮罩模式 → 用**标签独立入口** ✓（颜色默认跟随窗口、不透明度默认 0.85 ✓，
-      // 与「按钮/图标按钮」各自独立 ✓；用户可在「窗口与控件」区块单独设置 ✓）。
-      : tagOverlayColor();
+  // ⭐ L1：标签底色**完全独立控制** ✓ —— 原「标签颜色」模式开关（`tagColorMode`：
+  // 跟随遮罩 / 跟随主题 ✓）已按用户要求**删除** ✗；现在统一走 `tagOverlayColor()` ✓
+  //（颜色默认跟随窗口 ✓、不透明度默认 0.85 ✓，可在「窗口与控件」区块单独设置 ✓）。
+  // 想用主题色时：把「标签背景颜色」显式设为对应颜色即可 ✓。
+  return tagOverlayColor();
 }
 
 /// 「选择 / 标签 chip」类的**唯一实现**。
