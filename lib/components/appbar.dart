@@ -631,6 +631,13 @@ class _IndicatorPainter extends CustomPainter {
 
   int get maxTabIndex => offsets!.length - 2;
 
+  /// ⭐ AI1 续3：按钮的**可见底边** = 行高（实测 `itemHeight` ✓）− chip 自身的下内边距 ✓
+  ///（`tabItemPadding.bottom` ✓）。提到 painter 级别 ✓ → `indicatorRect` 与 `paint` 的裁切
+  /// **同源** ✓（避免再次出现"条被裁掉"✗ / "条跑到按钮外"✗）。
+  double get pillBottom =>
+      (itemHeight ?? _AppTabBarState._kTabHeight) -
+      _AppTabBarState.tabItemPadding.bottom;
+
   Rect indicatorRect(Size tabBarSize, int tabIndex) {
     assert(offsets != null);
     assert(offsets!.isNotEmpty);
@@ -638,13 +645,13 @@ class _IndicatorPainter extends CustomPainter {
     assert(tabIndex <= maxTabIndex);
     var (tabLeft, tabRight) = (offsets![tabIndex], offsets![tabIndex + 1]);
 
-    // ⭐ AI1 续（用户反馈 ✓）：y 由固定 `_kTabHeight - 3.6` ✗ 改为**贴齐按钮真正的底边** ✓
-    //（用实测的 `itemHeight` ✓ = 该行 chip 的实际高度 ✓）→ 条成为按钮**底边那一整条** ✓，
-    // 不再浮在上方被圆角裁出两侧空隙 ✗（用户："不是完整贴边" ✗）。
-    final double chipBottom = (itemHeight ?? _AppTabBarState._kTabHeight) - 3;
+    // ⭐ AI1 续3（用户反馈 ✓）：条必须**在按钮内部**且**覆盖整个底边** ✓ ——
+    // 关键：按钮的**可见底边** = 行高（实测 `itemHeight` ✓）**减去 chip 自身的下内边距** ✓
+    //（`tabItemPadding.bottom` ✓，**同源** ✓）。此前直接用 `itemHeight` ✗ → 条落到按钮**外面**
+    // 接了一块 ✗（用户："变成给按钮接一块了"✗）；直接用固定高度 ✗ 又会浮在上方留缝 ✗。
     var rect = Rect.fromLTWH(
       tabLeft + padding.left,
-      chipBottom,
+      pillBottom - 3,
       tabRight - tabLeft - padding.horizontal,
       3,
     );
@@ -683,10 +690,9 @@ class _IndicatorPainter extends CustomPainter {
       chipLeft,
       0,
       (chipRight - chipLeft).clamp(0, size.width),
-      // ⭐ AI1 续（用户反馈 ✓）：裁切高度必须与条的 y **同源** ✗→✓ ——
-      // 上一版条用实测 `itemHeight` 定位 ✓ 而裁切仍写死 `_kTabHeight` ✗ → 条落在裁切区外
-      // 被**整条裁掉** ✗（用户实测："小条完全消失了"✗）。两者统一用同一个高度 ✓。
-      itemHeight ?? _AppTabBarState._kTabHeight,
+      // ⭐ AI1 续3：裁切高度**与条同源** ✓ —— 同样减去 chip 的下内边距 ✓
+      //（此前两者不一致 ✗ 导致"条被裁掉"✗ 或"条跑到按钮外"✗）。
+      pillBottom,
     );
     canvas.save();
     canvas.clipRRect(
