@@ -186,8 +186,14 @@ class SecondaryPageSurface extends StatelessWidget {
     final tinted = !followTheme && popupStyle;
     final decoration = secondaryPageDecoration();
     final tint = customSecondarySurfaceColor(context.colorScheme);
-    // ⭐ T1/U1（用户反馈 ✓）：**弹层一律有底** ✓（保证"遮挡下面内容" ✓，与背景体系无关 ✓）。
-    final needSurface = true;
+    // ⭐ W2（用户选定方案 B ✓）：**整页式永远透出背景** ✓、**完全不受本节选项影响** ✗ ——
+    // - **有背景**（背景图/背景底色 ✓）→ **不铺任何底** ✓（露出全局背景 ✓，用户实测
+    //   "整页式被纯白底色覆盖、不显示背景" ✗）；
+    // - **无背景** → 退回**主题表面色** ✓（此时没有"背景"可露 ✓；若也不铺底会透出下层页面 ✗）；
+    // - 弹出式 ✓ 照旧：有底（遮挡 ✓）+ 可调模式/色调 ✓。
+    // 注意 ✓：`decoration`（壁纸切片）与 `tint`（色调 ✓）都只对**弹出式**生效 ✗（`tinted` ✓），
+    // 所以整页式**天然不受**这两个选项影响 ✓。
+    final needSurface = popupStyle || !appdata.settings.backgroundFeatureActive;
     // ⭐ U1（用户反馈 ✓）：底**按模式给透明度** ✓，色调**混入底**而不是叠蒙层 ✗。
     // - `opaque`（不透明 ✓）→ 不透明主题表面色 ✓（遮挡 ✓）；
     // - `transparent`（半透明 ✓）→ 用 `AppOpacity.hint` ✓ 的底 ✓，**透出下层内容** ✓
