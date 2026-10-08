@@ -266,6 +266,20 @@ class _GalleryModeState extends State<_GalleryMode>
     super.initState();
   }
 
+  // ⭐ AP1-A3（审计 ✓）：本 State 原先**没有 `dispose`** ✗ → `PageController`（initState 内自建 ✓）
+  // 与 `photoViewControllers` 里的 `PhotoViewController` 全部**泄漏** ✓（滚动位置/手势/动画状态常驻 ✓）。
+  // ⚠️ 只在 `State.dispose` 释放 ✓：**不要**在 `onPageChanged` 的 `remove(key)` 处 dispose ✗
+  //（那之后同帧仍会使用该 controller ✓ → 会 use-after-dispose ✓）。
+  @override
+  void dispose() {
+    controller.dispose();
+    for (final c in photoViewControllers.values) {
+      c.dispose();
+    }
+    photoViewControllers.clear();
+    super.dispose();
+  }
+
   /// Get the range of images for the given page. [page] is 1-based.
   (int start, int end) getPageImagesRange(int page) {
     var imagesPerPage = reader.imagesPerPage;
