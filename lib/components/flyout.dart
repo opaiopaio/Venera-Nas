@@ -150,6 +150,9 @@ class FlyoutState extends State<Flyout> {
                   child: AnimatedBuilder(
                     animation: animation,
                     builder: (context, builder) {
+                      // ⭐ 复查修复（2026-10-09 ✓）：同一插值里**重复调用了两次**同一函数 → 提取一次 ✓
+                      //（纯重构，语义逐位不变 ✓；`secondaryMenuBarrierColor()` 恒为 const 色 ✓，无分配 ✓）。
+                      final barrier = secondaryMenuBarrierColor();
                       return ColoredBox(
                         // ⭐ C6-新②（2026-10-09 审计 ✓）：原先**写死** `Colors.black @0.3` ✗ ——
                         // 完全无视应用内的「菜单变暗」（`secondaryMenuDim` ✓）开关 ✓ → 关掉它也照样变暗 ✗。
@@ -159,9 +162,7 @@ class FlyoutState extends State<Flyout> {
                         // 保留原有"随动画渐显"✓：按它自身 alpha × `animation.value` ✓。
                         // **用户可见变化**：仅当你在「弹出式二级页面」里关掉"菜单变暗"时，
                         // Flyout 的暗罩**才会消失** ✓（开着时与旧观感一致 ✓）。
-                        color: secondaryMenuBarrierColor().toOpacity(
-                          secondaryMenuBarrierColor().a * animation.value,
-                        ),
+                        color: barrier.toOpacity(barrier.a * animation.value),
                       );
                     },
                   ),

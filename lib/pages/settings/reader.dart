@@ -322,8 +322,26 @@ class _ReaderSettingsState extends State<ReaderSettings> {
           ),
         ),
         SliverAnimatedVisibility(
+          // ⭐ 复查修复（2026-10-09 ✓）：**本页还有 2 处漏改的全局读数** ✗ ——
+          // C4 当时只把前面两处改成 `readSettingValue(...)` ✓，但可见性判定这里（以及下面"连续模式"
+          // 那处 ✓）仍直接读**全局** `appdata.settings['readerMode']` ✗ → 一旦 `readerMode` 被纳入
+          // 「漫画 / 设备专属设置」的作用域存储 ✓，**显示就会与生效值不一致** ✓。
+          // 现按与 C4 **完全相同的写法**改为作用域有效值 ✓（`??` 回退全局 ✓，`.toString()` 防类型 ✓）。
+          // 注 ✓：`readerMode` 目前**只写全局** ✓ → 本改动**行为等价** ✓（作用域扩展后自动正确 ✓）。
           visible:
-              appdata.settings['readerMode']!.startsWith('gallery') &&
+              (appdata.settings.readSettingValue(
+                        key: 'readerMode',
+                        comicId: isEnabledSpecificSettings
+                            ? widget.comicId
+                            : null,
+                        comicSource: isEnabledSpecificSettings
+                            ? widget.comicSource
+                            : null,
+                        useDeviceSettings: useDeviceSpecificSettings,
+                      ) ??
+                      appdata.settings['readerMode'])
+                  .toString()
+                  .startsWith('gallery') &&
               (appdata.settings['readerScreenPicNumberForLandscape'] > 1 ||
                   appdata.settings['readerScreenPicNumberForPortrait'] > 1),
           child: _SwitchSetting(
@@ -339,7 +357,21 @@ class _ReaderSettingsState extends State<ReaderSettings> {
           ),
         ),
         SliverAnimatedVisibility(
-          visible: appdata.settings['readerMode']!.startsWith('continuous'),
+          // ⭐ 复查修复（2026-10-09 ✓）：同 C4 —— 改用**作用域有效值** ✓（原为全局读数 ✗，见上一条注释 ✓）。
+          visible:
+              (appdata.settings.readSettingValue(
+                        key: 'readerMode',
+                        comicId: isEnabledSpecificSettings
+                            ? widget.comicId
+                            : null,
+                        comicSource: isEnabledSpecificSettings
+                            ? widget.comicSource
+                            : null,
+                        useDeviceSettings: useDeviceSpecificSettings,
+                      ) ??
+                      appdata.settings['readerMode'])
+                  .toString()
+                  .startsWith('continuous'),
           child: _SliderSetting(
             title: "Mouse scroll speed".tl,
             settingsIndex: "readerScrollSpeed",
