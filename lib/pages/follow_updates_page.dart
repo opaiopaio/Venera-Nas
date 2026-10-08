@@ -378,6 +378,10 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
     String? selectedFolder;
     showDialog(
       context: App.rootContext,
+      // ⭐ E1-④：这里传的是 `App.rootContext` ✗（在主题之上 ✓）→ 主题层的
+      // `dialogTheme.barrierColor` **取不到** ✗ → 必须**显式传**统一判定 ✓
+      //（用户实测：追更页「立即检查 → 选文件夹」弹窗不受「突出二级菜单」控制 ✗）。
+      barrierColor: secondaryMenuBarrierColor(),
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {

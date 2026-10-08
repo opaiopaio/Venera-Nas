@@ -1,5 +1,26 @@
 part of 'components.dart';
 
+/// ⭐ E1：二级菜单/弹层**暗罩**的统一判定 ✓ —— 由外观设置「突出二级菜单」控制 ✓。
+///
+/// - 开关 **开** → `Colors.black54` ✓（周围变暗 ✓）；
+/// - 开关 **关** → `Colors.transparent` ✓（统一无暗罩 ✓；遮罩仍存在 ✓，点击外部关闭不受影响 ✓）；
+/// - **未设置** → 保持原有行为 ✓（有自定义背景时不变暗、否则变暗 ✓，零回归 ✓）。
+///
+/// 用法 ✓：
+/// - `PopUpWidget.barrierColor` 直接用它 ✓；
+/// - `showDialog(...)` 若传的是 **`App.rootContext`** 这类"主题之上"的 context ✗，
+///   主题层的 `dialogTheme.barrierColor` **取不到** ✗ → 必须在调用点**显式传**
+///   `barrierColor: secondaryMenuBarrierColor()` ✓（用户实测：追更页「立即检查」的
+///   选文件夹弹窗不受开关控制 ✗，根因即此 ✓）。
+Color secondaryMenuBarrierColor() {
+  final dim = appdata.settings['secondaryMenuDim'];
+  if (dim == true) return Colors.black54;
+  if (dim == false) return Colors.transparent;
+  return appdata.settings.customBackgroundActive
+      ? Colors.transparent
+      : Colors.black54;
+}
+
 class PopUpWidget<T> extends PopupRoute<T> {
   PopUpWidget(this.widget);
 
@@ -8,19 +29,8 @@ class PopUpWidget<T> extends PopupRoute<T> {
   final _innerKey = GlobalKey<NavigatorState>();
 
   @override
-  // ⭐ E1-①：二级菜单的"周围变暗"由外观设置「突出二级菜单」控制 ✓（key `secondaryMenuDim` ✓）：
-  // - `true`  → 强制变暗（`Colors.black54` ✓）；
-  // - `false` → 强制不变暗（`Colors.transparent` ✓，与其它二级菜单一致 ✓）；
-  // - **未设置（默认）** → 保持**原有行为** ✓（有自定义背景时不变暗、否则变暗 ✓，零回归 ✓）。
-  // 用 `Colors.transparent` 而不是 `null` ✓：遮罩仍存在 ✓ → 点击外部关闭依然可用 ✓。
-  Color? get barrierColor {
-    final dim = appdata.settings['secondaryMenuDim'];
-    if (dim == true) return Colors.black54;
-    if (dim == false) return Colors.transparent;
-    return appdata.settings.customBackgroundActive
-        ? Colors.transparent
-        : Colors.black54;
-  }
+  // E1：暗罩统一走 [secondaryMenuBarrierColor] ✓（逻辑集中一处 ✓，避免两条实现漂移 ✗）。
+  Color? get barrierColor => secondaryMenuBarrierColor();
 
   @override
   bool get barrierDismissible => true;
