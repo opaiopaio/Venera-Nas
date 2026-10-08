@@ -31,9 +31,11 @@ class Select extends StatelessWidget {
           var size = renderBox.size;
           showMenu(
             elevation: 3,
-            color: context.brightness == Brightness.light
-                ? const Color(0xFFF6F6F6)
-                : const Color(0xFF1E1E1E),
+            // ⭐ C6-新③（2026-10-09 审计 ✓）：原为**写死**的亮/暗两色 ✗
+            //（`0xFFF6F6F6` / `0xFF1E1E1E` ✓）—— 完全脱离主题 ✓：改主题色/换亮暗、或启用
+            // 「窗口与控件」体系后，这个下拉菜单都**不跟着变** ✗。现改走**主题表面色** ✓
+            //（`colorScheme.surface` ✓，M3 下亮暗分别接近原来那两个值 ✓ → 观感变化很小 ✓）。
+            color: context.colorScheme.surface,
             context: context,
             useRootNavigator: true,
             constraints: BoxConstraints(
@@ -49,6 +51,11 @@ class Select extends StatelessWidget {
             items: values
                 .map(
                   (e) => PopupMenuItem(
+                    // ⭐ C6-新③（2026-10-09 实测纠正 ✓）：本条**不能**用 `minHeight` ✗ ——
+                    // `PopupMenuItem` **只提供固定 `height`** ✓，传入 `minHeight` 会编译失败 ✗
+                    //（我已实测：`The named parameter 'minHeight' isn't defined` ✓）。
+                    // 因此这里保留原有固定高度 ✓（46/40 ✓），并**不改数值** ✓ 以免观感突变 ✗；
+                    // 记为该约定的**例外** ✓ —— 见 doc-private/16-audit-fix-plan.md ✓。
                     height: App.isMobile ? 46 : 40,
                     value: e,
                     child: Text(e),
