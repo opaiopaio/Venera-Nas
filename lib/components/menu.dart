@@ -75,15 +75,25 @@ class _MenuRoute<T> extends PopupRoute<T> {
                   windowOverlayBorderRadius() ??
                   BorderRadius.circular(AppRadius.sm),
               child: Material(
-                // ⭐ AQ1(2/3)（用户要求 ✓，2026-10-09）：菜单底色改走**独立统一入口** ✓ ——
-                // 原先写 `customBackgroundActive ? windowOverlayColor() : <主题表面色 · 92% 不透明>` ✗，
-                // 而 `customBackgroundActive` **恒真** ✗（见 `appdata.dart` 的 `cornerStyleActive` ✓
-                // 与 `secondaryPageFeatureActive` 默认 opaque ✓）→ **恒取窗口遮罩色** ✓，
-                // 在"窗口遮罩 = 透明"的设置下菜单就是**全透明** ✗ → 用户反馈"**可视化非常差**"✗。
-                // 现走 `menuSurfaceColor()` ✓：`system`（默认 ✓）= **跟随主题的表面色** ✓
-                // × 0.92 不透明度 ✓ → 开箱即可读 ✓；并可在「外观 → 弹出式二级页面」里
-                // 自行改底色 / 不透明度 ✓（与既有二级页面外观项同构 ✓，保留设计理念 ✓）。
-                color: menuSurfaceColor(),
+                // ⭐ AR1(3/5)（用户要求 ✓，2026-10-09）：菜单底色改为**与二级页面弹窗共用同一实现** ✓ ——
+                // 用户："把菜单的样式和背景也**学习二级页面弹窗**的背景和样式**复刻上去**
+                //（透明/不透明，变暗/变浅）"✓ → 现调用**共用函数** `secondarySurfaceColorFor(...)` ✓
+                //（与 `customSecondarySurfaceColor` 同一份合成逻辑 ✓，E1"逻辑集中一处"✓），
+                // 使用菜单自己的三项设置 ✓（样式/背景/色调强度 ✓，可在「外观 → 弹出式二级页面」调 ✓）。
+                // 圆角 / 边框 / 阴影**保持不变** ✗（本次只换**底色来源** ✓）。
+                color: secondarySurfaceColorFor(
+                  scheme: context.colorScheme,
+                  mode:
+                      appdata.settings['menuSurfaceMode'] as String? ??
+                      'opaque',
+                  tint:
+                      appdata.settings['menuSurfaceTint'] as String? ??
+                      'darken',
+                  strength:
+                      (appdata.settings['menuSurfaceTintStrength'] as num?)
+                          ?.toDouble() ??
+                      AppOpacity.tintStrengthDefault,
+                ),
                 borderRadius:
                     windowOverlayBorderRadius() ??
                     BorderRadius.circular(AppRadius.sm),

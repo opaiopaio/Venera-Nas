@@ -4,6 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:venera_nas/foundation/app.dart';
+// ⭐ AR1（2026-10-09）：需要 `AppOpacity.tintStrengthDefault` 作为菜单色调强度的默认值 ✓
+//（与二级页面同默认 ✓，避免写字面量 ✗ —— 外观铁律要求常量走 design_tokens ✓）。
+import 'package:venera_nas/foundation/design_tokens.dart';
 import 'package:venera_nas/foundation/log.dart';
 import 'package:venera_nas/utils/data_sync.dart';
 import 'package:venera_nas/utils/init.dart';
@@ -329,11 +332,14 @@ class Settings with ChangeNotifier {
     // ⭐ AQ1（用户要求 ✓，2026-10-09）：**上下文菜单 / 一级弹出菜单**（`components/menu.dart` 那一族 ✓，
     // 如「…」按钮弹出的 重命名/重新排序/导出/… ✓）的**独立外观** ✓ —— 用户原话：
     // "现在这个纯透明状态**可视化非常差** ✗，可以做成和现有弹出式二级菜单一样的**可配置是否半透明**"✓。
-    // 默认值选择 ✓：**跟随主题的表面色**（`system` ✓）+ **0.92** 不透明度 ✓ ——
-    // 与迁移前"有自定义背景时"的兜底写法（主题表面色 · 92% 不透明 ✓）观感一致 ✓，
-    // 保证**开箱即可读** ✓（不再是全透明 ✗）。
-    'menuSurfaceColor': 'system',
-    'menuSurfaceOpacity': 0.92,
+    // ⭐ AR1（用户要求 ✓，2026-10-09 二次指示）：这三项**复刻二级页面弹窗**的同一套设计语言 ✓ ——
+    // 用户原话："把菜单的样式和背景也**学习二级页面弹窗**的背景和样式**复刻上去**
+    //（**透明/不透明，变暗/变浅**）"✓ → 故菜单用与二级页面**同名同义**的三个键 ✓
+    //（`mode` 不透明/半透明/关闭 ✓、`tint` 变暗/变浅/无色调 ✓、`tintStrength` 强度 ✓），
+    // 默认值与二级页面一致 ✓ → **默认观感与二级弹窗一致** ✓、开箱即可读 ✓。
+    'menuSurfaceMode': 'opaque',
+    'menuSurfaceTint': 'darken',
+    'menuSurfaceTintStrength': AppOpacity.tintStrengthDefault,
     // ⚠️ AQ1 范围收敛（用户 2026-10-09 追加说明 ✓）：**毛玻璃不做** ✗ ——
     // 用户原话："毛玻璃不做了，**和现在的外观设计有冲突** ✗，如果要加毛玻璃**以后再说** ✓。
     // 就做成和现在已有的**二级弹窗窗口配置一样**就行 ✓，**保留设计理念** ✓。"

@@ -394,39 +394,10 @@ Color sourceTabOverlayColor() {
   return base.toOpacity(opacity);
 }
 
-/// ⭐ AQ1（用户要求 ✓，2026-10-09）：**上下文菜单 / 一级弹出菜单**（`components/menu.dart` 一族 ✓，
-/// 如「…」按钮弹出的 重命名/重新排序/导出/… ✓）的**面板底色统一入口** ✓ ——
-/// 与窗口/胶囊/图标按钮/标签/漫画源**五套遮罩同构** ✓。
-///
-/// 为什么需要它 ✓：`menu.dart` 原先写
-/// `customBackgroundActive ? windowOverlayColor() : <主题表面色 · 92% 不透明>` ✗ ——
-/// 而 `customBackgroundActive` **恒真** ✗（见 `appdata.dart` 的 `cornerStyleActive` ✓ 与
-/// `secondaryPageFeatureActive` 默认 opaque ✓）→ **恒取 `windowOverlayColor()`** ✓，
-/// 在"窗口遮罩 = 透明"的设置下就是**全透明** ✗ → 用户反馈"**可视化非常差** ✗"。
-///
-/// 取值语义 ✓（与其它入口一致 ✓）：
-/// - `system`（**默认** ✓）→ **跟随主题的表面色**（`systemContainerColorCache` = `surfaceContainerHigh` ✓，
-///   已按生效亮度写入 ✓，见 B1 ✓）；
-/// - `transparent` → 透明 ✓；`#RRGGBB` → 自定义色 ✓；
-/// - 再乘以 `menuSurfaceOpacity`（默认 **0.92** ✓，保证开箱可读 ✓）。
-///
-/// 注意 ✓：本入口**不受**「窗口与控件」总开关管理 ✗ —— 菜单底色是**独立一类** ✓
-///（用户要求"和现有弹出式二级菜单一样的可配置"✓）。
-Color menuSurfaceColor() {
-  final v = (appdata.settings['menuSurfaceColor'] ?? 'system').toString();
-  if (v == 'transparent') return Colors.transparent;
-  final opacity =
-      ((appdata.settings['menuSurfaceOpacity'] as num?)?.toDouble() ?? 0.92)
-          .clamp(0.0, 1.0);
-  if (opacity <= 0) return Colors.transparent;
-  final n = (v.startsWith('#') && v.length == 7)
-      ? int.tryParse(v.substring(1), radix: 16)
-      : null;
-  final base = n == null
-      ? (systemContainerColorCache ?? Colors.transparent)
-      : Color(0xFF000000 | n);
-  return base.toOpacity(opacity);
-}
+/// ⭐ AQ1 → AR1 说明 ✓（2026-10-09）：此处曾有一个 `menuSurfaceColor()`（"自选底色 + 不透明度"那套 ✓），
+/// 但用户随后二次指示"把菜单的样式和背景也照二级页面弹窗复刻上去（透明/不透明，变暗/变浅）"✓
+/// → 该入口已被 [secondarySurfaceColorFor] 取代 ✓（菜单与二级页面**共用同一实现** ✓，E1 原则 ✓）；
+/// 旧键 `menuSurfaceColor`/`menuSurfaceOpacity` 一并移除 ✓ —— 不留"两套并存"或"只写不读"✗。
 
 /// ⭐ AR1（用户要求 ✓，2026-10-09）：把「二级页面/菜单的**表面色合成**」抽成**可传参**的纯函数 ✓，
 /// 供「二级页面弹窗」与「上下文菜单」**共用同一实现** ✓ ——

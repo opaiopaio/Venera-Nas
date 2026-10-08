@@ -143,18 +143,19 @@ void main() {
       );
     });
 
-    test('T-AQ1：上下文菜单底色走 menuSurfaceColor（不得回退 windowOverlayColor）', () {
-      // 背景：用户 2026-10-09 反馈"这一类菜单**纯透明**时可视化非常差"；
+    test('T-AQ1：上下文菜单底色与二级页面共用 secondarySurfaceColorFor（不得回退）', () {
+      // 背景（AQ1 → AR1 演进）：用户先反馈"这一类菜单纯透明时可视化非常差"，
       // 真因是 menu.dart 写 `customBackgroundActive ? windowOverlayColor() : …`，
       // 而 customBackgroundActive 恒真 → 恒取"窗口遮罩色"（用户设为透明 → 菜单全透明）。
-      // 现改为独立入口 menuSurfaceColor()（system=跟随主题表面色 ×0.92）。
+      // 用户随后二次指示："把菜单的样式和背景也**学习二级页面弹窗**复刻上去
+      //（透明/不透明，变暗/变浅）" → 故改为**与二级页面共用同一合成函数**。
       final menu = File('lib/components/menu.dart');
       expect(menu.existsSync(), isTrue, reason: 'menu.dart 不存在');
       final menuText = stripComments(menu.readAsStringSync());
       expect(
-        menuText.contains('menuSurfaceColor()'),
+        menuText.contains('secondarySurfaceColorFor('),
         isTrue,
-        reason: '菜单底色未走统一入口 menuSurfaceColor() → 会回退成"窗口遮罩色"（可能全透明）',
+        reason: '菜单底色未走与二级页面共用的 secondarySurfaceColorFor → 会各自漂移或回退成全透明',
       );
       expect(
         menuText.contains('windowOverlayColor'),
@@ -163,19 +164,36 @@ void main() {
       );
 
       final overlay = File('lib/foundation/window_overlay.dart');
+      final overlayText = overlay.readAsStringSync();
       expect(
-        overlay.readAsStringSync(),
-        contains('Color menuSurfaceColor()'),
-        reason: '统一入口 menuSurfaceColor() 缺失',
+        overlayText.contains('Color secondarySurfaceColorFor('),
+        isTrue,
+        reason: '共用实现 secondarySurfaceColorFor() 缺失',
+      );
+      expect(
+        overlayText.contains('Color menuSurfaceColor()'),
+        isFalse,
+        reason: '旧的 menuSurfaceColor() 应已移除（被 AR1 的共用实现取代，避免两套并存）',
       );
 
       final appdata = File('lib/foundation/appdata.dart');
       final appdataText = appdata.readAsStringSync();
-      for (final key in const ["'menuSurfaceColor'", "'menuSurfaceOpacity'"]) {
+      for (final key in const [
+        "'menuSurfaceMode'",
+        "'menuSurfaceTint'",
+        "'menuSurfaceTintStrength'",
+      ]) {
         expect(
           appdataText.contains(key),
           isTrue,
-          reason: '缺少默认值 $key（会导致菜单底色无默认、可能全透明）',
+          reason: '缺少默认值 $key（菜单外观将无默认）',
+        );
+      }
+      for (final gone in const ["'menuSurfaceColor'", "'menuSurfaceOpacity'"]) {
+        expect(
+          appdataText.contains(gone),
+          isFalse,
+          reason: '$gone 应已移除（被 AR1 的样式/背景/强度三项取代）',
         );
       }
     });
