@@ -1132,7 +1132,7 @@ class ComicListState extends State<ComicList> {
   Widget _buildPageSelector() {
     return Row(
       children: [
-        FilledButton(
+        Button.normal(
           onPressed: _page > 1
               ? () {
                   setState(() {
@@ -1206,7 +1206,7 @@ class ComicListState extends State<ComicList> {
             ),
           ),
         ),
-        FilledButton(
+        Button.normal(
           onPressed: _page < (_maxPage ?? (_page + 1))
               ? () {
                   setState(() {
@@ -1400,7 +1400,7 @@ class ComicListState extends State<ComicList> {
                 ),
                 const SizedBox(height: 8),
                 Center(
-                  child: OutlinedButton(
+                  child: Button.normal(
                     onPressed: () {
                       setState(() {
                         _error = null;

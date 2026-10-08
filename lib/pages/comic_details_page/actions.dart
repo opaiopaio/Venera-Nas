@@ -158,7 +158,7 @@ abstract mixin class _ComicPageActions {
             ),
           ),
           actions: [
-            FilledButton(
+            Button.normal(
               onPressed: () => Navigator.of(ctx).pop(result),
               child: Text('Confirm'.tl),
             ),

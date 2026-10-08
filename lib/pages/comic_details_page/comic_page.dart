@@ -111,7 +111,7 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
     );
     Widget? action;
     if (isDownloaded) {
-      action = FilledButton.tonal(
+      action = Button.normal(
         child: Text("Read".tl),
         onPressed: () {
           final localComic = LocalManager().find(
@@ -459,7 +459,7 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
             Row(
               children: [
                 Expanded(
-                  child: FilledButton.tonal(
+                  child: Button.normal(
                     onPressed: download,
                     child: Text("Download".tl),
                   ),
@@ -467,11 +467,11 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
                 const SizedBox(width: 16),
                 Expanded(
                   child: hasHistory
-                      ? FilledButton(
+                      ? Button.normal(
                           onPressed: continueRead,
                           child: Text("Continue".tl),
                         )
-                      : FilledButton(onPressed: read, child: Text("Read".tl)),
+                      : Button.normal(onPressed: read, child: Text("Read".tl)),
                 ),
               ],
             ).paddingHorizontal(16).paddingVertical(8),
@@ -1012,7 +1012,7 @@ class _SelectDownloadChapterState extends State<_SelectDownloadChapter> {
               children: [
                 const SizedBox(width: 16),
                 Expanded(
-                  child: TextButton(
+                  child: Button.normal(
                     onPressed: () {
                       var res = <int>[];
                       for (int i = 0; i < widget.eps.length; i++) {
@@ -1028,7 +1028,7 @@ class _SelectDownloadChapterState extends State<_SelectDownloadChapter> {
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: FilledButton(
+                  child: Button.normal(
                     onPressed: selected.isEmpty
                         ? null
                         : () {

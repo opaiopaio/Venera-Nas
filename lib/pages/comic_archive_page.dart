@@ -76,7 +76,7 @@ class _ComicArchivePageState extends State<ComicArchivePage> {
         children: [
           Text(error!, textAlign: TextAlign.center),
           const SizedBox(height: 12),
-          FilledButton(onPressed: refresh, child: Text("Retry".tl)),
+          Button.normal(onPressed: refresh, child: Text("Retry".tl)),
         ],
       ).paddingHorizontal(16);
     }
@@ -172,11 +172,11 @@ class _ComicArchivePageState extends State<ComicArchivePage> {
           "Delete selected archive files?".tl,
         ).paddingHorizontal(16),
         actions: [
-          TextButton(
+          Button.normal(
             onPressed: () => Navigator.of(context).pop(false),
             child: Text("Cancel".tl),
           ),
-          FilledButton(
+          Button.normal(
             onPressed: () => Navigator.of(context).pop(true),
             child: Text("Confirm".tl),
           ),
@@ -276,7 +276,7 @@ class _ComicArchivePageState extends State<ComicArchivePage> {
                 ],
               ).paddingHorizontal(16),
               actions: [
-                TextButton(
+                Button.normal(
                   onPressed: () {
                     setState(() {
                       cancelled = true;
