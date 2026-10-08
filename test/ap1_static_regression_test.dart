@@ -111,5 +111,36 @@ void main() {
         reason: 'BlurEffect 应保持直通（只返回 child）',
       );
     });
+
+    test('T-B2：指示条与可见 chip 用同一份内边距（tabItemPadding）', () {
+      // 背景：B2 修复前，`_IndicatorPainter` 用 `tabPadding`（左右各 12），
+      // 而可见 chip 实际用 `tabItemPadding`（左右各 7）→ 指示条**每侧短 5px**
+      //（用户反复反馈的"没贴边 / 两端不对"）。
+      //
+      // 只扫描 `_IndicatorPainter(` 的**构造段**（到其后第一个 `);` 为止），
+      // 避免误判文件里别处合法出现的 `tabPadding`。
+      final appbar = File('lib/components/appbar.dart');
+      expect(appbar.existsSync(), isTrue, reason: 'appbar.dart 不存在');
+      final text = stripComments(appbar.readAsStringSync());
+      final start = text.indexOf('_IndicatorPainter(');
+      expect(start, isNot(-1), reason: '找不到 _IndicatorPainter( 的构造点');
+      final end = text.indexOf(');', start);
+      expect(end, isNot(-1), reason: '_IndicatorPainter( 构造段未正常结束');
+      final construction = text.substring(start, end);
+      expect(
+        construction.contains('tabItemPadding'),
+        isTrue,
+        reason:
+            '指示条没有与可见 chip 同源（未传 tabItemPadding）→ B2 会复发：条每侧短 5px\n'
+            '构造段：\n$construction',
+      );
+      expect(
+        construction.contains('tabPadding'),
+        isFalse,
+        reason:
+            '指示条的内边距被改回了 tabPadding（左右 12）→ B2 会复发\n'
+            '构造段：\n$construction',
+      );
+    });
   });
 }
