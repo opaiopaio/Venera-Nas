@@ -84,6 +84,10 @@ BorderRadius? windowOverlayBorderRadius() => appdata.settings.cornerStyleActive
 /// 性能：结果按「设置值 + 不透明度 + 系统色缓存」做了缓存 —— 该方法被 35+ 处、
 /// 每帧 build 调用，避免重复解析与 `Color` 分配。
 Color windowOverlayColor() {
+  // ⭐ N1：该页总开关「跟随系统主题」开启时 ✗ → 遮罩**完全不参与** ✓（等价于最初的干净默认 ✓）
+  if (appdata.settings['windowOverlayFollowTheme'] == true) {
+    return Colors.transparent;
+  }
   final v = (appdata.settings['windowOverlayColor'] ?? 'system').toString();
   if (v == 'transparent') return Colors.transparent;
   final opacity =
@@ -126,6 +130,10 @@ Color? _cachedResult;
 ///   未设置 → **自动加强一档** ✓ = `min(1.0, 窗口不透明度 + 0.3)` ✓
 ///   → 默认状态下按钮就比面板更实 ✓，不再融合 ✓（想恢复融合：把该值调成与窗口一致 ✓）。
 Color buttonOverlayColor() {
+  // N1：总开关跟随主题 → 不参与 ✓
+  if (appdata.settings['windowOverlayFollowTheme'] == true) {
+    return Colors.transparent;
+  }
   final v = (appdata.settings['buttonOverlayColor'] ?? 'system').toString();
   if (v == 'transparent') return Colors.transparent;
 
@@ -171,6 +179,10 @@ Color buttonOverlayColor() {
 /// ⚠️ `Color.toOpacity()` 是**替换 alpha** ✓（不是相乘 ✓）→ 可直接在"跟随胶囊"
 /// 的基色上套用**图标自己的**不透明度 ✓。
 Color iconOverlayColor() {
+  // N1：总开关跟随主题 → 不参与 ✓
+  if (appdata.settings['windowOverlayFollowTheme'] == true) {
+    return Colors.transparent;
+  }
   final v = (appdata.settings['iconOverlayColor'] ?? 'system').toString();
   if (v == 'transparent') return Colors.transparent;
 
@@ -204,6 +216,10 @@ Color iconOverlayColor() {
 ///   （与旧 `overlay` 行为一致 ✓ 颜色零回归 ✓）/ `transparent` / `#RRGGBB` ✓；
 /// - **不透明度** `tagOverlayOpacity`：0..1 ✓（**默认 0.85** ✓，与按钮/图标按钮默认一致 ✓）。
 Color tagOverlayColor() {
+  // N1：总开关跟随主题 → 不参与 ✓
+  if (appdata.settings['windowOverlayFollowTheme'] == true) {
+    return Colors.transparent;
+  }
   final v = (appdata.settings['tagOverlayColor'] ?? 'system').toString();
   if (v == 'transparent') return Colors.transparent;
 

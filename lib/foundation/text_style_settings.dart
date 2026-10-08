@@ -25,6 +25,8 @@ Color _parse(String? value, Color fallback) {
 
 /// 全局字体颜色；`null` 表示跟随系统（不覆盖）。
 Color? globalTextColor() {
+  // ⭐ N1：文字页总开关「跟随系统主题」开启时 ✗ → 不注入任何颜色 ✓（回到主题默认 ✓）
+  if (appdata.settings['textFollowTheme'] == true) return null;
   final v = (appdata.settings['globalTextColor'] ?? 'system').toString();
   if (!v.startsWith('#') || v.length != 7) return null; // system / transparent
   return _parse(v, Colors.black);
@@ -66,20 +68,25 @@ Future<void> loadCustomFont() async {
 /// 全局字体名；`null`/空 表示跟随系统。
 /// 优先使用**已加载的自定义字体文件**，其次才是系统字体名。
 String? globalFontFamily() {
+  // ⭐ N1：文字页总开关「跟随系统主题」开启时 ✗ → 不注入自定义字体 ✓（回到系统字体 ✓）
+  if (appdata.settings['textFollowTheme'] == true) return null;
   if (customFontFamilyName != null) return customFontFamilyName;
   final v = (appdata.settings['globalFontFamily'] ?? '').toString();
   return (v.isEmpty || v == 'system') ? null : v;
 }
 
 /// 全局字号缩放（0.8 - 1.4，默认 1.0）。
-double globalFontScale() =>
-    ((appdata.settings['globalFontScale'] as num?)?.toDouble() ?? 1.0).clamp(
-      AppTextScale.min,
-      AppTextScale.max,
-    );
+double globalFontScale() {
+  // ⭐ N1：文字页总开关「跟随系统主题」开启时 ✗ → 不缩放 ✓（回到最初默认字号 ✓）
+  if (appdata.settings['textFollowTheme'] == true) return 1.0;
+  return ((appdata.settings['globalFontScale'] as num?)?.toDouble() ?? 1.0)
+      .clamp(AppTextScale.min, AppTextScale.max);
+}
 
 /// 阴影 + 发光。发光用「多层同色、位移为 0、模糊递增」的 Shadow 叠加实现。
 List<Shadow>? globalTextShadows() {
+  // ⭐ N1：文字页总开关「跟随系统主题」开启时 ✗ → 无阴影/发光 ✓（回到主题默认 ✓）
+  if (appdata.settings['textFollowTheme'] == true) return null;
   final shadows = <Shadow>[];
   if (appdata.settings['textShadowEnabled'] == true) {
     shadows.add(

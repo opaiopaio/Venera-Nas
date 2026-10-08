@@ -321,6 +321,12 @@ class Settings with ChangeNotifier {
     //（与按钮/图标按钮一致 ✓）。仅当「标签颜色」= 跟随遮罩时生效 ✓（跟随主题时用 secondaryContainer ✓）。
     'tagOverlayColor': 'system',
     'tagOverlayOpacity': 0.85,
+    // ⭐ N1：「跟随系统主题」总开关 ✓ —— 每个外观子页一个 ✓（默认**开** ✓ = 软件最初那种
+    // 没有任何自定义外观的干净默认 ✓）。开启时该页所有自定义项**隐藏且不生效** ✓；
+    // 关闭后才参与渲染 ✓。三者全开 = 完全回到最初的默认外观 ✓。
+    'windowOverlayFollowTheme': true, // 窗口与控件页（窗口/胶囊/图标按钮/标签遮罩）
+    'textFollowTheme': true, // 文字页（颜色/字体/字号/阴影/发光）
+    'secondaryPageFollowTheme': true, // 二级页面页（样式/背景/对比强度）
     'windowOverlayCorner': 'rounded', // 窗口/按钮背景圆角：rounded / square
     // ── 全局文字（与自定义背景搭配）──
     'globalTextColor': 'system', // system / transparent / #RRGGBB（system=跟随系统）
@@ -348,18 +354,23 @@ class Settings with ChangeNotifier {
       (this['backgroundColor'] as String? ?? 'transparent') != 'transparent';
 
   /// ②-a 是否需要**填充方块**（遮罩色不是「透明」即需要）。
+  /// ⭐ N1：该页总开关「跟随系统主题」开启时 ✗ → 一律 false ✓（遮罩不参与 ✓，回到最初默认 ✓）。
   bool get hasWindowOverlay =>
+      this['windowOverlayFollowTheme'] != true &&
       (this['windowOverlayColor'] ?? 'system').toString() != 'transparent';
 
-  /// ②-b **圆角样式是否生效** —— 一套系统，始终生效。
-  bool get cornerStyleActive => true;
+  /// ②-b **圆角样式是否生效** —— ⭐ N1：受「窗口与控件」页总开关管理 ✓
+  ///（跟随主题时圆角也回到主题默认 ✓，不再是自定义那套 ✓）。
+  bool get cornerStyleActive => this['windowOverlayFollowTheme'] != true;
 
   /// ② 窗口与控件体系是否启用（填充 或 形状任一被配置）。
   bool get windowOverlayEnabled => hasWindowOverlay || cornerStyleActive;
 
   /// ③ 二级页面体系是否启用：**除显式选择「关闭(off)」外一律生效**。
   /// （旧逻辑用"偏离默认值"判定，导致 `不透明+加深+0.22` 这组默认值被判为未启用）
+  /// ⭐ N1：该页总开关「跟随系统主题」开启时 ✗ → 不启用 ✓（回到默认弹层 ✓）。
   bool get secondaryPageFeatureActive =>
+      this['secondaryPageFollowTheme'] != true &&
       (this['secondaryPageMode'] as String? ?? 'opaque') != 'off';
 
   /// 兼容旧调用：任一体系启用。
