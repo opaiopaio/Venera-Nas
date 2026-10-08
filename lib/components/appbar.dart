@@ -375,9 +375,12 @@ class _AppTabBarState extends State<AppTabBar> {
       // 也不是 `primaryContainer` ✗（用户表述澄清 ✓）。
       // ⭐ AE1（用户要求 ✓）：**指示条**颜色改为"主题色但**更浅一档**" ✓ ——
       // 原先与 chip 底色同为 `secondaryContainer` ✗ → 完全看不见 ✗（用户实测 ✓）。
-      color: Theme.of(
-        context,
-      ).colorScheme.primary.withValues(alpha: AppOpacity.hint),
+      // ⭐ AF1（用户要求 ✓）：指示条颜色 = **上面按钮色加深一档** ✓（保证对比度 ✓，
+      // 不再与 chip 同色而看不见 ✗）。用 `AppOpacity.selectedTint` **令牌** ✓ 做黑混 ✓。
+      color: Color.alphaBlend(
+        Colors.black.withValues(alpha: AppOpacity.selectedTint),
+        sourceTabOverlayColor(),
+      ),
       padding: tabPadding,
       radius: tabRadius,
     );
@@ -529,7 +532,9 @@ class _AppTabBarState extends State<AppTabBar> {
         // **不再跟随标签颜色** ✗（用户实测反馈 ✓：这一排应跟主题 ✓，不跟标签/胶囊按钮色 ✗）。
         // 用 `primaryContainer` ✓ —— 它由**种子色**直接派生 ✓（当前种子青色 → 青色系 ✓），
         // 且与胶囊按钮用的 `secondaryFixed` 是**两套**色 ✓（互不牵连 ✓）。
-        color: Theme.of(context).colorScheme.secondaryContainer,
+        // ⭐ AF1（用户要求 ✓）：填色走**新统一入口** `sourceTabOverlayColor()` ✓ ——
+        // `system` = 跟随主题（`secondaryContainer` ✓ 零回归）/ `transparent` / `#RRGGBB` × 不透明度 ✓。
+        color: sourceTabOverlayColor(),
         borderRadius: radius,
         clipBehavior: Clip.antiAlias,
         // ⭐ AA1（用户要求 ✓）：**可见 chip 的间距/高度由这里决定** ✗（上面的 `tabPadding`
@@ -633,12 +638,12 @@ class _IndicatorPainter extends CustomPainter {
     assert(tabIndex <= maxTabIndex);
     var (tabLeft, tabRight) = (offsets![tabIndex], offsets![tabIndex + 1]);
 
-    const horizontalPadding = 12.0;
-
+    // ⭐ AF1（用户要求 ✓）：**条的长度 = 按钮的完整长度** ✓ ——
+    // 去掉原先左右各 12px 的内缩 ✗（用户："条的长度就是按钮的长度" ✓）。
     var rect = Rect.fromLTWH(
-      tabLeft + padding.left + horizontalPadding,
+      tabLeft + padding.left,
       _AppTabBarState._kTabHeight - 3.6,
-      tabRight - tabLeft - padding.horizontal - horizontalPadding * 2,
+      tabRight - tabLeft - padding.horizontal,
       3,
     );
 
@@ -650,14 +655,20 @@ class _IndicatorPainter extends CustomPainter {
     if (offsets == null || itemHeight == null) {
       return;
     }
-    // ⭐ AE1（用户要求 ✓）：切换动画由"**左右滑动过去**"✗ 改为"**从下面蹦上来**"✓ ——
-    // X 直接落到**目标 chip**（`controller.index` ✓，不再跨 chip 水平插值 ✗）；
-    // Y 由下方弹入 ✓，用 `Curves.easeOutBack`（带回弹 ✓）驱动 ✓ → 有"蹦"的手感 ✓。
+    // ⭐ AF1（用户要求 ✓）：改为**在按钮内部的"浮现"** ✓ ——
+    // 条在原位由底部**长出来**（高度 0 → 满 ✓），不再整条从下方蹦入 ✗；
+    // 曲线用 `Curves.easeOutCubic`（**无回弹** ✓）→ 修掉此前 `easeOutBack` 回弹**越界**✗
+    // 造成的"动画有 bug"✗。
     final double t = controller.animation!.value.clamp(0.0, 1.0);
-    final double eased = Curves.easeOutBack.transform(t);
-    final double jump = itemHeight ?? 0;
+    final double eased = Curves.easeOutCubic.transform(t);
     final Rect target = indicatorRect(size, controller.index);
-    _currentRect = target.translate(0, (1 - eased) * jump);
+    final double h = target.height * eased;
+    _currentRect = Rect.fromLTWH(
+      target.left,
+      target.bottom - h,
+      target.width,
+      h,
+    );
     final Paint paint = Paint()..color = color;
     final RRect rrect = RRect.fromRectAndCorners(
       _currentRect!,
@@ -669,7 +680,9 @@ class _IndicatorPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
+    // ⭐ AF1（修 bug ✓）：返回 true ✓ —— 此前为 false ✗，`update(offsets, itemHeight)`
+    // 更新布局数据后**不触发重绘** ✗（用户反馈"现在的动画有 bug"✗ 的原因之一 ✓）。
+    return true;
   }
 }
 
@@ -1043,7 +1056,8 @@ class TabActionButton extends StatelessWidget {
         //  用户实测反馈"只有图标的按钮都不受控" ✓）。
         // ⭐ AA1（用户要求 ✓）：填色与本排标签一致（主题 `secondaryContainer` ✓），
         // **不再跟随「图标按钮」的自定义色** ✗（原先 `iconOverlayColor()` ✗，用户实测指出 ✓）。
-        color: context.colorScheme.secondaryContainer,
+        // ⭐ AF1（用户要求 ✓）：「+ 加号」与 chip 用**同一个**入口 ✓（同属这一排 ✓）。
+        color: sourceTabOverlayColor(),
         borderRadius: radius,
         clipBehavior: Clip.antiAlias,
         child: content,
