@@ -10,6 +10,13 @@ class AppearanceSettings extends StatefulWidget {
 class _AppearanceSettingsState extends State<AppearanceSettings> {
   @override
   Widget build(BuildContext context) {
+    // ⭐ 建立设置依赖（A5 修复）：外观设置变化时由框架**精准重建本页** ✓，
+    // 这样「主题颜色」等行的预览色块才会**实时刷新** ✓。
+    // 原先本页没有任何设置依赖 ✗ → 改完颜色预览不动 ✗（要重进页面才变 ✓）。
+    // ⚠️ 禁止改用 `App.forceRebuild()` 的 element 树遍历 ✗（曾导致严重渲染鬼影 ✗），
+    // 详见 doc-private/03-implementation/11-refresh-mechanism.md
+    AppSettingsScope.of(context);
+
     return SmoothCustomScrollView(
       slivers: [
         SliverAppbar(title: Text("Appearance".tl)),
