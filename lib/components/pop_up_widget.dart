@@ -186,12 +186,12 @@ class SecondaryPageSurface extends StatelessWidget {
     final tinted = !followTheme && popupStyle;
     final decoration = secondaryPageDecoration();
     final tint = customSecondarySurfaceColor(context.colorScheme);
-    // ⭐ S1（用户截图反馈 ✓）：**背景体系启用**（有背景图 ✓ 或背景底色 ✓）时，弹层必须
-    // **透明** ✓ 以露出全局背景 ✗✗ —— 此时**绝不能**补不透明底 ✗，否则会盖住纯色背景 ✗
-    //（用户实测："纯色的背景颜色在二级页面不生效了" ✗）。
-    final needSurface =
-        (followTheme || popupStyle || decoration == null) &&
-        !appdata.settings.backgroundFeatureActive;
+    // ⭐ T1（用户截图反馈 ✓）：**弹层一律要有不透明底** ✓ —— 用户明确要求
+    // "二级窗口**遮挡下面的内容**" ✓（不管有没有背景图/纯色底 ✓）。
+    // 之前按 `!backgroundFeatureActive` 排除 ✗ → 有背景时整页式页面（探索页面/分类页面…）
+    // **完全透明透出壁纸** ✗（截图实测 ✓）。
+    // 现在：**底恒在最下层** ✓，背景切片/色调只在其上**叠加** ✓（顺序见下 ✓）。
+    final needSurface = true;
     final radius =
         borderRadius ??
         windowOverlayBorderRadius() ??
@@ -222,12 +222,17 @@ class PopUpWidgetScaffold extends StatefulWidget {
     required this.title,
     required this.body,
     this.tailing,
+    // ⭐ T1（用户反馈 ✓）：本弹层是否按**弹出式**（对话框类 ✓，如**色盘**）对待 ——
+    // 影响是否叠加**色调加深** ✓。默认 `false` = **整页式**设置页 ✓（Q2 ✓，不叠色调 ✗）；
+    // 色盘这类小浮层传 `true` ✓（用户实测"打开二级窗口控制后，依然无法控制色盘" ✗）。
+    this.popupStyle = false,
     super.key,
   });
 
   final Widget body;
   final List<Widget>? tailing;
   final String title;
+  final bool popupStyle;
 
   @override
   State<PopUpWidgetScaffold> createState() => _PopUpWidgetScaffoldState();
@@ -325,8 +330,9 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
     return SecondaryPageSurface(
       fallbackToSurface: false,
       clip: false,
-      // ⭐ Q2：**整页式**二级页面 → 不叠加色调/背景装饰 ✓（用户要求色调只作用于弹出式 ✓）
-      popupStyle: false,
+      // ⭐ Q2/T1：沿用宿主传入的分类 ✓ —— 整页式设置页 `false` ✗（不叠色调 ✓）；
+      // 色盘等弹出式传 `true` ✓（可被色调控制 ✓）。
+      popupStyle: widget.popupStyle,
       child: content,
     );
   }

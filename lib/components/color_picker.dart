@@ -321,6 +321,9 @@ class _ColorPickerPageState extends State<ColorPickerPage> {
   @override
   Widget build(BuildContext context) {
     return PopUpWidgetScaffold(
+      // ⭐ T1：色盘属**弹出式**（对话框类 ✓）→ 语义上应可被「弹出式二级页面 → 色调」控制 ✓
+      //（用户实测："打开二级窗口控制后依然无法控制色盘" ✗，根因是它此前被当作整页式排除 ✗）。
+      popupStyle: true,
       title: widget.title,
       tailing: [
         // H2 `.icon` 专轮：标准 `TextButton.icon` → 自绘 `Button` + `pillLabel` ✓（一套体系 ✓）
