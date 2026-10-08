@@ -290,19 +290,21 @@ class _ButtonState extends State<Button> {
     final mask = buttonOverlayColor();
     if (widget.type == ButtonType.filled) {
       var color = widget.color ?? mask;
-      if (disabled) return color.toOpacity(0.38);
+      if (disabled) return color.toOpacity(AppOpacity.disabled);
       return isHover ? color.toOpacity(0.9) : color;
     }
     if (widget.type == ButtonType.normal) {
       var color = widget.color ?? mask;
-      if (disabled) return color.toOpacity(0.38);
+      if (disabled) return color.toOpacity(AppOpacity.disabled);
       return isHover ? color.toOpacity(0.9) : color;
     }
     // outlined / text：底色同样是遮罩色（未配置遮罩即透明 ✓），悬停时略加强 ✓
     if (widget.color != null) {
-      return disabled ? widget.color!.toOpacity(0.38) : widget.color!;
+      return disabled
+          ? widget.color!.toOpacity(AppOpacity.disabled)
+          : widget.color!;
     }
-    if (disabled) return mask.toOpacity(0.38);
+    if (disabled) return mask.toOpacity(AppOpacity.disabled);
     return isHover
         ? mask.toOpacity(mask.a >= 1 ? 1 : 0.5 + mask.a * 0.5)
         : mask;
@@ -325,7 +327,9 @@ class _ButtonState extends State<Button> {
     } else {
       base = global ?? context.colorScheme.onSurface;
     }
-    return widget.onPressed == null ? base.toOpacity(0.38) : base;
+    return widget.onPressed == null
+        ? base.toOpacity(AppOpacity.disabled)
+        : base;
   }
 }
 

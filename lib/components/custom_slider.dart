@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/app_theme.dart';
+// ⭐ AP1-低危清理（2026-10-09 审计 ✓）：本文件原先**直接用字面量 0.38** ✗ 表示禁用态不透明度 ✓，
+// 而项目早已有令牌 `AppOpacity.disabled`（= 0.38 ✓）却**零引用** ✗ → 现改用令牌 ✓（为此补本导入 ✓）。
+import 'package:venera_nas/foundation/design_tokens.dart';
 
 /// patched slider.dart with RtL support
 class _SliderDefaultsM3 extends SliderThemeData {
@@ -19,7 +22,8 @@ class _SliderDefaultsM3 extends SliderThemeData {
   Color? get secondaryActiveTrackColor => _colors.primary.toOpacity(0.54);
 
   @override
-  Color? get disabledActiveTrackColor => _colors.onSurface.toOpacity(0.38);
+  Color? get disabledActiveTrackColor =>
+      _colors.onSurface.toOpacity(AppOpacity.disabled);
 
   @override
   Color? get disabledInactiveTrackColor => _colors.onSurface.toOpacity(0.12);
@@ -29,23 +33,29 @@ class _SliderDefaultsM3 extends SliderThemeData {
       _colors.onSurface.toOpacity(0.12);
 
   @override
-  Color? get activeTickMarkColor => _colors.onPrimary.toOpacity(0.38);
+  Color? get activeTickMarkColor =>
+      _colors.onPrimary.toOpacity(AppOpacity.disabled);
 
   @override
-  Color? get inactiveTickMarkColor => _colors.onSurfaceVariant.toOpacity(0.38);
+  Color? get inactiveTickMarkColor =>
+      _colors.onSurfaceVariant.toOpacity(AppOpacity.disabled);
 
   @override
-  Color? get disabledActiveTickMarkColor => _colors.onSurface.toOpacity(0.38);
+  Color? get disabledActiveTickMarkColor =>
+      _colors.onSurface.toOpacity(AppOpacity.disabled);
 
   @override
-  Color? get disabledInactiveTickMarkColor => _colors.onSurface.toOpacity(0.38);
+  Color? get disabledInactiveTickMarkColor =>
+      _colors.onSurface.toOpacity(AppOpacity.disabled);
 
   @override
   Color? get thumbColor => _colors.primary;
 
   @override
-  Color? get disabledThumbColor =>
-      Color.alphaBlend(_colors.onSurface.toOpacity(0.38), _colors.surface);
+  Color? get disabledThumbColor => Color.alphaBlend(
+    _colors.onSurface.toOpacity(AppOpacity.disabled),
+    _colors.surface,
+  );
 
   @override
   Color? get overlayColor =>
