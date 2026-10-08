@@ -756,7 +756,7 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
               ),
               actions: [
                 if (selected.length < canAdd.length)
-                  TextButton(
+                  Button.normal(
                     child: Text("Select All".tl),
                     onPressed: () {
                       setState(() {
@@ -765,7 +765,7 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
                     },
                   )
                 else
-                  TextButton(
+                  Button.normal(
                     child: Text("Deselect All".tl),
                     onPressed: () {
                       setState(() {
@@ -774,7 +774,7 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
                     },
                   ),
                 const SizedBox(width: 8),
-                FilledButton(
+                Button.normal(
                   onPressed: selected.isNotEmpty
                       ? () {
                           this.setState(() {

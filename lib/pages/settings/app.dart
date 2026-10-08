@@ -423,7 +423,7 @@ class _LogsPageState extends State<LogsPage> {
                       "",
                     ),
                   ),
-                  TextButton(
+                  Button.normal(
                     onPressed: () {
                       Clipboard.setData(
                         ClipboardData(text: logToShow[index].content),
@@ -983,7 +983,7 @@ class _LocalPathDialogState extends State<_LocalPathDialog> {
         ],
       ),
       actions: [
-        TextButton(
+        Button.normal(
           onPressed: _isBusy ? null : () => Navigator.of(context).pop(),
           child: Text("Cancel".tl),
         ),
@@ -1078,7 +1078,7 @@ class _NasPathDialogState extends State<_NasPathDialog> {
         ],
       ),
       actions: [
-        TextButton(
+        Button.normal(
           onPressed: _isBusy ? null : () => Navigator.of(context).pop(),
           child: Text("Cancel".tl),
         ),

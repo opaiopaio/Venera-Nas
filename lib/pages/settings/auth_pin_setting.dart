@@ -70,7 +70,7 @@ class _AuthPinSettingState extends State<AuthPinSetting> {
     return PopUpWidgetScaffold(
       title: _title,
       tailing: AuthStorage.hasPin
-          ? [TextButton(onPressed: _clearPin, child: Text("Clear PIN".tl))]
+          ? [Button.normal(onPressed: _clearPin, child: Text("Clear PIN".tl))]
           : null,
       body: Align(
         alignment: Alignment.topCenter,

@@ -237,7 +237,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
             },
           ),
           const SizedBox(height: 16),
-          FilledButton(
+          Button.normal(
             onPressed: () {
               if (formKey.currentState?.validate() ?? false) {
                 appdata.settings['proxy'] = toProxyStr();
