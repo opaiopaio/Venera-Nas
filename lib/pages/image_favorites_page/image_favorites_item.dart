@@ -250,6 +250,8 @@ class _ImageFavoritesItemState extends State<_ImageFavoritesItem> {
             );
           },
         ),
+        // 间距：原先网格按钮与「n/m」计数**紧贴** ✗（视觉拥挤，用户实测反馈 ✓）
+        const SizedBox(width: AppSpace.sm),
         Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpace.sm,
