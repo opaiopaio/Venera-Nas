@@ -303,44 +303,19 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ),
       ),
     );
-    // 「文字 / 描边 / 实色 / tonal 按钮」的前景都跟随**全局文字色** ✓
-    // （实测反馈："扫描 NAS / 导入" 这类按钮文字与字体色不跟随即此 ✗）。
-    // 注意：
-    //  - **不要**给 `iconButtonTheme` 接全局文字色 ✗ —— 那会让图标跟着文字变色（已修过一次）；
-    //  - 禁用态保留透明度（`fg @0.38`），避免"看起来可点" ✗。
-    final overlayFg = globalTextColor();
-    WidgetStateProperty<Color?>? overlayFgProp(Color fg) =>
-        WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.disabled)) {
-            return fg.toOpacity(0.38);
-          }
-          return fg;
-        });
-    // ─── P8 胶囊按钮规范（见 doc-private/03-implementation/07-background-and-color-picker.md）───
-    // 底色 = 遮罩色（`windowOverlayColor()` ✓）、文字 = 全局文字色（`globalTextColor()` ✓）、
-    // **文字水平+垂直居中** ✓、胶囊形状 ✓、`AppSpace` 令牌化间距 ✓、禁用态 0.38 ✓。
-    // 直角模式（`windowOverlayBorderRadius()` 为 null）下形状退化为直角 ✓，尊重用户的形状设置。
-    final pillShape = windowOverlayBorderRadius() == null
-        ? const WidgetStatePropertyAll<OutlinedBorder>(
-            RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-          )
-        : const WidgetStatePropertyAll<OutlinedBorder>(StadiumBorder());
-    final pillButtonStyle = ButtonStyle(
-      backgroundColor: WidgetStatePropertyAll(windowOverlayColor()),
-      foregroundColor: overlayFg == null ? null : overlayFgProp(overlayFg),
-      // 文字**横纵都居中** ✓
-      alignment: Alignment.center,
-      // 高度 **32** ✓（用户定标 ✓）。
-      // ⚠️ 教训：M3 标准按钮的变体默认样式会压过主题 ✗（`minimumSize` 无效 ✗），
-      // 而用 `visualDensity(vertical:-2)` 强压会把标准按钮压成 **24** ✗（实测 ✗）——
-      // **不要**用主题去改 M3 按钮尺寸 ✗，统一改走应用自绘 `Button`（见 P8 规范 ✓）。
-      minimumSize: const WidgetStatePropertyAll(Size(0, 32)),
-      padding: const WidgetStatePropertyAll(
-        EdgeInsets.symmetric(horizontal: AppSpace.lg),
-      ),
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      shape: pillShape,
-    );
+    // ⭐ H2 清理（2026-10-08）：原 `overlayFg` / `overlayFgProp`（M3 按钮前景与禁用态 0.38 ✓）
+    // 与 `pillShape`（胶囊/直角形状 ✓）**已全部删除** ✗ —— 它们只服务于已移除的
+    // `pillButtonStyle` ✗；现在：按钮前景/禁用态/形状全部由自绘 `Button` 内部统一处理 ✓
+    //（`components/button.dart`：32 高 + 文字宽度两侧各 `AppSpace.lg(16)` + 胶囊 + 遮罩底
+    //  + 全局文字色 + `onPressed == null` → 0.38 ✓）。
+    // 注意：**不要**给 `iconButtonTheme` 接全局文字色 ✗ —— 那会让图标跟着文字变色（已修过一次）。
+    // ⭐ H2 清理（2026-10-08）：原 `overlayFgProp`（M3 按钮的禁用态 0.38 前景 ✓）与
+    // `pillShape`（胶囊/直角形状 ✓）**已删除** ✗ —— 它们只服务于已移除的 `pillButtonStyle` ✗；
+    // 禁用态 0.38 现由自绘 `Button` 内部统一处理 ✓（`buttonColor`/`textColor` 判定 `onPressed == null` ✓）。
+    // ⭐ H2 清理（2026-10-08）：原 `pillButtonStyle`（给 M3 的 Text/Outlined/Filled/Elevated
+    // 注入遮罩底色 + 32 高 + 胶囊 ✓）**已删除** ✗ —— 实测 M3 变体默认样式会压过主题 ✗
+    //（"看着在管其实没管" ✗）；全项目 M3 按钮已全部改为应用自绘 `Button` ✓（components/button.dart ✓，
+    // 规格 = 32 高 + 文字宽度两侧各 AppSpace.lg(16) 延伸 + 胶囊 + 遮罩底 + 全局文字色 ✓）。
     var scheme = SeedColorScheme.fromSeeds(
       primaryKey: primary,
       secondaryKey: secondary,
@@ -394,13 +369,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       //（用户实测反馈"切换没反应" ✓）。未设置全局文字色时 `gStyle?.color` 为 null ✓
       // → 不注入 ✓ → 继续走 M3 默认 ✓（零回归 ✓）。
       tabBarTheme: TabBarThemeData(labelColor: gStyle?.color),
-      // ↓ 以下四类 = **胶囊按钮**，统一走 P8 规范（遮罩底色 + 全局文字色 + 居中 + 胶囊 ✓）。
-      // `TextButton` 也纳入 ✓ —— 它同样有遮罩底色（`overlayButtonStyle` ✓），
-      // 且**垂直内边距 4→8、高度 36→44** 后可彻底消除"文字被压窄/裁切"✗（实测反馈 ✓）。
-      textButtonTheme: TextButtonThemeData(style: pillButtonStyle),
-      outlinedButtonTheme: OutlinedButtonThemeData(style: pillButtonStyle),
-      filledButtonTheme: FilledButtonThemeData(style: pillButtonStyle),
-      elevatedButtonTheme: ElevatedButtonThemeData(style: pillButtonStyle),
+      // ⭐ H2 清理（2026-10-08）：**已移除**四类 M3 按钮的主题注入 ✗
+      //（原 `textButtonTheme` / `outlinedButtonTheme` / `filledButtonTheme` / `elevatedButtonTheme`
+      //  = `pillButtonStyle` ✓）。原因：M3 的**变体默认样式会压过主题** ✗（实测：`minimumSize`
+      //  / `padding` / `shape` 注入后仍渲染为 40 高 M3 圆角矩形 ✗ "看着在管其实没管" ✗），
+      // 且全项目 95 处 M3 按钮**已全部替换为应用自绘 `Button`** ✓（自上而下统一 ✓）。
+      // 该注入留着只会误导后人 ✗ → 删除 ✓；下面 `iconButtonTheme`（`overlayButtonStyle` ✓）仍然生效 ✓ 保留 ✓。
     );
     // 全局文字（字体 + 颜色）：注入主题文字，做到"大致全控制"。
     // 注 1：所有按钮的**文字**都跟随全局文字色 ✓（text/outlined/filled/tonal ✓，见上方注入）；
