@@ -167,6 +167,9 @@ class SecondaryPageSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     AppSettingsScope.of(context);
+    // ⭐ P2（用户反馈 ✓）：**跟随系统主题**时 —— 不画背景切片 ✗、不做色调 ✗、
+    // 强制补一层**主题表面色** ✓（= 遮挡下面内容 ✓，且不调色不变深 ✓）。
+    final followTheme = appdata.settings['secondaryPageFollowTheme'] == true;
     final decoration = secondaryPageDecoration();
     final tint = customSecondarySurfaceColor(context.colorScheme);
     final radius =
@@ -175,12 +178,15 @@ class SecondaryPageSurface extends StatelessWidget {
         BorderRadius.circular(AppRadius.md);
     final stack = Stack(
       children: [
-        if (decoration != null)
+        if (decoration != null && !followTheme)
           // 与全窗背景**逐像素对齐**的切片（此前是 `DecorationImage` 按自身盒子
           // fit → 小弹窗看到的是**缩略图** ✗）。只画不布局，见 [BackgroundSlice]。
           const Positioned.fill(child: BackgroundSlice()),
-        if (tint != null) Positioned.fill(child: ColoredBox(color: tint)),
-        if (fallbackToSurface && decoration == null && tint == null)
+        if (tint != null && !followTheme)
+          Positioned.fill(child: ColoredBox(color: tint)),
+        if (followTheme ||
+            (fallbackToSurface && decoration == null && tint == null))
+          // 跟随主题 → 主题表面色 ✓（遮挡 ✓）；体系未启用 → 同样兜底（零回归 ✓）。
           Positioned.fill(
             child: ColoredBox(color: context.colorScheme.surface),
           ),

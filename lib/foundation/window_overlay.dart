@@ -284,7 +284,10 @@ Widget maskIfNeeded(bool masked, Widget child, {EdgeInsetsGeometry? margin}) =>
 
 /// 二级页面（弹层）的背景装饰：**有背景图时以背景图为准**（图优先于背景色），
 /// 仅在「不透明」样式下返回；返回 null 表示不做图片装饰。
+/// ⭐ P2（用户反馈 ✓）：**跟随系统主题**时恒为 null ✓ —— 既不做图片切片 ✓，也不带加深色调 ✓；
+/// 这种情况下由 `SecondaryPageSurface` 补一层**主题表面色** ✓（遮挡 ✓、不调色 ✓）。
 BoxDecoration? secondaryPageDecoration() {
+  if (appdata.settings['secondaryPageFollowTheme'] == true) return null;
   if (!appdata.settings.secondaryPageFeatureActive) return null;
   final mode = appdata.settings['secondaryPageMode'] as String? ?? 'opaque';
   if (mode == 'transparent') return null;
