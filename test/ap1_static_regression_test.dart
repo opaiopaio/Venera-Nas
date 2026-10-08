@@ -142,5 +142,42 @@ void main() {
             '构造段：\n$construction',
       );
     });
+
+    test('T-AQ1：上下文菜单底色走 menuSurfaceColor（不得回退 windowOverlayColor）', () {
+      // 背景：用户 2026-10-09 反馈"这一类菜单**纯透明**时可视化非常差"；
+      // 真因是 menu.dart 写 `customBackgroundActive ? windowOverlayColor() : …`，
+      // 而 customBackgroundActive 恒真 → 恒取"窗口遮罩色"（用户设为透明 → 菜单全透明）。
+      // 现改为独立入口 menuSurfaceColor()（system=跟随主题表面色 ×0.92）。
+      final menu = File('lib/components/menu.dart');
+      expect(menu.existsSync(), isTrue, reason: 'menu.dart 不存在');
+      final menuText = stripComments(menu.readAsStringSync());
+      expect(
+        menuText.contains('menuSurfaceColor()'),
+        isTrue,
+        reason: '菜单底色未走统一入口 menuSurfaceColor() → 会回退成"窗口遮罩色"（可能全透明）',
+      );
+      expect(
+        menuText.contains('windowOverlayColor'),
+        isFalse,
+        reason: '菜单底色又用了 windowOverlayColor()（在"窗口遮罩=透明"设置下菜单会变全透明）',
+      );
+
+      final overlay = File('lib/foundation/window_overlay.dart');
+      expect(
+        overlay.readAsStringSync(),
+        contains('Color menuSurfaceColor()'),
+        reason: '统一入口 menuSurfaceColor() 缺失',
+      );
+
+      final appdata = File('lib/foundation/appdata.dart');
+      final appdataText = appdata.readAsStringSync();
+      for (final key in const ["'menuSurfaceColor'", "'menuSurfaceOpacity'"]) {
+        expect(
+          appdataText.contains(key),
+          isTrue,
+          reason: '缺少默认值 $key（会导致菜单底色无默认、可能全透明）',
+        );
+      }
+    });
   });
 }
