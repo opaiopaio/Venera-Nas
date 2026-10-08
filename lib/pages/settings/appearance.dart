@@ -86,192 +86,22 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.to(() => const AppearanceWindowPage()),
         ).toSliver(),
+        // ⭐ N1：本区块已迁到**独立子页** ✓（`appearance_secondary_page.dart` ✓）—— 设置项与 key 完全不变 ✓，仅换位置 ✓。
         _SettingPartTitle(title: "Secondary page".tl, icon: Icons.layers),
-        // ⭐ N1：二级页面页总开关 ✓（默认开 = 用默认弹层 ✓；关才启用样式/背景/对比强度 ✓）
-        _SwitchSetting(
-          title: "Follow system theme".tl,
-          subtitle: "On: use the default look; Off: customize below".tl,
-          settingKey: "secondaryPageFollowTheme",
-          onChanged: () => App.forceRebuild(),
+        ListTile(
+          title: Text("Secondary page".tl),
+          subtitle: Text("Secondary page style and tint".tl),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.to(() => const AppearanceSecondaryPage()),
         ).toSliver(),
-        // ⭐ E1-①：「突出二级菜单」✓ —— 语义属于**二级页面** ✓（原先误放在「窗口与控件」区块 ✗，
-        // 用户指出后归位 ✓）；开启后二级菜单/弹层点开时**周围变暗** ✓；
-        // 关闭则与其它二级菜单一致（**无暗罩** ✓）；未设置时保持原有行为 ✓（零回归 ✓）。
-        // 落点：`components/pop_up_widget.dart` 的 `secondaryMenuBarrierColor()` ✓
-        //（另有 `showLoadingDialog` 的 `DialogRoute` 与主题层 `dialogTheme` ✓）。
-        // ⭐ N1：跟随系统主题（默认）时隐藏本节自定义项 ✓
-        if (appdata.settings['secondaryPageFollowTheme'] != true) ...[
-          _SwitchSetting(
-            title: "Highlight secondary menu".tl,
-            settingKey: "secondaryMenuDim",
-            onChanged: () => App.forceRebuild(),
-          ).toSliver(),
-          SelectSetting(
-            title: "Secondary page style".tl,
-            settingKey: "secondaryPageMode",
-            optionTranslation: {
-              "opaque": "Opaque (cover)".tl,
-              "transparent": "Translucent".tl,
-              "off": "Off".tl,
-            },
-            onChanged: () => App.forceRebuild(),
-          ).toSliver(),
-          SelectSetting(
-            title: "Secondary page background".tl,
-            settingKey: "secondaryPageTint",
-            optionTranslation: {
-              "darken": "Darken".tl,
-              "lighten": "Lighten".tl,
-              "none": "No tint".tl,
-            },
-            onChanged: () => App.forceRebuild(),
-          ).toSliver(),
-          _SliderSetting(
-            title: "Secondary page contrast".tl,
-            settingsIndex: "secondaryPageTintStrength",
-            interval: 0.02,
-            min: 0.0,
-            max: 0.6,
-            onChanged: () => App.forceRebuild(),
-          ).toSliver(),
-        ], // ← N1：二级页面自定义项隐藏到此结束 ✓
+        // ⭐ N1：本区块已迁到**独立子页** ✓（`appearance_text_page.dart` ✓）—— 设置项与 key 完全不变 ✓，仅换位置 ✓。
         _SettingPartTitle(title: "Text".tl, icon: Icons.text_fields),
-        // ⭐ N1：文字页总开关 ✓（默认开 = 主题字体/颜色/字号 ✓；关才启用下面各项 ✓）
-        _SwitchSetting(
-          title: "Follow system theme".tl,
-          subtitle: "On: use the default look; Off: customize below".tl,
-          settingKey: "textFollowTheme",
-          onChanged: () => App.forceRebuild(),
+        ListTile(
+          title: Text("Text".tl),
+          subtitle: Text("Font, color, scale, shadow and glow".tl),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.to(() => const AppearanceTextPage()),
         ).toSliver(),
-        // ⭐ N1：跟随系统主题（默认）时隐藏本节自定义项 ✓
-        if (appdata.settings['textFollowTheme'] != true) ...[
-          ColorSettingTile(
-            title: "Text color".tl,
-            settingValue: (appdata.settings['globalTextColor'] ?? 'system')
-                .toString(),
-            allowSystem: true,
-            onPicked: (value) async {
-              appdata.settings['globalTextColor'] = value;
-              await appdata.saveData();
-              App.forceRebuild();
-            },
-          ).toSliver(),
-          SelectSetting(
-            title: "Font".tl,
-            settingKey: "globalFontFamily",
-            optionTranslation: {
-              "system": "Follow system".tl,
-              "Microsoft YaHei": "微软雅黑",
-              "SimHei": "黑体",
-              "SimSun": "宋体",
-              "Noto Sans CJK SC": "Noto Sans CJK SC",
-              "Source Han Sans SC": "思源黑体",
-              "PingFang SC": "苹方",
-              "WenQuanYi Micro Hei": "文泉驿微米黑",
-              "serif": "Serif",
-              "monospace": "Monospace",
-            },
-            onChanged: () async {
-              await App.init();
-              App.forceRebuild();
-            },
-          ).toSliver(),
-          const _FontFileTile().toSliver(),
-          _SliderSetting(
-            title: "Font scale".tl,
-            settingsIndex: "globalFontScale",
-            interval: 0.05,
-            min: 0.8,
-            max: 1.4,
-            onChanged: () => App.forceRebuild(),
-          ).toSliver(),
-          _SwitchSetting(
-            title: "Text shadow".tl,
-            settingKey: "textShadowEnabled",
-            onChanged: () => App.forceRebuild(),
-          ).toSliver(),
-          ColorSettingTile(
-            title: "Shadow color".tl,
-            settingValue: (appdata.settings['textShadowColor'] ?? '#000000')
-                .toString(),
-            onPicked: (value) async {
-              appdata.settings['textShadowColor'] = value;
-              await appdata.saveData();
-              App.forceRebuild();
-            },
-          ).toSliver(),
-          _SliderSetting(
-            title: "Shadow blur".tl,
-            settingsIndex: "textShadowBlur",
-            interval: 0.5,
-            min: 0.0,
-            max: 10.0,
-            onChanged: () => App.forceRebuild(),
-          ).toSliver(),
-          _SliderSetting(
-            title: "Shadow offset X".tl,
-            settingsIndex: "textShadowOffsetX",
-            interval: 0.5,
-            min: -4.0,
-            max: 4.0,
-            onChanged: () => App.forceRebuild(),
-          ).toSliver(),
-          _SliderSetting(
-            title: "Shadow offset Y".tl,
-            settingsIndex: "textShadowOffsetY",
-            interval: 0.5,
-            min: -4.0,
-            max: 4.0,
-            onChanged: () => App.forceRebuild(),
-          ).toSliver(),
-          _SwitchSetting(
-            title: "Text glow".tl,
-            settingKey: "textGlowEnabled",
-            onChanged: () => App.forceRebuild(),
-          ).toSliver(),
-          ColorSettingTile(
-            title: "Glow color".tl,
-            settingValue: (appdata.settings['textGlowColor'] ?? '#FFFFFF')
-                .toString(),
-            onPicked: (value) async {
-              appdata.settings['textGlowColor'] = value;
-              await appdata.saveData();
-              App.forceRebuild();
-            },
-          ).toSliver(),
-          _SliderSetting(
-            title: "Glow radius".tl,
-            settingsIndex: "textGlowRadius",
-            interval: 1.0,
-            min: 0.0,
-            max: 20.0,
-            onChanged: () => App.forceRebuild(),
-          ).toSliver(),
-          _SliderSetting(
-            title: "Glow strength".tl,
-            settingsIndex: "textGlowStrength",
-            interval: 0.05,
-            min: 0.0,
-            max: 1.0,
-            onChanged: () => App.forceRebuild(),
-          ).toSliver(),
-          ListTile(
-            title: Text("Reset".tl),
-            trailing: const Icon(Icons.restart_alt),
-            onTap: () async {
-              appdata.settings['globalTextColor'] = 'system';
-              appdata.settings['globalFontFamily'] = 'system';
-              appdata.settings['globalFontFile'] = '';
-              appdata.settings['globalFontSource'] = '';
-              appdata.settings['globalFontScale'] = 1.0;
-              appdata.settings['textShadowEnabled'] = false;
-              appdata.settings['textGlowEnabled'] = false;
-              await appdata.saveData();
-              await loadCustomFont();
-              App.forceRebuild();
-            },
-          ).toSliver(),
-        ], // ← N1：文字自定义项隐藏到此结束 ✓
         _SettingPartTitle(title: "Comic Display".tl, icon: Icons.grid_view),
         SelectSetting(
           title: "Display mode of comic tile".tl,
