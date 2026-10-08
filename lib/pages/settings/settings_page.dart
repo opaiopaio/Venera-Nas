@@ -266,6 +266,25 @@ class _SettingsPageState extends State<SettingsPage> {
             return _buildSettingsContent(currentPage);
           },
           transitionDuration: Duration.zero,
+          // ⭐ BA2（用户实测 ✓，2026-10-09）：**被上层子页覆盖时，本层内容要"瞬间让位"** ✗→✓ ——
+          // 用户对照截图指出：设置页原本的效果是"**旧内容瞬间消失 + 新内容横切进来**"✓，
+          // 而右栏这一层**仍在绘制** ✗ → 又因四个外观子页在"有背景"时**本身是透明的** ✓，
+          // 旧内容便从新页透明区**透出来、与新页重叠** ✗（用户原话："新切入的动画会被原本页面的内容
+          // 侵入、重叠在一起，不好看"✓）。
+          // 修法 ✓：用本条路由的 **`secondaryAnimation`**（= 被上层覆盖的进度 ✓）让本层
+          // **在前 12% 内快速淡出** ✓ → 等价于"旧内容瞬间消失" ✓；返回时它反向恢复 ✓。
+          // ⚠️ 本层**自己**的进出仍由 `animation` 驱动 ✗ —— 这里**不改** `animation` ✓，
+          // 所以"设置项之间的切换"依旧零时长、行为不变 ✓。
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              FadeTransition(
+                opacity: Tween<double>(begin: 1.0, end: 0.0).animate(
+                  CurvedAnimation(
+                    parent: secondaryAnimation,
+                    curve: const Interval(0.0, 0.12, curve: Curves.easeOut),
+                  ),
+                ),
+                child: child,
+              ),
         );
       },
     );
