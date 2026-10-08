@@ -698,7 +698,14 @@ class _IndicatorPainter extends CustomPainter {
     canvas.clipRRect(
       RRect.fromRectAndRadius(chipRect, Radius.circular(radius)),
     );
-    canvas.drawRect(_currentRect!, paint);
+    // ⭐ AJ1（用户要求 ✓）：条改为**两侧半圆的细长胶囊** ✓ —— 圆角半径取 **高度的一半** ✓
+    //（`height / 2` ✓ → 两端正好是半圆 ✓）；位置与尺寸**保持不变** ✓（用户明确要求 ✓）。
+    // 外层仍按按钮形状 `clipRRect` 裁切 ✓ → 依旧**不出框** ✓。
+    final RRect capsule = RRect.fromRectAndRadius(
+      _currentRect!,
+      Radius.circular(_currentRect!.height / 2),
+    );
+    canvas.drawRRect(capsule, paint);
     canvas.restore();
   }
 
