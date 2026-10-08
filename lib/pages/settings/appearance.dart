@@ -1,16 +1,44 @@
 part of 'settings_page.dart';
 
-/// ⭐ AT1 → AU1（用户实测 ✓，2026-10-09）：**重要回退** ✗→✓ ——
-/// 我曾把这里改成 `opaque => false`，想消除"有背景时进子页的**白闪**"✗，
-/// 但用户实测发现两点：
-/// ① **白闪依旧** ✗ —— 说明白闪**不是**"路由不透明"造成的 ✗（真因待查 ✓）；
-/// ② **引入了新问题** ✗ —— **两层设置页面重合在一起** ✓：`opaque: false` 会让**下层路由继续绘制** ✗，
-///    而这四个子页在"有背景图"时**本身是透明的** ✓ → 下层内容直接透出来 ✓。
-/// 因此这里**改回 `opaque => true`** ✓（与普通 `MaterialPageRoute` 行为一致 ✓），**先消除回归** ✓；
-/// 白闪改由后续定位 ✓（线索：`PopUpWidgetScaffold` 内部 Material 的 `color` /
-/// 主题 zoom 转场是否垫了一层底 ✓ —— 见 `doc-private/04-changelog.md` 的 AU1 记录 ✓）。
+/// ⭐ AT1 → AU1 → AV1（用户建议 ✓ + 用户实测 ✓，2026-10-09）：外观四个子页的路由统一用它，
+/// 现在**继承本 App 自己的 `AppPageRoute`** ✓ ——
+///
+/// 用户原话 ✓："**会不会是动画效果导致的** ✓，你把动画换成和**上一级菜单一样的横向切入动画**呢"✓
+/// —— 方向完全正确 ✓，证据如下 ✓：
+/// ① 页面本身**已是全透明** ✗（`PopUpWidgetScaffold` 的 `Material(color: Colors.transparent)` ✓
+///    且整页式 + 有背景时 `needSurface = false` ✓）→ 所以那层"白"**只能来自转场** ✓；
+/// ② 桌面默认转场是 Material 3 的 **zoom** ✗ —— 它在转场期间会垫一层**不透明底** ✗ → 白闪 ✓；
+/// ③ 而 `AppPageRoute`（`foundation/app_page_route.dart` ✓）正是本 App 各处统一的
+///    **横向切入** ✓（`SlidePageTransitionBuilder`：`Offset(1,0) → Offset.zero` ✓，
+///    时长 `AppMotion.medium` ✓），**不垫任何背景** ✓；
+/// ④ 同时它是 `opaque: true` ✓ → **不会**出现"两层设置页重合"✗（上一版 `opaque:false` 的回归 ✗）。
+///
+/// ⚠️ 历史教训（留档 ✓）：我曾尝试 `opaque => false` ✗ —— 既**没解决白闪** ✗，
+/// 又因下层路由继续绘制而导致**两层页面重合** ✗（用户截图实测 ✓）→ 已回退 ✓（`f689cee` ✓）。
+/// ⚠️ 只用于**这四个外观子页** ✓，其它页面/弹层的路由**不动** ✗（同类原则 ✓）。
+/// ⚠️ 这里**不用** `extends AppPageRoute` ✗ —— 实测 `SettingsSubPageRoute(...)` 会被推断/判定为
+/// 与 `Navigator.push` 期望的 `Route<Object?>` 不兼容 ✗（编译报 `argument_type_not_assignable` ✓，
+/// 固定泛型为 `Object?` 后**仍然**报 ✗）→ 改用**更稳**的写法 ✓：
+/// 保留能正常编译的 `MaterialPageRoute` ✓，但把**转场**换成 App 自己的横向切入 ✓
+///（`SlidePageTransitionBuilder` ✓，就是"上一级菜单"用的那套 ✓，**不垫任何背景** ✓）。
 class SettingsSubPageRoute<T> extends MaterialPageRoute<T> {
   SettingsSubPageRoute({required super.builder});
+
+  @override
+  Widget buildTransitions(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return SlidePageTransitionBuilder().buildTransitions(
+      this,
+      context,
+      animation,
+      secondaryAnimation,
+      child,
+    );
+  }
 }
 
 class AppearanceSettings extends StatefulWidget {
