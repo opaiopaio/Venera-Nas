@@ -147,8 +147,15 @@ void applySystemContainerColorFor({
   final platformDark =
       WidgetsBinding.instance.platformDispatcher.platformBrightness ==
       Brightness.dark;
+  // ⭐ 复查修复（2026-10-09 ✓）：**让兜底与 `main.dart` 的映射等价** ✗→✓ ——
+  // 原式 `themeMode == 'dark' || (themeMode == 'system' && platformDark)` ✗ 把**未知/脏值**
+  // 当成**亮色** ✓，而 `main.dart` 的 `switch` 用 `_ => system` ✓ 把未知值当**跟随系统** ✗
+  // → 一旦设置里出现非法 `theme_mode`（旧版本残留 / 手改 json ✓），两者判定**分叉** ✗：
+  // 主程序按系统亮暗 ✓、这里却锁亮色 ✗ → `systemContainerColorCache` **不再更新** ✗
+  //（= B1 同类问题复发 ✗；B1 当初就是为了"暗色不再覆盖亮色"✓）。
+  // 现改为"**显式 light 才是亮色，其余（含 system / 未知）都跟随系统**" ✓，与 main.dart **逐字等价** ✓。
   final effectiveDark =
-      themeMode == 'dark' || (themeMode == 'system' && platformDark);
+      themeMode == 'dark' || (themeMode != 'light' && platformDark);
   if (brightness == (effectiveDark ? Brightness.dark : Brightness.light)) {
     systemContainerColorCache = systemContainerHigh;
   }
