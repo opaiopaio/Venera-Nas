@@ -355,11 +355,11 @@ class _AppTabBarState extends State<AppTabBar> {
       // 原先写死 `colorScheme.primary` ✗ → 无论设置如何都是主题色 ✗
       // （用户实测：图片收藏「标签/作者/漫画」不随「标签颜色」变化 ✓）。
       // 跟随遮罩 → `windowOverlayColor()` ✓；跟随主题 → `secondaryContainer` ✓。
-      // ⭐ Z1（用户选定 A ✓）：顶栏「漫画源」标签（含「+ 添加」✓）**跟随主题色本身** ✓，
-      // **不再跟随标签颜色** ✗（用户实测反馈 ✓：这一排应跟主题 ✓，不跟标签/胶囊按钮色 ✗）。
-      // 用 `primaryContainer` ✓ —— 它由**种子色**直接派生 ✓（当前种子青色 → 青色系 ✓），
-      // 且与胶囊按钮用的 `secondaryFixed` 是**两套**色 ✓（互不牵连 ✓）。
-      color: Theme.of(context).colorScheme.primaryContainer,
+      // ⭐ Z1（用户澄清 ✓）：顶栏「漫画源」标签（含「+ 添加」✓）跟随**主题自己那套
+      // tag/按钮色** ✓ = M3 的 **`secondaryContainer`** ✓（本项目最初"跟随主题"的标签/按钮
+      // 就是用的它 ✓）。**不跟随自定义按钮色** ✗（`buttonOverlayColor` 那套 ✗），
+      // 也不是 `primaryContainer` ✗（用户表述澄清 ✓）。
+      color: Theme.of(context).colorScheme.secondaryContainer,
       padding: tabPadding,
       radius: tabRadius,
     );
@@ -510,7 +510,7 @@ class _AppTabBarState extends State<AppTabBar> {
         // **不再跟随标签颜色** ✗（用户实测反馈 ✓：这一排应跟主题 ✓，不跟标签/胶囊按钮色 ✗）。
         // 用 `primaryContainer` ✓ —— 它由**种子色**直接派生 ✓（当前种子青色 → 青色系 ✓），
         // 且与胶囊按钮用的 `secondaryFixed` 是**两套**色 ✓（互不牵连 ✓）。
-        color: Theme.of(context).colorScheme.primaryContainer,
+        color: Theme.of(context).colorScheme.secondaryContainer,
         borderRadius: radius,
         clipBehavior: Clip.antiAlias,
         child: tab,
