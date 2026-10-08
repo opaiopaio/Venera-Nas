@@ -517,8 +517,11 @@ class _AppTabBarState extends State<AppTabBar> {
         color: Theme.of(context).colorScheme.secondaryContainer,
         borderRadius: radius,
         clipBehavior: Clip.antiAlias,
+        // ⭐ AA1（用户要求 ✓）：**可见 chip 的间距/高度由这里决定** ✗（上面的 `tabPadding`
+        // 在这条"自定义背景"分支**被覆盖** ✗ —— 这就是"改了 tabPadding 却看不到变化"✗ 的真因 ✓）。
+        // 用户实测要求 ✓：左右间距各 +5px、按钮高度 −4px → `left/right: 2 → 7` ✓、`bottom: 11 → 7` ✓。
         child: tab,
-      ).padding(const EdgeInsets.only(left: 2, right: 2, top: 1, bottom: 11));
+      ).padding(const EdgeInsets.only(left: 7, right: 7, top: 1, bottom: 7));
     }
     return tab.padding(tabPadding);
   }
