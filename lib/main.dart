@@ -303,7 +303,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ),
       ),
     );
-    // 「文字按钮 / 描边按钮 / 实色与 tonal 按钮」的前景都跟随**全局文字色** ✓
+    // 「文字 / 描边 / 实色 / tonal 按钮」的前景都跟随**全局文字色** ✓
     // （实测反馈："扫描 NAS / 导入" 这类按钮文字与字体色不跟随即此 ✗）。
     // 注意：
     //  - **不要**给 `iconButtonTheme` 接全局文字色 ✗ —— 那会让图标跟着文字变色（已修过一次）；
@@ -316,11 +316,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           }
           return fg;
         });
-    final overlayTextButtonStyle = overlayFg == null
-        ? overlayButtonStyle
-        : overlayButtonStyle.copyWith(
-            foregroundColor: overlayFgProp(overlayFg),
-          );
     // ─── P8 胶囊按钮规范（见 doc-private/03-implementation/07-background-and-color-picker.md）───
     // 底色 = 遮罩色（`windowOverlayColor()` ✓）、文字 = 全局文字色（`globalTextColor()` ✓）、
     // **文字水平+垂直居中** ✓、胶囊形状 ✓、`AppSpace` 令牌化间距 ✓、禁用态 0.38 ✓。
@@ -336,10 +331,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       // 文字**横纵都居中** ✓
       alignment: Alignment.center,
       // 胶囊要"胖"一些：实测 36 高度显得细长 ✗ → 抬到 44 ✓；
-      // 水平内边距略收（16→12），避免又长又细 ✗。
+      // ⚠️ **不要**给 `ButtonStyle.padding` 加**垂直**内边距 ✗ —— 它会把内容盒压到
+      //    `44 - 2*vertical`（例如 8 → 只剩 28px，正好等于行高 ✗），而 CJK 字的**墨迹高度
+      //    本就略大于行盒** → 文字被**裁切** ✗（实测：除首页两个按钮外全部胶囊文字被裁 ✗）。
+      //    高度由 `minimumSize` 统一保证 ✓，文字自然居中 ✓。
       minimumSize: const WidgetStatePropertyAll(Size(0, 44)),
       padding: const WidgetStatePropertyAll(
-        EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: AppSpace.sm),
+        EdgeInsets.symmetric(horizontal: AppSpace.md),
       ),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       shape: pillShape,
@@ -365,9 +363,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           ? Colors.transparent
           : null,
       iconButtonTheme: IconButtonThemeData(style: overlayButtonStyle),
-      // 文字按钮：无底色（不适用 P8 底色条款 ✓），仅前景跟随全局文字色 ✓
-      textButtonTheme: TextButtonThemeData(style: overlayTextButtonStyle),
-      // ↓ 以下三类 = **胶囊按钮**，统一走 P8 规范（遮罩底色 + 全局文字色 + 居中 + 胶囊 ✓）
+      // ↓ 以下四类 = **胶囊按钮**，统一走 P8 规范（遮罩底色 + 全局文字色 + 居中 + 胶囊 ✓）。
+      // `TextButton` 也纳入 ✓ —— 它同样有遮罩底色（`overlayButtonStyle` ✓），
+      // 且**垂直内边距 4→8、高度 36→44** 后可彻底消除"文字被压窄/裁切"✗（实测反馈 ✓）。
+      textButtonTheme: TextButtonThemeData(style: pillButtonStyle),
       outlinedButtonTheme: OutlinedButtonThemeData(style: pillButtonStyle),
       filledButtonTheme: FilledButtonThemeData(style: pillButtonStyle),
       elevatedButtonTheme: ElevatedButtonThemeData(style: pillButtonStyle),

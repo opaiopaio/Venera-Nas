@@ -161,13 +161,12 @@ class _ButtonState extends State<Button> {
 
   @override
   Widget build(BuildContext context) {
-    // P8 胶囊：默认内边距改为"水平 12 / 垂直 8"，避免又长又细 ✗（高度见下方 constraints ✓）
+    // P8 胶囊：水平内边距用 `AppSpace.md` ✓；**不要**加垂直内边距 ✗ ——
+    // 下方 `height = widget.height - padding.vertical` 会把调用方给的高度"吃掉"，
+    // 导致文字被**裁切** ✗（实测反馈：除首页两个标准 M3 按钮外，其余自绘胶囊文字全被裁 ✗）。
+    // 高度统一由 `constraints.minHeight: 44` 保证 ✓（不会裁切 ✓）。
     var padding =
-        widget.padding ??
-        const EdgeInsets.symmetric(
-          horizontal: AppSpace.md,
-          vertical: AppSpace.sm,
-        );
+        widget.padding ?? const EdgeInsets.symmetric(horizontal: AppSpace.md);
     var width = widget.width;
     if (width != null) {
       width = width - padding.horizontal;
