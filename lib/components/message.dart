@@ -218,6 +218,11 @@ LoadingDialogController showLoadingDialog(
 
   var loadingDialogRoute = DialogRoute(
     context: context,
+    // ⭐ E1-④：`DialogRoute` 的构造默认 `barrierColor` 是**写死的 `Colors.black54`** ✗
+    // （**不读主题** ✗ → 主题层 `dialogTheme` 对它无效 ✗）→ 必须显式传统一判定 ✓。
+    // 用户实测：追更页「立即检查」弹出的「更新漫画中…」进度弹窗一直有暗罩 ✗，根因即此 ✓。
+    // 本函数是**唯一**的 loading 弹层入口 ✓（20+ 调用点 ✓）→ 此处一处生效，全部受控 ✓。
+    barrierColor: secondaryMenuBarrierColor(),
     barrierDismissible: barrierDismissible,
     builder: (BuildContext context) {
       return StatefulBuilder(
