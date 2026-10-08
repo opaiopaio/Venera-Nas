@@ -674,11 +674,34 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
       ),
     );
 
-    final content = ListTile(
-      title: Text(widget.pages[key] ?? "(Invalid) $key"),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [removeButton, const Icon(Icons.drag_handle)],
+    // ⭐ B3：原先用 `ListTile` ✗ —— 它自带最小高度/内边距约定，在外层给定行高时
+    // 会把内容挤到贴底（用户实测：文字与图标不在遮罩内纵向居中 ✗），
+    // 且 leading/trailing 图标会受 `ListTileThemeData.iconColor` 烘焙色影响 ✗。
+    // 改为 `Row` ✓：`Row` 默认 `crossAxisAlignment: center` ✓ → **必然垂直居中** ✓；
+    // 图标颜色回归 `IconTheme`/`iconButtonTheme` ✓（跟随「图标颜色」设置 ✓）；
+    // 行高用 `minHeight` 且**跟随字号** ✓（禁止写死高度 ✗）。
+    final content = Container(
+      constraints: BoxConstraints(
+        minHeight: MediaQuery.textScalerOf(context).scale(1.0) * 44,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg),
+              child: Text(
+                widget.pages[key] ?? "(Invalid) $key",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [removeButton, const Icon(Icons.drag_handle)],
+          ),
+          const SizedBox(width: AppSpace.lg),
+        ],
       ),
     );
     // ⚠️ `ReorderableBuilder` 要求**交给它的最外层子项**带 `Key`（该包 controller 里
