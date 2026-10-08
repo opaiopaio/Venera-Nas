@@ -377,6 +377,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           ? Colors.transparent
           : null,
       iconButtonTheme: IconButtonThemeData(style: overlayButtonStyle),
+      // ⭐ E1-④：`showDialog` 类弹层的暗罩同样受「突出二级菜单」开关控制 ✓ ——
+      // 这类弹层（主页「扫描 NAS / 导入」、漫画源配置等 ✓）原先走 Flutter 默认
+      // `Colors.black54` ✗（**不受开关控制** ✓，用户实测反馈 ✓）；`PopUpWidget`
+      // 路由则在 `components/pop_up_widget.dart` 里单独处理 ✓。
+      // 规则与 `PopUpWidget` 一致 ✓：开关关 → 全透明（统一无暗罩 ✓）；
+      // 开 / 未设置 → `Colors.black54` ✓（保持原有行为 ✓，零回归 ✓）。
+      dialogTheme: DialogThemeData(
+        barrierColor: appdata.settings['secondaryMenuDim'] == false
+            ? Colors.transparent
+            : Colors.black54,
+      ),
       // ↓ 以下四类 = **胶囊按钮**，统一走 P8 规范（遮罩底色 + 全局文字色 + 居中 + 胶囊 ✓）。
       // `TextButton` 也纳入 ✓ —— 它同样有遮罩底色（`overlayButtonStyle` ✓），
       // 且**垂直内边距 4→8、高度 36→44** 后可彻底消除"文字被压窄/裁切"✗（实测反馈 ✓）。
