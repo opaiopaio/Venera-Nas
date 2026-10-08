@@ -252,6 +252,11 @@ class _SettingsPageState extends State<SettingsPage> {
       return const SizedBox();
     }
     return Navigator(
+      // ⭐ AO1 续（用户实测 ✓）：**必须给内层 Navigator 一个随 `currentPage` 变化的 key** ✓ ——
+      // 否则 `onGenerateRoute` 只对**新路由**生效 ✗ → 切换设置项后**旧路由仍显示** ✗
+      //（用户实测："左侧可点，但右侧页面不刷新"✗；直到 pop 掉子页才露出新页 ✓）。
+      // 加 key 后：切换设置项 → Navigator **重建** ✓ → 立即显示所点页面 ✓（子页也随之丢弃 ✓）。
+      key: ValueKey(currentPage),
       onGenerateRoute: (settings) {
         return PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) {
