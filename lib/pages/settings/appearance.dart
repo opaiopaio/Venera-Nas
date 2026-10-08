@@ -125,7 +125,9 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
         ).toSliver(),
         _SettingPartTitle(title: "Window & controls".tl, icon: Icons.widgets),
         ColorSettingTile(
-          title: "Window & control background".tl,
+          // H3 改名 ✓：原来叫「窗口/按钮背景颜色」✗ —— 现在按钮有**独立**设置了 ✓，
+          // 这一项只管**窗口**（面板/卡片/设置行/侧栏/顶栏 ✓），名实相符 ✓。
+          title: "Window background color".tl,
           settingValue: (appdata.settings['windowOverlayColor'] ?? 'system')
               .toString(),
           allowSystem: true,
@@ -137,8 +139,31 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
           },
         ).toSliver(),
         _SliderSetting(
-          title: "Window & control background opacity".tl,
+          // H3 改名 ✓（同上，只管窗口 ✓）
+          title: "Window background opacity".tl,
           settingsIndex: "windowOverlayOpacity",
+          interval: 0.05,
+          min: 0.0,
+          max: 1.0,
+          onChanged: () => App.forceRebuild(),
+        ).toSliver(),
+        // ⭐ H3：**按钮背景**独立控制 ✓ —— 与窗口分离后，胶囊按钮不再和面板同色融合 ✓。
+        // 颜色默认「跟随窗口」✓（`system` ✓）；不透明度默认 0.85 ✓（窗口默认 1.0 → 有层次 ✓）。
+        ColorSettingTile(
+          title: "Button background color".tl,
+          settingValue: (appdata.settings['buttonOverlayColor'] ?? 'system')
+              .toString(),
+          allowSystem: true,
+          allowTransparent: true,
+          onPicked: (value) async {
+            appdata.settings['buttonOverlayColor'] = value;
+            await appdata.saveData();
+            App.forceRebuild();
+          },
+        ).toSliver(),
+        _SliderSetting(
+          title: "Button background opacity".tl,
+          settingsIndex: "buttonOverlayOpacity",
           interval: 0.05,
           min: 0.0,
           max: 1.0,

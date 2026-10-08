@@ -113,6 +113,50 @@ double? _cachedOpacity;
 Color? _cachedSystemColor;
 Color? _cachedResult;
 
+/// ⭐ H3（2026-10-08）：**按钮背景**的统一入口 ✓ —— 与「窗口背景」**分离** ✓。
+///
+/// 原先面板与按钮都用 `windowOverlayColor()` ✗（像素级完全相同 ✓）→
+/// 按钮叠在同色面板上**完全融合** ✗（用户实测反馈："窗口和按钮的颜色和透明度
+/// 融合在一起" ✓）。
+///
+/// 规则 ✓：
+/// - **颜色**：优先设置项 `buttonOverlayColor` ✓（`system` = **跟随窗口色** ✓ /
+///   `transparent` / `#RRGGBB`）；未设置 → 跟随窗口色 ✓（**颜色零回归** ✓）。
+/// - **不透明度**：优先设置项 `buttonOverlayOpacity` ✓（0..1，clamp ✓）；
+///   未设置 → **自动加强一档** ✓ = `min(1.0, 窗口不透明度 + 0.3)` ✓
+///   → 默认状态下按钮就比面板更实 ✓，不再融合 ✓（想恢复融合：把该值调成与窗口一致 ✓）。
+Color buttonOverlayColor() {
+  final v = (appdata.settings['buttonOverlayColor'] ?? 'system').toString();
+  if (v == 'transparent') return Colors.transparent;
+
+  final rawOpacity = (appdata.settings['buttonOverlayOpacity'] as num?)
+      ?.toDouble();
+  double opacity;
+  if (rawOpacity != null) {
+    opacity = rawOpacity.clamp(0.0, 1.0);
+  } else {
+    final winOpacity =
+        ((appdata.settings['windowOverlayOpacity'] as num?)?.toDouble() ?? 1.0)
+            .clamp(0.0, 1.0);
+    // 自动加强一档 ✓（+0.3，上限 1.0 ✓）
+    opacity = (winOpacity + 0.3).clamp(0.0, 1.0);
+  }
+  if (opacity <= 0) return Colors.transparent;
+
+  // `system` = 跟随**窗口色**（取窗口设置的基色 ✓，再乘按钮自己的不透明度 ✓）
+  final winV = (appdata.settings['windowOverlayColor'] ?? 'system').toString();
+  final effective = v == 'system' ? winV : v;
+  if (effective == 'transparent') return Colors.transparent;
+
+  final n = (effective.startsWith('#') && effective.length == 7)
+      ? int.tryParse(effective.substring(1), radix: 16)
+      : null;
+  final base = n == null
+      ? (systemContainerColorCache ?? Colors.transparent)
+      : Color(0xFF000000 | n);
+  return base.toOpacity(opacity);
+}
+
 /// 「窗口/按钮背景」的统一方框：启用遮罩时包一层圆角底色（用 `Material` 裁切，
 /// 保证 `InkWell` 墨水也跟随圆角）；未启用时原样返回，零回归。
 class WindowOverlayBox extends StatelessWidget {

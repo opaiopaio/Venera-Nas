@@ -279,7 +279,10 @@ class _ButtonState extends State<Button> {
     // 显式传 `widget.color` 时以显式色为准 ✓（危险操作如"删除"用 error 色的例外 ✓）。
     // ⭐ H2 禁用态：`onPressed == null` → 整体 **0.38 不透明度** ✓（P8 规范已写明 ✓）。
     final disabled = widget.onPressed == null;
-    final mask = windowOverlayColor();
+    // ⭐ H3：按钮底色改用**独立入口** `buttonOverlayColor()` ✓ ——
+    // 与「窗口背景」分离 ✓（原先与面板同色 ✗ → 叠在同色面板上完全融合 ✗）。
+    // 颜色默认跟随窗口色 ✓（零回归 ✓）；不透明度默认自动加强一档 ✓（默认不再融合 ✓）。
+    final mask = buttonOverlayColor();
     if (widget.type == ButtonType.filled) {
       var color = widget.color ?? mask;
       if (disabled) return color.toOpacity(0.38);

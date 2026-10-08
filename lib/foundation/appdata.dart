@@ -305,6 +305,12 @@ class Settings with ChangeNotifier {
     'windowOverlayColor':
         'system', // 窗口/按钮背景色：system / transparent / #RRGGBB（独立于主题色）
     'windowOverlayOpacity': 1.0, // 窗口表面遮罩不透明度 0.0 - 1.0
+    // ⭐ H3：**按钮背景**与「窗口背景」分离 ✓（原先按钮与面板同色 ✗ → 完全融合 ✗）。
+    // `buttonOverlayColor` = `system` → **跟随窗口色** ✓（颜色零回归 ✓）；
+    // `buttonOverlayOpacity` 默认 **0.85** ✓（与窗口默认 1.0 不同 → 默认就有层次 ✓）。
+    // 另：`window_overlay.dart` 的 `buttonOverlayColor()` 保留"未设置时自动 +0.3"兜底 ✓（兼容旧配置 ✓）。
+    'buttonOverlayColor': 'system',
+    'buttonOverlayOpacity': 0.85,
     'windowOverlayCorner': 'rounded', // 窗口/按钮背景圆角：rounded / square
     // ── 全局文字（与自定义背景搭配）──
     'globalTextColor': 'system', // system / transparent / #RRGGBB（system=跟随系统）
