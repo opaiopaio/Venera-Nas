@@ -683,7 +683,10 @@ class _IndicatorPainter extends CustomPainter {
       chipLeft,
       0,
       (chipRight - chipLeft).clamp(0, size.width),
-      _AppTabBarState._kTabHeight,
+      // ⭐ AI1 续（用户反馈 ✓）：裁切高度必须与条的 y **同源** ✗→✓ ——
+      // 上一版条用实测 `itemHeight` 定位 ✓ 而裁切仍写死 `_kTabHeight` ✗ → 条落在裁切区外
+      // 被**整条裁掉** ✗（用户实测："小条完全消失了"✗）。两者统一用同一个高度 ✓。
+      itemHeight ?? _AppTabBarState._kTabHeight,
     );
     canvas.save();
     canvas.clipRRect(
