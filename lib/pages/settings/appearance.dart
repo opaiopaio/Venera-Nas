@@ -71,30 +71,36 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
         //（想用主题色时，把「标签背景颜色」显式设成对应颜色即可 ✓）。
         // ⭐ N1：本区块已迁到**独立子页** ✓（`appearance_background_page.dart` ✓）——
         // 设置项与 key 完全不变 ✓，仅换位置 ✓；点这一行进入 ✓。
-        // ⭐ AK1（用户要求 ✓）：**标题行本身即入口** ✓（不再需要下面那行 ListTile ✗）。
-        _SettingPartTitle(
-          title: "Background".tl,
-          icon: Icons.wallpaper,
+        // ⭐ AL1（用户要求 ✓）：恢复为**正常选项行** ✓（`ListTile` + `.toSliver()` ✓）——
+        // 整行可点 ✓ 且**受「窗口背景」遮罩控制** ✓（此前用裸标题行 ✗：只有文字/箭头能点 ✗、
+        // 且没有遮罩底色 ✗ = 用户所说"很诡异"✗）。
+        ListTile(
+          title: Text("Background".tl),
+          subtitle: Text("Image, color, opacity and fit".tl),
+          trailing: const Icon(Icons.chevron_right),
           onTap: () => context.to(() => const AppearanceBackgroundPage()),
-        ),
+        ).toSliver(),
         // ⭐ N1：本区块已迁到**独立子页** ✓（`appearance_window_page.dart` ✓）—— 设置项与 key 完全不变 ✓，仅换位置 ✓。
-        _SettingPartTitle(
-          title: "Window & controls".tl,
-          icon: Icons.widgets,
+        ListTile(
+          title: Text("Window & controls".tl),
+          subtitle: Text("Window and button overlays".tl),
+          trailing: const Icon(Icons.chevron_right),
           onTap: () => context.to(() => const AppearanceWindowPage()),
-        ),
+        ).toSliver(),
         // ⭐ N1：本区块已迁到**独立子页** ✓（`appearance_secondary_page.dart` ✓）—— 设置项与 key 完全不变 ✓，仅换位置 ✓。
-        _SettingPartTitle(
-          title: "Popup overlays".tl,
-          icon: Icons.layers,
+        ListTile(
+          title: Text("Popup overlays".tl),
+          subtitle: Text("Style and tint for pop-up overlays".tl),
+          trailing: const Icon(Icons.chevron_right),
           onTap: () => context.to(() => const AppearanceSecondaryPage()),
-        ),
+        ).toSliver(),
         // ⭐ N1：本区块已迁到**独立子页** ✓（`appearance_text_page.dart` ✓）—— 设置项与 key 完全不变 ✓，仅换位置 ✓。
-        _SettingPartTitle(
-          title: "Text".tl,
-          icon: Icons.text_fields,
+        ListTile(
+          title: Text("Text".tl),
+          subtitle: Text("Font, color, scale, shadow and glow".tl),
+          trailing: const Icon(Icons.chevron_right),
           onTap: () => context.to(() => const AppearanceTextPage()),
-        ),
+        ).toSliver(),
         _SettingPartTitle(title: "Comic Display".tl, icon: Icons.grid_view),
         SelectSetting(
           title: "Display mode of comic tile".tl,

@@ -828,33 +828,14 @@ class _CallbackSetting extends StatelessWidget {
 }
 
 class _SettingPartTitle extends StatelessWidget {
-  const _SettingPartTitle({
-    required this.title,
-    required this.icon,
-    this.onTap,
-  });
+  const _SettingPartTitle({required this.title, required this.icon});
 
   final String title;
 
   final IconData icon;
 
-  /// ⭐ AK1（用户要求 ✓）：为 `null` 时保持原样（纯标题 ✓）；
-  /// 传入后**标题行本身就是入口** ✓（右侧显示箭头 ✓）—— 于是不再需要下面那行 `ListTile` ✓。
-  final void Function()? onTap;
-
   @override
   Widget build(BuildContext context) {
-    final row = Row(
-      children: [
-        Icon(icon, size: AppIconSize.lg),
-        const SizedBox(width: 8),
-        Text(title, style: ts.s18),
-        if (onTap != null) ...[
-          const Spacer(),
-          const Icon(Icons.chevron_right, size: AppIconSize.md),
-        ],
-      ],
-    );
     return SliverToBoxAdapter(
       child: Container(
         padding: const EdgeInsets.only(
@@ -869,12 +850,13 @@ class _SettingPartTitle extends StatelessWidget {
             ),
           ),
         ),
-        child: onTap == null
-            ? row
-            : MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(onTap: onTap, child: row),
-              ),
+        child: Row(
+          children: [
+            Icon(icon, size: AppIconSize.lg),
+            const SizedBox(width: 8),
+            Text(title, style: ts.s18),
+          ],
+        ),
       ),
     );
   }
