@@ -323,10 +323,10 @@ class _ColorPickerPageState extends State<ColorPickerPage> {
     return PopUpWidgetScaffold(
       title: widget.title,
       tailing: [
-        TextButton.icon(
-          icon: const Icon(Icons.check),
-          label: Text("Done".tl),
+        // H2 `.icon` 专轮：标准 `TextButton.icon` → 自绘 `Button` + `pillLabel` ✓（一套体系 ✓）
+        Button.normal(
           onPressed: _apply,
+          child: pillLabel(Icons.check, "Done".tl),
         ),
       ],
       body: LayoutBuilder(

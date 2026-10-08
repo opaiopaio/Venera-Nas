@@ -117,18 +117,21 @@ class _ComicArchivePageState extends State<ComicArchivePage> {
         child: Row(
           children: [
             Expanded(
-              child: FilledButton.icon(
+              // H2 `.icon` 专轮：`FilledButton.icon` → 自绘 `Button` + `pillLabel` ✓
+              //（禁用态沿用可空 `onPressed` ✓：`isWorking` 时 0.38 半透明 ✓）
+              child: Button.normal(
                 onPressed: isWorking ? null : restoreSelected,
-                icon: const Icon(Icons.download),
-                label: Text("Download and Import".tl),
+                child: pillLabel(Icons.download, "Download and Import".tl),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: OutlinedButton.icon(
+              // H2 `.icon` 专轮：`OutlinedButton.icon` → 自绘 `Button` + `pillLabel` ✓
+              // ⚠️ 原本**没有**显式颜色 ✗（M3 默认）→ 此处**保持中性** ✓，不擅自改红 ✗
+              //（若需统一成危险色，可在 `color:` 传 `context.colorScheme.error` ✓）。
+              child: Button.normal(
                 onPressed: isWorking ? null : deleteSelected,
-                icon: const Icon(Icons.delete_outline),
-                label: Text("Delete".tl),
+                child: pillLabel(Icons.delete_outline, "Delete".tl),
               ),
             ),
           ],
