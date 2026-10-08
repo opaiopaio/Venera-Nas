@@ -382,7 +382,7 @@ class _AppTabBarState extends State<AppTabBar> {
         sourceTabOverlayColor(),
       ),
       padding: tabPadding,
-      radius: tabRadius,
+      radius: windowOverlayBorderRadius()?.topLeft.x ?? tabRadius,
     );
     if (old != null && old.offsets != null && old.itemHeight != null) {
       painter!.update(old.offsets!, old.itemHeight!);
@@ -638,13 +638,12 @@ class _IndicatorPainter extends CustomPainter {
     assert(tabIndex <= maxTabIndex);
     var (tabLeft, tabRight) = (offsets![tabIndex], offsets![tabIndex + 1]);
 
-    // ⭐ AH1（用户实测 ✓）：左右**各内缩** ✓（不贴边 ✗ —— 用户："这个条太丑了 ✗，不要贴两边 ✓"；
-    // 内缩量用 `AppSpace` 令牌 ✓ 不写数字 ✗），且足以**不越过按钮圆角** ✓（不漏到按钮外 ✗）。
-    const inset = AppSpace.sm;
+    // ⭐ AI1（用户要求 ✓）：**完整长度** ✓ —— 条铺满按钮**整个底部** ✓（"底下整个都是深色条"✓）；
+    // **不出框** ✓ 改由 `paint` 里按**按钮自身圆角裁切**保证 ✓（不再是靠左右内缩 ✗）。
     var rect = Rect.fromLTWH(
-      tabLeft + padding.left + inset,
+      tabLeft + padding.left,
       _AppTabBarState._kTabHeight - 3.6,
-      tabRight - tabLeft - padding.horizontal - inset * 2,
+      tabRight - tabLeft - padding.horizontal,
       3,
     );
 
@@ -673,9 +672,23 @@ class _IndicatorPainter extends CustomPainter {
       h,
     );
     final Paint paint = Paint()..color = color;
-    // ⭐ AH1（用户要求 ✓）：**直角** ✓ —— 去掉圆角 ✗（用户："这个线不要做圆角了" ✓），
-    // 直接画矩形 ✓（不再用 `RRect`/`Radius.circular` ✗）。
+    // ⭐ AI1（用户要求 ✓）：**直角** ✓（"这个线不要做圆角了"✓）—— 条本体画直角矩形 ✓；
+    // **不出框** ✓ 由**按按钮自身形状裁切**保证 ✓：圆角样式 → 裁成圆角 ✓；
+    // 切成直角样式 → 裁成直角 ✓（"包括圆角和切换成直角的边缘"✓）。
+    final double chipLeft = offsets![controller.index] + padding.left;
+    final double chipRight = offsets![controller.index + 1] - padding.left;
+    final Rect chipRect = Rect.fromLTWH(
+      chipLeft,
+      0,
+      (chipRight - chipLeft).clamp(0, size.width),
+      _AppTabBarState._kTabHeight,
+    );
+    canvas.save();
+    canvas.clipRRect(
+      RRect.fromRectAndRadius(chipRect, Radius.circular(radius)),
+    );
     canvas.drawRect(_currentRect!, paint);
+    canvas.restore();
   }
 
   @override
