@@ -69,41 +69,14 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
         // ⭐ L1：「标签颜色」模式开关（跟随遮罩 / 跟随主题 ✓，key `tagColorMode`）
         // 已按用户要求**删除** ✗ —— 标签底色改由下方「标签背景颜色 / 不透明度」**独立控制** ✓
         //（想用主题色时，把「标签背景颜色」显式设成对应颜色即可 ✓）。
+        // ⭐ N1：本区块已迁到**独立子页** ✓（`appearance_background_page.dart` ✓）——
+        // 设置项与 key 完全不变 ✓，仅换位置 ✓；点这一行进入 ✓。
         _SettingPartTitle(title: "Background".tl, icon: Icons.wallpaper),
-        const _BackgroundImageTile().toSliver(),
-        ColorSettingTile(
-          title: "Background color".tl,
-          settingValue: (appdata.settings['backgroundColor'] ?? 'transparent')
-              .toString(),
-          allowTransparent: true,
-          onPicked: (value) async {
-            appdata.settings['backgroundColor'] = value;
-            await appdata.saveData();
-            App.forceRebuild();
-          },
-        ).toSliver(),
-        _SliderSetting(
-          title: "Image opacity".tl,
-          settingsIndex: "backgroundImageOpacity",
-          interval: 0.05,
-          min: 0.0,
-          max: 1.0,
-          onChanged: () => App.forceRebuild(),
-        ).toSliver(),
-        SelectSetting(
-          title: "Image fit".tl,
-          settingKey: "backgroundImageFit",
-          optionTranslation: {
-            "cover": "Crop".tl,
-            "contain": "Contain".tl,
-            "fill": "Stretch".tl,
-            "fitWidth": "Fit width".tl,
-            "fitHeight": "Fit height".tl,
-            "none": "Original size".tl,
-            "scaleDown": "Scale down".tl,
-            "repeat": "Tile".tl,
-          },
-          onChanged: () => App.forceRebuild(),
+        ListTile(
+          title: Text("Background".tl),
+          subtitle: Text("Image, color, opacity and fit".tl),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.to(() => const AppearanceBackgroundPage()),
         ).toSliver(),
         _SettingPartTitle(title: "Window & controls".tl, icon: Icons.widgets),
         // ⭐ N1：本页总开关 ✓（用户规格：每个子页一个「是否跟随系统主题设置」✓，默认**开** ✓）。

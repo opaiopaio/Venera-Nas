@@ -35,6 +35,7 @@ part 'reader.dart';
 part 'explore_settings.dart';
 part 'setting_components.dart';
 part 'appearance.dart';
+part 'appearance_background_page.dart';
 part 'local_favorites.dart';
 part 'app.dart';
 part 'auth_pin_setting.dart';
