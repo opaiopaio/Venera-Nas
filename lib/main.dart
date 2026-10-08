@@ -345,6 +345,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     // 这样遮罩色与由主题色控制的 tag/滑条颜色能区分开。
     // ⚠️ 此处禁止调用 Theme.of（主题尚未建立会启动异常）。
     systemContainerColorCache = scheme.surfaceContainerHigh;
+    // ⭐ O1：把**主题的按钮/标签色**缓存给 `window_overlay.dart` 的 helpers ✓ ——
+    // 供「跟随系统主题」时的胶囊按钮与标签使用 ✓（用户澄清：默认态它们**跟随主题颜色** ✓，
+    // 而不是透明 ✗；helpers 无 BuildContext ✗ → 沿用上面 `systemContainerColorCache` 的模式 ✓）。
+    themeButtonColorCache = scheme.secondaryContainer;
     final gStyle = globalTextStyle();
     var theme = ThemeData(
       colorScheme: scheme,

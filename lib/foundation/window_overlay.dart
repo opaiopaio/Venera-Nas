@@ -130,9 +130,11 @@ Color? _cachedResult;
 ///   未设置 → **自动加强一档** ✓ = `min(1.0, 窗口不透明度 + 0.3)` ✓
 ///   → 默认状态下按钮就比面板更实 ✓，不再融合 ✓（想恢复融合：把该值调成与窗口一致 ✓）。
 Color buttonOverlayColor() {
-  // N1：总开关跟随主题 → 不参与 ✓
+  // ⭐ O1（用户澄清 ✓）：跟随主题时**不是透明** ✗ —— 最初默认下胶囊按钮本就有**主题色底** ✓
+  //（只有窗口/图标按钮才是透明 ✓）。主题色由 `main.dart` 的 `getTheme()` 写入本缓存 ✓
+  //（helpers 无 BuildContext ✗ → 沿用 `systemContainerColorCache` 的既有模式 ✓）。
   if (appdata.settings['windowOverlayFollowTheme'] == true) {
-    return Colors.transparent;
+    return themeButtonColorCache ?? Colors.transparent;
   }
   final v = (appdata.settings['buttonOverlayColor'] ?? 'system').toString();
   if (v == 'transparent') return Colors.transparent;
@@ -216,9 +218,9 @@ Color iconOverlayColor() {
 ///   （与旧 `overlay` 行为一致 ✓ 颜色零回归 ✓）/ `transparent` / `#RRGGBB` ✓；
 /// - **不透明度** `tagOverlayOpacity`：0..1 ✓（**默认 0.85** ✓，与按钮/图标按钮默认一致 ✓）。
 Color tagOverlayColor() {
-  // N1：总开关跟随主题 → 不参与 ✓
+  // ⭐ O1：同 `buttonOverlayColor()` ✓ —— 跟随主题时取**主题色** ✓（不是透明 ✗）
   if (appdata.settings['windowOverlayFollowTheme'] == true) {
-    return Colors.transparent;
+    return themeButtonColorCache ?? Colors.transparent;
   }
   final v = (appdata.settings['tagOverlayColor'] ?? 'system').toString();
   if (v == 'transparent') return Colors.transparent;
@@ -310,7 +312,16 @@ BoxDecoration? secondaryPageDecoration() {
 /// - `transparent` 样式 → 半透明黑/白（下层内容透出来）
 /// - `opaque` 样式 → 有背景图时返回**叠在背景图之上的半透明黑/白**（图本身不透明，
 ///   合成后整体不透明、完全遮住下层）；无背景图时按**背景色**加深/变浅得到不透明色。
+/// ⭐ O1：**主题色缓存** ✓ —— 由 `main.dart` 的 `getTheme()` 写入（`scheme.secondaryContainer` ✓），
+/// 供"跟随系统主题"时的**胶囊按钮/标签**底色使用 ✓（helpers 无 BuildContext ✗ → 沿用
+/// `systemContainerColorCache` 的既有模式 ✓）。
+Color? themeButtonColorCache;
+
 Color? customSecondarySurfaceColor(ColorScheme scheme) {
+  // ⭐ O1（用户澄清 ✓）：二级页面「跟随系统主题」时**只让色调不生效** ✓ ——
+  // 默认态必须**不做色调调整** ✓，但**遮挡下面内容** ✓（`secondaryPageFeatureActive` 仍为 true ✓）
+  // 且**突出二级菜单** ✓（`secondaryMenuDim` 默认 true ✓）都属于"回到最初默认" ✓。
+  if (appdata.settings['secondaryPageFollowTheme'] == true) return null;
   if (!appdata.settings.secondaryPageFeatureActive) return null;
   final mode = appdata.settings['secondaryPageMode'] as String? ?? 'opaque';
   final tint = appdata.settings['secondaryPageTint'] as String? ?? 'darken';

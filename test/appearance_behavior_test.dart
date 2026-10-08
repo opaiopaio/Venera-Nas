@@ -56,17 +56,22 @@ void main() {
   // ⭐ N1：三个「跟随系统主题」总开关（默认开）—— 开启时该页自定义项一律不生效 ✓，
   // 三页全开即回到"软件最开始没有任何自定义外观"的状态 ✓（用户明确要求 ✓）。
   group('⭐ N1 跟随系统主题总开关', () {
-    test('窗口与控件：开 → 四种遮罩全部不参与（透明）且布局判定为未启用', () {
+    test('窗口与控件：开 → 窗口/图标按钮透明；胶囊按钮与标签取主题色；布局判定未启用', () {
       appdata.settings['windowOverlayFollowTheme'] = true;
       appdata.settings['windowOverlayColor'] = '#123456';
       appdata.settings['windowOverlayOpacity'] = 0.5;
       appdata.settings['buttonOverlayColor'] = '#123456';
       appdata.settings['iconOverlayColor'] = '#123456';
       appdata.settings['tagOverlayColor'] = '#123456';
+      // ⭐ O1（用户澄清 ✓）：窗口底与图标按钮底 = **透明** ✓（最初默认本就无底 ✓）
       expect(windowOverlayColor(), Colors.transparent);
-      expect(buttonOverlayColor(), Colors.transparent);
       expect(iconOverlayColor(), Colors.transparent);
-      expect(tagOverlayColor(), Colors.transparent);
+      // ⭐ O1：胶囊按钮与标签 = **跟随主题色** ✓（不是透明 ✗ —— 最初默认本就有主题色底 ✓）
+      themeButtonColorCache = const Color(0xFFE8DEF8);
+      expect(buttonOverlayColor(), const Color(0xFFE8DEF8));
+      expect(tagOverlayColor(), const Color(0xFFE8DEF8));
+      themeButtonColorCache = null; // 缓存未写入时退回透明（安全兜底 ✓）
+      expect(buttonOverlayColor(), Colors.transparent);
       expect(appdata.settings.hasWindowOverlay, isFalse);
       expect(appdata.settings.cornerStyleActive, isFalse);
     });
