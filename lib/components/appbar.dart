@@ -649,10 +649,14 @@ class _IndicatorPainter extends CustomPainter {
     // 关键：按钮的**可见底边** = 行高（实测 `itemHeight` ✓）**减去 chip 自身的下内边距** ✓
     //（`tabItemPadding.bottom` ✓，**同源** ✓）。此前直接用 `itemHeight` ✗ → 条落到按钮**外面**
     // 接了一块 ✗（用户："变成给按钮接一块了"✗）；直接用固定高度 ✗ 又会浮在上方留缝 ✗。
+    // ⭐ AJ1 续（用户反馈"没变化"✓）：胶囊两端要**看得出半圆** ✓ —— 必须让两端落在按钮的
+    // **直边范围**内 ✓，否则会被按钮自身圆角裁成斜口 ✗（这就是"没变化"✓ 的真相 ✗）。
+    // 内缩量取**按钮圆角半径**（`radius` ✓，随「圆角样式」设置变化 ✓）= 两端正好躲开圆角 ✓。
+    final double endInset = radius;
     var rect = Rect.fromLTWH(
-      tabLeft + padding.left,
+      tabLeft + padding.left + endInset,
       pillBottom - 3,
-      tabRight - tabLeft - padding.horizontal,
+      tabRight - tabLeft - padding.horizontal - endInset * 2,
       3,
     );
 
