@@ -1,23 +1,16 @@
 part of 'settings_page.dart';
 
-/// ⭐ AT1（用户实测 ✓，2026-10-09）：外观四个子页的**路由**统一用它 ✓ ——
-/// 用户反馈："设置了背景后，进 背景 / 窗口与控件 / 弹出式二级页面 / 文字 这几个子页时，
-/// **进入那一侧会白色闪烁一下** ✗（一层浅色遮罩，直到转场结束才消失）"✓。
-///
-/// **真因** ✓：原先用 `MaterialPageRoute` ✗ —— 它**固定 `opaque: true`** ✗，
-/// 于是**转场那几帧**会露出**不透明的默认底** ✗；而这四个子页在"有背景图"时本身是
-/// **完全透明**的（`SecondaryPageSurface` 的 `needSurface = false` ✓ +
-/// `Material(color: Colors.transparent)` ✓）→ 路由的不透明底就把它们衬成了**白色** ✓。
-///
-/// **修法** ✓：继承 `MaterialPageRoute` ✓、**只把 `opaque` 改 false** ✓ ——
-/// 转场动画 / 时长 / 手势**全部照旧** ✓（仍走 Material 3 的 zoom 过渡 ✓），
-/// 唯一变化 = 转场期间**不再有不透明底** ✓ → 白闪消失 ✓。
-/// ⚠️ 只用于**这四个外观子页** ✓，其它页面/弹层的路由**不动** ✗（同类原则 ✓）。
+/// ⭐ AT1 → AU1（用户实测 ✓，2026-10-09）：**重要回退** ✗→✓ ——
+/// 我曾把这里改成 `opaque => false`，想消除"有背景时进子页的**白闪**"✗，
+/// 但用户实测发现两点：
+/// ① **白闪依旧** ✗ —— 说明白闪**不是**"路由不透明"造成的 ✗（真因待查 ✓）；
+/// ② **引入了新问题** ✗ —— **两层设置页面重合在一起** ✓：`opaque: false` 会让**下层路由继续绘制** ✗，
+///    而这四个子页在"有背景图"时**本身是透明的** ✓ → 下层内容直接透出来 ✓。
+/// 因此这里**改回 `opaque => true`** ✓（与普通 `MaterialPageRoute` 行为一致 ✓），**先消除回归** ✓；
+/// 白闪改由后续定位 ✓（线索：`PopUpWidgetScaffold` 内部 Material 的 `color` /
+/// 主题 zoom 转场是否垫了一层底 ✓ —— 见 `doc-private/04-changelog.md` 的 AU1 记录 ✓）。
 class SettingsSubPageRoute<T> extends MaterialPageRoute<T> {
   SettingsSubPageRoute({required super.builder});
-
-  @override
-  bool get opaque => false;
 }
 
 class AppearanceSettings extends StatefulWidget {
