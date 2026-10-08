@@ -49,7 +49,7 @@ void main() {
     await pumpSurface(
       tester,
       const SecondaryPageSurface(
-        fallbackToSurface: false,
+        // AP1-A4：fallbackToSurface 死参数已删除 ✗
         clip: false,
         child: SizedBox(width: 80, height: 40),
       ),
@@ -88,7 +88,7 @@ void main() {
       tester,
       const SecondaryPageSurface(
         clip: false,
-        fallbackToSurface: false,
+        // AP1-A4：fallbackToSurface 死参数已删除 ✗
         // ⭐ R1：整页式（`PopUpWidgetScaffold`）传 `popupStyle: false` ✓ ——
         // 弹出式（默认 true ✓）现在**无条件补不透明底** ✓（R1 修复：色盘等对话框在
         // "自定义开启"时也必须遮挡 ✓），故本用例必须显式声明自己不是弹出式 ✓。
@@ -230,7 +230,7 @@ void main() {
       tester,
       const SecondaryPageSurface(
         popupStyle: false, // 整页式 ✓
-        fallbackToSurface: false,
+        // AP1-A4：fallbackToSurface 死参数已删除 ✗
         clip: false,
         child: SizedBox(width: 80, height: 40),
       ),

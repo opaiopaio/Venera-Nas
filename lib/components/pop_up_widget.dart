@@ -145,7 +145,6 @@ class SecondaryPageSurface extends StatelessWidget {
     super.key,
     required this.child,
     this.borderRadius,
-    this.fallbackToSurface = true,
     this.clip = true,
     this.popupStyle = true,
   });
@@ -155,11 +154,10 @@ class SecondaryPageSurface extends StatelessWidget {
   /// 不传则跟随圆角设置（默认 `AppRadius.md`）。
   final BorderRadius? borderRadius;
 
-  /// 二级页面体系未启用时，是否补一层主题表面色。
-  /// - `ContentDialog`：需要（否则弹窗会透明透出下层内容）→ 保持默认 `true` ✓
-  /// - `PopUpWidgetScaffold`：不需要（它依赖**自身路由的 decoration**，见其 buildPage）
-  ///   → 传 `false`，与迁移前行为一致 ✓
-  final bool fallbackToSurface;
+  /// ⭐ AP1-A4（审计 ✓）：此处原有 `final bool fallbackToSurface` ✗ —— 它在 `build` 里
+  /// **从未被读取** ✓（真实底色由 `needSurface = popupStyle || !backgroundFeatureActive` ✓ 决定 ✓）
+  /// → 属**死参数** ✗（`PopUpWidgetScaffold` 传 `false` 与测试传 `false` 都不影响结果 ✓）
+  /// → 已删除 ✓（零行为影响 ✓）。
 
   /// 是否用 [ClipRRect] 按 `borderRadius` 裁切。
   /// `PopUpWidgetScaffold` 的形状/圆角由路由 decoration 提供 → 传 `false`（等价迁移）✓
@@ -353,7 +351,7 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
     // fallbackToSurface: false —— 本二级页依赖**自身路由的 decoration**（不一致地补底会变样 ✗）；
     // clip: false —— 形状/圆角由路由 decoration 提供（与迁移前行为一致 ✓）。
     return SecondaryPageSurface(
-      fallbackToSurface: false,
+      // ⭐ AP1-A4：`fallbackToSurface` 死参数已删除 ✗（底色由 `needSurface` 决定 ✓）
       clip: false,
       // ⭐ Q2/T1：沿用宿主传入的分类 ✓ —— 整页式设置页 `false` ✗（不叠色调 ✓）；
       // 色盘等弹出式传 `true` ✓（可被色调控制 ✓）。
