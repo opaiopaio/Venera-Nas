@@ -303,6 +303,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ),
       ),
     );
+    // 「文字按钮 / 描边按钮」的前景跟随**全局文字色** ✓（实测反馈："扫描 NAS" 这类
+    // 按钮文字不跟随即此 ✗）。注意：
+    //  - **不要**给 `iconButtonTheme` 接全局文字色 ✗ —— 那会让图标跟着文字变色（已修过一次）；
+    //  - **实色按钮**（`filledButtonTheme` 等）保持自身配色 ✓ —— 蓝底白字才是可读的组合，
+    //    硬套全局文字色会出现"蓝底红字"不可读 ✗。
+    final overlayFg = globalTextColor();
+    final overlayTextButtonStyle = overlayFg == null
+        ? overlayButtonStyle
+        : overlayButtonStyle.copyWith(
+            foregroundColor: WidgetStatePropertyAll(overlayFg),
+          );
     final scheme = SeedColorScheme.fromSeeds(
       primaryKey: primary,
       secondaryKey: secondary,
@@ -324,8 +335,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           ? Colors.transparent
           : null,
       iconButtonTheme: IconButtonThemeData(style: overlayButtonStyle),
-      textButtonTheme: TextButtonThemeData(style: overlayButtonStyle),
-      outlinedButtonTheme: OutlinedButtonThemeData(style: overlayButtonStyle),
+      textButtonTheme: TextButtonThemeData(style: overlayTextButtonStyle),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: overlayTextButtonStyle,
+      ),
     );
     // 全局文字（字体 + 颜色）：注入主题文字，做到"大致全控制"。
     // 注 1：FilledButton 等"实色主操作按钮"的前景保留自身配色，避免与实色底冲突不可读。
@@ -334,6 +347,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     //       图标应保持主题自身的前景色。
     if (gStyle != null) {
       final fg = gStyle.color;
+      // ListTile 的标题/副标题样式（全局文字样式自身已含颜色/字体/阴影/发光 ✓）
+      final titleStyle = theme.textTheme.bodyLarge?.merge(gStyle);
+      final subStyle = theme.textTheme.bodyMedium?.merge(gStyle);
       theme = theme.copyWith(
         // 颜色/字体/**阴影/发光** 注入整套主题文字（按钮、标签栏等控件的文字才会生效）
         textTheme: decorateTextTheme(
@@ -349,6 +365,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             bodyColor: fg,
             displayColor: fg,
           ),
+        ),
+        // ⚠️ **必须同时更新 `listTileTheme`**：`ThemeData` 在**构造时**就把
+        // ListTile 的默认文字样式算成了 `colorScheme.onSurface`（近黑 ✗），
+        // 之后 `copyWith(textTheme:)` **不会重算**它 → 所有基于 `ListTile` 的
+        // 设置行都会"不跟随全局文字颜色"（实测：行内 innerDefault=onSurface ✗，
+        // 而 innerThemeBodyLarge=全局色 ✓）。这里显式接上全局文字样式 ✓。
+        listTileTheme: theme.listTileTheme.copyWith(
+          titleTextStyle: titleStyle,
+          subtitleTextStyle: subStyle,
+          leadingAndTrailingTextStyle: subStyle,
         ),
       );
     }

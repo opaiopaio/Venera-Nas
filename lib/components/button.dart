@@ -268,14 +268,20 @@ class _ButtonState extends State<Button> {
   }
 
   Color get textColor {
+    // 全局文字色优先 ✓：用户设置了「字体颜色」时，**文字/描边按钮**的文字应跟随
+    // （实测反馈："扫描 NAS"、"Import" 这类按钮文字不跟随即此 ✗）。
+    // ⚠️ **实色按钮（filled）保持自身前景**（`onPrimary`）✗→✓ 不改 —— 蓝底白字
+    //    才是可读组合，硬套全局文字色会出现"蓝底红字"不可读。
+    // ⚠️ `iconButtonTheme` 也不接全局文字色（那会连图标一起染色，已修过一次 ✗）。
+    final global = globalTextColor();
     if (widget.type == ButtonType.outlined) {
-      return widget.color ?? context.colorScheme.primary;
+      return widget.color ?? global ?? context.colorScheme.primary;
     }
     return widget.type == ButtonType.filled
         ? context.colorScheme.onPrimary
         : (widget.type == ButtonType.text
-              ? widget.color ?? context.colorScheme.primary
-              : context.colorScheme.onSurface);
+              ? widget.color ?? global ?? context.colorScheme.primary
+              : global ?? context.colorScheme.onSurface);
   }
 }
 
