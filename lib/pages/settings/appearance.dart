@@ -169,6 +169,28 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
           max: 1.0,
           onChanged: () => App.forceRebuild(),
         ).toSliver(),
+        // ⭐ J1：**图标按钮**（只有图标的按钮 ✓：顶栏动作按钮 / `IconButton` / 页面右上「⋯」✓）
+        // 独立控制 ✓ —— 颜色默认「跟随胶囊按钮」✓、不透明度默认 0.85 ✓（与胶囊一致 ✓ → 零视觉变化 ✓）。
+        ColorSettingTile(
+          title: "Icon button background color".tl,
+          settingValue: (appdata.settings['iconOverlayColor'] ?? 'system')
+              .toString(),
+          allowSystem: true,
+          allowTransparent: true,
+          onPicked: (value) async {
+            appdata.settings['iconOverlayColor'] = value;
+            await appdata.saveData();
+            App.forceRebuild();
+          },
+        ).toSliver(),
+        _SliderSetting(
+          title: "Icon button background opacity".tl,
+          settingsIndex: "iconOverlayOpacity",
+          interval: 0.05,
+          min: 0.0,
+          max: 1.0,
+          onChanged: () => App.forceRebuild(),
+        ).toSliver(),
         SelectSetting(
           title: "Corner style".tl,
           settingKey: "windowOverlayCorner",

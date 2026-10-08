@@ -440,7 +440,7 @@ class _MenuButtonState extends State<MenuButton> {
       // ⭐ I1：底色走**按钮独立入口** ✓（原先 `windowOverlayColor()` ✗ → 与面板同色、不受「按钮背景」控制 ✗）
       child: appdata.settings.customBackgroundActive
           ? Material(
-              color: buttonOverlayColor(),
+              color: iconOverlayColor(),
               borderRadius: windowOverlayBorderRadius(),
               clipBehavior: Clip.antiAlias,
               child: button,

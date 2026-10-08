@@ -293,7 +293,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       // ⭐ I1：图标按钮（`IconButton`）的底色也走**按钮独立入口** ✓ ——
       // 原先用 `windowOverlayColor()` ✗ → 与面板同色、且**不受「按钮背景」设置控制** ✗
       //（用户实测："只有图标的按钮都不受控，还是受窗口遮罩控制" ✓）。
-      backgroundColor: WidgetStatePropertyAll(buttonOverlayColor()),
+      backgroundColor: WidgetStatePropertyAll(iconOverlayColor()),
       // 让按钮的底色方块更小、彼此不粘连。
       minimumSize: const WidgetStatePropertyAll(Size(36, 36)),
       padding: const WidgetStatePropertyAll(

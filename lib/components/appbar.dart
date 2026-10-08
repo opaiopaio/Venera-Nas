@@ -1014,7 +1014,7 @@ class TabActionButton extends StatelessWidget {
         // ⭐ I1：顶栏「动作按钮」（图标按钮，如设置/排序/搜索/⋯ ✓）底色走**按钮独立入口** ✓
         //（原先 `windowOverlayColor()` ✗ → 与顶栏面板同色、不受「按钮背景」设置控制 ✗，
         //  用户实测反馈"只有图标的按钮都不受控" ✓）。
-        color: buttonOverlayColor(),
+        color: iconOverlayColor(),
         borderRadius: radius,
         clipBehavior: Clip.antiAlias,
         child: content,

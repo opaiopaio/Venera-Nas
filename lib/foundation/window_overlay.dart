@@ -157,6 +157,45 @@ Color buttonOverlayColor() {
   return base.toOpacity(opacity);
 }
 
+/// ⭐ J1（2026-10-08）：**图标按钮背景**的统一入口 ✓ —— 与「胶囊按钮」**独立** ✓。
+///
+/// 用户诉求 ✓："把图标按钮的遮罩和胶囊按钮也分离，既然做自定义那就让大伙来选，
+/// 透明度也一样" ✓ → 图标按钮（只有图标的按钮 ✓：顶栏动作按钮 / `IconButton` /
+/// 页面右上「⋯」✓）拥有**自己的**颜色与不透明度设置 ✓。
+///
+/// 规则 ✓：
+/// - **颜色** `iconOverlayColor`：`system`（**默认** ✓）= **跟随胶囊按钮色** ✓ /
+///   `transparent` / `#RRGGBB` ✓；
+/// - **不透明度** `iconOverlayOpacity`：0..1 ✓（**默认 0.85** ✓ 与胶囊默认一致 ✓）；
+/// - 两者默认都与胶囊按钮一致 ✓ → **开箱零视觉变化** ✓，用户可随后各自调开 ✓。
+///
+/// ⚠️ `Color.toOpacity()` 是**替换 alpha** ✓（不是相乘 ✓）→ 可直接在"跟随胶囊"
+/// 的基色上套用**图标自己的**不透明度 ✓。
+Color iconOverlayColor() {
+  final v = (appdata.settings['iconOverlayColor'] ?? 'system').toString();
+  if (v == 'transparent') return Colors.transparent;
+
+  final opacity =
+      ((appdata.settings['iconOverlayOpacity'] as num?)?.toDouble() ?? 0.85)
+          .clamp(0.0, 1.0);
+  if (opacity <= 0) return Colors.transparent;
+
+  if (v == 'system') {
+    // 跟随**胶囊按钮**色 ✓（含按钮的显式色/遮罩色 ✓），再换成图标自己的不透明度 ✓
+    final btn = buttonOverlayColor();
+    if (btn == Colors.transparent) return Colors.transparent;
+    return btn.toOpacity(opacity);
+  }
+
+  final n = (v.startsWith('#') && v.length == 7)
+      ? int.tryParse(v.substring(1), radix: 16)
+      : null;
+  final base = n == null
+      ? (systemContainerColorCache ?? Colors.transparent)
+      : Color(0xFF000000 | n);
+  return base.toOpacity(opacity);
+}
+
 /// 「窗口/按钮背景」的统一方框：启用遮罩时包一层圆角底色（用 `Material` 裁切，
 /// 保证 `InkWell` 墨水也跟随圆角）；未启用时原样返回，零回归。
 class WindowOverlayBox extends StatelessWidget {
