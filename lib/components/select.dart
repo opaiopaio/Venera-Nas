@@ -72,7 +72,11 @@ class Select extends StatelessWidget {
                   child: Text(current ?? ' ', style: ts.s14),
                 ),
                 const SizedBox(width: 8),
-                Icon(Icons.arrow_drop_down, color: context.colorScheme.primary),
+                Icon(
+                  Icons.arrow_drop_down,
+                  // A8：走统一图标取色 ✓（全局图标色优先；未设置回退主题色 ✓）
+                  color: appIconColor(context, context.colorScheme.primary),
+                ),
               ],
             ).padding(
               const EdgeInsets.symmetric(
