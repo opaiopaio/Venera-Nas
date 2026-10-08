@@ -64,30 +64,38 @@ class AppearanceSecondaryPage extends StatelessWidget {
               max: 0.6,
               onChanged: () => App.forceRebuild(),
             ).toSliver(),
-            // ⭐ AQ1（用户要求 ✓，2026-10-09）：**上下文菜单 / 一级弹出菜单**的底色 ✓ ——
-            // 用户原话："给这类菜单加一个外观自定义配置 ✓，比如**底色** ✓、**透明度** ✓……
-            // 现在这个**纯透明状态可视化非常差** ✗，做成和现有弹出式二级菜单一样的**可配置**"✓。
-            // 毛玻璃**不做** ✗（用户追加说明："和现在的外观设计有冲突 ✓，以后再说"✓）。
-            // 落点 ✓：`foundation/window_overlay.dart` 的 `menuSurfaceColor()` ✓；
-            // 应用点 ✓：`components/menu.dart`（「…」按钮那族菜单 ✓）。
-            ColorSettingTile(
-              title: "Menu background color".tl,
-              settingValue: (appdata.settings['menuSurfaceColor'] ?? 'system')
-                  .toString(),
-              allowSystem: true,
-              allowTransparent: true,
-              onPicked: (value) async {
-                appdata.settings['menuSurfaceColor'] = value;
-                await appdata.saveData();
-                App.forceRebuild();
+            // ⭐ AR1（用户要求 ✓，2026-10-09 二次指示）：**上下文菜单 / 一级弹出菜单**外观 ✓ ——
+            // 用户原话："把菜单的样式和背景也**学习二级页面弹窗**的背景和样式**复刻上去**
+            //（**透明/不透明，变暗/变浅**）"✓ → 故与**上面二级页面那三项逐项同构** ✓
+            //（`menuSurfaceMode` / `menuSurfaceTint` / `menuSurfaceTintStrength` ✓，默认值也一致 ✓）。
+            // 落点 ✓：`foundation/window_overlay.dart` 的**共用**函数 `secondarySurfaceColorFor()` ✓；
+            // 应用点 ✓：`components/menu.dart`（「…」按钮那族菜单 ✓）。毛玻璃**不做** ✗（用户：以后再说 ✓）。
+            SelectSetting(
+              title: "Menu style".tl,
+              settingKey: "menuSurfaceMode",
+              optionTranslation: {
+                "opaque": "Opaque (cover)".tl,
+                "transparent": "Translucent".tl,
+                "off": "Off".tl,
               },
+              onChanged: () => App.forceRebuild(),
+            ).toSliver(),
+            SelectSetting(
+              title: "Menu background".tl,
+              settingKey: "menuSurfaceTint",
+              optionTranslation: {
+                "darken": "Darken".tl,
+                "lighten": "Lighten".tl,
+                "none": "No tint".tl,
+              },
+              onChanged: () => App.forceRebuild(),
             ).toSliver(),
             _SliderSetting(
-              title: "Menu background opacity".tl,
-              settingsIndex: "menuSurfaceOpacity",
+              title: "Menu contrast".tl,
+              settingsIndex: "menuSurfaceTintStrength",
               interval: 0.02,
               min: 0.0,
-              max: 1.0,
+              max: 0.6,
               onChanged: () => App.forceRebuild(),
             ).toSliver(),
           ], // ← N1：二级页面自定义项隐藏到此结束 ✓
