@@ -89,14 +89,14 @@ enum AppbarStyle { blur, shadow }
 /// 背景层 —— 横向（侧栏/双栏偏移）与纵向（标题栏让位）都能**严格对齐、无缝**；
 /// 静止时与"透明露出背景"外观一致，内容滚上来则被**实心挡住**，没有任何动画效果。
 ///
-/// 未启用背景时退回主题表面色，保证顶栏**始终不透明**。
-/// 只有 `blur` 样式且未启用背景时才保留原来的毛玻璃观感。
+/// 未启用背景时退回主题表面色，保证顶栏**始终不透明** ✓。
+///
+/// ⚠️ **不要在"未启用背景"时加毛玻璃** ✗ —— 纯色背景下的模糊会糊在滚动内容上、
+/// 观感很脏 ✗（用户实测反馈：带暗罩的二级菜单，其顶栏在纯色背景下出现毛玻璃 ✗）。
+/// 早前这里曾有 `style == blur && !AppBackground.isActive → BlurEffect` ✗，已移除 ✓。
 Widget _headerSurface(BuildContext context, AppbarStyle style, Widget body) {
-  Widget surface = _HeaderSurface(body: body);
-  if (style == AppbarStyle.blur && !AppBackground.isActive) {
-    surface = BlurEffect(blur: 15, child: surface);
-  }
-  return surface;
+  // `style` 保留在签名里以备将来扩展样式 ✓；当前统一走"不透明表面" ✓。
+  return _HeaderSurface(body: body);
 }
 
 class _HeaderSurface extends StatefulWidget {
