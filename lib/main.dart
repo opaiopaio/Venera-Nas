@@ -341,12 +341,27 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       shape: pillShape,
     );
-    final scheme = SeedColorScheme.fromSeeds(
+    var scheme = SeedColorScheme.fromSeeds(
       primaryKey: primary,
       secondaryKey: secondary,
       tertiaryKey: tertiary,
       brightness: brightness,
       tones: FlexTones.vividBackground(brightness),
+    );
+    // ⭐ A6 修复：所选主题色**按原样**用于强调元素 ✓ ——
+    // 原先只把所选色当 `primaryKey` **种子** ✗，M3 `SeedColorScheme` 会**派生色调** ✗
+    // → 界面显示的是派生后的深浅色 ✗，与预览/所选**不符** ✗（用户实测反馈 ✓）。
+    // 现在覆盖 `primary` / `primaryContainer`（滑条/开关/选中态用的就是这两个 ✓），
+    // 对比色 `onPrimary/onPrimaryContainer` 按**亮度**计算 ✓，保证可读性 ✓。
+    final onPicked =
+        ThemeData.estimateBrightnessForColor(primary) == Brightness.dark
+        ? Colors.white
+        : Colors.black;
+    scheme = scheme.copyWith(
+      primary: primary,
+      onPrimary: onPicked,
+      primaryContainer: primary,
+      onPrimaryContainer: onPicked,
     );
     // 供「窗口/按钮背景」取"跟随系统"的颜色：用**中性容器色**（不是主题色系），
     // 这样遮罩色与由主题色控制的 tag/滑条颜色能区分开。
