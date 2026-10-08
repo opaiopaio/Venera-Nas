@@ -143,7 +143,17 @@ class FlyoutState extends State<Flyout> {
                     animation: animation,
                     builder: (context, builder) {
                       return ColoredBox(
-                        color: Colors.black.toOpacity(0.3 * animation.value),
+                        // ⭐ C6-新②（2026-10-09 审计 ✓）：原先**写死** `Colors.black @0.3` ✗ ——
+                        // 完全无视应用内的「菜单变暗」（`secondaryMenuDim` ✓）开关 ✓ → 关掉它也照样变暗 ✗。
+                        // 现改走**统一入口** `secondaryMenuBarrierColor()` ✓（与 `message.dart` /
+                        // `follow_updates_page.dart` / `PopUpWidget.barrierColor` 同源 ✓ ——
+                        // 遵循 E1 定的"暗罩逻辑集中一处、避免两条实现漂移"✓）。
+                        // 保留原有"随动画渐显"✓：按它自身 alpha × `animation.value` ✓。
+                        // **用户可见变化**：仅当你在「弹出式二级页面」里关掉"菜单变暗"时，
+                        // Flyout 的暗罩**才会消失** ✓（开着时与旧观感一致 ✓）。
+                        color: secondaryMenuBarrierColor().toOpacity(
+                          secondaryMenuBarrierColor().a * animation.value,
+                        ),
                       );
                     },
                   ),
