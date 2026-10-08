@@ -294,10 +294,12 @@ class _AppTabBarState extends State<AppTabBar> {
 
   static const _kTabHeight = AppTopBar.tabHeight; // AA1：令牌化（原裸数字 ✗）
 
+  /// AA1 令牌化：**按钮本身的大小高度**由这里决定 ✓ —— 垂直内边距由 `AppSpace.tiny`
+  /// 收到 `AppSpace.xs` ✓ = 上下各收一点 = **按钮变小** ✓。
+  /// ⚠️ 注意 ✓：注释**不能写在参数中间** ✗ —— 外观守卫的"裸间距数值"规则会扫描
+  /// `EdgeInsets.symmetric(` 到第一个右括号之间的**任何数字** ✓（注释里的编号也算 ✗）。
   static const tabPadding = EdgeInsets.symmetric(
     horizontal: AppSpace.md,
-    // ⭐ Z3（用户澄清 ✓）：**按钮本身的大小高度**由这里决定 ✓ —— 垂直内边距
-    // `AppSpace.tiny` → `AppSpace.xs` ✓ = 上下各收一点 = **按钮变小** ✓。
     vertical: AppSpace.xs,
   );
 
