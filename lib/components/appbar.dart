@@ -292,7 +292,7 @@ class _AppTabBarState extends State<AppTabBar> {
 
   late List<GlobalKey> keys;
 
-  static const _kTabHeight = 48.0;
+  static const _kTabHeight = AppTopBar.tabHeight; // AA1：令牌化（原裸数字 ✗）
 
   static const tabPadding = EdgeInsets.symmetric(
     horizontal: AppSpace.md,
@@ -985,7 +985,7 @@ class TabActionButton extends StatelessWidget {
 
   final void Function() onPressed;
 
-  static const _kTabHeight = 46.0;
+  static const _kTabHeight = AppTopBar.actionHeight; // AA1：令牌化（原裸数字 ✗）
 
   @override
   Widget build(BuildContext context) {
