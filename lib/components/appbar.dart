@@ -351,7 +351,11 @@ class _AppTabBarState extends State<AppTabBar> {
     var old = painter;
     painter = _IndicatorPainter(
       controller: _controller,
-      color: context.colorScheme.primary,
+      // ⭐ F1-②：选中 tab 的**指示器填充**走「标签颜色」统一入口 ✓ ——
+      // 原先写死 `colorScheme.primary` ✗ → 无论设置如何都是主题色 ✗
+      // （用户实测：图片收藏「标签/作者/漫画」不随「标签颜色」变化 ✓）。
+      // 跟随遮罩 → `windowOverlayColor()` ✓；跟随主题 → `secondaryContainer` ✓。
+      color: tagFillColor(context),
       padding: tabPadding,
       radius: tabRadius,
     );
@@ -497,7 +501,8 @@ class _AppTabBarState extends State<AppTabBar> {
     // 同时整体上移 5px（上 1 / 下 11）。
     if (appdata.settings.customBackgroundActive) {
       return Material(
-        color: windowOverlayColor(),
+        // F1-②：tab 底同样走统一入口 ✓（原先恒 `windowOverlayColor()` ✗ → 不随设置变化 ✓）
+        color: tagFillColor(context),
         borderRadius: radius,
         clipBehavior: Clip.antiAlias,
         child: tab,
