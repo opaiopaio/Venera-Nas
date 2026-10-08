@@ -22,8 +22,15 @@ part of 'settings_page.dart';
 class SettingsSubPageRoute<T> extends PageRouteBuilder<T> {
   SettingsSubPageRoute({required WidgetBuilder builder})
     : super(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            builder(context),
+        // ⭐ 复查修复（2026-10-09 ✓）：**补回 `Semantics(scopesRoute: true, explicitChildNodes: true)`** ✗→✓ ——
+        // `MaterialPageRoute.buildPage` 自带这层无障碍"路由作用域"边界 ✓，而本类已改继承
+        // `PageRouteBuilder` ✗ → 该语义**丢失** ✗（读屏器会跨路由朗读 ✓ = 无障碍回归 ✓）。
+        // 本项目自己的 `AppPageRoute` 也是**显式补上**这一层 ✓ → 保持一致 ✓。
+        pageBuilder: (context, animation, secondaryAnimation) => Semantics(
+          scopesRoute: true,
+          explicitChildNodes: true,
+          child: builder(context),
+        ),
         // ⭐ 时长走令牌 ✓（`AppMotion.medium` ✓，与 `AppPageRoute` 一致 ✓）
         transitionDuration: AppMotion.medium,
         reverseTransitionDuration: AppMotion.medium,

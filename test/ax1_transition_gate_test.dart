@@ -68,5 +68,27 @@ void main() {
       isTrue,
       reason: '横向切入分支缺失（无背景时应走 SlideTransition 横切）',
     );
+
+    // ⭐ 复查补强（2026-10-09 ✓）：**守护 AZ1 的拆分** ✗→✓ ——
+    // AZ1 的回归是"把 `forceSlide` 并进 `customBg` ⇒ 强制横切时 Material 变不透明白 + elevation 6
+    // ⇒ 有背景时四个子页**一片空白**"✓（用户截图实测 ✓）。当时只断言了"存在 forceSlide 开关"✗，
+    // 若有人把 `elevation:`/`color:` 改回 `customBg`，原断言**仍会全绿** ✗ = 静默复发 ✓。
+    expect(
+      text.contains(
+        'final transparentPages = App.data.settings.backgroundFeatureActive;',
+      ),
+      isTrue,
+      reason: '缺少 transparentPages（AZ1 的拆分变量）→ 白板回归可静默复活',
+    );
+    expect(
+      text.contains('elevation: transparentPages ? 0 : 6'),
+      isTrue,
+      reason: 'elevation 未取 transparentPages → 强制横切时会变成 6（带阴影），AZ1 复发',
+    );
+    expect(
+      text.contains('color: transparentPages ? Colors.transparent : null'),
+      isTrue,
+      reason: 'Material.color 未取 transparentPages → 强制横切时变成不透明主题色（白板），AZ1 复发',
+    );
   });
 }
