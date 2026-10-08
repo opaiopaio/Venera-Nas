@@ -262,9 +262,12 @@ class ComicTile extends StatelessWidget {
                   ),
                 if (history != null)
                   Container(
-                    height: 24,
+                    // 高度用 `minHeight` ✓（跟随字号自适应；固定 24 在更大字号下会裁字 ✗）
                     color: Colors.blue.toOpacity(0.9),
-                    constraints: const BoxConstraints(minWidth: 24),
+                    constraints: const BoxConstraints(
+                      minWidth: 24,
+                      minHeight: 24,
+                    ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpace.xs,
                     ),
