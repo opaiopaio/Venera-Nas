@@ -148,7 +148,6 @@ class _ExplorePageState extends State<ExplorePage>
         controller: controller,
         actionButton: TabActionButton(
           icon: const Icon(Icons.add),
-          text: "Add".tl,
           onPressed: addPage,
         ),
       ),

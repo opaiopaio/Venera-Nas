@@ -120,7 +120,6 @@ class _CategoriesPageState extends State<CategoriesPage>
             }).toList(),
             actionButton: TabActionButton(
               icon: const Icon(Icons.add),
-              text: "Add".tl,
               onPressed: addPage,
             ),
           ).paddingTop(context.padding.top),

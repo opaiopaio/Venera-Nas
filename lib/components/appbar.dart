@@ -978,13 +978,10 @@ class TabActionButton extends StatelessWidget {
   const TabActionButton({
     super.key,
     required this.icon,
-    required this.text,
     required this.onPressed,
   });
 
   final Icon icon;
-
-  final String text;
 
   final void Function() onPressed;
 
@@ -1004,18 +1001,13 @@ class TabActionButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
         child: IconTheme(
           data: IconThemeData(
-            size: AppIconSize.md,
-            // A8：顶栏标签/操作图标的颜色走统一入口 ✓
-            // （全局「图标颜色」优先，未设置回退主题色 ✓；原先写死 primary ✗ → 不跟随 ✓）
-            color: appIconColor(context, context.colorScheme.primary),
+            // ⭐ AA1（用户要求 ✓）：**纯图标按钮** ✓ —— 去掉「添加」文字 ✗、图标**更大** ✓；
+            // 颜色**跟随本排主题色** ✓（`onSecondaryContainer` 配 `secondaryContainer` ✓），
+            // **不再跟随「图标按钮」的自定义色** ✗（原先走 `appIconColor()` ✗，用户实测指出 ✓）。
+            size: AppIconSize.lg,
+            color: context.colorScheme.onSecondaryContainer,
           ),
-          child: Row(
-            children: [
-              icon,
-              const SizedBox(width: 8),
-              Text(text, style: ts.withColor(context.colorScheme.primary)),
-            ],
-          ),
+          child: icon, // 只留图标 ✓（真正的图标按钮 ✓）
         ),
       ),
     );
@@ -1024,7 +1016,9 @@ class TabActionButton extends StatelessWidget {
         // ⭐ I1：顶栏「动作按钮」（图标按钮，如设置/排序/搜索/⋯ ✓）底色走**按钮独立入口** ✓
         //（原先 `windowOverlayColor()` ✗ → 与顶栏面板同色、不受「按钮背景」设置控制 ✗，
         //  用户实测反馈"只有图标的按钮都不受控" ✓）。
-        color: iconOverlayColor(),
+        // ⭐ AA1（用户要求 ✓）：填色与本排标签一致（主题 `secondaryContainer` ✓），
+        // **不再跟随「图标按钮」的自定义色** ✗（原先 `iconOverlayColor()` ✗，用户实测指出 ✓）。
+        color: context.colorScheme.secondaryContainer,
         borderRadius: radius,
         clipBehavior: Clip.antiAlias,
         child: content,
