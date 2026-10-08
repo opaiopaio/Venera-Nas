@@ -1,4 +1,26 @@
-﻿part of 'components.dart';
+part of 'components.dart';
+
+/// ⭐ D1：**小标签（tag / chip）底色**的统一入口 ✓。
+///
+/// 由外观设置「标签颜色」（key `tagColorMode` ✓）控制：
+/// - `overlay`（**默认** ✓）：`windowOverlayColor()` = 跟随**遮罩设置** ✓
+///   （与分类页标签一致 ✓）；
+/// - `theme`：`colorScheme.secondaryContainer` = 跟随**主题色** ✓（原样式 ✓）。
+///
+/// 选中态（`selected: true`）仍固定用 `secondaryContainer` ✓ —— 它表达"已选中"语义 ✓，
+/// 与底色模式无关 ✓。
+///
+/// 用法：标签类控件统一走本函数 ✓（`MaskChip` ✓、卡片内 tag ✓ 等），
+/// 这样"标签颜色"设置一处生效 ✓，不要在各处散写 `secondaryContainer` ✗。
+Color tagFillColor(BuildContext context, {bool selected = false}) {
+  // 建立设置依赖 ✓：改设置后标签即时刷新 ✓（见 11-refresh-mechanism.md）
+  AppSettingsScope.of(context);
+  final scheme = context.colorScheme;
+  if (selected) return scheme.secondaryContainer;
+  return appdata.settings['tagColorMode'] == 'theme'
+      ? scheme.secondaryContainer
+      : windowOverlayColor();
+}
 
 /// 「选择 / 标签 chip」类的**唯一实现**。
 ///
@@ -48,7 +70,7 @@ class MaskChip extends StatelessWidget {
     Widget chip = AnimatedContainer(
       duration: AppMotion.short,
       decoration: BoxDecoration(
-        color: isSelected ? scheme.secondaryContainer : windowOverlayColor(),
+        color: tagFillColor(context, selected: isSelected),
         borderRadius: radius,
         border: selected == null
             ? null

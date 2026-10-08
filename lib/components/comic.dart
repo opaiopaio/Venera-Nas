@@ -715,9 +715,11 @@ class _ComicDescription extends StatelessWidget {
                             maxWidth: constraints.maxWidth * 0.45,
                           ),
                           decoration: BoxDecoration(
+                            // D1：标签底色走统一入口 ✓（「标签颜色」设置可切"跟随遮罩/跟随主题" ✓）；
+                            // 「不可用」保持语义**错误色** ✗ 不参与切换 ✓。
                             color: s == "Unavailable"
                                 ? context.colorScheme.errorContainer
-                                : context.colorScheme.secondaryContainer,
+                                : tagFillColor(context),
                             borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                           child: Center(
