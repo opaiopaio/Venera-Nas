@@ -463,9 +463,20 @@ class _WebdavSettingState extends State<_WebdavSetting> {
   bool isTesting = false;
   bool upload = true;
 
+  // ⭐ AP1-A2（审计 ✓）：TextField 控制器改为**状态内持有** ✓ 并在 `dispose` 释放 ✓ ——
+  // 原先在 `build` 里 `TextEditingController(text: …)` 新建 ✗（无 dispose ✗）→
+  // 每次重建（开关/测试按钮 setState ✓）都会**重置光标与选区** ✗，用户编辑中被中断 ✓。
+  late final TextEditingController _urlCtrl;
+  late final TextEditingController _userCtrl;
+  late final TextEditingController _passCtrl;
+
   @override
   void initState() {
     super.initState();
+    // ⭐ AP1-A2：控制器**无条件先建** ✓（early-return 分支也要存在 ✓，否则 `late final` 未初始化 ✓）
+    _urlCtrl = TextEditingController();
+    _userCtrl = TextEditingController();
+    _passCtrl = TextEditingController();
     if (appdata.settings['webdav'] is! List) {
       appdata.settings['webdav'] = [];
     }
@@ -481,6 +492,19 @@ class _WebdavSettingState extends State<_WebdavSetting> {
     url = configs[0];
     user = configs[1];
     pass = configs[2];
+    // 已有配置 → 同步到控制器 ✓（空配置分支不执行 ✓，控制器仍为空 ✓，行为与迁移前一致 ✓）
+    _urlCtrl.text = url;
+    _userCtrl.text = user;
+    _passCtrl.text = pass;
+  }
+
+  @override
+  void dispose() {
+    // ⭐ AP1-A2（审计 ✓）：释放三个控制器 ✓（原先在 build 内新建且永不释放 ✗）
+    _urlCtrl.dispose();
+    _userCtrl.dispose();
+    _passCtrl.dispose();
+    super.dispose();
   }
 
   void onAutoSyncChanged(bool value) {
@@ -505,7 +529,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
                 hintText: "A valid WebDav directory URL".tl,
                 border: OutlineInputBorder(),
               ),
-              controller: TextEditingController(text: url),
+              controller: _urlCtrl,
               onChanged: (value) => url = value,
             ),
             const SizedBox(height: 12),
@@ -514,7 +538,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
                 labelText: "Username".tl,
                 border: const OutlineInputBorder(),
               ),
-              controller: TextEditingController(text: user),
+              controller: _userCtrl,
               onChanged: (value) => user = value,
             ),
             const SizedBox(height: 12),
@@ -523,7 +547,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
                 labelText: "Password".tl,
                 border: const OutlineInputBorder(),
               ),
-              controller: TextEditingController(text: pass),
+              controller: _passCtrl,
               onChanged: (value) => pass = value,
             ),
             const SizedBox(height: 12),
