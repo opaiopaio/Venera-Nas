@@ -73,7 +73,10 @@ class AppearanceWindowPage extends StatelessWidget {
               onChanged: () => App.forceRebuild(),
             ).toSliver(),
             // ⭐ J1：**图标按钮**（只有图标的按钮 ✓：顶栏动作按钮 / `IconButton` / 页面右上「⋯」✓）
-            // 独立控制 ✓ —— 颜色默认「跟随胶囊按钮」✓、不透明度默认 0.85 ✓（与胶囊一致 ✓ → 零视觉变化 ✓）。
+            // 独立控制 ✓、不透明度默认 0.85 ✓（与胶囊一致 ✓ → 零视觉变化 ✓）。
+            // ⚠️ **归档复核更正** ✗（2026-10-09 ✓）：本段原写"颜色默认**跟随胶囊按钮**"✗ —— **与代码不符** ✓；
+            // 实测 `iconOverlayColor` 的 `system` 分支与 `buttonOverlayColor` 同源 ✓，
+            // 取的都是 **系统容器色**（`systemContainerColorCache` ✓，M2 起 ✓）→ 已按代码更正 ✓。
             ColorSettingTile(
               title: "Icon button background color".tl,
               settingValue: (appdata.settings['iconOverlayColor'] ?? 'system')
@@ -95,8 +98,11 @@ class AppearanceWindowPage extends StatelessWidget {
               onChanged: () => App.forceRebuild(),
             ).toSliver(),
             // ⭐ K1：**标签背景**独立控制 ✓（颜色 + 不透明度，与按钮遮罩同形态 ✓）。
-            // ⚠️ 与上方「标签颜色」开关的关系 ✓：模式 = **跟随主题** 时用 `secondaryContainer` ✓（此项不生效 ✓）；
-            // 模式 = **跟随遮罩**（默认 ✓）时用本项 ✓。颜色默认 `system` = 跟随**系统容器色** ✓。
+            // ⚠️ **归档复核更正** ✗（2026-10-09 ✓）：本段原写"与上方「标签颜色」开关的关系 ✓：模式 = **跟随主题**
+            // 时用 `secondaryContainer` ✓、模式 = **跟随遮罩**（默认 ✓）时用本项" ✗ —— 该 **`tagColorMode` 模式开关
+            // 已按用户要求删除** ✗（见 `components/mask_chip.dart` 的 L1 注释 ✓），原表述**过期** ✓。
+            // **现值** ✓：标签底色**只有本项这一个入口** ✓（`tagOverlayColor()` ✓）；
+            // 颜色默认 `system` = 跟随**系统容器色** ✓；**想要主题色**就把该颜色显式设成对应颜色 ✓。
             ColorSettingTile(
               title: "Tag background color".tl,
               settingValue: (appdata.settings['tagOverlayColor'] ?? 'system')

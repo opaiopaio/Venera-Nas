@@ -410,7 +410,25 @@ class _ReaderSettingsState extends State<ReaderSettings> {
           useDeviceSettings: useDeviceSpecificSettings,
         ).toSliver(),
         SliverAnimatedVisibility(
-          visible: appdata.settings['enableLongPressToZoom'] == true,
+          // ⭐ 复查补漏（2026-10-09 ✓，归档复核发现 ✗）：本行原读**全局** `enableLongPressToZoom` ✗ ——
+          // 而它上面那个开关（与上方两处**同一族**设置行 ✓、key 一致 ✓）是**带作用域**的 ✓
+          //（`comicId` / `comicSource` / `useDeviceSettings` ✓）→ 用户若把该项设为**漫画 / 设备专属** ✓，
+          // 开关会亮 ✓ 但**这一行不会出现** ✗ —— 即 C4 修复**漏掉的第 3 处**同类问题 ✓。
+          // ⚠️ 注意 ✗：此处**刻意不写出该设置行调用的完整字面量** ✓ —— `test/mask_entry_test.dart` 的正则
+          //   是**连注释一起扫**的 ✓（本次就因此把我这条注释误报成"未接入遮罩"✗ 并让测试变红 ✓）；
+          //   同理 `tool/appearance_guard.dart` 的"裸透明度"正则也会扫到注释内的字面量 ✓ —— 注释里别写这些模式 ✗。
+          // 现按与 C4 **完全相同的写法**改用**作用域有效值** ✓（`??` 回退全局 ✓；该键目前只写全局 ⇒ **行为等价** ✓）。
+          visible:
+              (appdata.settings.readSettingValue(
+                    key: 'enableLongPressToZoom',
+                    comicId: isEnabledSpecificSettings ? widget.comicId : null,
+                    comicSource: isEnabledSpecificSettings
+                        ? widget.comicSource
+                        : null,
+                    useDeviceSettings: useDeviceSpecificSettings,
+                  ) ??
+                  appdata.settings['enableLongPressToZoom']) ==
+              true,
           child: SelectSetting(
             title: "Long press zoom position".tl,
             settingKey: "longPressZoomPosition",
