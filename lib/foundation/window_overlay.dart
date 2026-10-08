@@ -333,9 +333,10 @@ BoxDecoration? secondaryPageDecoration() {
 /// `systemContainerColorCache` 的既有模式 ✓）。
 Color? themeButtonColorCache;
 
-/// ⭐ AF1：**顶栏「漫画源」按钮**（分类/发现页顶部那一排 ✓，含「+ 加号」✓）的**主题色缓存** ✓ ——
-/// 由 `main.dart` 的 `getTheme()` 写入 `scheme.secondaryContainer` ✓（= 现状外观 ✓ 零回归 ✓）。
-Color? themeSourceTabColorCache;
+/// ⭐ AF1/AG1 说明 ✓：曾经有过一个 `themeSourceTabColorCache` ✗（存 `secondaryContainer` ✓），
+/// 但 AG1 用户澄清后，"跟随系统"改取**系统按钮色**（`themeButtonColorCache` = `secondaryFixed` ✓）
+/// → 该缓存**再无读取点** ✓ → 已按审计（AP1-A4）删除 ✓，避免"只写不读"的死代码 ✗ 与误导性注释 ✗。
+/// 若将来确需改回 `secondaryContainer` 语义，请先与用户确认 ✓（AG1 是其原话要求的按钮色 ✓）。
 
 /// ⭐ AF1（用户要求 ✓）：顶栏「分类/发现页顶部**漫画源按钮**」的统一入口 ✓。
 ///
