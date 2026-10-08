@@ -1,5 +1,25 @@
 part of 'settings_page.dart';
 
+/// ⭐ AT1（用户实测 ✓，2026-10-09）：外观四个子页的**路由**统一用它 ✓ ——
+/// 用户反馈："设置了背景后，进 背景 / 窗口与控件 / 弹出式二级页面 / 文字 这几个子页时，
+/// **进入那一侧会白色闪烁一下** ✗（一层浅色遮罩，直到转场结束才消失）"✓。
+///
+/// **真因** ✓：原先用 `MaterialPageRoute` ✗ —— 它**固定 `opaque: true`** ✗，
+/// 于是**转场那几帧**会露出**不透明的默认底** ✗；而这四个子页在"有背景图"时本身是
+/// **完全透明**的（`SecondaryPageSurface` 的 `needSurface = false` ✓ +
+/// `Material(color: Colors.transparent)` ✓）→ 路由的不透明底就把它们衬成了**白色** ✓。
+///
+/// **修法** ✓：继承 `MaterialPageRoute` ✓、**只把 `opaque` 改 false** ✓ ——
+/// 转场动画 / 时长 / 手势**全部照旧** ✓（仍走 Material 3 的 zoom 过渡 ✓），
+/// 唯一变化 = 转场期间**不再有不透明底** ✓ → 白闪消失 ✓。
+/// ⚠️ 只用于**这四个外观子页** ✓，其它页面/弹层的路由**不动** ✗（同类原则 ✓）。
+class SettingsSubPageRoute<T> extends MaterialPageRoute<T> {
+  SettingsSubPageRoute({required super.builder});
+
+  @override
+  bool get opaque => false;
+}
+
 class AppearanceSettings extends StatefulWidget {
   const AppearanceSettings({super.key});
 
@@ -85,7 +105,9 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
           // 点左边设置栏（发现/阅读中…）会被它的 barrier 吃掉 ✗ = "点不动、页面不跳转" ✓。
           // 改为内层 push ✓ → 左侧设置栏**始终可点** ✓（一次点击即切换 ✓）。
           onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const AppearanceBackgroundPage()),
+            SettingsSubPageRoute(
+              builder: (_) => const AppearanceBackgroundPage(),
+            ),
           ),
         ).toSliver(),
         // ⭐ N1：本区块已迁到**独立子页** ✓（`appearance_window_page.dart` ✓）—— 设置项与 key 完全不变 ✓，仅换位置 ✓。
@@ -94,7 +116,7 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
           title: Text("Window & controls".tl),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const AppearanceWindowPage()),
+            SettingsSubPageRoute(builder: (_) => const AppearanceWindowPage()),
           ),
         ).toSliver(),
         // ⭐ N1：本区块已迁到**独立子页** ✓（`appearance_secondary_page.dart` ✓）—— 设置项与 key 完全不变 ✓，仅换位置 ✓。
@@ -103,7 +125,9 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
           title: Text("Popup overlays".tl),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const AppearanceSecondaryPage()),
+            SettingsSubPageRoute(
+              builder: (_) => const AppearanceSecondaryPage(),
+            ),
           ),
         ).toSliver(),
         // ⭐ N1：本区块已迁到**独立子页** ✓（`appearance_text_page.dart` ✓）—— 设置项与 key 完全不变 ✓，仅换位置 ✓。
@@ -111,9 +135,9 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
           leading: const Icon(Icons.text_fields, size: AppIconSize.lg),
           title: Text("Text".tl),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (_) => const AppearanceTextPage())),
+          onTap: () => Navigator.of(context).push(
+            SettingsSubPageRoute(builder: (_) => const AppearanceTextPage()),
+          ),
         ).toSliver(),
         _SettingPartTitle(title: "Comic Display".tl, icon: Icons.grid_view),
         SelectSetting(
