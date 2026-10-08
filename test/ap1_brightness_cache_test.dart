@@ -101,4 +101,37 @@ void main() {
       reason: 'system 模式应跟随平台亮度（测试环境下通常为 light）',
     );
   });
+
+  test('T-复查⑧：theme_mode 为未知值时按"跟随系统"兜底（与 main.dart 的 _ => system 等价）', () {
+    // ⭐ 复查补强（2026-10-09 ✓）：`main.dart` 的主题映射用 `_ => system` ✓ —— 把**未知/脏值**
+    // 当**跟随系统** ✓；而 `applySystemContainerColorFor` 原先写的是 `themeMode == 'system'` ✗
+    // → 未知值被当成**亮色** ✗ → 两者**判定分叉** ✗ → `systemContainerColorCache` 在暗色平台下
+    // **不再更新** ✗（= B1 "暗色不再覆盖亮色"同类问题复发 ✓）。
+    // 本用例锁死"未知值 ⇒ 与 `system` **完全一致**"✓（修复后两者结果必然相等 ✓）。
+    // ⚠️ 关键 ✓：必须把"平台亮暗"固定为**暗色** ✗ —— 否则测试环境（亮色 ✓）下
+    // "system" 与"未知值被当成亮色"**结果恰好相同** ✗ → 用例会**假绿** ✓（测不出任何东西 ✗）。
+    final dispatcher =
+        WidgetsBinding.instance.platformDispatcher as TestPlatformDispatcher;
+    dispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(dispatcher.clearPlatformBrightnessTestValue);
+
+    // 先按 system 取基准
+    appdata.settings['theme_mode'] = 'system';
+    systemContainerColorCache = null;
+    simulateMaterialAppThemeEvaluation();
+    final systemResult = systemContainerColorCache;
+
+    // 再换成一个非法/脏值（旧版本残留、手改 json 等真实可达场景）
+    appdata.settings['theme_mode'] = '__dirty_value__';
+    systemContainerColorCache = null;
+    simulateMaterialAppThemeEvaluation();
+
+    expect(
+      systemContainerColorCache,
+      systemResult,
+      reason:
+          '未知 theme_mode 的兜底与 system 不一致 → 与 main.dart 的 `_ => system` 分叉，'
+          '会导致"暗色不再覆盖亮色"（T-B1 类）问题复发',
+    );
+  });
 }
