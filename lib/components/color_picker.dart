@@ -1,5 +1,25 @@
 part of 'components.dart';
 
+/// ⭐ A8：**统一图标取色入口** ✓ —— 外观设置里的「图标颜色」优先 ✓，
+/// 未设置（`system`/空）时回退到调用处原来的兜底色 `fallback` ✓。
+///
+/// 用法：
+/// - `Icon(x, color: appIconColor(context))` —— 原本没有指定颜色的图标 ✓；
+/// - `Icon(x, color: appIconColor(context, colorScheme.primary))` —— 原本显式用主题色的图标 ✓
+///   （就是这类图标导致"设置了图标颜色却不跟随" ✗，用户实测反馈 ✓）。
+///
+/// ⚠️ **语义色例外不要走这里** ✗：危险操作红（`colorScheme.error` ✓）、
+/// 彩色底上的白色/黑色图标（角标 ✓）应保持自身颜色 ✓。
+///
+/// 背景：`IconTheme` 只是**兜底** ✓，任何显式 `color:` 都会压过它 ✗ →
+/// 所以"全局图标色"必须通过本入口在**每个显式取色处**生效 ✓。
+Color? appIconColor(BuildContext context, [Color? fallback]) {
+  final c = resolveColorSettingValue(
+    appdata.settings['globalIconColor'] as String?,
+  );
+  return c ?? fallback;
+}
+
 // 颜色设置值的编码约定：
 //  - 'system'      跟随系统
 //  - 'transparent' 透明
