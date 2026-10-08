@@ -87,7 +87,11 @@ class _FavoritesPageState extends State<FavoritesPage> {
     // （见 doc-private/03-implementation/11-refresh-mechanism.md）
     AppSettingsScope.of(context);
     return IconTheme(
-      data: IconThemeData(color: Theme.of(context).colorScheme.secondary),
+      // A8：收藏页侧栏等图标的颜色走统一入口 ✓（全局「图标颜色」优先 ✓，
+      // 未设置回退 `secondary` ✓；原先写死 secondary ✗ → 不跟随设置 ✓）
+      data: IconThemeData(
+        color: appIconColor(context, Theme.of(context).colorScheme.secondary),
+      ),
       child: Stack(
         children: [
           AnimatedPositioned(

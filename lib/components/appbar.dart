@@ -990,7 +990,9 @@ class TabActionButton extends StatelessWidget {
         child: IconTheme(
           data: IconThemeData(
             size: AppIconSize.md,
-            color: context.colorScheme.primary,
+            // A8：顶栏标签/操作图标的颜色走统一入口 ✓
+            // （全局「图标颜色」优先，未设置回退主题色 ✓；原先写死 primary ✗ → 不跟随 ✓）
+            color: appIconColor(context, context.colorScheme.primary),
           ),
           child: Row(
             children: [
