@@ -16,23 +16,20 @@ class BlurEffect extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 建立设置依赖：本控件的外观由设置算出 → 设置变化时由框架精准重建
-    // （见 doc-private/03-implementation/11-refresh-mechanism.md）
-    AppSettingsScope.of(context);
-    // 有自定义背景（背景图/底色）时不用毛玻璃（会糊在背景图上、观感差）。
-    if (appdata.settings.backgroundFeatureActive) {
-      return child;
-    }
-    return ClipRRect(
-      borderRadius: borderRadius ?? BorderRadius.zero,
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(
-          sigmaX: blur,
-          sigmaY: blur,
-          tileMode: TileMode.mirror,
-        ),
-        child: child,
-      ),
-    );
+    // ⭐ C6-新①（用户要求 ✓，2026-10-09）：用户明确表示**不喜欢毛玻璃** ✗，并指出
+    // "原版毛玻璃的位置很突兀，并不好看" ✓，原话："**不是禁用，全部移除都可以**" ✓
+    // → 因此这里改为**彻底直通**（只返回 `child` ✓）：任何情况都不再模糊 ✓。
+    //
+    // 这样做的两个理由 ✓：
+    // ① 覆盖全部 6 个调用点 ✓（`menu.dart` / `flyout.dart` / `reader/scaffold.dart` ×2 /
+    //    `comic_details_page/cover_viewer.dart` / `image_favorites_page/image_favorites_photo_view.dart` ✓）
+    //    —— 不必逐个拆嵌套括号 ✗，零结构性风险 ✓；
+    // ② 类名与参数**原样保留** ✓ → 将来若只想恢复某一处毛玻璃，改这里一处即可 ✓
+    //    （原始实现见 git 历史：`ClipRRect + BackdropFilter + ImageFilter.blur` ✓）。
+    //
+    // 注 ✓：原先"有自定义背景时不模糊"（`backgroundFeatureActive` ✓）的开关因此失去意义 ✓ ——
+    // 现在是**任何情况都不模糊** ✓，`AppSettingsScope.of(context)` 依赖也一并去掉 ✓
+    //（本控件已不随任何设置变化 ✓，少一处无谓重建 ✓）。
+    return child;
   }
 }
