@@ -1,28 +1,33 @@
 part of 'settings_page.dart';
 
-/// ⭐ AT1 → AU1 → AV1（用户建议 ✓ + 用户实测 ✓，2026-10-09）：外观四个子页的路由统一用它，
-/// 现在**继承本 App 自己的 `AppPageRoute`** ✓ ——
+/// ⭐ AT1 → AU1 → AV1 → AY1 → **BA1**（用户实测 ✓，2026-10-09）：外观四个子页的路由统一用它 ✓ ——
+/// 现在**继承 `PageRouteBuilder`（不再继承 `MaterialPageRoute`）** ✗→✓。
 ///
-/// 用户原话 ✓："**会不会是动画效果导致的** ✓，你把动画换成和**上一级菜单一样的横向切入动画**呢"✓
-/// —— 方向完全正确 ✓，证据如下 ✓：
-/// ① 页面本身**已是全透明** ✗（`PopUpWidgetScaffold` 的 `Material(color: Colors.transparent)` ✓
-///    且整页式 + 有背景时 `needSurface = false` ✓）→ 所以那层"白"**只能来自转场** ✓；
-/// ② 桌面默认转场是 Material 3 的 **zoom** ✗ —— 它在转场期间会垫一层**不透明底** ✗ → 白闪 ✓；
-/// ③ 而 `AppPageRoute`（`foundation/app_page_route.dart` ✓）正是本 App 各处统一的
-///    **横向切入** ✓（`SlidePageTransitionBuilder`：`Offset(1,0) → Offset.zero` ✓，
-///    时长 `AppMotion.medium` ✓），**不垫任何背景** ✓；
-/// ④ 同时它是 `opaque: true` ✓ → **不会**出现"两层设置页重合"✗（上一版 `opaque:false` 的回归 ✗）。
+/// ⚠️ **BA1 真因（有代码证据 ✓）**：`MaterialPageRoute` 会把转场交给**主题的 `pageTransitionsTheme`** ✗，
+/// 而**本 App 没有自定义它**（全项目 grep `pageTransitionsTheme` / `ZoomPageTransitionsBuilder` **零命中** ✓）
+/// → 用的就是 **Flutter 的桌面默认 `ZoomPageTransitionsBuilder`** ✗ —— zoom 的**退场页会放大到 ~1.05 并淡出** ✓，
+/// 正是用户描述的"**上一级朝我眼睛方向放大**"✓（用户补充澄清："上移指的是**像我方向**，不是纵坐标方向"✓）。
+/// 旧路由（右栏那层的 `PageRouteBuilder(Duration.zero)` ✓，见 `settings_page.dart:254` ✓）本身无动画 ✓
+/// → 那个缩放**只可能来自主题默认** ✓（我已用 grep 排除了 App 自定义主题转场 ✓）。
+/// **修法** ✓：改继承 **`PageRouteBuilder`** ✓ —— 它**完全不查主题** ✗（转场只由 `buildTransitions` 决定 ✓），
+/// 再覆写 `buildTransitions` 复用 App 自己的 `SlidePageTransitionBuilder(forceSlide: true)` ✓
+/// → **旧页不再被 zoom** ✓、新页仍是**横向切入** ✓、且**与设置页同一份实现** ✓（满足 AY1"不搞差分"✓）。
 ///
-/// ⚠️ 历史教训（留档 ✓）：我曾尝试 `opaque => false` ✗ —— 既**没解决白闪** ✗，
-/// 又因下层路由继续绘制而导致**两层页面重合** ✗（用户截图实测 ✓）→ 已回退 ✓（`f689cee` ✓）。
-/// ⚠️ 只用于**这四个外观子页** ✓，其它页面/弹层的路由**不动** ✗（同类原则 ✓）。
-/// ⚠️ 这里**不用** `extends AppPageRoute` ✗ —— 实测 `SettingsSubPageRoute(...)` 会被推断/判定为
-/// 与 `Navigator.push` 期望的 `Route<Object?>` 不兼容 ✗（编译报 `argument_type_not_assignable` ✓，
-/// 固定泛型为 `Object?` 后**仍然**报 ✗）→ 改用**更稳**的写法 ✓：
-/// 保留能正常编译的 `MaterialPageRoute` ✓，但把**转场**换成 App 自己的横向切入 ✓
-///（`SlidePageTransitionBuilder` ✓，就是"上一级菜单"用的那套 ✓，**不垫任何背景** ✓）。
-class SettingsSubPageRoute<T> extends MaterialPageRoute<T> {
-  SettingsSubPageRoute({required super.builder});
+/// 保留的历史约束（都已修好，勿回退 ✗）：
+/// ① 不得用 `opaque: false` ✗（曾致**两层页面重合** ✓，提交 `f689cee` 回退 ✓）；
+/// ② 不得让"有背景时进子页"**白闪** ✓ 或**一片空白** ✓（`af83093` / `3c74cd3` 已修 ✓）；
+/// ③ 四个入口仍推在**右栏内层 Navigator** 上 ✓，且内层 `Navigator` 仍带 `ValueKey(currentPage)` ✓
+///    → **AO1**（点左侧设置栏立即切换、不被覆盖 ✓）不得回归 ✗；
+/// ④ 只用于**这四个外观子页** ✓，其它页面/子页/弹层的路由**不动** ✗（同类原则 ✓）。
+class SettingsSubPageRoute<T> extends PageRouteBuilder<T> {
+  SettingsSubPageRoute({required WidgetBuilder builder})
+    : super(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            builder(context),
+        // ⭐ 时长走令牌 ✓（`AppMotion.medium` ✓，与 `AppPageRoute` 一致 ✓）
+        transitionDuration: AppMotion.medium,
+        reverseTransitionDuration: AppMotion.medium,
+      );
 
   @override
   Widget buildTransitions(
@@ -31,11 +36,8 @@ class SettingsSubPageRoute<T> extends MaterialPageRoute<T> {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    // ⭐ AY1（用户要求 ✓，2026-10-09）：传 `forceSlide: true` ✓ ——
-    // 用户原话："**我想让你在有背景、或者说任何情况下，这四个页面都保持横向切入** ✓，
-    // 且**效果要和设置的横向切入统一，不要搞差分** ✓"。
-    // 复用的仍是**同一个** `SlidePageTransitionBuilder` ✓（同一份实现 ✓），
-    // 只把它的**背景分支跳过** ✗ → **任何情况下都走"旧内容不动 + 新内容从右切入"** ✓。
+    // ⭐ AY1（用户要求 ✓）：复用 App 自己的横向切入 ✓ 并 `forceSlide: true` ✓
+    //（任何情况都横切 ✓；同一份实现 ✓，不搞差分 ✗）。
     return SlidePageTransitionBuilder(
       forceSlide: true,
     ).buildTransitions(this, context, animation, secondaryAnimation, child);
