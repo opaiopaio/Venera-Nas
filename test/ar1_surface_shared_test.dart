@@ -103,4 +103,46 @@ void main() {
       ),
     );
   });
+
+  test('T-AS1：没有壁纸切片时（菜单）「不透明」必须真不透明，「半透明」仍半透明', () {
+    // 背景：用户实测"菜单样式 = 不透明，**有背景时不生效**，无背景时生效"。
+    // 真因：共用函数在"有背景图"时只返回**色调遮罩**（底交给二级页面的壁纸切片），
+    //       而菜单**没有切片** → 于是只拿到一层色调 → 根本不透明。
+    // 修法：新增 hasWallpaperSlice 参数（菜单传 false → 跳过早退，走"背景色/主题表面色 ± 色调"）。
+    setBothSides(mode: 'opaque', tint: 'darken', strength: 0.22);
+
+    final menuOpaque = secondarySurfaceColorFor(
+      scheme: scheme,
+      mode: 'opaque',
+      tint: 'darken',
+      strength: 0.22,
+      hasWallpaperSlice: false,
+    );
+    expect(
+      menuOpaque.a,
+      1.0,
+      reason: '菜单（无切片）在「不透明」模式下 alpha 必须是 1 —— 否则就是 AS1 复发',
+    );
+
+    final menuTranslucent = secondarySurfaceColorFor(
+      scheme: scheme,
+      mode: 'transparent',
+      tint: 'darken',
+      strength: 0.22,
+      hasWallpaperSlice: false,
+    );
+    expect(menuTranslucent.a, lessThan(1.0), reason: '菜单「半透明」模式应能透出下层');
+
+    // 二级页面路径（默认参数）行为不得改变：仍与"同参数调用"完全相等
+    expect(
+      customSecondarySurfaceColor(scheme),
+      secondarySurfaceColorFor(
+        scheme: scheme,
+        mode: 'opaque',
+        tint: 'darken',
+        strength: 0.22,
+      ),
+      reason: '二级页面路径（默认 hasWallpaperSlice: true）行为不得改变',
+    );
+  });
 }

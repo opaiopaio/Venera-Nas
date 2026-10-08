@@ -413,6 +413,13 @@ Color secondarySurfaceColorFor({
   required String mode,
   required String tint,
   required double strength,
+  // ⭐ AS1（用户实测 ✓，2026-10-09）：调用方**是否有壁纸切片** ✓ ——
+  // `true`（**默认** ✓）= 二级页面：有背景图时"底"由 `BackgroundSlice` 提供 ✓，
+  //   本函数只返回切片之上的**色调遮罩** ✓（**原语义完全不变** ✓）；
+  // `false` = 菜单这类**没有切片**的弹出物 ✓：跳过那个早退 ✗，
+  //   改走"背景色 ?? 主题表面色 ± 色调" ✓ → 「不透明」模式下得到**真正不透明的实色** ✓
+  //   （修用户反馈："菜单样式=不透明，**有背景时不生效** / 无背景时生效"✗）。
+  bool hasWallpaperSlice = true,
 }) {
   final s = strength.clamp(0.0, 1.0);
   final tintColor = switch (tint) {
@@ -422,7 +429,10 @@ Color secondarySurfaceColorFor({
   };
   // ① **有背景图** ✓ → 底由**壁纸切片**（`BackgroundSlice`）负责 ✓，
   //    本函数只给"切片之上的色调遮罩" ✓（原语义 ✓，色调作用于**壁纸** ✓）。
-  if (currentBackgroundImageFile() != null) return tintColor;
+  //    ⭐ AS1：**仅当调用方确实有切片时**才这样早退 ✓（菜单没有切片 → 见上参数说明 ✓）。
+  if (hasWallpaperSlice && currentBackgroundImageFile() != null) {
+    return tintColor;
+  }
   // ② **无背景图** ✓ → **以当前背景色为主** ✓：把深浅直接调在**背景色**上 ✓
   //（用户截图澄清 ✓：背景是**明黄色**，弹层应是"**明黄稍深**"✓，绝不能是**黑色遮罩** ✗）。
   final baseValue = appdata.settings.customBackgroundBaseColorValue;

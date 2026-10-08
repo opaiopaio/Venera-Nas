@@ -83,6 +83,10 @@ class _MenuRoute<T> extends PopupRoute<T> {
                 // 圆角 / 边框 / 阴影**保持不变** ✗（本次只换**底色来源** ✓）。
                 color: secondarySurfaceColorFor(
                   scheme: context.colorScheme,
+                  // ⭐ AS1（用户实测 ✓，2026-10-09）：菜单**没有壁纸切片** ✗ → 传 false ✓ ——
+                  // 否则"有背景图"时会沿用二级页面的早退逻辑（只给色调遮罩 ✓）→
+                  // 「不透明」模式下菜单**根本不透明** ✗（用户实测："有背景时不生效"✓）。
+                  hasWallpaperSlice: false,
                   mode:
                       appdata.settings['menuSurfaceMode'] as String? ??
                       'opaque',
