@@ -247,7 +247,25 @@ class _ReaderSettingsState extends State<ReaderSettings> {
           useDeviceSettings: useDeviceSpecificSettings,
         ).toSliver(),
         SliverAnimatedVisibility(
-          visible: appdata.settings['readerMode']!.startsWith('gallery'),
+          // ⭐ C4 修复（审计 AP1-C4 ✓）：可见性判定改用**当前作用域的有效值** ✗→✓ ——
+          // 原先直接读**全局** `appdata.settings['readerMode']` ✗：一旦 `readerMode` 被纳入
+          // 「漫画 / 设备专属设置」的作用域存储 ✗，这里显示就会与**实际生效值不一致** ✓
+          //（本页其它设置项早已统一用 `readSettingValue(...)` ✓）。
+          // 注 ✓：`readerMode` 目前**只写全局** ✓ → 本改动**行为等价** ✓（`??` 回退全局保证不为空 ✓）。
+          visible:
+              (appdata.settings.readSettingValue(
+                        key: 'readerMode',
+                        comicId: isEnabledSpecificSettings
+                            ? widget.comicId
+                            : null,
+                        comicSource: isEnabledSpecificSettings
+                            ? widget.comicSource
+                            : null,
+                        useDeviceSettings: useDeviceSpecificSettings,
+                      ) ??
+                      appdata.settings['readerMode'])
+                  .toString()
+                  .startsWith('gallery'),
           child: _SliderSetting(
             title:
                 "The number of pic in screen for landscape (Only Gallery Mode)"
@@ -267,7 +285,25 @@ class _ReaderSettingsState extends State<ReaderSettings> {
           ),
         ),
         SliverAnimatedVisibility(
-          visible: appdata.settings['readerMode']!.startsWith('gallery'),
+          // ⭐ C4 修复（审计 AP1-C4 ✓）：可见性判定改用**当前作用域的有效值** ✗→✓ ——
+          // 原先直接读**全局** `appdata.settings['readerMode']` ✗：一旦 `readerMode` 被纳入
+          // 「漫画 / 设备专属设置」的作用域存储 ✗，这里显示就会与**实际生效值不一致** ✓
+          //（本页其它设置项早已统一用 `readSettingValue(...)` ✓）。
+          // 注 ✓：`readerMode` 目前**只写全局** ✓ → 本改动**行为等价** ✓（`??` 回退全局保证不为空 ✓）。
+          visible:
+              (appdata.settings.readSettingValue(
+                        key: 'readerMode',
+                        comicId: isEnabledSpecificSettings
+                            ? widget.comicId
+                            : null,
+                        comicSource: isEnabledSpecificSettings
+                            ? widget.comicSource
+                            : null,
+                        useDeviceSettings: useDeviceSpecificSettings,
+                      ) ??
+                      appdata.settings['readerMode'])
+                  .toString()
+                  .startsWith('gallery'),
           child: _SliderSetting(
             title:
                 "The number of pic in screen for portrait (Only Gallery Mode)"
