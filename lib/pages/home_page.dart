@@ -736,7 +736,7 @@ class _ImportComicsWidgetState extends State<_ImportComicsWidget> {
               Icon(
                 Icons.help_outline,
                 size: AppIconSize.sm,
-                color: context.colorScheme.primary,
+                color: appIconColor(context, context.colorScheme.primary),
               ),
               const SizedBox(width: 8),
               Text("help".tl),
@@ -879,7 +879,10 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                             children: [
                               Icon(
                                 Icons.update,
-                                color: context.colorScheme.primary,
+                                color: appIconColor(
+                                  context,
+                                  context.colorScheme.primary,
+                                ),
                                 size: AppIconSize.md,
                               ),
                               const SizedBox(width: AppSpace.sm),
@@ -953,7 +956,10 @@ class __AnimatedDownloadingIconState extends State<_AnimatedDownloadingIcon>
             child: Icon(
               Icons.arrow_downward,
               size: AppIconSize.xs,
-              color: Theme.of(context).colorScheme.primary,
+              color: appIconColor(
+                context,
+                Theme.of(context).colorScheme.primary,
+              ),
             ),
           ),
         );

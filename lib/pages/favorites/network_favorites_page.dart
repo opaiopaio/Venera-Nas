@@ -109,7 +109,7 @@ class _NormalFavoritePageState extends State<_NormalFavoritePage> {
           child: context.width <= _kTwoPanelChangeWidth
               ? IconButton(
                   icon: const Icon(Icons.menu),
-                  color: context.colorScheme.primary,
+                  color: appIconColor(context, context.colorScheme.primary),
                   onPressed: showFolders,
                 )
               : null,
@@ -149,7 +149,7 @@ class _NormalFavoritePageState extends State<_NormalFavoritePage> {
           child: context.width <= _kTwoPanelChangeWidth
               ? IconButton(
                   icon: const Icon(Icons.menu),
-                  color: context.colorScheme.primary,
+                  color: appIconColor(context, context.colorScheme.primary),
                   onPressed: context
                       .findAncestorStateOfType<_FavoritesPageState>()!
                       .showFolderSelector,
@@ -243,7 +243,7 @@ class _MultiFolderFavoritesPageState extends State<_MultiFolderFavoritesPage> {
         child: context.width <= _kTwoPanelChangeWidth
             ? IconButton(
                 icon: const Icon(Icons.menu),
-                color: context.colorScheme.primary,
+                color: appIconColor(context, context.colorScheme.primary),
                 onPressed: showFolders,
               )
             : null,
@@ -260,7 +260,7 @@ class _MultiFolderFavoritesPageState extends State<_MultiFolderFavoritesPage> {
         child: context.width <= _kTwoPanelChangeWidth
             ? IconButton(
                 icon: const Icon(Icons.menu),
-                color: context.colorScheme.primary,
+                color: appIconColor(context, context.colorScheme.primary),
                 onPressed: showFolders,
               )
             : null,

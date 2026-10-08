@@ -218,7 +218,10 @@ class AnimatedCheckWidget extends AnimatedWidget {
             child: Icon(
               Icons.check,
               size: iconSize,
-              color: Theme.of(context).colorScheme.primary,
+              color: appIconColor(
+                context,
+                Theme.of(context).colorScheme.primary,
+              ),
             ),
           ),
         ),

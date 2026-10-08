@@ -321,7 +321,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
               child: context.width <= _kTwoPanelChangeWidth
                   ? IconButton(
                       icon: const Icon(Icons.menu),
-                      color: context.colorScheme.primary,
+                      color: appIconColor(context, context.colorScheme.primary),
                       onPressed: favPage.showFolderSelector,
                     )
                   : const SizedBox(),
