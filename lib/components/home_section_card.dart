@@ -21,7 +21,7 @@ class HomeSectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 建立设置依赖：本控件的外观由设置算出 → 设置变化时由框架精准重建
-    // （见 doc-private/03-implementation/11-refresh-mechanism.md）
+    // （见 ../workspace/archive/doc-private-legacy-20261009/03-implementation/11-refresh-mechanism.md）
     AppSettingsScope.of(context);
     return Container(
       margin: const EdgeInsets.all(AppSpace.sm),

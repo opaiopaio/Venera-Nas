@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// ③ 前面 400 字符内出现过 `WindowOverlayBox(`（已被就地包裹）
 /// ④ 该行注释含 `// mask-guard: ok`（人工确认的例外，需写明理由）
 ///
-/// 决策表与两个入口见 `doc-private/03-implementation/07-background-and-color-picker.md`。
+/// 决策表与两个入口见 `../workspace/archive/doc-private-legacy-20261009/03-implementation/07-background-and-color-picker.md`。
 void main() {
   const components = [
     '_SwitchSetting',

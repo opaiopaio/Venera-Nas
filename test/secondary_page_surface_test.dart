@@ -4,7 +4,7 @@ import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/foundation/app_settings_scope.dart';
 import 'package:venera_nas/foundation/appdata.dart';
 
-/// 二级页面**统一表面** `SecondaryPageSurface` 的语义回归（见 doc-private 12 号文档）。
+/// 二级页面**统一表面** `SecondaryPageSurface` 的语义回归（见 ../workspace/archive/doc-private-legacy-20261009/03-implementation/12-secondary-page-surface-unification.md）。
 ///
 /// 锁死两条使用路径的差异，防止将来"顺手统一"把语义改坏：
 /// - `ContentDialog`（默认）：**补主题表面色 + 裁剪圆角**（否则弹窗会透出下层内容 ✗）

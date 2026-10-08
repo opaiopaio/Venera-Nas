@@ -274,7 +274,7 @@ class _ButtonState extends State<Button> {
   }
 
   Color get buttonColor {
-    // ─── P8 胶囊按钮规范（doc-private/03-implementation/07-background-and-color-picker.md）───
+    // ─── P8 胶囊按钮规范（../workspace/archive/doc-private-legacy-20261009/03-implementation/07-background-and-color-picker.md）───
     // 底色 = **遮罩色**（`windowOverlayColor()` ✓，跟随「窗口/按钮背景颜色 × 不透明度」）。
     // 显式传 `widget.color` 时以显式色为准 ✓（危险操作如"删除"用 error 色的例外 ✓）。
     // ⭐ H2 禁用态：`onPressed == null` → 整体 **0.38 不透明度** ✓（P8 规范已写明 ✓）。
@@ -422,7 +422,7 @@ class _MenuButtonState extends State<MenuButton> {
   @override
   Widget build(BuildContext context) {
     // 建立设置依赖：本控件的外观由设置算出 → 设置变化时由框架精准重建
-    // （见 doc-private/03-implementation/11-refresh-mechanism.md）
+    // （见 ../workspace/archive/doc-private-legacy-20261009/03-implementation/11-refresh-mechanism.md）
     AppSettingsScope.of(context);
     final button = Button.icon(
       // ⭐ C1：`MenuButton` 的「⋯」图标走统一取色 ✓ ——

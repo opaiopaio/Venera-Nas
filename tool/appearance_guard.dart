@@ -7,7 +7,7 @@ import 'dart:io';
 ///   dart run tool/appearance_guard.dart          # 校验（超出基线则退出码 1）
 ///   dart run tool/appearance_guard.dart --update # 重新采样并写回基线
 ///
-/// 规则见 `doc-private/03-implementation/07-background-and-color-picker.md` 的「外观决策表」：
+/// 规则见 `../workspace/archive/doc-private-legacy-20261009/03-implementation/07-background-and-color-picker.md` 的「外观决策表」：
 /// 圆角用 `AppRadius`、间距用 `AppSpace`、透明度用 `AppOpacity`、动效用 `AppMotion`、
 /// 含文字的容器用 `minHeight` 而非固定 `height`、桌面顶部边界用 `AppTopBar`。
 void main(List<String> args) {

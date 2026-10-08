@@ -6,7 +6,7 @@ import 'package:venera_nas/foundation/design_tokens.dart';
 ///
 /// 只测令牌本身的稳定性，保证"规则地基"不被无意改动；
 /// 涉及 `appdata` 的行为测试（遮罩色合成、直角=0、全局文字零干预）需要设置层测试脚手架，
-/// 见 `doc-private/08-tech-debt.md` 的后续项。
+/// 见 `../workspace/archive/doc-private-legacy-20261009/08-tech-debt.md` 的后续项。
 void main() {
   group('AppRadius（圆角刻度）', () {
     test('含直角与全圆，且刻度递增', () {

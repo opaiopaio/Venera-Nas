@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// AP1 修复的**静态回归测试**（来源 `doc-private/17-fix-list-and-test-needs.md` 的测试需求）。
+/// AP1 修复的**静态回归测试**（来源 `../workspace/archive/doc-private-legacy-20261009/17-fix-list-and-test-needs.md` 的测试需求）。
 ///
 /// 全部是**纯静态扫描**：不启动 Widget、不依赖 appdata → 零风险、跑得快，
 /// 目的是把 C5 / C8 / C6-新① 三项修复钉死：任何一处回退都会让本文件变红。

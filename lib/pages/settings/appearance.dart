@@ -65,7 +65,7 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
     // 这样「主题颜色」等行的预览色块才会**实时刷新** ✓。
     // 原先本页没有任何设置依赖 ✗ → 改完颜色预览不动 ✗（要重进页面才变 ✓）。
     // ⚠️ 禁止改用 `App.forceRebuild()` 的 element 树遍历 ✗（曾导致严重渲染鬼影 ✗），
-    // 详见 doc-private/03-implementation/11-refresh-mechanism.md
+    // 详见 ../workspace/archive/doc-private-legacy-20261009/03-implementation/11-refresh-mechanism.md
     AppSettingsScope.of(context);
 
     return SmoothCustomScrollView(

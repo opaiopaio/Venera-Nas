@@ -4,7 +4,7 @@ import 'package:venera_nas/foundation/app_settings_scope.dart';
 import 'package:venera_nas/foundation/appdata.dart';
 import 'package:venera_nas/foundation/window_overlay.dart';
 
-/// 刷新机制回归测试（见 doc-private/03-implementation/11-refresh-mechanism.md）。
+/// 刷新机制回归测试（见 ../workspace/archive/doc-private-legacy-20261009/03-implementation/11-refresh-mechanism.md）。
 ///
 /// 证明核心链路：**设置变化 → `AppSettingsScope` 通知 → 依赖它的控件被框架重建**。
 /// 这条链路取代了历史上 `App.forceRebuild()` 的"遍历整棵 element 树

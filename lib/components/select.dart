@@ -81,7 +81,7 @@ class Select extends StatelessWidget {
                     // `PopupMenuItem` **只提供固定 `height`** ✓，传入 `minHeight` 会编译失败 ✗
                     //（我已实测：`The named parameter 'minHeight' isn't defined` ✓）。
                     // 因此这里保留原有固定高度 ✓（46/40 ✓），并**不改数值** ✓ 以免观感突变 ✗；
-                    // 记为该约定的**例外** ✓ —— 见 doc-private/16-audit-fix-plan.md ✓。
+                    // 记为该约定的**例外** ✓ —— 见 ../workspace/archive/doc-private-legacy-20261009/16-audit-fix-plan.md ✓。
                     height: App.isMobile ? 46 : 40,
                     value: e,
                     child: Text(e),
