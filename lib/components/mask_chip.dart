@@ -19,7 +19,7 @@ Color tagFillColor(BuildContext context, {bool selected = false}) {
   if (selected) return scheme.secondaryContainer;
   // ⭐ L1：标签底色**完全独立控制** ✓ —— 原「标签颜色」模式开关（`tagColorMode`：
   // 跟随遮罩 / 跟随主题 ✓）已按用户要求**删除** ✗；现在统一走 `tagOverlayColor()` ✓
-  //（颜色默认跟随窗口 ✓、不透明度默认 0.85 ✓，可在「窗口与控件」区块单独设置 ✓）。
+  //（颜色默认跟随**系统容器色** ✓、不透明度默认 0.85 ✓，可在「窗口与控件」区块单独设置 ✓）。
   // 想用主题色时：把「标签背景颜色」显式设为对应颜色即可 ✓。
   return tagOverlayColor();
 }

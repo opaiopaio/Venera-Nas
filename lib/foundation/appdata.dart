@@ -306,7 +306,7 @@ class Settings with ChangeNotifier {
         'system', // 窗口/按钮背景色：system / transparent / #RRGGBB（独立于主题色）
     'windowOverlayOpacity': 1.0, // 窗口表面遮罩不透明度 0.0 - 1.0
     // ⭐ H3：**按钮背景**与「窗口背景」分离 ✓（原先按钮与面板同色 ✗ → 完全融合 ✗）。
-    // `buttonOverlayColor` = `system` → **跟随窗口色** ✓（颜色零回归 ✓）；
+    // `buttonOverlayColor` = `system` → **跟随系统容器色** ✓（M2 起不再跟随窗口色 ✗）；
     // `buttonOverlayOpacity` 默认 **0.85** ✓（与窗口默认 1.0 不同 → 默认就有层次 ✓）。
     // 另：`window_overlay.dart` 的 `buttonOverlayColor()` 保留"未设置时自动 +0.3"兜底 ✓（兼容旧配置 ✓）。
     'buttonOverlayColor': 'system',
@@ -316,7 +316,7 @@ class Settings with ChangeNotifier {
     //（与胶囊默认一致 ✓ → 开箱零视觉变化 ✓，用户可各自调开 ✓）。
     'iconOverlayColor': 'system',
     'iconOverlayOpacity': 0.85,
-    // ⭐ K1：**标签（tag/chip）背景**也独立 ✓ —— `tagOverlayColor` = `system` → 跟随**窗口**色 ✓
+    // ⭐ K1：**标签（tag/chip）背景**也独立 ✓ —— `tagOverlayColor` = `system` → 跟随**系统容器色** ✓
     //（与旧 tagColorMode=overlay 行为一致 ✓ 颜色零回归 ✓）；`tagOverlayOpacity` 默认 0.85 ✓
     //（与按钮/图标按钮一致 ✓）。仅当「标签颜色」= 跟随遮罩时生效 ✓（跟随主题时用 secondaryContainer ✓）。
     'tagOverlayColor': 'system',

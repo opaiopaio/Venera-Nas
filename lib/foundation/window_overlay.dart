@@ -137,7 +137,8 @@ Color? _cachedResult;
 /// 融合在一起" ✓）。
 ///
 /// 规则 ✓：
-/// - **颜色**：优先设置项 `buttonOverlayColor` ✓（`system` = **跟随窗口色** ✓ /
+/// - **颜色**：优先设置项 `buttonOverlayColor` ✓（`system` = **跟随系统容器色**
+///   `systemContainerColorCache` ✓ —— ⚠️ M2 起**不再**跟随窗口色 ✗ /
 ///   `transparent` / `#RRGGBB`）；未设置 → 跟随窗口色 ✓（**颜色零回归** ✓）。
 /// - **不透明度**：优先设置项 `buttonOverlayOpacity` ✓（0..1，clamp ✓）；
 ///   未设置 → **自动加强一档** ✓ = `min(1.0, 窗口不透明度 + 0.3)` ✓
@@ -227,7 +228,7 @@ Color iconOverlayColor() {
 /// - `tagColorMode == 'overlay'`（默认 ✓）→ 用**本函数** ✓。
 ///
 /// 规则 ✓：
-/// - **颜色** `tagOverlayColor`：`system`（**默认** ✓）= 跟随**窗口**色 ✓
+/// - **颜色** `tagOverlayColor`：`system`（**默认** ✓）= 跟随**系统容器色** ✓
 ///   （与旧 `overlay` 行为一致 ✓ 颜色零回归 ✓）/ `transparent` / `#RRGGBB` ✓；
 /// - **不透明度** `tagOverlayOpacity`：0..1 ✓（**默认 0.85** ✓，与按钮/图标按钮默认一致 ✓）。
 Color tagOverlayColor() {
