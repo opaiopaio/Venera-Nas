@@ -143,20 +143,12 @@ Color buttonOverlayColor() {
   }
   if (opacity <= 0) return Colors.transparent;
 
-  // `system` = 跟随**窗口色**（取窗口设置的基色 ✓，再乘按钮自己的不透明度 ✓）
-  final winV = (appdata.settings['windowOverlayColor'] ?? 'system').toString();
-  final effective = v == 'system' ? winV : v;
-  if (effective == 'transparent') {
-    // ⚠️ 用户实测坑（2026-10-08）✗：若「窗口背景色」被设成 **transparent** ✗，
-    // 而按钮默认是「跟随窗口」✓ → 按钮也会变**透明** ✗ → 观感就成了"按钮跟随窗口遮罩、
-    // 不受「按钮背景」设置控制" ✗（其实是被跟随对象透明了 ✓）。
-    // 处理 ✓：**system（跟随）**路径下若目标是透明 ✓ → 退回**系统容器色**（中性可见底 ✓），
-    // 让按钮始终有底色 ✓；用户**显式**选 `transparent` 时（上面已 return ✓）仍保持透明 ✓。
-    return (systemContainerColorCache ?? Colors.transparent).toOpacity(opacity);
-  }
-
-  final n = (effective.startsWith('#') && effective.length == 7)
-      ? int.tryParse(effective.substring(1), radix: 16)
+  // ⭐ M2（用户指正 ✓）：`system` = **跟随系统容器色** ✓ —— 与「窗口背景色」的 system
+  // 语义完全一致 ✓（原先我让它跟随"窗口色" ✗ → 语义不自洽 ✗，且窗口设为 transparent 时
+  // 按钮会跟着透明 ✗）。现在四项（窗口 / 胶囊 / 图标 / 标签）**各自独立** ✓：
+  // `system` 都取系统容器色 ✓，互不干扰 ✓。
+  final n = (v.startsWith('#') && v.length == 7)
+      ? int.tryParse(v.substring(1), radix: 16)
       : null;
   final base = n == null
       ? (systemContainerColorCache ?? Colors.transparent)
@@ -187,13 +179,8 @@ Color iconOverlayColor() {
           .clamp(0.0, 1.0);
   if (opacity <= 0) return Colors.transparent;
 
-  if (v == 'system') {
-    // 跟随**胶囊按钮**色 ✓（含按钮的显式色/遮罩色 ✓），再换成图标自己的不透明度 ✓
-    final btn = buttonOverlayColor();
-    if (btn == Colors.transparent) return Colors.transparent;
-    return btn.toOpacity(opacity);
-  }
-
+  // ⭐ M2：`system` = 跟随**系统容器色** ✓（与其它三项一致 ✓，**不再**跟随胶囊按钮 ✗）。
+  // 想与胶囊按钮同色 → 把颜色显式设成同一值 ✓。
   final n = (v.startsWith('#') && v.length == 7)
       ? int.tryParse(v.substring(1), radix: 16)
       : null;
@@ -225,19 +212,7 @@ Color tagOverlayColor() {
           .clamp(0.0, 1.0);
   if (opacity <= 0) return Colors.transparent;
 
-  if (v == 'system') {
-    // 跟随**窗口**色 ✓（旧 overlay 行为 ✓），换成标签自己的不透明度 ✓（toOpacity 是替换 ✓）
-    final win = windowOverlayColor();
-    // ⚠️ 同 `buttonOverlayColor()`：跟随目标是**透明** ✗ 时退回**系统容器色** ✓，
-    // 避免"标签跟随窗口遮罩（其实是透明）"✗ 的观感问题 ✓。
-    if (win == Colors.transparent) {
-      return (systemContainerColorCache ?? Colors.transparent).toOpacity(
-        opacity,
-      );
-    }
-    return win.toOpacity(opacity);
-  }
-
+  // ⭐ M2：`system` = 跟随**系统容器色** ✓（与其它三项一致 ✓，**不再**跟随窗口色 ✗）。
   final n = (v.startsWith('#') && v.length == 7)
       ? int.tryParse(v.substring(1), radix: 16)
       : null;
