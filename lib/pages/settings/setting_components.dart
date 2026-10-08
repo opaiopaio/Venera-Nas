@@ -330,14 +330,9 @@ class _EndSelectorSelectSettingState extends State<_EndSelectorSelectSetting> {
       comicSource: widget.comicSource,
       useDeviceSettings: widget.useDeviceSettings,
     );
-    // ⚠️ 临时探针（排查设置行文字颜色不跟随，定位后立即删除）
-    Log.info(
-      "ROW_PROBE",
-      "key=${widget.settingKey} "
-          "theme.bodyLarge=${Theme.of(context).textTheme.bodyLarge?.color?.toARGB32()} "
-          "tileTitle=${ListTileTheme.of(context).titleTextStyle?.color?.toARGB32()} "
-          "default=${DefaultTextStyle.of(context).style.color?.toARGB32()}",
-    );
+    // ⭐ AP1-A1（审计发现 ✓ 已删除）：此处曾有**临时调试探针** ✗（`Log.info("ROW_PROBE", …)` ✓）。
+    // 它在 `build` 内**无条件执行** ✓ → release 下**每行每次 build 都写一条日志** ✗
+    //（`Log.info` 的落盘不经 `kDebugMode` 保护 ✓）。注释自称"定位后立即删除"✓ —— 现按审计删除 ✓。
     final content = ListTile(
       title: Row(
         children: [
