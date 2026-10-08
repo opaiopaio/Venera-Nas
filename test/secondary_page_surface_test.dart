@@ -134,4 +134,77 @@ void main() {
       reason: '弹出式必须始终有不透明底（否则遮挡失效）',
     );
   });
+
+  /// ⭐ U1：读出弹层**底**（`Stack` 中最底层那个 `ColoredBox` ✓）的颜色。
+  Color baseColorOf(WidgetTester tester) {
+    final boxes = tester
+        .widgetList<ColoredBox>(
+          find.descendant(
+            of: find.byType(SecondaryPageSurface),
+            matching: find.byType(ColoredBox),
+          ),
+        )
+        .toList();
+    expect(boxes, isNotEmpty, reason: '弹层必须有底（T1 不变量 ✓）');
+    return boxes.first.color;
+  }
+
+  /// ⭐ U1（用户反馈 ✓）：`secondaryPageMode` 决定底的**透明度** ✓、
+  /// `secondaryPageTint` 决定底的**深浅** ✓（必须是"更深/更浅的**面板**"✓，而不是蒙层灰 ✗）。
+  testWidgets('U1：四种组合 —— 底随模式与色调变化', (tester) async {
+    final oldMode = appdata.settings['secondaryPageMode'];
+    final oldTint = appdata.settings['secondaryPageTint'];
+    final oldStrength = appdata.settings['secondaryPageTintStrength'];
+    final oldFollow = appdata.settings['secondaryPageFollowTheme'];
+    addTearDown(() {
+      appdata.settings['secondaryPageMode'] = oldMode;
+      appdata.settings['secondaryPageTint'] = oldTint;
+      appdata.settings['secondaryPageTintStrength'] = oldStrength;
+      appdata.settings['secondaryPageFollowTheme'] = oldFollow;
+    });
+    appdata.settings['secondaryPageFollowTheme'] = false; // 自定义态 ✓
+    Future<void> pump() => pumpSurface(
+      tester,
+      const SecondaryPageSurface(child: SizedBox(width: 80, height: 40)),
+    );
+
+    // ① opaque + tint=none → 底 = 纯主题表面色，**不透明** ✓
+    appdata.settings['secondaryPageMode'] = 'opaque';
+    appdata.settings['secondaryPageTint'] = 'none';
+    await pump();
+    final plain = baseColorOf(tester);
+    expect(plain.a, 1.0, reason: '不透明模式：底必须完全不透明（保证遮挡 ✓）');
+
+    // ② transparent → 底**带透明度** ✓（半透明档 ✓ → 能透出下层 ✓）
+    appdata.settings['secondaryPageMode'] = 'transparent';
+    await pump();
+    final translucent = baseColorOf(tester);
+    expect(
+      translucent.a,
+      lessThan(1.0),
+      reason: '⭐ U1：半透明模式底必须带透明度（否则透不出下层 ✗，用户实测"变白底" ✗）',
+    );
+
+    // ③ darken → 比纯表面色**更深** ✓（且仍是实色面板 ✓，不是灰蒙层 ✗）
+    appdata.settings['secondaryPageMode'] = 'opaque';
+    appdata.settings['secondaryPageTint'] = 'darken';
+    appdata.settings['secondaryPageTintStrength'] = 0.3;
+    await pump();
+    final darker = baseColorOf(tester);
+    expect(
+      darker.computeLuminance(),
+      lessThan(plain.computeLuminance()),
+      reason: '⭐ U1：darken 应得到"更深的面板"（用户实测"变灰色界面" ✗ 是蒙层做法 ✗）',
+    );
+
+    // ④ lighten → 比纯表面色**更浅** ✓
+    appdata.settings['secondaryPageTint'] = 'lighten';
+    await pump();
+    final lighter = baseColorOf(tester);
+    expect(
+      lighter.computeLuminance(),
+      greaterThan(plain.computeLuminance()),
+      reason: '⭐ U1：lighten 应得到"更浅的面板"',
+    );
+  });
 }
