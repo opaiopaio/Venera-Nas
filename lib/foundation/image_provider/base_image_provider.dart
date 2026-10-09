@@ -112,7 +112,7 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
           getTargetSize: enableResize ? _getTargetSize : null,
         );
       } catch (e) {
-        await CacheManager().delete(this.key);
+        await CacheManager().delete(cacheKey);
         if (data.length < 2 * 1024) {
           // data is too short, it's likely that the data is text, not image
           try {
@@ -146,6 +146,12 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
   );
 
   String get key;
+
+  /// ⭐ 修复（2026-10-09）：**磁盘缓存键**（默认与 [key] 相同）。
+  /// 某些 provider 的 [key] 会带上渲染参数（如 `@enableResize`），而**写盘用的是不带参数**的键，
+  /// 于是解码失败时 `delete(key)` 删的是**不存在的键**、坏图缓存永久残留。
+  /// 覆写本 getter 即可让清理命中真正的磁盘文件。
+  String get cacheKey => key;
 
   @override
   bool operator ==(Object other) {

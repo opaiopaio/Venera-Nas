@@ -30,6 +30,13 @@ class _ChaptersViewState extends State<_ChaptersView> {
   }
 
   @override
+  void dispose() {
+    // ⭐ 修复（2026-10-09）：补上 ScrollController 释放（原先只创建不释放，控制器常驻泄漏）。
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     var chapters = widget.reader.widget.chapters!;
     var current = widget.reader.chapter - 1;

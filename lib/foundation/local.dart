@@ -537,6 +537,10 @@ class LocalManager with ChangeNotifier {
         );
       }
 
+      // ⭐ 修复（2026-10-09）：**只保留真正的图片扩展名** —— 原先白名单里含
+      // `pdf/cbz/zip/rar/cbr/cb7`，而本函数的消费方是**阅读器取图**与**图片收藏**，
+      // 拿到压缩包/PDF 会让阅读器把它们当图片渲染（页面错乱）。对照本地扫描的
+      // `utils/import_comic.dart` 只列图片扩展名，这里保持一致。
       const imageExtensions = [
         'jpg',
         'jpeg',
@@ -545,12 +549,6 @@ class LocalManager with ChangeNotifier {
         'gif',
         'jpe',
         'bmp',
-        'pdf',
-        'cbz',
-        'zip',
-        'rar',
-        'cbr',
-        'cb7',
       ];
 
       var imageEntries = entries.where((e) {

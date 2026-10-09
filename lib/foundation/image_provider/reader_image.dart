@@ -164,6 +164,11 @@ class ReaderImageProvider
   @override
   String get key => "$imageKey@$sourceKey@$cid@$eid@$enableResize";
 
+  /// ⭐ 修复（2026-10-09）：磁盘写入键**不含** `@enableResize`（见 `network/images.dart` 的 writeCache），
+  /// 覆写后解码失败的清理才能命中真实缓存文件。
+  @override
+  String get cacheKey => "$imageKey@$sourceKey@$cid@$eid";
+
   @override
   void onLoadError() {
     var cacheKey = "loadComicPages@$sourceKey@$cid@$eid";

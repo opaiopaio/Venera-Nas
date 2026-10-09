@@ -481,7 +481,7 @@ class _GalleryModeState extends State<_GalleryMode>
           var keys = photoViewControllers.keys.toList();
           for (var key in keys) {
             if (key != i) {
-              photoViewControllers.remove(key);
+              photoViewControllers.remove(key)?.dispose();
             }
           }
         },
