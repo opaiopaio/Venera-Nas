@@ -139,6 +139,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
   @override
   Widget build(BuildContext context) {
     return PopUpWidgetScaffold(
+      popupStyle: true,
       title: "Proxy".tl,
       body: SingleChildScrollView(
         child: RadioGroup<String>(
@@ -303,6 +304,7 @@ class __DNSOverridesState extends State<_DNSOverrides> {
   @override
   Widget build(BuildContext context) {
     return PopUpWidgetScaffold(
+      popupStyle: true,
       title: "DNS Overrides".tl,
       tailing: [
         // H2 `.icon` 专轮：DNS 覆盖的「Save」→ 自绘 `Button` + `pillLabel` ✓
@@ -480,6 +482,7 @@ class _SmbServerManagerState extends State<_SmbServerManager> {
     final list = servers;
 
     return PopUpWidgetScaffold(
+      popupStyle: true,
       title: "SMB / NAS Servers".tl,
       body: Column(
         children: [
@@ -677,6 +680,7 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
   @override
   Widget build(BuildContext context) {
     return PopUpWidgetScaffold(
+      popupStyle: true,
       title: _isEditing ? "Edit Server".tl : "Add Server".tl,
       body: SingleChildScrollView(
         child: Column(

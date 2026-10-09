@@ -254,6 +254,7 @@ class _ManageBlockingCommentWordViewState
     assert(appdata.settings["blockedCommentWords"] is List);
     return PopUpWidgetScaffold(
       title: "Comment keyword blocking".tl,
+      popupStyle: true,
       tailing: [
         // P8：标准 `TextButton.icon` → 应用自绘 `Button` + `pillLabel` ✓（一套体系 ✓）
         Button.normal(onPressed: add, child: pillLabel(Icons.add, "Add".tl)),
