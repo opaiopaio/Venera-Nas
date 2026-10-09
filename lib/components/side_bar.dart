@@ -99,11 +99,17 @@ class SideBarRoute<T> extends PopupRoute<T> {
 
     // · 关闭总开关（启用自定义）⇒ 用侧边栏那组成品色 ✓、并铺背景切片 ✓（同 `SecondaryPageSurface` 的 tinted 门禁 ✓）。
 
-    final followTheme = appdata.settings['secondaryPageFollowTheme'] == true;
+    // ⭐ 与 `showSideBar` 同一判据：窄屏（竖屏）下该窗口会**铺满整屏** ✓（用户实测 ✓）。
+    final fullScreen = !(MediaQuery.of(context).size.width > width);
 
-    final sideBarColor = followTheme
-        ? backgroundPlaceholderColor(context.colorScheme)
-        : sideBarSurfaceColor(context);
+    // ⭐ 修复（2026-10-09 用户指示 ✓）：与「探索页面 / 背景设置页」等**弹窗式二级页面**行为一致 ——
+    // **竖屏（整屏）⇒ 半透明效果失效** ✗（恒用不透的兜底色 ✓）；**横屏 ⇒ 才受「侧边栏」那组设置控制** ✓
+    //（含样式/背景/对比强度与半透明 ✓）。
+    final followTheme = appdata.settings['secondaryPageFollowTheme'] == true;
+    final useCustomSideBar = !fullScreen && !followTheme;
+    final sideBarColor = useCustomSideBar
+        ? sideBarSurfaceColor(context)
+        : backgroundPlaceholderColor(context.colorScheme);
 
     bool showSideBar = MediaQuery.of(context).size.width > width;
 
@@ -169,7 +175,7 @@ class SideBarRoute<T> extends PopupRoute<T> {
               child: Stack(
                 children: [
                   // ⭐ 仅"启用自定义"时铺切片 ✓（默认与收藏页文件夹一致：白底不透 ✓）
-                  if (!followTheme)
+                  if (useCustomSideBar)
                     const Positioned.fill(child: BackgroundSlice()),
                   body,
                 ],
