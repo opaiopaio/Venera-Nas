@@ -346,6 +346,19 @@ class Settings with ChangeNotifier {
     // ⚠️ 因此 `menuSurfaceTint` 的默认值由 `darken` **改为 `lighten`** ✗→✓（其余两项原已一致 ✓）。
     'menuSurfaceTint': 'lighten',
     'menuSurfaceTintStrength': AppOpacity.tintStrengthDefault,
+    // ⭐ 2026-10-09（用户指示 ✓）：**侧滑窗口 / 侧边栏**独立一组外观项 ✓ ——
+    // 范围 = `components/side_bar.dart` 的 `showSideBar` 各调用点（漫画页收藏/选择章节/评论页）
+    // + 收藏页「文件夹选择」✓；结构与「二级页面」「菜单」那两套**同构** ✓。
+    // 默认值 = 用户原话"默认就是之前跟随主题的默认状态"✓ ⇒ 不透明遮挡 / 变浅 / 0.22 ✓。
+    'sideBarSurfaceMode':
+        'opaque', // 侧边栏样式：opaque(不透明遮挡) / transparent(半透明) / off
+    'sideBarSurfaceTint':
+        'lighten', // 侧边栏背景：darken(变深) / lighten(变浅) / none(无色调)
+    'sideBarSurfaceTintStrength':
+        AppOpacity.tintStrengthDefault, // 强度 0.0 - 0.6
+    // ⭐「变暗」**独立开关** ✓（用户："变不变暗你给他单独配置个开关"✓）。**不设默认值** ⇒ 保持既有行为
+    //（`side_bar.dart` 原逻辑：有自定义背景时不变暗 ✓、否则 black54 ✓）；设 true/false 即强制开/关 ✓。
+    // 'sideBarDim': true,  // ← 需要时再显式写入
     // ⚠️ AQ1 范围收敛（用户 2026-10-09 追加说明 ✓）：**毛玻璃不做** ✗ ——
     // 用户原话："毛玻璃不做了，**和现在的外观设计有冲突** ✗，如果要加毛玻璃**以后再说** ✓。
     // 就做成和现在已有的**二级弹窗窗口配置一样**就行 ✓，**保留设计理念** ✓。"

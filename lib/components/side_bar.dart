@@ -28,10 +28,17 @@ class SideBarRoute<T> extends PopupRoute<T> {
   bool _barrierSawPointerDown = false;
 
   @override
-  Color? get barrierColor =>
-      showBarrier && !appdata.settings.customBackgroundActive
-      ? Colors.black54
-      : Colors.transparent;
+  // ⭐ 2026-10-09（用户指示 ✓）：**变暗改为独立开关** `sideBarDim` ✓。
+  // 未设置（默认）⇒ **保持既有行为** ✓（有自定义背景时不变暗、否则 black54 ✓）；
+  // 设 true ⇒ 强制变暗 ✓；设 false ⇒ 强制不变暗 ✓。
+  Color? get barrierColor {
+    final dim = appdata.settings['sideBarDim'];
+    if (dim == true) return Colors.black54;
+    if (dim == false) return Colors.transparent;
+    return showBarrier && !appdata.settings.customBackgroundActive
+        ? Colors.black54
+        : Colors.transparent;
+  }
 
   @override
   bool get barrierDismissible => dismissible;
@@ -102,7 +109,10 @@ class SideBarRoute<T> extends PopupRoute<T> {
         borderRadius: showSideBar
             ? const BorderRadius.horizontal(left: Radius.circular(AppRadius.xl))
             : null,
-        color: Theme.of(context).colorScheme.surfaceTint,
+        // ⭐ 2026-10-09（用户指示 ✓）：侧滑窗口的表面色改走**独立一组设置** ✓
+        //（`sideBarSurfaceMode/Tint/TintStrength` ✓，与二级页面/菜单两套同构 ✓），
+        // 受「二级页面/弹窗」页总开关 `secondaryPageFollowTheme` 控制 ✓（跟随主题 ⇒ 默认观感 ✓）。
+        color: sideBarSurfaceColor(context),
         boxShadow: context.brightness == ui.Brightness.dark
             ? [
                 BoxShadow(
@@ -174,6 +184,29 @@ class SideBarRoute<T> extends PopupRoute<T> {
       child: child,
     );
   }
+}
+
+/// ⭐ 2026-10-09（用户指示 ✓）：**侧滑窗口/侧边栏**的成品表面色 —— 独立一组设置 ✓。
+/// 受「二级页面/弹窗」页总开关 `secondaryPageFollowTheme` 控制 ✓：
+/// 跟随主题（默认）⇒ 强制用**默认值**（不透明遮挡 / 变浅 / 0.22 ✓ = 用户"之前跟随主题的默认状态"✓）；
+/// 关闭该总开关 ⇒ 用 `sideBarSurfaceMode/Tint/TintStrength` ✓。
+Color sideBarSurfaceColor(BuildContext context) {
+  final followTheme = appdata.settings['secondaryPageFollowTheme'] == true;
+  return secondarySurfaceColorFor(
+    scheme: Theme.of(context).colorScheme,
+    mode: followTheme
+        ? 'opaque'
+        : (appdata.settings['sideBarSurfaceMode'] as String? ?? 'opaque'),
+    tint: followTheme
+        ? 'lighten'
+        : (appdata.settings['sideBarSurfaceTint'] as String? ?? 'lighten'),
+    strength: followTheme
+        ? AppOpacity.tintStrengthDefault
+        : ((appdata.settings['sideBarSurfaceTintStrength'] as num?)
+                  ?.toDouble() ??
+              AppOpacity.tintStrengthDefault),
+    hasWallpaperSlice: false,
+  );
 }
 
 Future<void> showSideBar(
