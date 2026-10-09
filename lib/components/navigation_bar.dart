@@ -275,20 +275,30 @@ class NaviPaneState extends State<NaviPane>
             ),
             const Spacer(),
             for (var action in widget.paneActions)
-              Tooltip(
-                message: action.label,
-                child: IconButton(
-                  // ⭐ 修复（2026-10-09 用户实测 ✓）：**竖屏（窄屏）顶栏的「搜索 / 设置」按钮紧贴** ✗→✓ ——
-                  // 这两个按钮来自 `paneActions`（宽屏时在左侧栏左下角 ✓），窄屏时并列在顶栏 ✓ 而此处**没有任何间距** ✗
-                  //（用户："这俩按钮紧贴"✓，收藏 / 发现 / 分类页均有 ✓）。
-                  // 现给按钮加内边距：**窄屏（< changePoint）用 `AppSpace.sm`** ✓；宽屏沿用 `AppSpace.tiny`（≈原默认 ⇒ 观感不变 ✓）。
-                  padding: EdgeInsets.symmetric(
-                    horizontal: context.width < changePoint
-                        ? AppSpace.sm
-                        : AppSpace.tiny,
+              // ⭐ 修复（2026-10-09 用户实测 ✓ 加强版）：**用 Padding 包住整枚按钮** ✓ ——
+              // 上一版只给了 IconButton.padding，观感变化不够明显 / 可能被主题样式淡化 ✗；
+              // 这里直接在**按钮外层**补间距，窄屏 `AppSpace.sm`、宽屏 `AppSpace.tiny` ✓。
+              Padding(
+                padding: EdgeInsets.only(
+                  left: context.width < changePoint
+                      ? AppSpace.sm
+                      : AppSpace.tiny,
+                ),
+                child: Tooltip(
+                  message: action.label,
+                  child: IconButton(
+                    // ⭐ 修复（2026-10-09 用户实测 ✓）：**竖屏（窄屏）顶栏的「搜索 / 设置」按钮紧贴** ✗→✓ ——
+                    // 这两个按钮来自 `paneActions`（宽屏时在左侧栏左下角 ✓），窄屏时并列在顶栏 ✓ 而此处**没有任何间距** ✗
+                    //（用户："这俩按钮紧贴"✓，收藏 / 发现 / 分类页均有 ✓）。
+                    // 现给按钮加内边距：**窄屏（< changePoint）用 `AppSpace.sm`** ✓；宽屏沿用 `AppSpace.tiny`（≈原默认 ⇒ 观感不变 ✓）。
+                    padding: EdgeInsets.symmetric(
+                      horizontal: context.width < changePoint
+                          ? AppSpace.sm
+                          : AppSpace.tiny,
+                    ),
+                    icon: Icon(action.icon),
+                    onPressed: action.onTap,
                   ),
-                  icon: Icon(action.icon),
-                  onPressed: action.onTap,
                 ),
               ),
           ],
