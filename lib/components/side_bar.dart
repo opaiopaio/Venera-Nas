@@ -99,20 +99,6 @@ class SideBarRoute<T> extends PopupRoute<T> {
 
     // · 关闭总开关（启用自定义）⇒ 用侧边栏那组成品色 ✓、并铺背景切片 ✓（同 `SecondaryPageSurface` 的 tinted 门禁 ✓）。
 
-    // ⭐ 与 `showSideBar` 同一判据：窄屏（竖屏）下该窗口会**铺满整屏** ✓（用户实测 ✓）。
-    final fullScreen = !(MediaQuery.of(context).size.width > width);
-
-    // ⭐ 修复（2026-10-09 用户指示 ✓）：与「探索页面 / 背景设置页」等**弹窗式二级页面**行为一致 ——
-    // **竖屏（整屏）⇒ 半透明效果失效** ✗（恒用不透的兜底色 ✓）；**横屏 ⇒ 才受「侧边栏」那组设置控制** ✓
-    //（含样式/背景/对比强度与半透明 ✓）。
-    final followTheme = appdata.settings['secondaryPageFollowTheme'] == true;
-    // ⭐ 修正（2026-10-09 用户指正 ✓）：**侧边栏设置全局受控** ✓ —— 上一版把整组控制在竖屏屏蔽掉了 ✗
-    //（用户："其他控制项你不能给我屏蔽掉啊"✓）。现只在竖屏（整屏）时让**「样式」这一项强制不透明** ✓，
-    // 背景（变深/变浅/无色调）与对比强度**照常生效** ✓。默认（跟随主题）仍与收藏页文件夹一致：不透的白底 ✓。
-    final sideBarColor = followTheme
-        ? backgroundPlaceholderColor(context.colorScheme)
-        : sideBarSurfaceColor(context, forceOpaque: fullScreen);
-
     bool showSideBar = MediaQuery.of(context).size.width > width;
 
     Widget body = widget;
@@ -130,15 +116,17 @@ class SideBarRoute<T> extends PopupRoute<T> {
 
     final sideBarWidth = math.min(width, MediaQuery.of(context).size.width);
 
+    // ⭐ 统一实现（2026-10-10 用户指正 ✓）：**表面只用 `SecondaryPageSurface` 这一套** ✗→✓ ——
+    // 侧滑窗口与「弹窗式二级页面 / 收藏页文件夹选择」**共用同一个表面组件** ✓（切片、色调、底座、
+    // 以及"跟随主题 / 竖屏强制不透明 / 启用自定义"等**全部门禁都只在那一处** ✓）。
+    // 本组件只保留它真正独有的部分：**形态（贴边整高）与动画（左/右滑入）** ✓ ——
+    // 用户原话："样式都一样只是弹出方向不同，为啥还要用两套实现方式写两套门控" ✓。
     body = Container(
       decoration: BoxDecoration(
         borderRadius: showSideBar
             ? const BorderRadius.horizontal(left: Radius.circular(AppRadius.xl))
             : null,
-        // ⭐ 2026-10-09（用户指示 ✓）：侧滑窗口的表面色改走**独立一组设置** ✓
-        //（`sideBarSurfaceMode/Tint/TintStrength` ✓，与二级页面/菜单两套同构 ✓），
-        // 受「二级页面/弹窗」页总开关 `secondaryPageFollowTheme` 控制 ✓（跟随主题 ⇒ 默认观感 ✓）。
-        color: sideBarColor,
+        // 仅阴影（底色/切片已交由 SecondaryPageSurface ✓，避免两处各画一份 ✗）
         boxShadow: context.brightness == ui.Brightness.dark
             ? [
                 BoxShadow(
@@ -152,49 +140,30 @@ class SideBarRoute<T> extends PopupRoute<T> {
       clipBehavior: Clip.antiAlias,
       constraints: BoxConstraints(maxWidth: sideBarWidth),
       height: MediaQuery.of(context).size.height,
-      child: GestureDetector(
-        // ⭐ 修复（2026-10-09 用户实测 ✓）：**本层 `Material` 必须透明** ✗→✓ ——
-        // 原先 `Material()` 不传 color ⇒ 取主题 `canvasColor`（**不透明表面色** ✗），
-        // 把外层 `Container(decoration: color: sideBarColor)` 整个盖住 ⇒ 用户感受为"**这个窗口根本没法控制**" ✓
-        //（白底恒亮、半透明/背景/对比强度全部无效 ✓）。改为透明后，设置才真正作用在观感上 ✓。
-        child: Material(
-          color: Colors.transparent,
-          child: ClipRect(
-            clipBehavior: Clip.antiAlias,
-            child: Container(
-              padding: EdgeInsets.fromLTRB(
-                0,
-                0,
-                MediaQuery.of(context).padding.right,
-                addBottomPadding
-                    ? MediaQuery.of(context).padding.bottom +
-                          MediaQuery.of(context).viewInsets.bottom
-                    : 0,
-              ),
-              color: useSurfaceTintColor
-                  ? Theme.of(context).colorScheme.surfaceTint.withAlpha(20)
-                  : null,
-              // ⭐ 修复（2026-10-09 用户实测 ✓）：**侧滑窗口补铺背景切片** ✗→✓ ——
-              // 共用组件原先只画 `sideBarSurfaceColor()` 一层**实色** ✗，而收藏页「文件夹选择」那条走
-              // `SecondaryPageSurface(alwaysSliceBackground: true)` ✓ 会铺**与全局背景逐像素对齐的切片** ✓
-              // ⇒ 两者观感不同（用户：漫画内收藏打开的侧滑窗口"并不受新的侧滑窗口控制"✓）。
-              // 现给侧滑窗口也补上同一套切片 ⇒ **透出壁纸但不透出下层内容** ✓，与文件夹选择一致 ✓。
-              child: Stack(
-                children: [
-                  // ① 背景切片（最底层；仅"启用自定义"时铺 ✓）
-                  // ⭐ 修复（2026-10-09 用户实测 ✓）：**切片门禁与收藏页文件夹对齐** ✗→✓ ——
-                  // 原先只判 `!followTheme` ✗：**没有背景图时也铺切片**，而切片画的是**不透明的底**（背景色/主题底）✗
-                  // ⇒ 把下层内容整片盖住 ⇒ 用户感受为"**半透明无效**"✓（收藏页文件夹那条要求"背景图存在"才铺 ✓，故其半透明能透出内容 ✓）。
-                  // 现与 `SecondaryPageSurface` 的 `sliceAlways` 条件一致：**有背景图时才铺切片** ✓。
-                  if (currentBackgroundImageFile() != null)
-                    const Positioned.fill(child: BackgroundSlice()),
-                  // ⭐ 修复（2026-10-09 用户实测 ✓）：**表面色必须画在切片【之上】** ✗→✓ ——
-                  // 原先色画在 `Container.decoration`（位于子层**之下** ✗），而切片是子层 ⇒ **切片把色盖住** ✗ ⇒
-                  // 用户感受为"漫画页收藏侧滑依旧不受控" ✓（收藏页文件夹走 SecondaryPageSurface，其色调层在切片之上 ⇒ 已受控 ✓）。
-                  // 现改为：切片在最底 ✓、表面色（含不透明/半透明/色调）在其上 ✓、内容最上 ✓ —— 与文件夹选择的层次一致 ✓。
-                  Positioned.fill(child: ColoredBox(color: sideBarColor)),
-                  body,
-                ],
+      child: SecondaryPageSurface(
+        popupStyle: true,
+        useSideBarSettings: true,
+        alwaysSliceBackground: true,
+        borderRadius: BorderRadius.zero,
+        child: GestureDetector(
+          child: Material(
+            color: Colors.transparent,
+            child: ClipRect(
+              clipBehavior: Clip.antiAlias,
+              child: Container(
+                padding: EdgeInsets.fromLTRB(
+                  0,
+                  0,
+                  MediaQuery.of(context).padding.right,
+                  addBottomPadding
+                      ? MediaQuery.of(context).padding.bottom +
+                            MediaQuery.of(context).viewInsets.bottom
+                      : 0,
+                ),
+                color: useSurfaceTintColor
+                    ? Theme.of(context).colorScheme.surfaceTint.withAlpha(20)
+                    : null,
+                child: body,
               ),
             ),
           ),
