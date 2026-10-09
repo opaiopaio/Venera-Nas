@@ -143,7 +143,17 @@ class SideBarRoute<T> extends PopupRoute<T> {
               color: useSurfaceTintColor
                   ? Theme.of(context).colorScheme.surfaceTint.withAlpha(20)
                   : null,
-              child: body,
+              // ⭐ 修复（2026-10-09 用户实测 ✓）：**侧滑窗口补铺背景切片** ✗→✓ ——
+              // 共用组件原先只画 `sideBarSurfaceColor()` 一层**实色** ✗，而收藏页「文件夹选择」那条走
+              // `SecondaryPageSurface(alwaysSliceBackground: true)` ✓ 会铺**与全局背景逐像素对齐的切片** ✓
+              // ⇒ 两者观感不同（用户：漫画内收藏打开的侧滑窗口"并不受新的侧滑窗口控制"✓）。
+              // 现给侧滑窗口也补上同一套切片 ⇒ **透出壁纸但不透出下层内容** ✓，与文件夹选择一致 ✓。
+              child: Stack(
+                children: [
+                  const Positioned.fill(child: BackgroundSlice()),
+                  body,
+                ],
+              ),
             ),
           ),
         ),
