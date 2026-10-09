@@ -176,21 +176,10 @@ class _BackgroundSlicePainter extends CustomPainter {
     canvas.drawRect(Offset.zero & size, Paint()..color = baseColor);
     final img = image;
     if (img == null) return;
-    // ⭐ 修复（2026-10-10 用户实测 ✓）：**位置改用"本帧绘制时的 canvas 变换"同步取得** ✗→✓ ——
-    // 原先用帧后测量的 `offsetInWindow` ✗：绘制时拿到的是**上一帧**的位置 ⇒ 面板本帧移动多少，
-    // 整窗矩形就落后多少 ⇒ 滑动前缘露出**一条底色（无背景色时=主题白）** ✗。
-    // 宽度＝该帧位移 ⇒ `fastOutSlowIn` 曲线中间位移最大 ⇒ **白条中间最宽** ✓，与用户观察逐点吻合 ✓。
-    // canvas 变换在**本帧绘制时**有效 ⇒ 无滞后 ✓；测不准时退回测量值兜底 ✓。
-    // 注：`canvas.getTransform()` 返回 `Float64List`（不是 Matrix4 ✓），需显式转换 ✓。
-    final m = Matrix4.fromFloat64List(canvas.getTransform());
-    final scale = m.getMaxScaleOnAxis();
-    final origin = scale > 0
-        ? Offset(m.storage[12] / scale, m.storage[13] / scale)
-        : offsetInWindow;
     // 整窗矩形平移到本组件坐标系 → 与全窗背景逐像素对齐
     final rect = Rect.fromLTWH(
-      -origin.dx,
-      -origin.dy,
+      -offsetInWindow.dx,
+      -offsetInWindow.dy,
       windowSize.width,
       windowSize.height,
     );
@@ -208,7 +197,11 @@ class _BackgroundSlicePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_BackgroundSlicePainter old) =>
-      // ⭐ 位置已改由"本帧 canvas 变换"决定 ✗ ⇒ **字段相同不代表画面相同**（组件仍在被平移 ✓）
-      // ⇒ 统一返回 true ✓（仅在重建时被询问，并非每帧 ✓），确保过渡期间切片按新位置重绘 ✓。
-      true;
+      old.image != image ||
+      old.offsetInWindow != offsetInWindow ||
+      old.windowSize != windowSize ||
+      old.baseColor != baseColor ||
+      old.opacity != opacity ||
+      old.fit != fit ||
+      old.isRepeat != isRepeat;
 }
