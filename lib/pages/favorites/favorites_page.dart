@@ -136,6 +136,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
               //  —— 两个极端都不对 ✓，正解是"切片 + 色调"这套既有机制 ✓。
               //  `popupStyle: true` = 弹出式 ✓（与菜单/色盘同类 ✓）；`borderRadius: zero` = 通栏面板不切圆角 ✓。
               popupStyle: true,
+              // 用户指示（2026-10-09）：默认**透过背景**、**不透出下层内容**；
+              // 且开启「弹出式二级页面」后跟随其模式/色调/强度设定。
+              alwaysSliceBackground: true,
               borderRadius: BorderRadius.zero,
               child: SizedBox(
                 width: min(300, context.width - 16),

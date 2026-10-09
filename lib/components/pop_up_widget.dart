@@ -147,6 +147,7 @@ class SecondaryPageSurface extends StatelessWidget {
     this.borderRadius,
     this.clip = true,
     this.popupStyle = true,
+    this.alwaysSliceBackground = false,
   });
 
   final Widget child;
@@ -171,6 +172,11 @@ class SecondaryPageSurface extends StatelessWidget {
   ///（正式名参考：弹出式 = Dialog / Modal Overlay / PopupRoute ✓；
   ///  整页式 = Full-screen route / Pushed page ✓）。
   final bool popupStyle;
+
+  /// ⭐（2026-10-09 用户指示）：即使「弹出式二级页面」体系**关闭**，也**照常铺背景切片** ——
+  /// 用于**浮层**类表面（收藏页窄屏侧栏）。切片由 [BackgroundSlice]**自绘** ⇒ 背景可见、下层内容不透出；
+  /// 色调仍**跟随**该体系（体系关闭时 tint 为 null ⇒ 不叠色调）。默认 false ⇒ 其它调用方零变化。
+  final bool alwaysSliceBackground;
 
   @override
   Widget build(BuildContext context) {
@@ -220,17 +226,24 @@ class SecondaryPageSurface extends StatelessWidget {
         borderRadius ??
         windowOverlayBorderRadius() ??
         BorderRadius.circular(AppRadius.md);
+    // ⭐（2026-10-09 用户指示）：`alwaysSliceBackground` = 即使本体系**关闭**，也照常铺背景切片
+    //（"透过背景、不透出下层内容"；切片自绘）。默认 false ⇒ 其它调用方逐字不变。
+    final sliceAlways =
+        tinted && alwaysSliceBackground && currentBackgroundImageFile() != null;
     final stack = Stack(
       children: [
         // ⭐ S1：**不透明底必须在最底层** ✓ —— 放在色调/装饰之后会**盖住色调** ✗
         //（用户实测："打开加深也不会变深" ✗）。
         if (needSurface) Positioned.fill(child: ColoredBox(color: base)),
-        if (decoration != null && tinted) ...[
+        // ⭐（2026-10-09 用户指示）：`alwaysSliceBackground` = 即使本体系**关闭**，
+        // 也照常铺**背景切片**（"透过背景、不透出下层内容"；切片自绘）。
+        // 原调用方**逐字不变**（默认 false ⇒ 条件与原来完全相同）。
+        if ((decoration != null && tinted) || sliceAlways) ...[
           // 与全窗背景**逐像素对齐**的切片（此前是 `DecorationImage` 按自身盒子
-          // fit → 小弹窗看到的是**缩略图** ✗）。只画不布局，见 [BackgroundSlice]。
+          // fit → 小弹窗看到的是**缩略图**）。只画不布局，见 [BackgroundSlice]。
           const Positioned.fill(child: BackgroundSlice()),
-          // 有**壁纸切片**时，色调叠在**切片之上** ✓（语义 = 把壁纸调深/调浅 ✓，
-          // 这是原本的语义 ✓）；无切片时色调已**混入底色** ✓（见上 ✓），不重复叠 ✗。
+          // 有**壁纸切片**时，色调叠在**切片之上**（语义 = 把壁纸调深/调浅）；
+          // 无切片时色调已**混入底色**（见上），不重复叠。
           if (tint != null) Positioned.fill(child: ColoredBox(color: tint)),
         ],
         Material(color: Colors.transparent, child: child),
