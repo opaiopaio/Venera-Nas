@@ -104,6 +104,42 @@ class AppearanceSecondaryPage extends StatelessWidget {
               max: 0.6,
               onChanged: () => App.forceRebuild(),
             ).toSliver(),
+            // ⭐ 2026-10-09（用户指示 ✓）：**侧滑窗口 / 侧边栏**独立一组 ✓（与上面两组同构 ✓）——
+            // 范围：`components/side_bar.dart` 的 `showSideBar` 各调用点（漫画页收藏 / 选择章节 / 评论页）
+            // + 收藏页「文件夹选择」✓。
+            _SwitchSetting(
+              title: "Dim sidebar".tl,
+              settingKey: "sideBarDim",
+              onChanged: () => App.forceRebuild(),
+            ).toSliver(),
+            SelectSetting(
+              title: "Sidebar style".tl,
+              settingKey: "sideBarSurfaceMode",
+              optionTranslation: {
+                "opaque": "Opaque (cover)".tl,
+                "transparent": "Translucent".tl,
+                "off": "Off".tl,
+              },
+              onChanged: () => App.forceRebuild(),
+            ).toSliver(),
+            SelectSetting(
+              title: "Sidebar background".tl,
+              settingKey: "sideBarSurfaceTint",
+              optionTranslation: {
+                "darken": "Darken".tl,
+                "lighten": "Lighten".tl,
+                "none": "No tint".tl,
+              },
+              onChanged: () => App.forceRebuild(),
+            ).toSliver(),
+            _SliderSetting(
+              title: "Sidebar contrast".tl,
+              settingsIndex: "sideBarSurfaceTintStrength",
+              interval: 0.02,
+              min: 0.0,
+              max: 0.6,
+              onChanged: () => App.forceRebuild(),
+            ).toSliver(),
           ], // ← N1：二级页面自定义项隐藏到此结束 ✓
         ],
       ),

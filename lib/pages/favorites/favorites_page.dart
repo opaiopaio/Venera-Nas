@@ -123,7 +123,11 @@ class _FavoritesPageState extends State<FavoritesPage> {
         // 用户原话："突出页面（周围变暗），**但是这个侧滑二级菜单我觉得不用**"。
         // 遮罩**仍然存在**（`barrierDismissible: true` ⇒ 点面板外部可关闭 ✓），只是**不着色** ✓；
         // 因此也不再随 `customBackgroundActive` 在两套值之间切换（原行为：有背景=透明 ✓、无背景=黑 0.36 ✗）。
-        barrierColor: Colors.transparent,
+        // ⭐ 2026-10-09（用户指示 ✓）：变暗改为**独立开关** `sideBarDim` ✓（与 `side_bar.dart` 同源 ✓）；
+        // 默认 false ⇒ 保持既有"不着色"观感 ✓；设 true ⇒ 变暗 ✓。
+        barrierColor: appdata.settings['sideBarDim'] == true
+            ? Colors.black54
+            : Colors.transparent,
         pageBuilder: (context, animation, secondary) {
           return Align(
             alignment: Alignment.centerLeft,
@@ -138,6 +142,8 @@ class _FavoritesPageState extends State<FavoritesPage> {
               //  —— 两个极端都不对 ✓，正解是"切片 + 色调"这套既有机制 ✓。
               //  `popupStyle: true` = 弹出式 ✓（与菜单/色盘同类 ✓）；`borderRadius: zero` = 通栏面板不切圆角 ✓。
               popupStyle: true,
+              // ⭐ 2026-10-09（用户指示 ✓）：侧滑窗口走**独立一组**外观设置 ✓（受本页总开关控制 ✓）。
+              useSideBarSettings: true,
               // 用户指示（2026-10-09）：默认**透过背景**、**不透出下层内容**；
               // 且开启「弹出式二级页面」后跟随其模式/色调/强度设定。
               alwaysSliceBackground: true,

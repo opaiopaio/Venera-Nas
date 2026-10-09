@@ -173,6 +173,9 @@ class SecondaryPageSurface extends StatelessWidget {
     this.clip = true,
     this.popupStyle = true,
     this.alwaysSliceBackground = false,
+    // ⭐ 2026-10-09（用户指示 ✓）：本表面是否属于**侧滑窗口 / 侧边栏** ⇒ 读 `sideBarSurface*` 三项 ✓
+    //（受同一个 `secondaryPageFollowTheme` 总开关控制 ✓）。默认 false ⇒ 其它调用方**逐字不变** ✓。
+    this.useSideBarSettings = false,
   });
 
   final Widget child;
@@ -203,6 +206,9 @@ class SecondaryPageSurface extends StatelessWidget {
   /// 色调仍**跟随**该体系（体系关闭时 tint 为 null ⇒ 不叠色调）。默认 false ⇒ 其它调用方零变化。
   final bool alwaysSliceBackground;
 
+  /// 侧滑窗口 / 侧边栏专用：表面色改读 `sideBarSurface*`（默认 false ✓）。
+  final bool useSideBarSettings;
+
   @override
   Widget build(BuildContext context) {
     AppSettingsScope.of(context);
@@ -214,7 +220,10 @@ class SecondaryPageSurface extends StatelessWidget {
     // "色调加深只作用给弹出式二级页面" ✓；此时它由**自身路由的 decoration** 负责底色 ✓。
     final tinted = !followTheme && popupStyle;
     final decoration = secondaryPageDecoration();
-    final tint = customSecondarySurfaceColor(context.colorScheme);
+    // ⭐ 侧滑窗口/侧边栏：改用**独立一组**成品表面色 ✓（`sideBarSurfaceColor()` ✓，受同一总开关控制 ✓）。
+    final tint = useSideBarSettings
+        ? sideBarSurfaceColor(context)
+        : customSecondarySurfaceColor(context.colorScheme);
     // ⭐ W2（用户选定方案 B ✓）：**整页式永远透出背景** ✓、**完全不受本节选项影响** ✗ ——
     // - **有背景**（背景图/背景底色 ✓）→ **不铺任何底** ✓（露出全局背景 ✓，用户实测
     //   "整页式被纯白底色覆盖、不显示背景" ✗）；
@@ -290,7 +299,7 @@ class SecondaryPageSurface extends StatelessWidget {
           // 有**壁纸切片**时，色调叠在**切片之上**（语义 = 把壁纸调深/调浅）；
           // 无切片时色调已**混入底色**（见上），不重复叠。
           // 整页式：**不叠色调** ✗（用户要求"就是背景本身" ✓）；窗口式照旧 ✓
-          if (tint != null && !fullScreenPopup)
+          if (tint != null && !fullScreenPopup && !useSideBarSettings)
             Positioned.fill(child: ColoredBox(color: tint)),
         ],
         Material(color: Colors.transparent, child: child),
