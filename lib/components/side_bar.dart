@@ -99,6 +99,9 @@ class SideBarRoute<T> extends PopupRoute<T> {
 
     // · 关闭总开关（启用自定义）⇒ 用侧边栏那组成品色 ✓、并铺背景切片 ✓（同 `SecondaryPageSurface` 的 tinted 门禁 ✓）。
 
+    // ⭐ 本面板是否铺满整屏 ✓（面板宽度 vs 屏幕宽度 ✓）—— 传给统一表面组件决定"是否强制不透明" ✓
+    final fullScreen = !(MediaQuery.of(context).size.width > width);
+
     bool showSideBar = MediaQuery.of(context).size.width > width;
 
     Widget body = widget;
@@ -142,6 +145,8 @@ class SideBarRoute<T> extends PopupRoute<T> {
       height: MediaQuery.of(context).size.height,
       child: SecondaryPageSurface(
         popupStyle: true,
+        // ⭐ 面板铺满整屏时才强制不透明 ✓（与文件夹面板的判据一致 ✓）
+        sideBarFullScreen: fullScreen,
         useSideBarSettings: true,
         alwaysSliceBackground: true,
         borderRadius: BorderRadius.zero,
@@ -229,7 +234,12 @@ Color sideBarSurfaceColor(BuildContext context, {bool forceOpaque = false}) {
         : ((appdata.settings['sideBarSurfaceTintStrength'] as num?)
                   ?.toDouble() ??
               AppOpacity.tintStrengthDefault),
-    hasWallpaperSlice: false,
+    // ⭐ 修复（2026-10-10 用户实测 ✓）：**有背景图时改传 true** ✗→✓ ——
+    // 原先恒传 `false` ✗ ⇒ 本函数返回**成品不透明实色** ✓，而它被画在**切片之上** ⇒ **把壁纸盖住** ✗，
+    // 用户感受为"选择不透明(遮挡)时页面还是纯白、没有背景图片" ✓。
+    // 改传"是否存在背景图" ✓ ⇒ 有壁纸时只返回**色调层**（由切片负责背景 ✓），与二级页面同口径 ✓；
+    // 无壁纸时仍走"背景色/主题底 ± 色调"的成品色 ✓（不透明遮挡 ✓）。
+    hasWallpaperSlice: currentBackgroundImageFile() != null,
   );
 }
 

@@ -176,6 +176,7 @@ class SecondaryPageSurface extends StatelessWidget {
     // ⭐ 2026-10-09（用户指示 ✓）：本表面是否属于**侧滑窗口 / 侧边栏** ⇒ 读 `sideBarSurface*` 三项 ✓
     //（受同一个 `secondaryPageFollowTheme` 总开关控制 ✓）。默认 false ⇒ 其它调用方**逐字不变** ✓。
     this.useSideBarSettings = false,
+    this.sideBarFullScreen = false,
   });
 
   final Widget child;
@@ -209,6 +210,10 @@ class SecondaryPageSurface extends StatelessWidget {
   /// 侧滑窗口 / 侧边栏专用：表面色改读 `sideBarSurface*`（默认 false ✓）。
   final bool useSideBarSettings;
 
+  /// ⭐ 2026-10-10（用户实测 ✓）：**本侧滑面板是否铺满整屏** ✓（由调用方按"面板宽度 vs 屏幕宽度"判定 ✓）。
+  /// 仅此时才让「样式」强制不透明 ✓；否则照常受「侧边栏」那组控制 ✓（半透明可透出内容 ✓）。
+  final bool sideBarFullScreen;
+
   @override
   Widget build(BuildContext context) {
     AppSettingsScope.of(context);
@@ -225,7 +230,10 @@ class SecondaryPageSurface extends StatelessWidget {
         ? sideBarSurfaceColor(
             context,
             // ⭐ 竖屏（窄屏）时仅强制「样式」不透明 ✓（其余项照常受控 ✓）
-            forceOpaque: context.width < changePoint,
+            // ⭐ 修复（2026-10-10 用户实测 ✓）：**改由调用方告知是否铺满整屏** ✗→✓ ——
+            // 原先用 `context.width < changePoint` 粗判 ✗ ⇒ 486px 窗口里那个 300px 宽的文件夹面板也被当成"整屏" ⇒
+            // 半透明被误屏蔽 ✓（用户：该菜单竖屏下并非整页菜单 ✓）。
+            forceOpaque: sideBarFullScreen,
           )
         : customSecondarySurfaceColor(context.colorScheme);
     // ⭐ W2（用户选定方案 B ✓）：**整页式永远透出背景** ✓、**完全不受本节选项影响** ✗ ——
