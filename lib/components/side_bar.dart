@@ -4,7 +4,6 @@ class SideBarRoute<T> extends PopupRoute<T> {
   SideBarRoute(
     this.widget, {
     this.showBarrier = true,
-    this.useSurfaceTintColor = false,
     this.dismissible = true,
     required this.width,
     this.addBottomPadding = true,
@@ -14,8 +13,6 @@ class SideBarRoute<T> extends PopupRoute<T> {
   final Widget widget;
 
   final bool showBarrier;
-
-  final bool useSurfaceTintColor;
 
   final bool dismissible;
 
@@ -97,7 +94,7 @@ class SideBarRoute<T> extends PopupRoute<T> {
 
     // · 默认（总开关＝跟随主题）⇒ 底用 `backgroundPlaceholderColor`（**白底不透** ✓，与文件夹选择一致 ✓）、不铺切片 ✗；
 
-    // · 关闭总开关（启用自定义）⇒ 用侧边栏那组成品色 ✓、并铺背景切片 ✓（同 `SecondaryPageSurface` 的 tinted 门禁 ✓）。
+    // （2026-10-10 方案 A 复核更正 ✓：本条已由**统一表面**接管 —— 表面/切片/色调/门禁均在 `SecondaryPageSurface` 一处 ✓；是否铺切片由"是否有背景图 + 是否整屏 + 是否半透明"决定 ✓，**不再看 `tinted`** ✓。）
 
     // ⭐ 本面板是否铺满整屏 ✓（面板宽度 vs 屏幕宽度 ✓）—— 传给统一表面组件决定"是否强制不透明" ✓
     final fullScreen = !(MediaQuery.of(context).size.width > width);
@@ -165,9 +162,6 @@ class SideBarRoute<T> extends PopupRoute<T> {
                             MediaQuery.of(context).viewInsets.bottom
                       : 0,
                 ),
-                color: useSurfaceTintColor
-                    ? Theme.of(context).colorScheme.surfaceTint.withAlpha(20)
-                    : null,
                 child: body,
               ),
             ),
@@ -252,7 +246,6 @@ Future<void> showSideBar(
   BuildContext context,
   Widget widget, {
   bool showBarrier = true,
-  bool useSurfaceTintColor = false,
   bool dismissible = true,
   double width = 500,
   bool addTopPadding = true,
@@ -261,7 +254,6 @@ Future<void> showSideBar(
     SideBarRoute(
       widget,
       showBarrier: showBarrier,
-      useSurfaceTintColor: useSurfaceTintColor,
       dismissible: dismissible,
       width: width,
       addTopPadding: addTopPadding,

@@ -327,7 +327,12 @@ class SecondaryPageSurface extends StatelessWidget {
         // 上一版只给 `sliceAlways` 加了 `!sideBarTransparent` ✗，而此处 `decoration`（壁纸切片装饰 ✓）这条**仍会铺切片** ✗
         // ⇒ 面板依旧被整块不透明的切片挡住 ⇒ 用户感受："有背景图时半透明无效（有背景色时有效）" ✓
         //（有背景色时 `currentBackgroundImageFile()` 为 null ⇒ 本分支不进入 ⇒ 半透明自然有效 ✓）。
-        if (((decoration != null && tinted) || sliceAlways || pageBackground) &&
+        // ⭐ 清理（2026-10-10 方案 A ✓）：**三条来路合并为互斥判定** ✗→✓ ——
+        // 原先三条并列，侧滑窗口在"自定义 + 有背景图"时会**同时命中前两条 ⇒ 重复铺两层切片** ✗（同一画笔，白画一遍 ✓）。
+        // 现：整页式弹窗恒铺 ✓；侧滑窗口走 `sliceAlways` ✓；其余（二级页面/菜单）才走 `decoration` 装饰 ✓ ⇒ 三者互斥 ✓。
+        if ((pageBackground ||
+                sliceAlways ||
+                (decoration != null && tinted && !useSideBarSettings)) &&
             !sideBarTransparent) ...[
           // 与全窗背景**逐像素对齐**的切片（此前是 `DecorationImage` 按自身盒子
           // fit → 小弹窗看到的是**缩略图**）。只画不布局，见 [BackgroundSlice]。
