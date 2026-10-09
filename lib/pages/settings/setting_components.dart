@@ -643,6 +643,9 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
           );
 
     return PopUpWidgetScaffold(
+      // ⭐ 批次 3（2026-10-09 用户指示 ✓）：本 widget = 探索/分类/网络收藏/搜索源 **4 个排序页**的本体 ✓，
+      // 由 `showPopUpWidget` 推出（已是浮层 ✓）；补 `popupStyle: true` ⇒ 表面走切片+色调 ⇒ 跟随自定义 ✓。
+      popupStyle: true,
       title: widget.title,
       tailing: [
         if (keys.length < widget.pages.length)
