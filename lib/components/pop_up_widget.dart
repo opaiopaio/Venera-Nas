@@ -317,9 +317,12 @@ class SecondaryPageSurface extends StatelessWidget {
         // ⭐（2026-10-09 用户指示）：`alwaysSliceBackground` = 即使本体系**关闭**，
         // 也照常铺**背景切片**（"透过背景、不透出下层内容"；切片自绘）。
         // 原调用方**逐字不变**（默认 false ⇒ 条件与原来完全相同）。
-        if ((decoration != null && tinted) ||
-            sliceAlways ||
-            pageBackground) ...[
+        // ⭐ 修复（2026-10-10 用户实测 ✓）：**三项切片条件统一加"非半透明白名单"** ✗→✓ ——
+        // 上一版只给 `sliceAlways` 加了 `!sideBarTransparent` ✗，而此处 `decoration`（壁纸切片装饰 ✓）这条**仍会铺切片** ✗
+        // ⇒ 面板依旧被整块不透明的切片挡住 ⇒ 用户感受："有背景图时半透明无效（有背景色时有效）" ✓
+        //（有背景色时 `currentBackgroundImageFile()` 为 null ⇒ 本分支不进入 ⇒ 半透明自然有效 ✓）。
+        if (((decoration != null && tinted) || sliceAlways || pageBackground) &&
+            !sideBarTransparent) ...[
           // 与全窗背景**逐像素对齐**的切片（此前是 `DecorationImage` 按自身盒子
           // fit → 小弹窗看到的是**缩略图**）。只画不布局，见 [BackgroundSlice]。
           const Positioned.fill(child: BackgroundSlice()),
