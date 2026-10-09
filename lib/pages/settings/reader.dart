@@ -505,9 +505,8 @@ class _ReaderSettingsState extends State<ReaderSettings> {
         _CallbackSetting(
           title: "Custom Image Processing".tl,
           // ⭐ AO1（同款修法 ✓）：内层 Navigator push ✓（不再用全屏弹层 ✗）
-          callback: () => Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (_) => _CustomImageProcessing())),
+          callback: () =>
+              showPopUpWidget(context, const _CustomImageProcessing()),
           actionTitle: "Edit".tl,
         ).toSliver(),
         _SliderSetting(
@@ -598,21 +597,20 @@ class __CustomImageProcessingState extends State<_CustomImageProcessing> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: Appbar(
-        title: Text("Custom Image Processing".tl),
-        actions: [
-          Button.normal(
-            onPressed: () {
-              current = defaultCustomImageProcessing;
-              appdata.settings['customImageProcessing'] = current;
-              resetKey++;
-              setState(() {});
-            },
-            child: Text("Reset".tl),
-          ),
-        ],
-      ),
+    // ⭐ 2026-10-09（用户指示）：自定义图像处理页由全屏 Scaffold 改为弹窗形态（与其它二级页统一）。
+    return PopUpWidgetScaffold(
+      title: "Custom Image Processing".tl,
+      tailing: [
+        Button.normal(
+          onPressed: () {
+            current = defaultCustomImageProcessing;
+            appdata.settings['customImageProcessing'] = current;
+            resetKey++;
+            setState(() {});
+          },
+          child: Text("Reset".tl),
+        ),
+      ],
       body: Column(
         children: [
           _SwitchSetting(
