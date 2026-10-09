@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/design_tokens.dart';
-// ⭐ 修复（2026-10-09）：路由需要在本路由内垫一个**不参与过渡动画**的背景层（见 buildTransitions）✓
+// （2026-10-09 复核：背景层现由 SlidePageTransitionBuilder 的 content 统一垫底，见其 buildTransitions；本 import 供该处使用）
 import 'package:venera_nas/components/components.dart';
 
 const double _kBackGestureWidth = 20.0;
@@ -133,22 +133,9 @@ mixin _AppRouteTransitionMixin<T> on PageRoute<T> {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    PageTransitionsBuilder builder;
-    if (App.isAndroid) {
-      // ⭐ 修复（2026-10-09 用户 Android 实测 ✓）：**不再使用安卓专有的"预测式返回"过渡** ✗→✓。
-
-      // 它是本 App **唯一**的"平台差异"来源 —— 用户实测：该 1~2 帧闪白"**只有安卓有，Windows 不发生**" ✓。
-
-      // `PredictiveBackPageTransitionsBuilder` 在安卓会回落到平台默认的 Zoom 过渡（含快照 / 缩放 + 淡入，
-
-      // 首帧路由内尚无背景 ⇒ 露白 ✗）；改成与 Windows 一致的 App 自有横切过渡 ✓。
-
-      // 代价：失去安卓 14 手势返回的"预测式预览" ✓（换取不闪白 ✓，与全平台观感统一 ✓）。
-
-      builder = const SlidePageTransitionBuilder();
-    } else {
-      builder = SlidePageTransitionBuilder();
-    }
+    // ⭐ 清理（2026-10-09 复核 ✓）：原先这里是 `if (App.isAndroid) PredictiveBackPageTransitionsBuilder else SlidePageTransitionBuilder` 的平台分叉；
+    // +19 已把安卓也统一为横切 ⇒ 两个分支完全相同 ⇒ 合并为单一赋值（消除死分支 ✓）。
+    final PageTransitionsBuilder builder = const SlidePageTransitionBuilder();
 
     return builder.buildTransitions(
       this,
