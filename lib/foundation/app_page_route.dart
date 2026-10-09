@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/design_tokens.dart';
+// ⭐ 修复（2026-10-09）：页面路由需要在路由内部画全局背景（见 buildContent）⇒ 需引用 `AppBackground` ✓
+import 'package:venera_nas/components/components.dart';
 
 const double _kBackGestureWidth = 20.0;
 const int _kMaxDroppedSwipePageForwardAnimationTime = 800;
@@ -42,7 +44,18 @@ class AppPageRoute<T> extends PageRoute<T> with _AppRouteTransitionMixin {
   Widget buildContent(BuildContext context) {
     var widget = builder(context);
     label = widget.runtimeType.toString();
-    return widget;
+    // ⭐ 修复（2026-10-09 用户 Android 实测 ✓）：**页面路由自己画背景** ✓。
+    // 现象（用户描述 ✓）：主页点历史窗口进入历史页时，上一页背景瞬间变白、新页面内容区纯白，随后背景"闪现出来"；
+    // 而走 `showPopUpWidget` 的弹窗页面**没有**此问题 ✓ —— 因为弹窗在**自己的路由内部**就画了背景
+    //（`SecondaryPageSurface` ✓），`AppPageRoute` 却只**依赖下面那层**全局背景 ✗ ⇒ 平台过渡动画进行时露白 ✓。
+    // 做法：把背景层搬进路由内部（`AppBackground` 内置 `BackgroundSlice` 解码缓存 ⇒ 首帧即有图 ✓）；
+    // 页面内容仍叠在其上 ✓、Scaffold 保持透明 ✓ ⇒ 过渡期间任何时刻都有背景 ✓。
+    return Stack(
+      children: [
+        const Positioned.fill(child: AppBackground()),
+        widget,
+      ],
+    );
   }
 
   @override
