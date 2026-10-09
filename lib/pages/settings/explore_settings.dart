@@ -100,6 +100,10 @@ class _ManageBlockingWordViewState extends State<_ManageBlockingWordView> {
     assert(appdata.settings["blockedWords"] is List);
     return PopUpWidgetScaffold(
       title: "Keyword blocking".tl,
+      // ⭐ 批次 1（2026-10-09 用户指示 ✓）：本页是经 `showPopUpWidget` 推出来的**弹出式**浮层 ✓，
+      // 需传 `popupStyle: true` ⇒ 表面走 `SecondaryPageSurface` 的**切片 + 色调** ✓，
+      // 从而**跟随「弹出式二级页面」自定义** ✓（原默认 false = 整页式 ⇒ 不叠色调 ✗）。
+      popupStyle: true,
       tailing: [
         // P8：标准 `TextButton.icon` → 应用自绘 `Button` + `pillLabel` ✓（一套体系 ✓）
         Button.normal(onPressed: add, child: pillLabel(Icons.add, "Add".tl)),
