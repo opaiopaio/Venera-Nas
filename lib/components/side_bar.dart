@@ -153,7 +153,12 @@ class SideBarRoute<T> extends PopupRoute<T> {
       constraints: BoxConstraints(maxWidth: sideBarWidth),
       height: MediaQuery.of(context).size.height,
       child: GestureDetector(
+        // ⭐ 修复（2026-10-09 用户实测 ✓）：**本层 `Material` 必须透明** ✗→✓ ——
+        // 原先 `Material()` 不传 color ⇒ 取主题 `canvasColor`（**不透明表面色** ✗），
+        // 把外层 `Container(decoration: color: sideBarColor)` 整个盖住 ⇒ 用户感受为"**这个窗口根本没法控制**" ✓
+        //（白底恒亮、半透明/背景/对比强度全部无效 ✓）。改为透明后，设置才真正作用在观感上 ✓。
         child: Material(
+          color: Colors.transparent,
           child: ClipRect(
             clipBehavior: Clip.antiAlias,
             child: Container(
