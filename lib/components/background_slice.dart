@@ -127,9 +127,6 @@ class _BackgroundSliceState extends State<BackgroundSlice> {
         opacity: opacity,
         fit: backgroundBoxFitOf(fitSetting),
         isRepeat: fitSetting == 'repeat',
-
-        // 修复：传 DPR，供 painter 从 canvas 变换同步求偏移
-        devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
       ),
     );
   }
@@ -144,7 +141,6 @@ class _BackgroundSlicePainter extends CustomPainter {
     required this.opacity,
     required this.fit,
     required this.isRepeat,
-    required this.devicePixelRatio,
   });
 
   final ui.Image? image;
@@ -154,7 +150,6 @@ class _BackgroundSlicePainter extends CustomPainter {
   final double opacity;
   final BoxFit fit;
   final bool isRepeat;
-  final double devicePixelRatio;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -163,19 +158,9 @@ class _BackgroundSlicePainter extends CustomPainter {
     final img = image;
     if (img == null) return;
     // 整窗矩形平移到本组件坐标系 → 与全窗背景逐像素对齐
-    // 修复：偏移在**绘制时**同步取得（原靠帧后测量 + setState ⇒ 动画中慢一帧 ⇒ 与下层全窗背景错位，观感"割裂"）。
-    // canvas.getTransform() 是**本帧**的 local→device 变换 ⇒ 除以 DPR 即窗口逻辑坐标（无需 setState）。
-    var origin = offsetInWindow;
-    if (devicePixelRatio > 0) {
-      final p = MatrixUtils.transformPoint(
-        Matrix4.fromFloat64List(canvas.getTransform()),
-        Offset.zero,
-      );
-      origin = Offset(p.dx / devicePixelRatio, p.dy / devicePixelRatio);
-    }
     final rect = Rect.fromLTWH(
-      -origin.dx,
-      -origin.dy,
+      -offsetInWindow.dx,
+      -offsetInWindow.dy,
       windowSize.width,
       windowSize.height,
     );
