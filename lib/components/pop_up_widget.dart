@@ -221,7 +221,16 @@ class SecondaryPageSurface extends StatelessWidget {
     // 半透明模式下它是叠在背景上的**遮罩**（泛白 / 发黑 / 不调整=浅白 ✓，见 `window_overlay.dart` ✓）。
     // → 这里**直接当底用** ✓：不再二次混合 ✗（V1② ✓）、也**不要**擅自改它的透明度 ✗
     //（那会把用户设的强度冲掉 ✗，U1 的旧做法已废弃 ✗）。
-    final base = (popupStyle ? tint : null) ?? context.colorScheme.surface;
+    // ⭐ 修复（2026-10-09 用户实测）：`followTheme`（用户所说"开关打开 = 跟随系统"）时，
+    // 底色必须是**主题表面色** —— 原写法 `base = tint` 与本节注释自相矛盾：
+    // `customSecondarySurfaceColor()` 在**有背景图**时返回的是**色调层本身**（半透明，
+    // 设计上需配合下方 `BackgroundSlice` 切片刻画），而 `followTheme` 又**不画切片**
+    // （`tinted = !followTheme && popupStyle` = false）⇒ **既无底又无切片** ⇒ 整块透出
+    // 下层内容（用户实测：窄屏收藏页侧栏透出后面的漫画列表）。
+    // 现改为：`followTheme` 时不使用色调，直接补主题表面色（＝注释所述语义）。
+    final base =
+        (popupStyle && !followTheme ? tint : null) ??
+        context.colorScheme.surface;
     final radius =
         borderRadius ??
         windowOverlayBorderRadius() ??
