@@ -223,11 +223,16 @@ Color sideBarSurfaceColor(BuildContext context, {bool forceOpaque = false}) {
   return secondarySurfaceColorFor(
     scheme: Theme.of(context).colorScheme,
     // ⭐ 竖屏（整屏）⇒ 仅**强制不透明** ✓（其余项不动 ✓）；其余情况照常受控 ✓
-    mode: (forceOpaque || followTheme)
+    // ⭐ 默认（总开关＝跟随主题 / 关闭自定义 ✓，用户 2026-10-10 指示 ✓）：
+    // **样式＝关闭**（`off` ⇒ 退回主题素色 ✓）、**背景＝不调整**（`none` ⇒ 不叠任何色调 ✓）✓。
+    // 仅竖屏（整屏）时把「样式」强制为不透明 ✓（其余项照常 ✓）。
+    mode: forceOpaque
         ? 'opaque'
-        : (appdata.settings['sideBarSurfaceMode'] as String? ?? 'opaque'),
+        : (followTheme
+              ? 'off'
+              : (appdata.settings['sideBarSurfaceMode'] as String? ?? 'off')),
     tint: followTheme
-        ? 'lighten'
+        ? 'none'
         : (appdata.settings['sideBarSurfaceTint'] as String? ?? 'lighten'),
     strength: followTheme
         ? AppOpacity.tintStrengthDefault
