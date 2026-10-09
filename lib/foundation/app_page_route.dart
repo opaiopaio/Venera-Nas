@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/design_tokens.dart';
+// ⭐ 修复（2026-10-09）：路由需要在本路由内垫一个**不参与过渡动画**的背景层（见 buildTransitions）✓
+import 'package:venera_nas/components/components.dart';
 
 const double _kBackGestureWidth = 20.0;
 const int _kMaxDroppedSwipePageForwardAnimationTime = 800;
@@ -47,6 +49,27 @@ class AppPageRoute<T> extends PageRoute<T> with _AppRouteTransitionMixin {
     // 现改回：背景仍由 `MaterialApp.builder` 的全局层负责 ✓（它在 Navigator 之外 ⇒ **永不随动画移动** ✓），
     // 路由内 `Material` 无条件透明（见下）⇒ 背景自然透出 ✓。
     return widget;
+  }
+
+  // ⭐ 修复（2026-10-09 用户 Android 实测 ✓）：**背景层垫在过渡动画之外** ✓。
+  // 两个已验证的事实：
+  //   ① 路由**内部没有背景**时 ⇒ 平台过渡期间露白（用户："闪白"✓）—— 所以背景必须在本路由内 ✓；
+  //   ② 背景放进 `buildContent` 时 ⇒ 它随过渡**一起平移/淡入**（用户："背景好像有动效一样"✓）—— 所以不能放在内容里 ✗。
+  // 正解：在 `buildTransitions` 里用 Stack 把背景**垫在过渡之下** ✓ —— 页面内容做动画 ✓、背景**纹丝不动** ✓、
+  // 且任何时刻路由内都有背景 ⇒ 不再露白 ✓。
+  @override
+  Widget buildTransitions(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return Stack(
+      children: [
+        const Positioned.fill(child: AppBackground()),
+        super.buildTransitions(context, animation, secondaryAnimation, child),
+      ],
+    );
   }
 
   @override
