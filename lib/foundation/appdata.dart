@@ -113,6 +113,13 @@ class Appdata with Init {
 
   /// Following fields are related to device-specific data and should not be synced.
   static const _disableSync = [
+    // ⭐ 修复（2026-10-09 用户指示 ✓）：**背景信息与背景设置不参与同步** ✗ ——
+    // 用户原话："同步不要同步背景信息，背景的设置也不要同步，不然两个客户端背景不一致他就会给你换成白底"✓。
+    // 原因 ✓：另一端没有同名背景图文件 ⇒ 同步过来的路径无效 ⇒ 该端退化成白底 ✓。
+    "backgroundImage",
+    "backgroundColor",
+    "backgroundImageOpacity",
+    "backgroundImageFit",
     "proxy",
     "authorizationRequired",
     "customImageProcessing",
