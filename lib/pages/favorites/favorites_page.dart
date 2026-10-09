@@ -125,14 +125,18 @@ class _FavoritesPageState extends State<FavoritesPage> {
         pageBuilder: (context, animation, secondary) {
           return Align(
             alignment: Alignment.centerLeft,
-            child: Material(
-              // 修复（2026-10-09，用户实测）：窄屏时本侧栏是**浮层**（push 在正文页之上的路由）✓，
-              // 而 `customBackgroundAware(null)` 在开启背景体系时返回 Colors.transparent ✗
-              // ⇒ 下方正文（漫画列表）整片透出 ✗ = 用户报告的「侧边栏与主页重叠」✓。
-              // 浮层必须给**不透明**表面色 ✓：用主题表面色（与项目其它弹层回退一致 ✓）；
-              // 侧栏条目仍各自叠 `windowOverlayColor()` ✓，观感层次不变 ✓。
-              // 宽屏双栏模式**不走这条路由** ✗ ⇒ 双栏外观零变化 ✓。
-              color: context.colorScheme.surface,
+            child: SecondaryPageSurface(
+              // 修复（2026-10-09，用户两轮实测）：窄屏侧栏是**弹出式浮层**（push 在正文页之上的路由）✓
+              //  ⇒ 表面必须走项目统一的二级页面表面 [SecondaryPageSurface]（与弹窗/菜单同构 ✓）：
+              //     · 有背景图 → 铺**同区域壁纸切片** + 叠**色调遮罩** ✓（观感与其它二级页面一致 ✓）
+              //     · 无背景 / 跟随主题 → 自动补**主题表面色** ✓（遮挡下层 ✓）
+              //  这样**既不透出下方正文** ✓（切片/底是自绘的 ✓），**又保留壁纸观感** ✓。
+              //  ⚠️ 历史：先用了 `customBackgroundAware(null)`（背景开启时=透明 ✗ → 正文整片透出 ✗），
+              //  再改成 `colorScheme.surface`（不透明 ✓ 但**丢了壁纸** ✗，用户反馈"变成不显示背景的样式了"✓）
+              //  —— 两个极端都不对 ✓，正解是"切片 + 色调"这套既有机制 ✓。
+              //  `popupStyle: true` = 弹出式 ✓（与菜单/色盘同类 ✓）；`borderRadius: zero` = 通栏面板不切圆角 ✓。
+              popupStyle: true,
+              borderRadius: BorderRadius.zero,
               child: SizedBox(
                 width: min(300, context.width - 16),
                 child: _LeftBar(
