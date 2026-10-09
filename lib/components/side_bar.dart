@@ -106,10 +106,12 @@ class SideBarRoute<T> extends PopupRoute<T> {
     // **竖屏（整屏）⇒ 半透明效果失效** ✗（恒用不透的兜底色 ✓）；**横屏 ⇒ 才受「侧边栏」那组设置控制** ✓
     //（含样式/背景/对比强度与半透明 ✓）。
     final followTheme = appdata.settings['secondaryPageFollowTheme'] == true;
-    final useCustomSideBar = !fullScreen && !followTheme;
-    final sideBarColor = useCustomSideBar
-        ? sideBarSurfaceColor(context)
-        : backgroundPlaceholderColor(context.colorScheme);
+    // ⭐ 修正（2026-10-09 用户指正 ✓）：**侧边栏设置全局受控** ✓ —— 上一版把整组控制在竖屏屏蔽掉了 ✗
+    //（用户："其他控制项你不能给我屏蔽掉啊"✓）。现只在竖屏（整屏）时让**「样式」这一项强制不透明** ✓，
+    // 背景（变深/变浅/无色调）与对比强度**照常生效** ✓。默认（跟随主题）仍与收藏页文件夹一致：不透的白底 ✓。
+    final sideBarColor = followTheme
+        ? backgroundPlaceholderColor(context.colorScheme)
+        : sideBarSurfaceColor(context, forceOpaque: fullScreen);
 
     bool showSideBar = MediaQuery.of(context).size.width > width;
 
@@ -175,7 +177,7 @@ class SideBarRoute<T> extends PopupRoute<T> {
               child: Stack(
                 children: [
                   // ⭐ 仅"启用自定义"时铺切片 ✓（默认与收藏页文件夹一致：白底不透 ✓）
-                  if (useCustomSideBar)
+                  if (!followTheme)
                     const Positioned.fill(child: BackgroundSlice()),
                   body,
                 ],
@@ -226,11 +228,14 @@ class SideBarRoute<T> extends PopupRoute<T> {
 /// 受「二级页面/弹窗」页总开关 `secondaryPageFollowTheme` 控制 ✓：
 /// 跟随主题（默认）⇒ 强制用**默认值**（不透明遮挡 / 变浅 / 0.22 ✓ = 用户"之前跟随主题的默认状态"✓）；
 /// 关闭该总开关 ⇒ 用 `sideBarSurfaceMode/Tint/TintStrength` ✓。
-Color sideBarSurfaceColor(BuildContext context) {
+/// ⭐ `forceOpaque`（用户 2026-10-09 指示 ✓）：**仅让「样式」这一项失效**（强制不透明 ✓），
+/// **其余设置项（背景/对比强度）照常生效** ✓ —— 用于竖屏（窗口铺满整屏）时"半透明不透出内容" ✓。
+Color sideBarSurfaceColor(BuildContext context, {bool forceOpaque = false}) {
   final followTheme = appdata.settings['secondaryPageFollowTheme'] == true;
   return secondarySurfaceColorFor(
     scheme: Theme.of(context).colorScheme,
-    mode: followTheme
+    // ⭐ 竖屏（整屏）⇒ 仅**强制不透明** ✓（其余项不动 ✓）；其余情况照常受控 ✓
+    mode: (forceOpaque || followTheme)
         ? 'opaque'
         : (appdata.settings['sideBarSurfaceMode'] as String? ?? 'opaque'),
     tint: followTheme
