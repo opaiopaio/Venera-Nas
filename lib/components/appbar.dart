@@ -128,7 +128,11 @@ class _HeaderSurfaceState extends State<_HeaderSurface> {
         children: [
           // 不透明兜底（背景底色可能是半透明的）
           Positioned.fill(
-            child: ColoredBox(color: context.colorScheme.surface),
+            child: // ⭐ 修复（2026-10-09 用户 Android 实测 ✓）：本底原先写死 `colorScheme.surface` ✗
+                // ⇒ 背景图**未就绪时**这里会露出**白块**（浅色主题）✓；改用与全局背景**同口径**的兜底色 ✓。
+                ColoredBox(
+                  color: backgroundPlaceholderColor(context.colorScheme),
+                ),
           ),
           if (AppBackground.isActive)
             // 背景切片：**只画不布局**的自绘（见 [_HeaderBackground] 注释）。
