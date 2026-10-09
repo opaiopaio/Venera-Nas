@@ -139,6 +139,14 @@ class _BackgroundSliceState extends State<BackgroundSlice> {
             .clamp(0.0, 1.0);
     return CustomPaint(
       painter: _BackgroundSlicePainter(
+        // ⭐ 绘制时现取位置 ✓：`paint` 阶段 RenderBox 的全局变换就是**本帧**的 ✓（无帧滞后 ✓）。
+        offsetProvider: () {
+          final box = context.findRenderObject();
+          if (box is RenderBox && box.hasSize && box.attached) {
+            return box.localToGlobal(Offset.zero);
+          }
+          return _offsetInWindow ?? Offset.zero;
+        },
         image: _image,
         offsetInWindow: _offsetInWindow ?? Offset.zero,
         windowSize: MediaQuery.sizeOf(context),
@@ -153,6 +161,7 @@ class _BackgroundSliceState extends State<BackgroundSlice> {
 
 class _BackgroundSlicePainter extends CustomPainter {
   _BackgroundSlicePainter({
+    required this.offsetProvider,
     required this.image,
     required this.offsetInWindow,
     required this.windowSize,
@@ -161,6 +170,9 @@ class _BackgroundSlicePainter extends CustomPainter {
     required this.fit,
     required this.isRepeat,
   });
+
+  /// ⭐ 绘制时现取"本组件在窗口中的位置" ✓（见 paint 注释 ✓）。
+  final Offset Function() offsetProvider;
 
   final ui.Image? image;
   final Offset offsetInWindow;
@@ -176,10 +188,15 @@ class _BackgroundSlicePainter extends CustomPainter {
     canvas.drawRect(Offset.zero & size, Paint()..color = baseColor);
     final img = image;
     if (img == null) return;
-    // 整窗矩形平移到本组件坐标系 → 与全窗背景逐像素对齐
+    // ⭐ 修复（2026-10-10 用户实测 ✓）：**位置改为"绘制本帧"现取** ✗→✓ ——
+    // 原先用帧后测量的字段 ✗ ⇒ 绘制时是**上一帧**位置 ⇒ 侧滑窗口前缘露出底色（无背景色时=主题白）✓；
+    // 宽度＝该帧位移 ⇒ `fastOutSlowIn` 中间位移最大 ⇒ 白条中间最宽 ✓（与用户观察一致 ✓）。
+    // 注意：**只能用 `RenderBox.localToGlobal`** ✓（逻辑像素 ✓，与本文件坐标一致 ✓）；
+    // 曾试 `canvas.getTransform()` ✗ 失败：它含上游变换且需除以缩放 ⇒ 全部切片错位（`ccae062` / `f43d606` ✓），已列入禁止 ✓。
+    final current = offsetProvider();
     final rect = Rect.fromLTWH(
-      -offsetInWindow.dx,
-      -offsetInWindow.dy,
+      -current.dx,
+      -current.dy,
       windowSize.width,
       windowSize.height,
     );
@@ -197,11 +214,6 @@ class _BackgroundSlicePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_BackgroundSlicePainter old) =>
-      old.image != image ||
-      old.offsetInWindow != offsetInWindow ||
-      old.windowSize != windowSize ||
-      old.baseColor != baseColor ||
-      old.opacity != opacity ||
-      old.fit != fit ||
-      old.isRepeat != isRepeat;
+      // ⭐ 位置由绘制时现取 ✓ ⇒ 字段相同不代表画面相同（组件可能仍在被平移 ✓）⇒ 恒 true 以确保重绘 ✓
+      true;
 }
