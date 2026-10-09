@@ -181,9 +181,14 @@ class SideBarRoute<T> extends PopupRoute<T> {
               // 现给侧滑窗口也补上同一套切片 ⇒ **透出壁纸但不透出下层内容** ✓，与文件夹选择一致 ✓。
               child: Stack(
                 children: [
-                  // ⭐ 仅"启用自定义"时铺切片 ✓（默认与收藏页文件夹一致：白底不透 ✓）
+                  // ① 背景切片（最底层；仅"启用自定义"时铺 ✓）
                   if (!followTheme)
                     const Positioned.fill(child: BackgroundSlice()),
+                  // ⭐ 修复（2026-10-09 用户实测 ✓）：**表面色必须画在切片【之上】** ✗→✓ ——
+                  // 原先色画在 `Container.decoration`（位于子层**之下** ✗），而切片是子层 ⇒ **切片把色盖住** ✗ ⇒
+                  // 用户感受为"漫画页收藏侧滑依旧不受控" ✓（收藏页文件夹走 SecondaryPageSurface，其色调层在切片之上 ⇒ 已受控 ✓）。
+                  // 现改为：切片在最底 ✓、表面色（含不透明/半透明/色调）在其上 ✓、内容最上 ✓ —— 与文件夹选择的层次一致 ✓。
+                  Positioned.fill(child: ColoredBox(color: sideBarColor)),
                   body,
                 ],
               ),
