@@ -237,16 +237,8 @@ class SecondaryPageSurface extends StatelessWidget {
         BorderRadius.circular(AppRadius.md);
     // ⭐（2026-10-09 用户指示）：`alwaysSliceBackground` = 即使本体系**关闭**，也照常铺背景切片
     //（"透过背景、不透出下层内容"；切片自绘）。默认 false ⇒ 其它调用方逐字不变。
-    // ⭐ 修复（2026-10-09 用户实测）：**整页式**（`popupStyle == false`，即 PopUpWidgetScaffold
-    // 这类设置子页 / 探索页面 / 分类页面 / 网络收藏页面 / 搜索源）在**有背景图**时原先
-    // "不画切片 ✗ + 不铺底 ✗" ⇒ **全透明** ✗；独占一屏时只是透出壁纸 ✓，但**被放在别的页面之上**
-    //（右栏内层导航等）就会**整片透出下层内容** ✗（用户实测：设置页与下层内容重叠 ✓）。
-    // 现改为：**只要有背景图就铺切片** ✓（切片自绘 ⇒ 壁纸照常 ✓、下层不透出 ✓）。
-    // 跟随系统主题时仍**不画切片** ✗（尊重该设置 ✓）；色调仍**只给弹出式** ✗（整页式不叠 ✓）。
-    final showSlice =
-        !followTheme &&
-        currentBackgroundImageFile() != null &&
-        (alwaysSliceBackground || decoration != null || !popupStyle);
+    final sliceAlways =
+        tinted && alwaysSliceBackground && currentBackgroundImageFile() != null;
     final stack = Stack(
       children: [
         // ⭐ S1：**不透明底必须在最底层** ✓ —— 放在色调/装饰之后会**盖住色调** ✗
@@ -255,14 +247,13 @@ class SecondaryPageSurface extends StatelessWidget {
         // ⭐（2026-10-09 用户指示）：`alwaysSliceBackground` = 即使本体系**关闭**，
         // 也照常铺**背景切片**（"透过背景、不透出下层内容"；切片自绘）。
         // 原调用方**逐字不变**（默认 false ⇒ 条件与原来完全相同）。
-        if (showSlice) ...[
+        if ((decoration != null && tinted) || sliceAlways) ...[
           // 与全窗背景**逐像素对齐**的切片（此前是 `DecorationImage` 按自身盒子
           // fit → 小弹窗看到的是**缩略图**）。只画不布局，见 [BackgroundSlice]。
           const Positioned.fill(child: BackgroundSlice()),
           // 有**壁纸切片**时，色调叠在**切片之上**（语义 = 把壁纸调深/调浅）；
           // 无切片时色调已**混入底色**（见上），不重复叠。
-          if (tinted && tint != null)
-            Positioned.fill(child: ColoredBox(color: tint)),
+          if (tint != null) Positioned.fill(child: ColoredBox(color: tint)),
         ],
         Material(color: Colors.transparent, child: child),
       ],
