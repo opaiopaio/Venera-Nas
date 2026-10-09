@@ -373,10 +373,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       colorScheme: scheme,
       fontFamily: font,
       fontFamilyFallback: fallback,
-      // 启用自定义背景时，让页面 Scaffold 透明，背景层才能透出。
-      scaffoldBackgroundColor: AppBackground.isActive
-          ? Colors.transparent
-          : null,
+      // ⭐ 修复（2026-10-09 用户 Android 实测 ✓）：**无条件透明** ✗→✓。
+      // 原写法 `AppBackground.isActive ? Colors.transparent : null` ✗ —— 主题值**只在构建那一刻求值**，
+      // 一旦这一帧 `isActive` 还是 false（设置尚未就绪 / 主题重建时序），`null` 会让 Scaffold 用**默认底色（白）** ✗；
+      // 切页时就会看到"内容区纯白 → 随后背景闪现出来" ✓（用户实测描述 ✓）。
+      // 而 `AppBackground` **始终**挂在 `MaterialApp.builder` 里（main.dart:634 ✓），且背景关闭时它自己也画 `scheme.surface` 底 ✓，
+      // ⇒ 所有 Scaffold **无条件透明是安全且正确的** ✓（关闭背景时观感不变 ✓）。
+      scaffoldBackgroundColor: Colors.transparent,
       iconButtonTheme: IconButtonThemeData(style: overlayButtonStyle),
       // ⭐ E1-④：`showDialog` 类弹层的暗罩同样受「突出二级菜单」开关控制 ✓ ——
       // 这类弹层（主页「扫描 NAS / 导入」、漫画源配置等 ✓）原先走 Flutter 默认
