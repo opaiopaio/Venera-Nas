@@ -23,7 +23,10 @@ class NetworkError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var cfe = CloudflareException.fromString(message);
+    // 修复（2026-10-09 用户实测）：错误内容外层 Center 默认会撑满可用空间，卡片高度顶到底；
+    // 加 heightFactor: 1 ⇒ 高度 = 内容高度（宽度由外层 maxWidth 约束）。
     Widget body = Center(
+      heightFactor: 1,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
