@@ -135,40 +135,30 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
           // 原先 `context.to(...)` ✗ 是**根 Navigator 的全屏弹层** ✗ → 它盖住整屏的点击层 ✗，
           // 点左边设置栏（发现/阅读中…）会被它的 barrier 吃掉 ✗ = "点不动、页面不跳转" ✓。
           // 改为内层 push ✓ → 左侧设置栏**始终可点** ✓（一次点击即切换 ✓）。
-          onTap: () => Navigator.of(context).push(
-            SettingsSubPageRoute(
-              builder: (_) => const AppearanceBackgroundPage(),
-            ),
-          ),
+          onTap: () =>
+              showPopUpWidget(context, const AppearanceBackgroundPage()),
         ).toSliver(),
         // ⭐ N1：本区块已迁到**独立子页** ✓（`appearance_window_page.dart` ✓）—— 设置项与 key 完全不变 ✓，仅换位置 ✓。
         ListTile(
           leading: const Icon(Icons.widgets, size: AppIconSize.lg),
           title: Text("Window & controls".tl),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.of(context).push(
-            SettingsSubPageRoute(builder: (_) => const AppearanceWindowPage()),
-          ),
+          onTap: () => showPopUpWidget(context, const AppearanceWindowPage()),
         ).toSliver(),
         // ⭐ N1：本区块已迁到**独立子页** ✓（`appearance_secondary_page.dart` ✓）—— 设置项与 key 完全不变 ✓，仅换位置 ✓。
         ListTile(
           leading: const Icon(Icons.layers, size: AppIconSize.lg),
           title: Text("Popup overlays".tl),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.of(context).push(
-            SettingsSubPageRoute(
-              builder: (_) => const AppearanceSecondaryPage(),
-            ),
-          ),
+          onTap: () =>
+              showPopUpWidget(context, const AppearanceSecondaryPage()),
         ).toSliver(),
         // ⭐ N1：本区块已迁到**独立子页** ✓（`appearance_text_page.dart` ✓）—— 设置项与 key 完全不变 ✓，仅换位置 ✓。
         ListTile(
           leading: const Icon(Icons.text_fields, size: AppIconSize.lg),
           title: Text("Text".tl),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.of(context).push(
-            SettingsSubPageRoute(builder: (_) => const AppearanceTextPage()),
-          ),
+          onTap: () => showPopUpWidget(context, const AppearanceTextPage()),
         ).toSliver(),
         _SettingPartTitle(title: "Comic Display".tl, icon: Icons.grid_view),
         SelectSetting(

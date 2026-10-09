@@ -17,6 +17,12 @@ import 'package:flutter_test/flutter_test.dart';
 ///   （源码注释：横向滑动会让旧页从新页透明区透出来，形成"残影/两页叠加"）。
 /// - 因此这四个子页**复用同一个 `SlidePageTransitionBuilder`** 即为"与设置页一致"。
 ///
+/// ⚠️ **2026-10-09 变更（用户指示 ✓）**：四个外观子页已改为**弹窗形态**
+/// （入口 `showPopUpWidget(context, …)` + `PopUpWidgetScaffold(popupStyle: true)`）✓ ——
+/// 用户原话「**同化成探索页面那种形式，省的纠结横切和动画 bug**」✗⇒✓。
+/// 因此 ③ 的判据已从"必须推在右栏内层 Navigator"（AO1 时期 ✓）改为"必须是弹窗形态" ✓；
+/// `SettingsSubPageRoute`（AW1/BA1/AY1/AV1 的成果 ✓）**保留但已不再被这四个入口使用** ✗（死代码，留作回溯 ✓）。
+///
 /// 本文件锁死三条：① 转场复用 App 自己那一份；② 不得再改 `opaque => false`
 /// （曾造成两层页面重合，提交 `f689cee` 回退过）；③ 必须仍推在**右栏内层 Navigator**
 /// 且内层 Navigator 仍带 `ValueKey(currentPage)`（AO1 的"点左侧栏立即刷新"就靠这两条）。
@@ -64,11 +70,23 @@ void main() {
         File('lib/pages/settings/appearance.dart').readAsStringSync(),
       );
       expect(
-        appearance.contains('Navigator.of(context).push('),
+        appearance.contains(
+              'showPopUpWidget(context, const AppearanceBackgroundPage())',
+            ) &&
+            appearance.contains(
+              'showPopUpWidget(context, const AppearanceWindowPage())',
+            ) &&
+            appearance.contains(
+              'showPopUpWidget(context, const AppearanceSecondaryPage())',
+            ) &&
+            appearance.contains(
+              'showPopUpWidget(context, const AppearanceTextPage())',
+            ),
         isTrue,
         reason:
-            '四个外观子页必须推在**当前（右栏内层）Navigator** 上；'
-            '若改回全屏弹层，左侧设置栏会被盖住点不动（AO1 回归）',
+            '四个外观子页必须统一为**弹窗形态**（showPopUpWidget + PopUpWidgetScaffold(popupStyle: true)）'
+            '—— 用户 2026-10-09 明确要求「同化成探索页面那种形式，省的纠结横切和动画 bug」；'
+            '此决定覆盖 AW1 早期"推在右栏内层 Navigator"的要求（AO1：左侧栏点击不被 barrier 吃掉）',
       );
       expect(
         appearance.contains('context.to('),
