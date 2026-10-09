@@ -21,6 +21,29 @@ Color secondaryMenuBarrierColor() {
       : Colors.black54;
 }
 
+/// ⭐ 2026-10-09（用户指示）：弹窗**形态**作用域 —— 由 `PopUpWidget` 注入 ✓。
+/// `fullScreen == true` = 窄屏**整页式**（`width/height = double.infinity` ✓）；默认 `false` = **窗口式** ✓。
+/// 仅整页式改变表面策略（同步显示全局背景 ✓）；窗口式与所有既有调用方**逐字不变** ✓。
+class PopupFormScope extends InheritedWidget {
+  const PopupFormScope({
+    super.key,
+    required this.fullScreen,
+    required super.child,
+  });
+
+  final bool fullScreen;
+
+  static bool of(BuildContext context) =>
+      context
+          .dependOnInheritedWidgetOfExactType<PopupFormScope>()
+          ?.fullScreen ??
+      false;
+
+  @override
+  bool updateShouldNotify(PopupFormScope oldWidget) =>
+      oldWidget.fullScreen != fullScreen;
+}
+
 class PopUpWidget<T> extends PopupRoute<T> {
   PopUpWidget(this.widget);
 
@@ -84,6 +107,8 @@ class PopUpWidget<T> extends PopupRoute<T> {
         child: body,
       );
     }
+    // ⭐ 2026-10-09（用户指示）：把"当前弹窗是否为整页式"注入内容作用域 ✓，供 SecondaryPageSurface 决定表面策略 ✓。
+    body = PopupFormScope(fullScreen: !showPopUp, child: body);
     if (showPopUp) {
       return MediaQuery.removePadding(
         removeTop: true,
@@ -197,7 +222,16 @@ class SecondaryPageSurface extends StatelessWidget {
     // - 弹出式 ✓ 照旧：有底（遮挡 ✓）+ 可调模式/色调 ✓。
     // 注意 ✓：`decoration`（壁纸切片）与 `tint`（色调 ✓）都只对**弹出式**生效 ✗（`tinted` ✓），
     // 所以整页式**天然不受**这两个选项影响 ✓。
-    final needSurface = popupStyle || !appdata.settings.backgroundFeatureActive;
+    // ⭐ 2026-10-09（用户指示 ✓）：**整页式弹窗**（窄屏 ⇒ 全屏 ✓）按"页面"规则 —— **同步显示全局背景** ✓
+    //（`BackgroundSlice` 同时画背景色与背景图 ✓）；**窗口式**保持原样 ✗。
+    final fullScreenPopup = PopupFormScope.of(context);
+    final pageBackground =
+        fullScreenPopup && appdata.settings.backgroundFeatureActive;
+    // 整页式恒铺**不透明底座** ✓ ⇒ 切片之下有底 ⇒ **不会透出下层页面** ✓
+    final needSurface =
+        fullScreenPopup ||
+        popupStyle ||
+        !appdata.settings.backgroundFeatureActive;
     // ⭐ U1（用户反馈 ✓）：底**按模式给透明度** ✓，色调**混入底**而不是叠蒙层 ✗。
     // - `opaque`（不透明 ✓）→ 不透明主题表面色 ✓（遮挡 ✓）；
     // - `transparent`（半透明 ✓）→ 用 `AppOpacity.hint` ✓ 的底 ✓，**透出下层内容** ✓
@@ -229,7 +263,7 @@ class SecondaryPageSurface extends StatelessWidget {
     // 下层内容（用户实测：窄屏收藏页侧栏透出后面的漫画列表）。
     // 现改为：`followTheme` 时不使用色调，直接补主题表面色（＝注释所述语义）。
     final base =
-        (popupStyle && !followTheme ? tint : null) ??
+        (popupStyle && !followTheme && !fullScreenPopup ? tint : null) ??
         context.colorScheme.surface;
     final radius =
         borderRadius ??
@@ -247,13 +281,17 @@ class SecondaryPageSurface extends StatelessWidget {
         // ⭐（2026-10-09 用户指示）：`alwaysSliceBackground` = 即使本体系**关闭**，
         // 也照常铺**背景切片**（"透过背景、不透出下层内容"；切片自绘）。
         // 原调用方**逐字不变**（默认 false ⇒ 条件与原来完全相同）。
-        if ((decoration != null && tinted) || sliceAlways) ...[
+        if ((decoration != null && tinted) ||
+            sliceAlways ||
+            pageBackground) ...[
           // 与全窗背景**逐像素对齐**的切片（此前是 `DecorationImage` 按自身盒子
           // fit → 小弹窗看到的是**缩略图**）。只画不布局，见 [BackgroundSlice]。
           const Positioned.fill(child: BackgroundSlice()),
           // 有**壁纸切片**时，色调叠在**切片之上**（语义 = 把壁纸调深/调浅）；
           // 无切片时色调已**混入底色**（见上），不重复叠。
-          if (tint != null) Positioned.fill(child: ColoredBox(color: tint)),
+          // 整页式：**不叠色调** ✗（用户要求"就是背景本身" ✓）；窗口式照旧 ✓
+          if (tint != null && !fullScreenPopup)
+            Positioned.fill(child: ColoredBox(color: tint)),
         ],
         Material(color: Colors.transparent, child: child),
       ],
