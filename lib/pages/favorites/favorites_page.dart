@@ -119,9 +119,11 @@ class _FavoritesPageState extends State<FavoritesPage> {
         barrierDismissible: true,
         fullscreenDialog: true,
         opaque: false,
-        barrierColor: appdata.settings.customBackgroundActive
-            ? Colors.transparent
-            : Colors.black.toOpacity(0.36),
+        // ⭐（2026-10-09 用户指示）：本「侧滑二级菜单」**不做"周围变暗"** ——
+        // 用户原话："突出页面（周围变暗），**但是这个侧滑二级菜单我觉得不用**"。
+        // 遮罩**仍然存在**（`barrierDismissible: true` ⇒ 点面板外部可关闭 ✓），只是**不着色** ✓；
+        // 因此也不再随 `customBackgroundActive` 在两套值之间切换（原行为：有背景=透明 ✓、无背景=黑 0.36 ✗）。
+        barrierColor: Colors.transparent,
         pageBuilder: (context, animation, secondary) {
           return Align(
             alignment: Alignment.centerLeft,
