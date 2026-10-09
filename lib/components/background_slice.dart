@@ -24,6 +24,15 @@ class BackgroundSlice extends StatefulWidget {
   State<BackgroundSlice> createState() => _BackgroundSliceState();
 }
 
+// ⭐ 修复（2026-10-09 用户实测 ✓）：**切片解码结果的模块级缓存** ✓。
+// 起因：`_image` 是**实例字段** ⇒ 每个新 `BackgroundSlice`（顶栏 appbar.dart:136、二级表面
+// pop_up_widget.dart:298 —— **每次切页都会新建**）的**第一帧拿不到解码结果** ⇒ 这一帧什么都不画 ⇒
+// 露出它下面的底（浅色主题 = colorScheme.surface 白）= 观感"切页时背景重载 / 白一块"。
+// 做法：解码完成后把 ui.Image 存到模块级（FileImage 本身已走 Flutter ImageCache，这里只是免掉那一两帧空窗）；
+// 换图/清图靠**路径比较**失效（换图处文件名本就每次唯一，见 pages/settings/appearance.dart:388）。
+ui.Image? _sliceCachedImage;
+String? _sliceCachedPath;
+
 class _BackgroundSliceState extends State<BackgroundSlice> {
   /// 本组件左上角在窗口坐标里的位置。
   Offset? _offsetInWindow;
@@ -50,15 +59,23 @@ class _BackgroundSliceState extends State<BackgroundSlice> {
   void _resolveImage() {
     if (!AppBackground.isActive) {
       _image = null;
+      _sliceCachedImage = null;
+      _sliceCachedPath = null;
       return;
     }
     final file = currentBackgroundImageFile();
     if (file == null) {
       _image = null;
+      _sliceCachedImage = null;
+      _sliceCachedPath = null;
       return;
     }
     if (_path == file.path && _image != null) return; // 同一张图不重复解析
     _path = file.path;
+    // ⭐ 首帧同步命中缓存 ⇒ 本帧就能画出图（消除"先白一下再出图"）
+    if (_sliceCachedPath == file.path && _sliceCachedImage != null) {
+      _image = _sliceCachedImage;
+    }
     final stream = FileImage(
       file,
     ).resolve(createLocalImageConfiguration(context));
@@ -67,6 +84,10 @@ class _BackgroundSliceState extends State<BackgroundSlice> {
     }
     _listener = ImageStreamListener((info, _) {
       if (!mounted) return;
+      _sliceCachedImage = info.image;
+
+      _sliceCachedPath = file.path;
+
       setState(() => _image = info.image);
     }, onError: (_, _) {});
     _stream = stream..addListener(_listener!);
