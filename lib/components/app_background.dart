@@ -4,6 +4,15 @@ part of 'components.dart';
 ///
 /// 由 `main.dart` 的 `MaterialApp.builder` 垫在所有内容之下。
 /// 遮罩/圆角等通用 helper 见 `foundation/window_overlay.dart`。
+/// ⭐ 修复（2026-10-09 用户 Android 实测 ✓）：**背景未就绪时的兜底色** ✓。
+/// 与下面 `AppBackground.build` 的 `base` 同口径 ✓：背景底色（非透明）→ 否则主题表面色 ✓。
+/// 用途 ✓：二级表面 / 弹窗底座等在**背景图解码完成前**露出的"底"，避免出现**白块** ✗
+///（用户实测："有的地方白一块"✓；与 `background_slice.dart` 的首帧缓存配合，双保险 ✓）。
+Color backgroundPlaceholderColor(ColorScheme scheme) {
+  final v = appdata.settings['backgroundColor'] as String? ?? 'transparent';
+  return resolveColorSettingValue(v) ?? scheme.surface;
+}
+
 class AppBackground extends StatelessWidget {
   const AppBackground({super.key});
 

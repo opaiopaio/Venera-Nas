@@ -273,7 +273,9 @@ class SecondaryPageSurface extends StatelessWidget {
     // 现改为：`followTheme` 时不使用色调，直接补主题表面色（＝注释所述语义）。
     final base =
         (popupStyle && !followTheme && !fullScreenPopup ? tint : null) ??
-        context.colorScheme.surface;
+        // ⭐ 修复（2026-10-09 用户实测 ✓）：底改用**与背景同口径**的兜底色 ✓
+        //（原为 `colorScheme.surface` ✗ ⇒ 背景图未就绪时露出**白块** ✓ —— 浅色主题）。
+        backgroundPlaceholderColor(context.colorScheme);
     final radius =
         borderRadius ??
         windowOverlayBorderRadius() ??
