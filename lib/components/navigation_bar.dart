@@ -555,8 +555,12 @@ class _SingleBottomNaviWidgetState extends State<_SingleBottomNaviWidget>
   Widget buildContent() {
     final value = controller.value;
     final colorScheme = Theme.of(context).colorScheme;
+    // ⭐ 修复（2026-10-09 用户实测 ✓）：**竖屏/手机端底部 tab 图标加大** ✗→✓ ——
+    // 原先 `Icon(...)` 未指定 size ⇒ 用默认 24（= `AppIconSize.lg` ✗），在手机/竖屏下显得偏小 ✓。
+    // 现：窄屏（< changePoint）用 `AppIconSize.xl`（28 ✓）；**宽屏 / 横屏保持 `AppIconSize.lg`（24）不变** ✓（用户要求）。
     final icon = Icon(
       widget.enabled ? widget.entry.activeIcon : widget.entry.icon,
+      size: context.width < changePoint ? AppIconSize.xl : AppIconSize.lg,
     );
     return Center(
       child: Container(
