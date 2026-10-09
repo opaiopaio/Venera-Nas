@@ -441,7 +441,11 @@ class _ComicSourceListState extends State<_ComicSourceList> {
 
   @override
   Widget build(BuildContext context) {
-    return PopUpWidgetScaffold(title: "Comic Source".tl, body: buildBody());
+    return PopUpWidgetScaffold(
+      popupStyle: true,
+      title: "Comic Source".tl,
+      body: buildBody(),
+    );
   }
 
   Widget buildBody() {

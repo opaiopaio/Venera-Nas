@@ -272,6 +272,7 @@ Future<void> sortFolders() async {
     StatefulBuilder(
       builder: (context, setState) {
         return PopUpWidgetScaffold(
+          popupStyle: true,
           title: "Sort".tl,
           tailing: [
             Tooltip(

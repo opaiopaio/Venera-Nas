@@ -518,6 +518,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
   @override
   Widget build(BuildContext context) {
     return PopUpWidgetScaffold(
+      popupStyle: true,
       title: "Webdav",
       body: SingleChildScrollView(
         child: Column(
@@ -738,6 +739,7 @@ class _BackupWebdavSettingState extends State<_BackupWebdavSetting> {
   @override
   Widget build(BuildContext context) {
     return PopUpWidgetScaffold(
+      popupStyle: true,
       title: "Comic Archive Backup".tl,
       body: SingleChildScrollView(
         child: Column(

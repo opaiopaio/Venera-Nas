@@ -773,6 +773,7 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
     showPopUpWidget(
       context,
       PopUpWidgetScaffold(
+        popupStyle: true,
         title: "Select chapters".tl,
         body: StatefulBuilder(
           builder: (context, setState) {
@@ -1101,6 +1102,7 @@ void showDeleteChaptersPopWindow(BuildContext context, LocalComic comic) {
   showPopUpWidget(
     context,
     PopUpWidgetScaffold(
+      popupStyle: true,
       title: "Delete Chapters".tl,
       body: StatefulBuilder(
         builder: (context, setState) {

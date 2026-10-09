@@ -55,6 +55,7 @@ class _DownloadingPageState extends State<DownloadingPage> {
   @override
   Widget build(BuildContext context) {
     return PopUpWidgetScaffold(
+      popupStyle: true,
       title: "",
       body: ListView.builder(
         itemCount: LocalManager().downloadingTasks.length + 1,

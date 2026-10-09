@@ -68,6 +68,7 @@ class _AuthPinSettingState extends State<AuthPinSetting> {
   @override
   Widget build(BuildContext context) {
     return PopUpWidgetScaffold(
+      popupStyle: true,
       title: _title,
       tailing: AuthStorage.hasPin
           ? [Button.normal(onPressed: _clearPin, child: Text("Clear PIN".tl))]

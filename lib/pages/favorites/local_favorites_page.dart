@@ -866,6 +866,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
       StatefulBuilder(
         builder: (context, setState) {
           return PopUpWidgetScaffold(
+            popupStyle: true,
             title: isAllFolder ? "All".tl : (favPage.folder ?? "Unselected".tl),
             body: Padding(
               padding: EdgeInsets.only(bottom: context.padding.bottom + 16),
