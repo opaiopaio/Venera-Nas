@@ -91,7 +91,7 @@ class _HistoryPageState extends State<HistoryPage> {
     } else if (comic.sourceKey == 'local') {
       HistoryManager().remove(comic.id, ComicType.local);
     } else {
-      HistoryManager().remove(comic.id, ComicType(comic.sourceKey.hashCode));
+      HistoryManager().remove(comic.id, ComicType.fromKey(comic.sourceKey));
     }
   }
 

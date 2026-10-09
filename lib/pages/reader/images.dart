@@ -697,9 +697,16 @@ class _GalleryModeState extends State<_GalleryMode>
     if (imageKey.startsWith("file://")) {
       return await File(imageKey.substring(7)).readAsBytes();
     } else {
-      return (await CacheManager().findCache(
+      // ⭐ 修复（2026-10-09）：**去掉硬 `!` 强解包** —— 缓存被清理/过期时 findCache 返回 null，
+      // 原写法会空指针崩溃。现改为显式抛错，交由 ImageProvider 的失败路径处理（显示失败/按需重试）；
+      // **正常命中缓存的路径行为完全不变**（同一 key、同一 readAsBytes）。
+      final cached = await CacheManager().findCache(
         "$imageKey@${context.reader.type.sourceKey}@${context.reader.cid}@${context.reader.eid}",
-      ))!.readAsBytes();
+      );
+      if (cached == null || !cached.existsSync()) {
+        throw Exception("Reader image cache missing: $imageKey");
+      }
+      return cached.readAsBytes();
     }
   }
 
@@ -1286,9 +1293,16 @@ class _ContinuousModeState extends State<_ContinuousMode>
     if (imageKey.startsWith("file://")) {
       return await File(imageKey.substring(7)).readAsBytes();
     } else {
-      return (await CacheManager().findCache(
+      // ⭐ 修复（2026-10-09）：**去掉硬 `!` 强解包** —— 缓存被清理/过期时 findCache 返回 null，
+      // 原写法会空指针崩溃。现改为显式抛错，交由 ImageProvider 的失败路径处理（显示失败/按需重试）；
+      // **正常命中缓存的路径行为完全不变**（同一 key、同一 readAsBytes）。
+      final cached = await CacheManager().findCache(
         "$imageKey@${context.reader.type.sourceKey}@${context.reader.cid}@${context.reader.eid}",
-      ))!.readAsBytes();
+      );
+      if (cached == null || !cached.existsSync()) {
+        throw Exception("Reader image cache missing: $imageKey");
+      }
+      return cached.readAsBytes();
     }
   }
 

@@ -119,7 +119,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
     var filtered = curComics.where((comic) {
       var history = HistoryManager().find(
         comic.id,
-        ComicType(comic.sourceKey.hashCode),
+        ComicType.fromKey(comic.sourceKey),
       );
       if (readFilterSelect == "UnCompleted") {
         return history == null || history.page != history.maxPage;

@@ -254,7 +254,10 @@ class ComicDetails with HistoryMixin {
   @override
   String get id => comicId;
 
-  ComicType get comicType => ComicType(sourceKey.hashCode);
+  // ⭐ 修复（2026-10-09）：**统一走 `ComicType.fromKey`** —— 原写法 `ComicType(sourceKey.hashCode)`
+  // 只对**真实漫画源**正确（其 value 约定就是 key.hashCode），对 `local`/`smb` 会得到错误 type
+  // （正确值分别是 0 / -1）。`fromKey` 对真实源结果**逐字相同**，仅修正 local/smb。
+  ComicType get comicType => ComicType.fromKey(sourceKey);
 
   /// Convert tags map to plain list
   List<String> get plainTags {

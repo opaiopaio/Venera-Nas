@@ -171,17 +171,13 @@ class ComicTile extends StatelessWidget {
         text:
             ReadLaterManager().exists(
               comic.id,
-              ComicType(
-                comic.sourceKey == 'local' ? 0 : comic.sourceKey.hashCode,
-              ),
+              ComicType.fromKey(comic.sourceKey),
             )
             ? 'Remove from Read Later'.tl
             : 'Read Later'.tl,
         onClick: () {
           final manager = ReadLaterManager();
-          final type = ComicType(
-            comic.sourceKey == 'local' ? 0 : comic.sourceKey.hashCode,
-          );
+          final type = ComicType.fromKey(comic.sourceKey);
           if (manager.exists(comic.id, type)) {
             manager.remove(comic.id, type);
           } else {
@@ -221,11 +217,11 @@ class ComicTile extends StatelessWidget {
     var isFavorite = appdata.settings['showFavoriteStatusOnTile']
         ? LocalFavoritesManager().isExist(
             comic.id,
-            ComicType(comic.sourceKey.hashCode),
+            ComicType.fromKey(comic.sourceKey),
           )
         : false;
     var history = appdata.settings['showHistoryStatusOnTile']
-        ? HistoryManager().find(comic.id, ComicType(comic.sourceKey.hashCode))
+        ? HistoryManager().find(comic.id, ComicType.fromKey(comic.sourceKey))
         : null;
     if (history?.page == 0) {
       history!.page = 1;

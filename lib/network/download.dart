@@ -640,6 +640,20 @@ class _ImageDownloadWrapper {
 
   void cancel() {
     isCancelled = true;
+    // ⭐ 修复（2026-10-09）：**取消后必须释放 wait() 的等待者** —— 原先只置 isCancelled，
+    // 而 start() 命中该标志后**直接 return**，既不进成功分支（:673-676 的 c.complete），
+    // 也不进异常分支（:690-694；普通 return 不会进 catch）→ wait()（:711-718）注册的 Completer
+    // **永不 complete** → 主循环 await task.wait() **永久挂起**、_index 不再推进；
+    // 再次「开始」还会并发第二个协程共写 _index/_downloadedCount。
+    // 修法：在此把等待者**全部释放**（与 :690-694 同风格，先判 isCompleted）。
+    // 影响：**只影响「暂停」这一条路径** —— 由「协程卡死」变为「本轮正常结束」；
+    // 正常下载与失败重试逻辑一字未动。
+    for (var c in completers) {
+      if (!c.isCompleted) {
+        c.complete(this);
+      }
+    }
+    completers.clear();
   }
 
   var completers = <Completer<_ImageDownloadWrapper>>[];

@@ -42,9 +42,7 @@ class ReadLaterItem implements Comic {
   factory ReadLaterItem.fromComic(Comic comic) {
     return ReadLaterItem(
       id: comic.id,
-      type: ComicType(
-        comic.sourceKey == 'local' ? 0 : comic.sourceKey.hashCode,
-      ),
+      type: ComicType.fromKey(comic.sourceKey),
       title: comic.title,
       subtitle: comic.subtitle,
       cover: comic.cover,
