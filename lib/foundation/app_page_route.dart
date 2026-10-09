@@ -18,7 +18,11 @@ class AppPageRoute<T> extends PageRoute<T> with _AppRouteTransitionMixin {
     super.settings,
     this.maintainState = true,
     super.fullscreenDialog,
-    super.allowSnapshotting = true,
+    // ⭐ 修复（2026-10-09 用户 Android 实测 ✓）：**关闭路由过渡快照** ✗→✓。
+    // 现象：安卓端"进入下一级页面（设置 / 历史页等）会闪白" ✓，而 Windows 端无此现象 ✓
+    //（该优化是 Android 侧行为 ✓）。快照在背景层尚未绘制时取帧 ⇒ 露出白底 ✓。
+    // 代价：过渡期间改为实时渲染 ✓（略增开销 ✓），换取不闪白 ✓。
+    super.allowSnapshotting = false,
     super.barrierDismissible = false,
     this.enableIOSGesture = true,
     this.preventRebuild = true,
