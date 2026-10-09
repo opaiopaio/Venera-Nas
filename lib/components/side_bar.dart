@@ -186,7 +186,7 @@ class SideBarRoute<T> extends PopupRoute<T> {
                   // 原先只判 `!followTheme` ✗：**没有背景图时也铺切片**，而切片画的是**不透明的底**（背景色/主题底）✗
                   // ⇒ 把下层内容整片盖住 ⇒ 用户感受为"**半透明无效**"✓（收藏页文件夹那条要求"背景图存在"才铺 ✓，故其半透明能透出内容 ✓）。
                   // 现与 `SecondaryPageSurface` 的 `sliceAlways` 条件一致：**有背景图时才铺切片** ✓。
-                  if (!followTheme && currentBackgroundImageFile() != null)
+                  if (currentBackgroundImageFile() != null)
                     const Positioned.fill(child: BackgroundSlice()),
                   // ⭐ 修复（2026-10-09 用户实测 ✓）：**表面色必须画在切片【之上】** ✗→✓ ——
                   // 原先色画在 `Container.decoration`（位于子层**之下** ✗），而切片是子层 ⇒ **切片把色盖住** ✗ ⇒
