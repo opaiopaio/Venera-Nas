@@ -131,7 +131,14 @@ class _HeaderSurfaceState extends State<_HeaderSurface> {
             child: // ⭐ 修复（2026-10-09 用户 Android 实测 ✓）：本底原先写死 `colorScheme.surface` ✗
                 // ⇒ 背景图**未就绪时**这里会露出**白块**（浅色主题）✓；改用与全局背景**同口径**的兜底色 ✓。
                 ColoredBox(
-                  color: backgroundPlaceholderColor(context.colorScheme),
+                  // ⭐ 修复（2026-10-09 用户 Android 实测 ✓）：背景体系**开启时本层应当透明** ✓ ——
+
+                  // 否则切片尚未就绪的那几帧会露出**白色**（用户："背景被压在下面，白色消失背景出现"✓）；关闭背景时退回同口径兜底色 ✓。
+                  color:
+                      customBackgroundAware(
+                        backgroundPlaceholderColor(context.colorScheme),
+                      ) ??
+                      Colors.transparent,
                 ),
           ),
           if (AppBackground.isActive)

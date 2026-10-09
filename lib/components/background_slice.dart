@@ -42,14 +42,33 @@ class _BackgroundSliceState extends State<BackgroundSlice> {
   ImageStreamListener? _listener;
   String? _path;
 
+  // ⭐ 修复（2026-10-09 用户 Android 实测 ✓）：**路由过渡期间逐帧重建** ✓。
+  // 现象：偏移 `_offsetInWindow` 是**帧后**测量的 ✗ ⇒ 切页/侧栏滑动时切片**晚一帧** ⇒ 观感"割裂"、
+  // "完全展开后背景才推过去填满" ✓。挂上当前路由的 animation ⇒ 过渡期间每帧重建 ⇒ 测量即时刷新 ✓。
+  Animation<double>? _routeAnimation;
+
+  void _onRouteTick() {
+    if (mounted) setState(() {});
+  }
+
+  void _syncRouteAnimation() {
+    final animation = ModalRoute.of(context)?.animation;
+    if (identical(animation, _routeAnimation)) return;
+    _routeAnimation?.removeListener(_onRouteTick);
+    _routeAnimation = animation;
+    _routeAnimation?.addListener(_onRouteTick);
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _syncRouteAnimation();
     _resolveImage();
   }
 
   @override
   void dispose() {
+    _routeAnimation?.removeListener(_onRouteTick);
     if (_stream != null && _listener != null) {
       _stream!.removeListener(_listener!);
     }

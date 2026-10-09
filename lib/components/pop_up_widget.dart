@@ -272,8 +272,11 @@ class SecondaryPageSurface extends StatelessWidget {
     // 下层内容（用户实测：窄屏收藏页侧栏透出后面的漫画列表）。
     // 现改为：`followTheme` 时不使用色调，直接补主题表面色（＝注释所述语义）。
     final base =
-        (popupStyle && !followTheme && !fullScreenPopup ? tint : null) ??
-        // ⭐ 修复（2026-10-09 用户实测 ✓）：底改用**与背景同口径**的兜底色 ✓
+        // ⭐ 修复（2026-10-09 用户实测 ✓）：侧滑窗口也**不用色调色作底** ✗（默认"变浅"⇒ 发白 ✗，用户："侧栏左侧会有一个白色"✓）
+        (popupStyle && !followTheme && !fullScreenPopup && !useSideBarSettings
+            ? tint
+            : null) ??
+        // ⭐ 修复：底改用**与背景同口径**的兜底色 ✓
         //（原为 `colorScheme.surface` ✗ ⇒ 背景图未就绪时露出**白块** ✓ —— 浅色主题）。
         backgroundPlaceholderColor(context.colorScheme);
     final radius =
