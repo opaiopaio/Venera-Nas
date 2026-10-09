@@ -97,4 +97,10 @@ class CachedImageProvider
 
   @override
   String get key => url + (sourceKey ?? "") + (cid ?? "");
+
+  /// 修复（2026-10-09）：本类 `key` 用**无分隔符拼接**，而缩略图的磁盘写入键
+  /// （`network/images.dart` 的 `loadThumbnail`）是 `"$url@$sourceKey@$cid"` 形式 ——
+  /// 两者不同 ⇒ 原 `delete(key)` 命不中真实缓存文件。覆写后即可正确清理。
+  @override
+  String get cacheKey => "$url@$sourceKey${cid != null ? '@$cid' : ''}";
 }
