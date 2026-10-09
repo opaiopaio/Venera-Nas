@@ -222,7 +222,11 @@ class SecondaryPageSurface extends StatelessWidget {
     final decoration = secondaryPageDecoration();
     // ⭐ 侧滑窗口/侧边栏：改用**独立一组**成品表面色 ✓（`sideBarSurfaceColor()` ✓，受同一总开关控制 ✓）。
     final tint = useSideBarSettings
-        ? sideBarSurfaceColor(context)
+        ? sideBarSurfaceColor(
+            context,
+            // ⭐ 竖屏（窄屏）时仅强制「样式」不透明 ✓（其余项照常受控 ✓）
+            forceOpaque: context.width < changePoint,
+          )
         : customSecondarySurfaceColor(context.colorScheme);
     // ⭐ W2（用户选定方案 B ✓）：**整页式永远透出背景** ✓、**完全不受本节选项影响** ✗ ——
     // - **有背景**（背景图/背景底色 ✓）→ **不铺任何底** ✓（露出全局背景 ✓，用户实测
@@ -273,9 +277,7 @@ class SecondaryPageSurface extends StatelessWidget {
     // 现改为：`followTheme` 时不使用色调，直接补主题表面色（＝注释所述语义）。
     final base =
         // ⭐ 修复（2026-10-09 用户实测 ✓）：侧滑窗口也**不用色调色作底** ✗（默认"变浅"⇒ 发白 ✗，用户："侧栏左侧会有一个白色"✓）
-        (popupStyle && !followTheme && !fullScreenPopup && !useSideBarSettings
-            ? tint
-            : null) ??
+        (popupStyle && !followTheme && !fullScreenPopup ? tint : null) ??
         // ⭐ 修复：底改用**与背景同口径**的兜底色 ✓
         //（原为 `colorScheme.surface` ✗ ⇒ 背景图未就绪时露出**白块** ✓ —— 浅色主题）。
         backgroundPlaceholderColor(context.colorScheme);
@@ -304,7 +306,7 @@ class SecondaryPageSurface extends StatelessWidget {
           // 有**壁纸切片**时，色调叠在**切片之上**（语义 = 把壁纸调深/调浅）；
           // 无切片时色调已**混入底色**（见上），不重复叠。
           // 整页式：**不叠色调** ✗（用户要求"就是背景本身" ✓）；窗口式照旧 ✓
-          if (tint != null && !fullScreenPopup && !useSideBarSettings)
+          if (tint != null && !fullScreenPopup)
             Positioned.fill(child: ColoredBox(color: tint)),
         ],
         Material(color: Colors.transparent, child: child),
