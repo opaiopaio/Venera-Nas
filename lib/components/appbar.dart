@@ -64,9 +64,15 @@ class _AppbarState extends State<Appbar> {
           ...?widget.actions?.map(
             (e) => appdata.settings.customBackgroundActive
                 // 启用「窗口/按钮背景」时按钮自带底色块，这里补间距避免贴在一起
+                // ⭐ 修复（2026-10-09 用户实测 ✓）：**竖屏（窄屏）下顶栏按钮间距加大** ✗→✓ ——
+                // 原先仅在有「窗口/按钮背景」时补 `AppSpace.tiny`（≈4 ⇒ 相邻仅 8px）✗，无背景时更是 0 ✗，
+                // 竖屏下「搜索 / 设置」这类相邻按钮会挤在一起 ✓（用户反馈 ✓）。
+                // 现统一给间距：**窄屏 `AppSpace.sm`（约 2 倍）** ✓、宽屏沿用 `AppSpace.tiny` ✓（宽屏观感不变 ✓）。
                 ? Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpace.tiny,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: context.width < changePoint
+                          ? AppSpace.sm
+                          : AppSpace.tiny,
                     ),
                     child: e,
                   )
@@ -242,9 +248,15 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
         ),
         ...?actions?.map(
           (e) => appdata.settings.customBackgroundActive
+              // ⭐ 修复（2026-10-09 用户实测 ✓）：**竖屏（窄屏）下顶栏按钮间距加大** ✗→✓ ——
+              // 原先仅在有「窗口/按钮背景」时补 `AppSpace.tiny`（≈4 ⇒ 相邻仅 8px）✗，无背景时更是 0 ✗，
+              // 竖屏下「搜索 / 设置」这类相邻按钮会挤在一起 ✓（用户反馈 ✓）。
+              // 现统一给间距：**窄屏 `AppSpace.sm`（约 2 倍）** ✓、宽屏沿用 `AppSpace.tiny` ✓（宽屏观感不变 ✓）。
               ? Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpace.tiny,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: context.width < changePoint
+                        ? AppSpace.sm
+                        : AppSpace.tiny,
                   ),
                   child: e,
                 )
