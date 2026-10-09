@@ -151,4 +151,11 @@ class HistoryImageProvider
 
   @override
   String get key => "history${history.id}${history.type.value}";
+
+  /// 修复（2026-10-09）：SMB 封面磁盘缓存键为 `smb_cover:<localComic.id>`（见 _loadSmbCover），
+  /// 而该 localComic 是用 `LocalManager().find(history.id, …)` 查到的 ⇒ 键中的 id 即 `history.id`。
+  /// 网络缩略图路径（cover 含 '/'）保持原行为不变，避免误删无关缓存。
+  @override
+  String get cacheKey =>
+      history.cover.contains('/') ? key : 'smb_cover:${history.id}';
 }

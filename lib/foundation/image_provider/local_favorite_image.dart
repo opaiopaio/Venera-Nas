@@ -64,4 +64,9 @@ class LocalFavoriteImageProvider
 
   @override
   String get key => id + intKey.toString();
+
+  /// 修复（2026-10-09）：load() 走的是 `ImageDownloader.loadThumbnail(url, sourceKey)`，
+  /// 其磁盘缓存键为 `"$url@$sourceKey"`（见 network/images.dart），与本类 `key` 不同 ⇒ 原清理命不中。
+  @override
+  String get cacheKey => "$url@${ComicSource.fromIntKey(intKey)?.key}";
 }

@@ -210,4 +210,10 @@ class LocalComicImageProvider
 
   @override
   String get key => "local${comic.id}${comic.comicType.value}";
+
+  /// 修复（2026-10-09）：本 provider 的 SMB 封面**磁盘缓存**键是 `smb_cover:<comic.id>`（见 _loadSmbCover），
+  /// 与本类 `key` 不同 ⇒ 原 `delete(key)` 清不掉坏封面缓存（会永久残留、导致坏封面一直加载失败）。
+  /// 覆写后解码失败的清理即可命中该缓存文件。
+  @override
+  String get cacheKey => 'smb_cover:${comic.id}';
 }

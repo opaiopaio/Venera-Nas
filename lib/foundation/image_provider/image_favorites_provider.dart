@@ -160,4 +160,9 @@ class ImageFavoritesProvider
   @override
   String get key =>
       "ImageFavorites ${imageFavorite.imageKey}@${imageFavorite.sourceKey}@${imageFavorite.id}@${imageFavorite.eid}";
+
+  /// 修复（2026-10-09）：加载走 `ImageDownloader.loadComicImage(imageKey, sourceKey, cid, eid)`，
+  /// 其磁盘缓存键为 `"$imageKey@$sourceKey@$cid@$eid"`（见 network/images.dart），与本类 `key`（内存键）不同。
+  @override
+  String get cacheKey => "${imageFavorite.imageKey}@$sourceKey@$cid@$eid";
 }
