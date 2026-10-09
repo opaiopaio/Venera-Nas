@@ -87,6 +87,24 @@ class SideBarRoute<T> extends PopupRoute<T> {
     Animation<double> animation,
     Animation<double> secondaryAnimation,
   ) {
+    // ⭐ 修复（2026-10-09 用户实测 ✓）：**建立设置依赖** ✗→✓ —— 原先此处没有 `AppSettingsScope.of(context)`，
+
+    // 于是改动「二级页面/弹窗 → 侧边栏」那几项时该窗口不会重建 ⇒ 用户感受为"设置对它失效" ✓。
+
+    AppSettingsScope.of(context);
+
+    // ⭐ 与收藏页「文件夹选择」对齐（用户指示 ✓）：
+
+    // · 默认（总开关＝跟随主题）⇒ 底用 `backgroundPlaceholderColor`（**白底不透** ✓，与文件夹选择一致 ✓）、不铺切片 ✗；
+
+    // · 关闭总开关（启用自定义）⇒ 用侧边栏那组成品色 ✓、并铺背景切片 ✓（同 `SecondaryPageSurface` 的 tinted 门禁 ✓）。
+
+    final followTheme = appdata.settings['secondaryPageFollowTheme'] == true;
+
+    final sideBarColor = followTheme
+        ? backgroundPlaceholderColor(context.colorScheme)
+        : sideBarSurfaceColor(context);
+
     bool showSideBar = MediaQuery.of(context).size.width > width;
 
     Widget body = widget;
@@ -112,7 +130,7 @@ class SideBarRoute<T> extends PopupRoute<T> {
         // ⭐ 2026-10-09（用户指示 ✓）：侧滑窗口的表面色改走**独立一组设置** ✓
         //（`sideBarSurfaceMode/Tint/TintStrength` ✓，与二级页面/菜单两套同构 ✓），
         // 受「二级页面/弹窗」页总开关 `secondaryPageFollowTheme` 控制 ✓（跟随主题 ⇒ 默认观感 ✓）。
-        color: sideBarSurfaceColor(context),
+        color: sideBarColor,
         boxShadow: context.brightness == ui.Brightness.dark
             ? [
                 BoxShadow(
@@ -150,7 +168,9 @@ class SideBarRoute<T> extends PopupRoute<T> {
               // 现给侧滑窗口也补上同一套切片 ⇒ **透出壁纸但不透出下层内容** ✓，与文件夹选择一致 ✓。
               child: Stack(
                 children: [
-                  const Positioned.fill(child: BackgroundSlice()),
+                  // ⭐ 仅"启用自定义"时铺切片 ✓（默认与收藏页文件夹一致：白底不透 ✓）
+                  if (!followTheme)
+                    const Positioned.fill(child: BackgroundSlice()),
                   body,
                 ],
               ),
