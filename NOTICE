@@ -1,0 +1,68 @@
+VeneraNas —— 版权与第三方依赖声明
+
+Copyright (C) 2026 opaiopaio
+
+本仓库（Venera-Nas）是 haukuen/Venera（-> venera-app/venera）的二次开发版本，
+依据 GNU General Public License v3.0（见本仓库根目录 LICENSE）发布。
+上游版权归其原作者所有；本项目对其修改与新增部分按同一许可（GPL-3.0）发布。
+
+分发义务（GPL-3.0）：分发本项目的二进制（APK / zip 等）时，必须同时提供对应源码，
+并随附完整的许可证与版权声明。
+
+第三方依赖：
+  本仓库的 Dart/Flutter 依赖清单与锁定版本见 app/pubspec.lock
+  （直接依赖见 app/pubspec.yaml 的 dependencies / dev_dependencies）。
+  ⚠️ 本文件不包含各第三方包的许可全文 —— 分发前请逐一从各包自身的 LICENSE
+     或 pub.dev 页面收集，并随发行物一并提供。
+  说明：Flutter / Dart SDK 依 BSD-3-Clause；其余包许可类型请以各自仓库为准。
+
+本项目不内置任何字体文件（自定义字体由用户运行时加载，不进备份/同步）。
+
+---- 自动生成的直接依赖清单（版本以 app/pubspec.lock 为准）----
+  - flutter  0.0.0
+  - path_provider  2.1.5
+  - intl  0.20.2
+  - window_manager  0.5.1
+  - sqlite3  2.9.4
+  - sqlite3_flutter_libs  0.5.42
+  - flutter_qjs  0.3.7
+  - crypto  3.0.7
+  - dio  5.9.2
+  - html  0.15.6
+  - pointycastle  4.0.0
+  - url_launcher  6.3.2
+  - path  1.9.1
+  - photo_view  0.14.0
+  - mime  2.0.0
+  - share_plus  12.0.2
+  - scrollable_positioned_list  0.3.8+1
+  - flutter_reorderable_grid_view  5.6.0
+  - uuid  4.5.3
+  - desktop_webview_window  0.2.4
+  - flutter_inappwebview  6.2.0-beta.3
+  - app_links  7.0.0
+  - sliver_tools  0.2.12
+  - flutter_file_dialog  3.0.3
+  - file_selector  1.1.0
+  - zip_flutter  0.0.13
+  - lodepng_flutter  0.0.1
+  - rhttp  0.15.1
+  - webdav_client  1.2.2
+  - battery_plus  7.0.0
+  - local_auth  3.0.1
+  - flutter_saf  0.0.1
+  - dynamic_color  1.8.1
+  - shimmer_animation  2.2.2+1
+  - flutter_memory_info  0.0.3
+  - syntax_highlight  0.4.0
+  - flutter_7zip  0.0.1
+  - flex_seed_scheme  4.0.1
+  - flutter_localizations  0.0.0
+  - yaml  3.1.3
+  - enough_convert  1.6.0
+  - display_mode  0.0.2
+  - flutter_staggered_grid_view  0.7.0
+  - package_info_plus  8.3.1
+  - pub_semver  2.2.0
+  - dart_smb2  0.1.0
+  - image  4.8.0
