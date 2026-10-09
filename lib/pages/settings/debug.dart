@@ -27,11 +27,10 @@ class DebugPageState extends State<DebugPage> {
         _CallbackSetting(
           title: "Open Log".tl,
           callback: () {
-            // ⭐ AO1（同款修法 ✓）：推在**当前（右栏内层）Navigator** ✓ 而非根 Navigator 的全屏弹层 ✗
-            // → 左侧设置栏不被遮 ✓，点其它设置项一次即切换 ✓。
-            Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const LogsPage()));
+            // ⭐ 2026-10-09（用户指示）：改为弹窗形态（与其它二级页统一）。
+            // ⚠️ 取舍：showPopUpWidget 走 rootNavigator:true，其 barrier 会盖住左侧设置栏；
+            // 用户已确认统一为弹窗形式，AO1 的旧行为随之作废。
+            showPopUpWidget(context, const LogsPage());
           },
           actionTitle: 'Open'.tl,
         ).toSliver(),

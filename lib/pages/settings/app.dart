@@ -289,79 +289,76 @@ class _LogsPageState extends State<LogsPage> {
     var logToShow = logLevelToShow == "all"
         ? Log.logs
         : Log.logs.where((log) => log.level.name == logLevelToShow).toList();
-    return Scaffold(
-      appBar: Appbar(
-        title: Text("Logs".tl),
-        actions: [
-          IconButton(
-            onPressed: () => setState(() {
-              final RelativeRect position = RelativeRect.fromLTRB(
-                MediaQuery.of(context).size.width,
-                MediaQuery.of(context).padding.top + kToolbarHeight,
-                0.0,
-                0.0,
-              );
-              showMenu(
-                context: context,
-                position: position,
-                items: [
-                  PopupMenuItem(
-                    child: Text("all"),
-                    onTap: () => setState(() => logLevelToShow = "all"),
-                  ),
-                  PopupMenuItem(
-                    child: Text("info"),
-                    onTap: () => setState(() => logLevelToShow = "info"),
-                  ),
-                  PopupMenuItem(
-                    child: Text("warning"),
-                    onTap: () => setState(() => logLevelToShow = "warning"),
-                  ),
-                  PopupMenuItem(
-                    child: Text("error"),
-                    onTap: () => setState(() => logLevelToShow = "error"),
-                  ),
-                ],
-              );
-            }),
-            icon: const Icon(Icons.filter_list_outlined),
-          ),
-          IconButton(
-            onPressed: () => setState(() {
-              final RelativeRect position = RelativeRect.fromLTRB(
-                MediaQuery.of(context).size.width,
-                MediaQuery.of(context).padding.top + kToolbarHeight,
-                0.0,
-                0.0,
-              );
-              showMenu(
-                context: context,
-                position: position,
-                items: [
-                  PopupMenuItem(
-                    child: Text("Clear".tl),
-                    onTap: () => setState(() => Log.clear()),
-                  ),
-                  PopupMenuItem(
-                    child: Text("Disable Length Limitation".tl),
-                    onTap: () {
-                      Log.ignoreLimitation = true;
-                      context.showMessage(
-                        message: "Only valid for this run".tl,
-                      );
-                    },
-                  ),
-                  PopupMenuItem(
-                    child: Text("Export".tl),
-                    onTap: () => saveLog(Log().toString()),
-                  ),
-                ],
-              );
-            }),
-            icon: const Icon(Icons.more_horiz),
-          ),
-        ],
-      ),
+    // ⭐ 2026-10-09（用户指示）：日志页由全屏 Scaffold 改为弹窗形态（与其它二级页统一）。
+    return PopUpWidgetScaffold(
+      title: "Logs".tl,
+      tailing: [
+        IconButton(
+          onPressed: () => setState(() {
+            final RelativeRect position = RelativeRect.fromLTRB(
+              MediaQuery.of(context).size.width,
+              MediaQuery.of(context).padding.top + kToolbarHeight,
+              0.0,
+              0.0,
+            );
+            showMenu(
+              context: context,
+              position: position,
+              items: [
+                PopupMenuItem(
+                  child: Text("all"),
+                  onTap: () => setState(() => logLevelToShow = "all"),
+                ),
+                PopupMenuItem(
+                  child: Text("info"),
+                  onTap: () => setState(() => logLevelToShow = "info"),
+                ),
+                PopupMenuItem(
+                  child: Text("warning"),
+                  onTap: () => setState(() => logLevelToShow = "warning"),
+                ),
+                PopupMenuItem(
+                  child: Text("error"),
+                  onTap: () => setState(() => logLevelToShow = "error"),
+                ),
+              ],
+            );
+          }),
+          icon: const Icon(Icons.filter_list_outlined),
+        ),
+        IconButton(
+          onPressed: () => setState(() {
+            final RelativeRect position = RelativeRect.fromLTRB(
+              MediaQuery.of(context).size.width,
+              MediaQuery.of(context).padding.top + kToolbarHeight,
+              0.0,
+              0.0,
+            );
+            showMenu(
+              context: context,
+              position: position,
+              items: [
+                PopupMenuItem(
+                  child: Text("Clear".tl),
+                  onTap: () => setState(() => Log.clear()),
+                ),
+                PopupMenuItem(
+                  child: Text("Disable Length Limitation".tl),
+                  onTap: () {
+                    Log.ignoreLimitation = true;
+                    context.showMessage(message: "Only valid for this run".tl);
+                  },
+                ),
+                PopupMenuItem(
+                  child: Text("Export".tl),
+                  onTap: () => saveLog(Log().toString()),
+                ),
+              ],
+            );
+          }),
+          icon: const Icon(Icons.more_horiz),
+        ),
+      ],
       body: ListView.builder(
         reverse: true,
         controller: ScrollController(),
