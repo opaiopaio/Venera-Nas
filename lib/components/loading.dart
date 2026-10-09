@@ -1,4 +1,4 @@
-﻿part of 'components.dart';
+part of 'components.dart';
 
 class NetworkError extends StatelessWidget {
   const NetworkError({
@@ -91,7 +91,16 @@ class NetworkError extends StatelessWidget {
         ],
       );
     }
-    return Material(child: body);
+    // ⭐ 修复（2026-10-09 用户实测 ✓）：错误提示原先用 `Material(child: body)` ✗ —— `Material` 不传 `color` 时
+    // 取 `Theme.canvasColor` ⇒ **整片不透明底** ✗ ⇒ 有背景图时"背景被白色覆盖" ✓（用户截图 ✓）。
+    // 现改为：**背景体系启用时直接叠在背景上** ✓，并给一层**透明遮罩** `windowOverlayColor()` ✓
+    //（与主页「历史 / 本地」窗口同款 ✓）；**背景体系关闭时保持原来的主题表面色** ✓ ⇒ 零回归 ✓。
+    return Material(
+      color: appdata.settings.backgroundFeatureActive
+          ? windowOverlayColor()
+          : Theme.of(context).colorScheme.surface,
+      child: body,
+    );
   }
 }
 
