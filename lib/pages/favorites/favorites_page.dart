@@ -126,7 +126,13 @@ class _FavoritesPageState extends State<FavoritesPage> {
           return Align(
             alignment: Alignment.centerLeft,
             child: Material(
-              color: customBackgroundAware(null),
+              // 修复（2026-10-09，用户实测）：窄屏时本侧栏是**浮层**（push 在正文页之上的路由）✓，
+              // 而 `customBackgroundAware(null)` 在开启背景体系时返回 Colors.transparent ✗
+              // ⇒ 下方正文（漫画列表）整片透出 ✗ = 用户报告的「侧边栏与主页重叠」✓。
+              // 浮层必须给**不透明**表面色 ✓：用主题表面色（与项目其它弹层回退一致 ✓）；
+              // 侧栏条目仍各自叠 `windowOverlayColor()` ✓，观感层次不变 ✓。
+              // 宽屏双栏模式**不走这条路由** ✗ ⇒ 双栏外观零变化 ✓。
+              color: context.colorScheme.surface,
               child: SizedBox(
                 width: min(300, context.width - 16),
                 child: _LeftBar(
