@@ -47,7 +47,11 @@ class ImportComic {
     if (dir != null) {
       var files = (await dir.list().toList()).whereType<File>().toList();
       const supportedExtensions = ['cbz', 'zip', '7z', 'cb7'];
-      files.removeWhere((e) => !supportedExtensions.contains(e.extension));
+      files.removeWhere(
+        // 修复（2026-10-09）：扩展名比较前**统一小写**（同文件图片分支 :363 已有 toLowerCase），
+        // 否则 `.CBZ`/`.ZIP` 这类大写扩展名会被静默漏扫。
+        (e) => !supportedExtensions.contains(e.extension.toLowerCase()),
+      );
       Map<String?, List<LocalComic>> imported = {};
       if (!App.rootContext.mounted) return false;
       var controller = showLoadingDialog(App.rootContext, allowCancel: false);

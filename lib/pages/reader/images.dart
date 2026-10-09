@@ -1368,7 +1368,10 @@ void _preDownloadImage(int page, BuildContext context) {
   }
   var reader = context.reader;
   var imageKey = reader.images![page - 1];
-  if (imageKey.startsWith("file://")) {
+  // 修复（2026-10-09）：**SMB 图片也要跳过预下载** —— 原先只跳过 file://，
+  // 而 SMB 的 imageKey 形如 smb://…，且下面 sourceKey = reader.type.comicSource?.key
+  // 对 SMB 恒为 null ⇒ 网络预下载注定失败、白耗请求。
+  if (imageKey.startsWith("file://") || imageKey.startsWith("smb://")) {
     return;
   }
   var cid = reader.cid;

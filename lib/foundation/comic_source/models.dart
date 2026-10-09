@@ -249,7 +249,9 @@ class ComicDetails with HistoryMixin {
   }
 
   @override
-  HistoryType get historyType => HistoryType(sourceKey.hashCode);
+  // 修复（2026-10-09）：`HistoryType` 是 `ComicType` 的别名（`history.dart:26 typedef HistoryType = ComicType;`），
+  // 原写法同样只对真实漫画源正确，对 local/smb 会得到错误 type；统一走 `ComicType.fromKey`。
+  HistoryType get historyType => ComicType.fromKey(sourceKey);
 
   @override
   String get id => comicId;
