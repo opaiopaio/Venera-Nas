@@ -224,6 +224,13 @@ class SecondaryPageSurface extends StatelessWidget {
     // ⭐ Q2：**整页式**（`popupStyle: false`）不叠加色调/背景装饰 ✗ —— 用户要求
     // "色调加深只作用给弹出式二级页面" ✓；此时它由**自身路由的 decoration** 负责底色 ✓。
     final tinted = !followTheme && popupStyle;
+    // ⭐ 侧滑窗口处于「半透明」且**非整屏**时 ⇒ 不铺切片 ✓（让下层内容透出 ✓；
+    // 整屏时「样式」被强制不透明 ✓，因此与它无关 ✓）。
+    final sideBarTransparent =
+        useSideBarSettings &&
+        !followTheme &&
+        !sideBarFullScreen &&
+        appdata.settings['sideBarSurfaceMode'] == 'transparent';
     final decoration = secondaryPageDecoration();
     // ⭐ 侧滑窗口/侧边栏：改用**独立一组**成品表面色 ✓（`sideBarSurfaceColor()` ✓，受同一总开关控制 ✓）。
     final tint = useSideBarSettings
@@ -296,7 +303,12 @@ class SecondaryPageSurface extends StatelessWidget {
     // ⭐（2026-10-09 用户指示）：`alwaysSliceBackground` = 即使本体系**关闭**，也照常铺背景切片
     //（"透过背景、不透出下层内容"；切片自绘）。默认 false ⇒ 其它调用方逐字不变。
     final sliceAlways =
-        tinted && alwaysSliceBackground && currentBackgroundImageFile() != null;
+        alwaysSliceBackground &&
+        currentBackgroundImageFile() != null &&
+        // ⭐ 修复（2026-10-10 用户实测 ✓）：**「半透明」模式下不铺切片** ✗→✓ —— 切片是整块不透明的 ✗，
+        // 会把下层内容全挡住 ⇒ 用户感受为"有背景图时半透明不生效（两个窗口都不生效）" ✓；
+        // 弹窗式二级页面半透明之所以有效 ✓，正因它不铺切片 ✓。现与之一致 ✓。
+        !sideBarTransparent;
     final stack = Stack(
       children: [
         // ⭐ S1：**不透明底必须在最底层** ✓ —— 放在色调/装饰之后会**盖住色调** ✗
