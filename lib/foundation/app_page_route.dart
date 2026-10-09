@@ -51,27 +51,6 @@ class AppPageRoute<T> extends PageRoute<T> with _AppRouteTransitionMixin {
     return widget;
   }
 
-  // ⭐ 修复（2026-10-09 用户 Android 实测 ✓）：**背景层垫在过渡动画之外** ✓。
-  // 两个已验证的事实：
-  //   ① 路由**内部没有背景**时 ⇒ 平台过渡期间露白（用户："闪白"✓）—— 所以背景必须在本路由内 ✓；
-  //   ② 背景放进 `buildContent` 时 ⇒ 它随过渡**一起平移/淡入**（用户："背景好像有动效一样"✓）—— 所以不能放在内容里 ✗。
-  // 正解：在 `buildTransitions` 里用 Stack 把背景**垫在过渡之下** ✓ —— 页面内容做动画 ✓、背景**纹丝不动** ✓、
-  // 且任何时刻路由内都有背景 ⇒ 不再露白 ✓。
-  @override
-  Widget buildTransitions(
-    BuildContext context,
-    Animation<double> animation,
-    Animation<double> secondaryAnimation,
-    Widget child,
-  ) {
-    return Stack(
-      children: [
-        const Positioned.fill(child: AppBackground()),
-        super.buildTransitions(context, animation, secondaryAnimation, child),
-      ],
-    );
-  }
-
   @override
   final bool maintainState;
 
@@ -566,17 +545,25 @@ class SlidePageTransitionBuilder extends PageTransitionsBuilder {
     final transparentPages = App.data.settings.backgroundFeatureActive;
     final customBg = !forceSlide && transparentPages;
 
-    Widget content = PhysicalModel(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.zero,
-      clipBehavior: Clip.hardEdge,
-      // 透明色 + elevation>0 会把阴影画进形状内部形成整页暗色遮罩，
-      // 自定义背景时必须关掉 elevation（窗口层次改由「窗口遮罩」配置卡片容器）。
-      elevation: transparentPages ? 0 : 6,
-      child: Material(
-        color: transparentPages ? Colors.transparent : null,
-        child: child,
-      ),
+    // ⭐ 修复（2026-10-09 用户实测 ✓）：**背景放进"内容"里** ✓ —— 让它与页面**一起淡入淡出**，
+    // 从而全程交叉、没有空档 ✓（用户："进入时当前页面消失，然后下一级页面浮现"✗ 就是空档造成的）；
+    // customBg 分支**只做淡变不做滑动** ⇒ 背景不会平移 ✓（两张背景像素相同 ⇒ 观感上背景静止 ✓）。
+    Widget content = Stack(
+      children: [
+        const Positioned.fill(child: AppBackground()),
+        PhysicalModel(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.zero,
+          clipBehavior: Clip.hardEdge,
+          // 透明色 + elevation>0 会把阴影画进形状内部形成整页暗色遮罩，
+          // 自定义背景时必须关掉 elevation（窗口层次改由「窗口遮罩」配置卡片容器）。
+          elevation: transparentPages ? 0 : 6,
+          child: Material(
+            color: transparentPages ? Colors.transparent : null,
+            child: child,
+          ),
+        ),
+      ],
     );
 
     // 自定义背景时页面背景是透明的，原来的「两页同时滑动」会让旧页面从
@@ -584,15 +571,12 @@ class SlidePageTransitionBuilder extends PageTransitionsBuilder {
     // 改为 fade through：旧页面在前 30% 淡出消失，新页面再从 35% 起淡入 ——
     // 两页在时间上不重叠，既无残影，也不会闪底色。
     if (customBg) {
-      final fadeIn = CurvedAnimation(
-        parent: animation,
-        curve: const Interval(0.35, 1.0, curve: Curves.easeIn),
-      );
+      // ⭐ 修复（2026-10-09 用户实测 ✓）：**改为全程交叉淡变** ✗→✓ ——
+      // 原为 fadeIn `Interval(0.35, 1.0)` + fadeOut `Interval(0.0, 0.3)` ⇒ 中间 30%~35% **两页都不可见** ✗
+      //（用户："当前页面消失，然后下一级页面浮现"✗；退出时下层"瞬间跳出"✗）。
+      final fadeIn = CurvedAnimation(parent: animation, curve: Curves.easeOut);
       final fadeOut = Tween<double>(begin: 1, end: 0).animate(
-        CurvedAnimation(
-          parent: secondaryAnimation,
-          curve: const Interval(0.0, 0.3, curve: Curves.easeOut),
-        ),
+        CurvedAnimation(parent: secondaryAnimation, curve: Curves.easeIn),
       );
       return FadeTransition(
         opacity: fadeOut,
