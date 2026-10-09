@@ -599,6 +599,8 @@ class __CustomImageProcessingState extends State<_CustomImageProcessing> {
   Widget build(BuildContext context) {
     // ⭐ 2026-10-09（用户指示）：自定义图像处理页由全屏 Scaffold 改为弹窗形态（与其它二级页统一）。
     return PopUpWidgetScaffold(
+      // ⭐ 2026-10-09：弹窗形态必须传 popupStyle: true（否则有背景体系时表面透明 ⇒ 与下层重叠 ✗）。
+      popupStyle: true,
       title: "Custom Image Processing".tl,
       tailing: [
         Button.normal(

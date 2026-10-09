@@ -292,6 +292,8 @@ class _LogsPageState extends State<LogsPage> {
     // ⭐ 2026-10-09（用户指示）：日志页由全屏 Scaffold 改为弹窗形态（与其它二级页统一）。
     return PopUpWidgetScaffold(
       title: "Logs".tl,
+      // ⭐ 2026-10-09：弹窗形态必须传 popupStyle: true（否则有背景体系时表面透明 ⇒ 与下层重叠 ✗）。
+      popupStyle: true,
       tailing: [
         IconButton(
           onPressed: () => setState(() {
