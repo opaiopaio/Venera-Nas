@@ -197,7 +197,15 @@ class SecondaryPageSurface extends StatelessWidget {
     // - 弹出式 ✓ 照旧：有底（遮挡 ✓）+ 可调模式/色调 ✓。
     // 注意 ✓：`decoration`（壁纸切片）与 `tint`（色调 ✓）都只对**弹出式**生效 ✗（`tinted` ✓），
     // 所以整页式**天然不受**这两个选项影响 ✓。
-    final needSurface = popupStyle || !appdata.settings.backgroundFeatureActive;
+    // ⭐ 修复（2026-10-09 用户实测）：**关闭自定义（= 跟随系统）时要有"默认形态"** ✓ ——
+    // 原判据只有 `popupStyle || !backgroundFeatureActive` ⇒ **整页式 + 有背景** = 不铺底 ✗，
+    // 再叠加"followTheme 不画切片" ✗ ⇒ **既不铺底也不画切片 = 全透明** ✗
+    //（用户实测：设置页透出下层收藏页侧栏 ✓）。现补上 `followTheme` ✓：
+    //   · 跟随系统（关自定义）⇒ **不透明主题底** ✓（与其它窗口默认形态一致 ✓）；
+    //   · 自定义 + 有背景图 ⇒ 不铺底 ✓ + **铺背景切片** ✓（透过壁纸 ✓、下层不透出 ✓）；
+    //   · 无背景体系 ⇒ 铺底 ✓（遮挡 ✓）。
+    final needSurface =
+        followTheme || popupStyle || !appdata.settings.backgroundFeatureActive;
     // ⭐ U1（用户反馈 ✓）：底**按模式给透明度** ✓，色调**混入底**而不是叠蒙层 ✗。
     // - `opaque`（不透明 ✓）→ 不透明主题表面色 ✓（遮挡 ✓）；
     // - `transparent`（半透明 ✓）→ 用 `AppOpacity.hint` ✓ 的底 ✓，**透出下层内容** ✓

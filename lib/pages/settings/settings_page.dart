@@ -98,7 +98,11 @@ class _SettingsPageState extends State<SettingsPage> {
     // 建立设置依赖：本控件的外观由设置算出 → 设置变化时由框架精准重建
     // （见 ../workspace/archive/doc-private-legacy-20261009/03-implementation/11-refresh-mechanism.md）
     AppSettingsScope.of(context);
-    return Material(color: customBackgroundAware(null), child: buildBody());
+    return SecondaryPageSurface(
+      popupStyle: false,
+      borderRadius: BorderRadius.zero,
+      child: buildBody(),
+    );
   }
 
   Widget buildBody() {
@@ -158,8 +162,13 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget buildLeft() {
-    return Material(
-      color: customBackgroundAware(null),
+    return SecondaryPageSurface(
+      // 修复（2026-10-09 用户实测）：本页原先用 `customBackgroundAware(null)`（背景开启=透明 ✓、
+      // 关闭时返回 null 也=透明 ✗）⇒ **始终透明** ✗，会透出下层页面内容（用户实测：与收藏页侧栏重叠 ✓）。
+      // 现统一走二级页面表面 ✓：**关闭自定义（跟随系统）⇒ 默认主题底** ✓；**打开自定义 ⇒ 切片 + 色调** ✓，
+      // 与其它窗口形态一致 ✓。整页式不叠色调 ✓（尊重"突出二级菜单"体系只作用于弹窗式 ✓）。
+      popupStyle: false,
+      borderRadius: BorderRadius.zero,
       child: Column(
         children: [
           SizedBox(height: MediaQuery.of(context).padding.top),
@@ -315,7 +324,15 @@ class _SettingsDetailPage extends StatelessWidget {
     // 建立设置依赖：本控件的外观由设置算出 → 设置变化时由框架精准重建
     // （见 ../workspace/archive/doc-private-legacy-20261009/03-implementation/11-refresh-mechanism.md）
     AppSettingsScope.of(context);
-    return Material(color: customBackgroundAware(null), child: _buildPage());
+    return SecondaryPageSurface(
+      // 修复（2026-10-09 用户实测）：本页原先用 `customBackgroundAware(null)`（背景开启=透明 ✓、
+      // 关闭时返回 null 也=透明 ✗）⇒ **始终透明** ✗，会透出下层页面内容（用户实测：与收藏页侧栏重叠 ✓）。
+      // 现统一走二级页面表面 ✓：**关闭自定义（跟随系统）⇒ 默认主题底** ✓；**打开自定义 ⇒ 切片 + 色调** ✓，
+      // 与其它窗口形态一致 ✓。整页式不叠色调 ✓（尊重"突出二级菜单"体系只作用于弹窗式 ✓）。
+      popupStyle: false,
+      borderRadius: BorderRadius.zero,
+      child: _buildPage(),
+    );
   }
 
   Widget _buildPage() {
