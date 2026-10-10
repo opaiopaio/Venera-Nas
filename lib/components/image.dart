@@ -1,4 +1,4 @@
-﻿part of 'components.dart';
+part of 'components.dart';
 
 class AnimatedImage extends StatefulWidget {
   /// show animation when loading is complete.
@@ -281,7 +281,7 @@ class _AnimatedImageState extends State<AnimatedImage>
       if (widget.part != null) {
         result = CustomPaint(
           isComplex: true,
-          painter: ImagePainter(
+          painter: _ImagePainter(
             image: _imageInfo!.image,
             part: widget.part!,
             fit: widget.fit ?? BoxFit.cover,
@@ -357,7 +357,7 @@ class ImagePart {
   const ImagePart({this.x1, this.y1, this.x2, this.y2});
 }
 
-class ImagePainter extends CustomPainter {
+class _ImagePainter extends CustomPainter {
   final ui.Image image;
 
   final ImagePart part;
@@ -365,7 +365,7 @@ class ImagePainter extends CustomPainter {
   final BoxFit fit;
 
   /// Render a part of the image.
-  const ImagePainter({
+  const _ImagePainter({
     required this.image,
     this.part = const ImagePart(),
     this.fit = BoxFit.cover,
@@ -391,7 +391,7 @@ class ImagePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return oldDelegate is! ImagePainter ||
+    return oldDelegate is! _ImagePainter ||
         oldDelegate.image != image ||
         oldDelegate.part.x1 != part.x1 ||
         oldDelegate.part.y1 != part.y1 ||

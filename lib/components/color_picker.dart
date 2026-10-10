@@ -158,7 +158,7 @@ class ColorSettingTile extends StatelessWidget {
       onTap: () {
         showPopUpWidget(
           context,
-          ColorPickerPage(
+          _ColorPickerPage(
             title: title,
             initial: settingValue,
             allowSystem: allowSystem,
@@ -172,9 +172,8 @@ class ColorSettingTile extends StatelessWidget {
 }
 
 /// 二级选色页：左侧预设色，右侧调色圆盘 + RGB / 颜色代码输入。
-class ColorPickerPage extends StatefulWidget {
-  const ColorPickerPage({
-    super.key,
+class _ColorPickerPage extends StatefulWidget {
+  const _ColorPickerPage({
     required this.title,
     required this.initial,
     required this.onPick,
@@ -193,10 +192,10 @@ class ColorPickerPage extends StatefulWidget {
   final bool allowTransparent;
 
   @override
-  State<ColorPickerPage> createState() => _ColorPickerPageState();
+  State<_ColorPickerPage> createState() => _ColorPickerPageState();
 }
 
-class _ColorPickerPageState extends State<ColorPickerPage> {
+class _ColorPickerPageState extends State<_ColorPickerPage> {
   static const List<Color> _presets = [
     Color(0xFFF44336),
     Color(0xFFE91E63),

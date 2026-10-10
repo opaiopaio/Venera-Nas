@@ -24,23 +24,19 @@ Color secondaryMenuBarrierColor() {
 /// ⭐ 2026-10-09（用户指示）：弹窗**形态**作用域 —— 由 `PopUpWidget` 注入 ✓。
 /// `fullScreen == true` = 窄屏**整页式**（`width/height = double.infinity` ✓）；默认 `false` = **窗口式** ✓。
 /// 仅整页式改变表面策略（同步显示全局背景 ✓）；窗口式与所有既有调用方**逐字不变** ✓。
-class PopupFormScope extends InheritedWidget {
-  const PopupFormScope({
-    super.key,
-    required this.fullScreen,
-    required super.child,
-  });
+class _PopupFormScope extends InheritedWidget {
+  const _PopupFormScope({required this.fullScreen, required super.child});
 
   final bool fullScreen;
 
   static bool of(BuildContext context) =>
       context
-          .dependOnInheritedWidgetOfExactType<PopupFormScope>()
+          .dependOnInheritedWidgetOfExactType<_PopupFormScope>()
           ?.fullScreen ??
       false;
 
   @override
-  bool updateShouldNotify(PopupFormScope oldWidget) =>
+  bool updateShouldNotify(_PopupFormScope oldWidget) =>
       oldWidget.fullScreen != fullScreen;
 }
 
@@ -69,7 +65,7 @@ class PopUpWidget<T> extends PopupRoute<T> {
   ) {
     var height = MediaQuery.of(context).size.height * 0.9;
     bool showPopUp = MediaQuery.of(context).size.width > 500;
-    Widget body = PopupIndicatorWidget(
+    Widget body = _PopupIndicatorWidget(
       child: Container(
         decoration: showPopUp
             ? BoxDecoration(
@@ -108,7 +104,7 @@ class PopUpWidget<T> extends PopupRoute<T> {
       );
     }
     // ⭐ 2026-10-09（用户指示）：把"当前弹窗是否为整页式"注入内容作用域 ✓，供 SecondaryPageSurface 决定表面策略 ✓。
-    body = PopupFormScope(fullScreen: !showPopUp, child: body);
+    body = _PopupFormScope(fullScreen: !showPopUp, child: body);
     if (showPopUp) {
       return MediaQuery.removePadding(
         removeTop: true,
@@ -138,15 +134,11 @@ class PopUpWidget<T> extends PopupRoute<T> {
   }
 }
 
-class PopupIndicatorWidget extends InheritedWidget {
-  const PopupIndicatorWidget({super.key, required super.child});
+class _PopupIndicatorWidget extends InheritedWidget {
+  const _PopupIndicatorWidget({required super.child});
 
   @override
   bool updateShouldNotify(covariant InheritedWidget oldWidget) => false;
-
-  static PopupIndicatorWidget? maybeOf(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<PopupIndicatorWidget>();
-  }
 }
 
 Future<T> showPopUpWidget<T>(BuildContext context, Widget widget) async {
@@ -252,7 +244,7 @@ class SecondaryPageSurface extends StatelessWidget {
     // 所以整页式**天然不受**这两个选项影响 ✓。
     // ⭐ 2026-10-09（用户指示 ✓）：**整页式弹窗**（窄屏 ⇒ 全屏 ✓）按"页面"规则 —— **同步显示全局背景** ✓
     //（`BackgroundSlice` 同时画背景色与背景图 ✓）；**窗口式**保持原样 ✗。
-    final fullScreenPopup = PopupFormScope.of(context);
+    final fullScreenPopup = _PopupFormScope.of(context);
     final pageBackground =
         fullScreenPopup && appdata.settings.backgroundFeatureActive;
     // 整页式恒铺**不透明底座** ✓ ⇒ 切片之下有底 ⇒ **不会透出下层页面** ✓

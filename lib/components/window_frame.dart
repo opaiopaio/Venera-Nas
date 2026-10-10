@@ -185,7 +185,7 @@ class _WindowFrameState extends State<WindowFrame> {
     );
 
     if (App.isLinux) {
-      body = VirtualWindowFrame(child: body);
+      body = _VirtualWindowFrame(child: body);
     }
 
     return WindowFrameController._create(
@@ -257,8 +257,8 @@ class _WindowButtonsState extends State<_WindowButtons> with WindowListener {
       height: _kTitleBarHeight,
       child: Row(
         children: [
-          WindowButton(
-            icon: MinimizeIcon(color: color),
+          _WindowButton(
+            icon: _MinimizeIcon(color: color),
             hoverColor: hoverColor,
             onPressed: () async {
               bool isMinimized = await windowManager.isMinimized();
@@ -270,24 +270,24 @@ class _WindowButtonsState extends State<_WindowButtons> with WindowListener {
             },
           ),
           if (isMaximized)
-            WindowButton(
-              icon: RestoreIcon(color: color),
+            _WindowButton(
+              icon: _RestoreIcon(color: color),
               hoverColor: hoverColor,
               onPressed: () {
                 windowManager.unmaximize();
               },
             )
           else
-            WindowButton(
-              icon: MaximizeIcon(color: color),
+            _WindowButton(
+              icon: _MaximizeIcon(color: color),
               hoverColor: hoverColor,
               onPressed: () {
                 windowManager.maximize();
               },
             ),
-          WindowButton(
-            icon: CloseIcon(color: color),
-            hoverIcon: CloseIcon(color: !dark ? Colors.white : Colors.black),
+          _WindowButton(
+            icon: _CloseIcon(color: color),
+            hoverIcon: _CloseIcon(color: !dark ? Colors.white : Colors.black),
             hoverColor: Colors.red,
             onPressed: widget.onClose,
           ),
@@ -297,13 +297,12 @@ class _WindowButtonsState extends State<_WindowButtons> with WindowListener {
   }
 }
 
-class WindowButton extends StatefulWidget {
-  const WindowButton({
+class _WindowButton extends StatefulWidget {
+  const _WindowButton({
     required this.icon,
     required this.onPressed,
     required this.hoverColor,
     this.hoverIcon,
-    super.key,
   });
 
   final Widget icon;
@@ -315,10 +314,10 @@ class WindowButton extends StatefulWidget {
   final Widget? hoverIcon;
 
   @override
-  State<WindowButton> createState() => _WindowButtonState();
+  State<_WindowButton> createState() => _WindowButtonState();
 }
 
-class _WindowButtonState extends State<WindowButton> {
+class _WindowButtonState extends State<_WindowButton> {
   bool isHovering = false;
 
   @override
@@ -346,10 +345,10 @@ class _WindowButtonState extends State<WindowButton> {
 }
 
 /// Close
-class CloseIcon extends StatelessWidget {
+class _CloseIcon extends StatelessWidget {
   final Color color;
 
-  const CloseIcon({super.key, required this.color});
+  const _CloseIcon({required this.color});
 
   @override
   Widget build(BuildContext context) => _AlignedPaint(_ClosePainter(color));
@@ -360,17 +359,17 @@ class _ClosePainter extends _IconPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    Paint p = getPaint(color, true);
+    Paint p = _getPaint(color, true);
     canvas.drawLine(const Offset(0, 0), Offset(size.width, size.height), p);
     canvas.drawLine(Offset(0, size.height), Offset(size.width, 0), p);
   }
 }
 
 /// Maximize
-class MaximizeIcon extends StatelessWidget {
+class _MaximizeIcon extends StatelessWidget {
   final Color color;
 
-  const MaximizeIcon({super.key, required this.color});
+  const _MaximizeIcon({required this.color});
 
   @override
   Widget build(BuildContext context) => _AlignedPaint(_MaximizePainter(color));
@@ -381,16 +380,16 @@ class _MaximizePainter extends _IconPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    Paint p = getPaint(color);
+    Paint p = _getPaint(color);
     canvas.drawRect(Rect.fromLTRB(0, 0, size.width - 1, size.height - 1), p);
   }
 }
 
 /// Restore
-class RestoreIcon extends StatelessWidget {
+class _RestoreIcon extends StatelessWidget {
   final Color color;
 
-  const RestoreIcon({super.key, required this.color});
+  const _RestoreIcon({required this.color});
 
   @override
   Widget build(BuildContext context) => _AlignedPaint(_RestorePainter(color));
@@ -401,7 +400,7 @@ class _RestorePainter extends _IconPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    Paint p = getPaint(color);
+    Paint p = _getPaint(color);
     canvas.drawRect(Rect.fromLTRB(0, 2, size.width - 2, size.height), p);
     canvas.drawLine(const Offset(2, 2), const Offset(2, 0), p);
     canvas.drawLine(const Offset(2, 0), Offset(size.width, 0), p);
@@ -419,10 +418,10 @@ class _RestorePainter extends _IconPainter {
 }
 
 /// Minimize
-class MinimizeIcon extends StatelessWidget {
+class _MinimizeIcon extends StatelessWidget {
   final Color color;
 
-  const MinimizeIcon({super.key, required this.color});
+  const _MinimizeIcon({required this.color});
 
   @override
   Widget build(BuildContext context) => _AlignedPaint(_MinimizePainter(color));
@@ -433,7 +432,7 @@ class _MinimizePainter extends _IconPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    Paint p = getPaint(color);
+    Paint p = _getPaint(color);
     canvas.drawLine(
       Offset(0, size.height / 2),
       Offset(size.width, size.height / 2),
@@ -466,7 +465,7 @@ class _AlignedPaint extends StatelessWidget {
   }
 }
 
-Paint getPaint(Color color, [bool isAntiAlias = false]) => Paint()
+Paint _getPaint(Color color, [bool isAntiAlias = false]) => Paint()
   ..color = color
   ..style = PaintingStyle.stroke
   ..isAntiAlias = isAntiAlias
@@ -561,17 +560,17 @@ class WindowPlacement {
   }
 }
 
-class VirtualWindowFrame extends StatefulWidget {
-  const VirtualWindowFrame({super.key, required this.child});
+class _VirtualWindowFrame extends StatefulWidget {
+  const _VirtualWindowFrame({required this.child});
 
-  /// The [child] contained by the VirtualWindowFrame.
+  /// The [child] contained by the _VirtualWindowFrame.
   final Widget child;
 
   @override
   State<StatefulWidget> createState() => _VirtualWindowFrameState();
 }
 
-class _VirtualWindowFrameState extends State<VirtualWindowFrame>
+class _VirtualWindowFrameState extends State<_VirtualWindowFrame>
     with WindowListener {
   bool _isFocused = true;
   bool _isMaximized = false;

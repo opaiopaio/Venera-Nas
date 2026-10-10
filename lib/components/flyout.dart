@@ -1,7 +1,7 @@
-part of "components.dart";
+part of 'components.dart';
 
-const minFlyoutWidth = 256.0;
-const minFlyoutHeight = 128.0;
+const _minFlyoutWidth = 256.0;
+const _minFlyoutHeight = 128.0;
 
 class FlyoutController {
   Function? _show;
@@ -124,11 +124,11 @@ class FlyoutState extends State<Flyout> {
           var left = rect.left;
           var top = rect.bottom;
 
-          if (left + minFlyoutWidth > MediaQuery.of(context).size.width) {
-            left = MediaQuery.of(context).size.width - minFlyoutWidth;
+          if (left + _minFlyoutWidth > MediaQuery.of(context).size.width) {
+            left = MediaQuery.of(context).size.width - _minFlyoutWidth;
           }
-          if (top + minFlyoutHeight > MediaQuery.of(context).size.height) {
-            top = MediaQuery.of(context).size.height - minFlyoutHeight;
+          if (top + _minFlyoutHeight > MediaQuery.of(context).size.height) {
+            top = MediaQuery.of(context).size.height - _minFlyoutHeight;
           }
 
           Widget transition(
@@ -226,7 +226,7 @@ class FlyoutContent extends StatelessWidget {
               ? windowOverlayColor()
               : context.colorScheme.surface.toOpacity(0.82),
           child: Container(
-            constraints: const BoxConstraints(minWidth: minFlyoutWidth),
+            constraints: const BoxConstraints(minWidth: _minFlyoutWidth),
             padding: const EdgeInsets.symmetric(
               vertical: AppSpace.sm,
               horizontal: AppSpace.lg,

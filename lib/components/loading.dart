@@ -127,7 +127,7 @@ class ListLoadingIndicator extends StatelessWidget {
     return const SizedBox(
       width: double.infinity,
       height: 80,
-      child: Center(child: FiveDotLoadingAnimation()),
+      child: Center(child: _FiveDotLoadingAnimation()),
     );
   }
 }
@@ -378,15 +378,15 @@ abstract class MultiPageLoadingState<T extends StatefulWidget, S extends Object>
   }
 }
 
-class FiveDotLoadingAnimation extends StatefulWidget {
-  const FiveDotLoadingAnimation({super.key});
+class _FiveDotLoadingAnimation extends StatefulWidget {
+  const _FiveDotLoadingAnimation();
 
   @override
-  State<FiveDotLoadingAnimation> createState() =>
+  State<_FiveDotLoadingAnimation> createState() =>
       _FiveDotLoadingAnimationState();
 }
 
-class _FiveDotLoadingAnimationState extends State<FiveDotLoadingAnimation>
+class _FiveDotLoadingAnimationState extends State<_FiveDotLoadingAnimation>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 

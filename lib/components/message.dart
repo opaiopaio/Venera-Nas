@@ -1,4 +1,4 @@
-part of "components.dart";
+part of 'components.dart';
 
 void showToast({
   required String message,
@@ -12,7 +12,7 @@ void showToast({
         _ToastOverlay(message: message, icon: icon, trailing: trailing),
   );
 
-  var state = context.findAncestorStateOfType<OverlayWidgetState>();
+  var state = context.findAncestorStateOfType<_OverlayWidgetState>();
 
   state?.addOverlay(newEntry);
 
@@ -87,10 +87,10 @@ class OverlayWidget extends StatefulWidget {
   final Widget child;
 
   @override
-  State<OverlayWidget> createState() => OverlayWidgetState();
+  State<OverlayWidget> createState() => _OverlayWidgetState();
 }
 
-class OverlayWidgetState extends State<OverlayWidget> {
+class _OverlayWidgetState extends State<OverlayWidget> {
   final overlayKey = GlobalKey<OverlayState>();
 
   var entries = <OverlayEntry>[];

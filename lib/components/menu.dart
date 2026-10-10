@@ -1,4 +1,4 @@
-part of "components.dart";
+part of 'components.dart';
 
 void showMenuX(BuildContext context, Offset location, List<MenuEntry> entries) {
   Navigator.of(

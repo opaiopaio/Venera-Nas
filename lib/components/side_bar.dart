@@ -1,7 +1,7 @@
 part of 'components.dart';
 
-class SideBarRoute<T> extends PopupRoute<T> {
-  SideBarRoute(
+class _SideBarRoute<T> extends PopupRoute<T> {
+  _SideBarRoute(
     this.widget, {
     this.showBarrier = true,
     this.dismissible = true,
@@ -251,7 +251,7 @@ Future<void> showSideBar(
   bool addTopPadding = true,
 }) {
   return Navigator.of(context).push(
-    SideBarRoute(
+    _SideBarRoute(
       widget,
       showBarrier: showBarrier,
       dismissible: dismissible,
