@@ -9,16 +9,19 @@ part of 'components.dart';
 /// - **不透明度**：默认 0.85 ✓，同区块可调 ✓；
 /// - 想要**主题色**：把「标签背景颜色」显式设成对应颜色即可 ✓（不再有模式开关 ✓）。
 ///
-/// 选中态（`selected: true`）仍固定用 `secondaryContainer` ✓ —— 它表达"已选中"语义 ✓，
+/// 选中态（`selected: true`）固定用 `primaryContainer` ✓ —— 它表达"已选中"语义 ✓，
 /// 与底色模式无关 ✓。
 ///
-/// 用法：标签类控件统一走本函数 ✓（`MaskChip` ✓、卡片内 tag ✓ 等），
-/// 这样"标签颜色"设置一处生效 ✓，不要在各处散写 `secondaryContainer` ✗。
+/// ⭐ 2026-10-10（用户实测反馈 ✓）：**选中态原先用 `secondaryContainer` 太不显眼** ✗ ——
+/// 「外观全部跟随主题」时它与未选中的 `tagOverlayColor()`（系统容器色 × 0.85）几乎同色 ✓，
+/// 而选中态又把描边设成**与填充同色** ✗ ⇒ 唯一差别只剩"未选中才有描边" ⇒ **看不出谁被选中** ✓。
+/// 现改为 `primaryContainer` ✓（更强色调 ✓，配 `MaskChip` 的 `onPrimaryContainer` 文字 ✓ =
+/// Material 成对色 ⇒ 对比度有保证 ✓、且天然跟随主题/自定义配色 ✓）。
 Color tagFillColor(BuildContext context, {bool selected = false}) {
   // 建立设置依赖 ✓：改设置后标签即时刷新 ✓（见 11-refresh-mechanism.md）
   AppSettingsScope.of(context);
   final scheme = context.colorScheme;
-  if (selected) return scheme.secondaryContainer;
+  if (selected) return scheme.primaryContainer;
   // ⭐ L1：标签底色**完全独立控制** ✓ —— 原「标签颜色」模式开关（`tagColorMode`：
   // 跟随遮罩 / 跟随主题 ✓）已按用户要求**删除** ✗；现在统一走 `tagOverlayColor()` ✓
   //（颜色默认跟随**系统容器色** ✓、不透明度默认 0.85 ✓，可在「窗口与控件」区块单独设置 ✓）。
@@ -37,7 +40,9 @@ Color tagFillColor(BuildContext context, {bool selected = false}) {
 /// - 圆角：`windowOverlayBorderRadius() ?? AppRadius.md` → **跟随「圆角/直角」设置**
 /// - 文字：居中
 /// - 未选中填充：`windowOverlayColor()`（跟随遮罩色 × 不透明度）
-/// - 选中填充：`colorScheme.secondaryContainer`（+ 同色描边）
+/// - **选中填充：`primaryContainer` ＋ 文字 `onPrimaryContainer` ＋ 描边 `primary`**
+///   （⭐ 2026-10-10 用户要求 ✓：**靠颜色变化突出选中** 而非只靠描边 ✓ —— 旧实现填充 `secondaryContainer`
+///   且描边与填充**同色** ✗ ⇒ 跟随主题时选中/未选中几乎一样 ⇒ 用户"根本看不出按钮被选中" ✓）
 /// - 外间距（Wrap 场景）：`horizontal AppSpace.sm(8)` / `vertical AppSpace.tiny(6)`
 ///
 /// ⚠️ **不要**用它同化顶栏「漫画源」标签：那一类属于更宽松的卡片式标签，
@@ -70,17 +75,22 @@ class MaskChip extends StatelessWidget {
     final radius =
         windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.md);
     final isSelected = selected ?? false;
+    // ⭐ 2026-10-10（用户要求 ✓）：**选中 = 颜色变化** ✓ ——
+    // 填充 `primaryContainer` ✓、文字 `onPrimaryContainer` ✓、描边 `primary` ✓（三者成对 ✓ 对比度有保证 ✓）；
+    // 未选中保持原样 ✓（填充 `tagOverlayColor()`、描边 `outline` ✓、文字沿用主题 ✓）。
+    // ⚠️ 只改 `MaskChip`（= `OptionChip` ✓）这一族 ✓；**顶栏「漫画源」标签不走这里** ✓
+    //（`home_page.dart` 的 `_ComicSourceWidget` 直接调 `tagFillColor(context)` 不带 selected ✓ ⇒ 不受影响 ✓）。
+    final selectedFill = isSelected ? scheme.primaryContainer : null;
+    final selectedOnColor = isSelected ? scheme.onPrimaryContainer : null;
 
     Widget chip = AnimatedContainer(
       duration: AppMotion.short,
       decoration: BoxDecoration(
-        color: tagFillColor(context, selected: isSelected),
+        color: selectedFill ?? tagFillColor(context, selected: false),
         borderRadius: radius,
         border: selected == null
             ? null
-            : Border.all(
-                color: isSelected ? scheme.secondaryContainer : scheme.outline,
-              ),
+            : Border.all(color: isSelected ? scheme.primary : scheme.outline),
       ),
       child: Material(
         color: Colors.transparent,
@@ -97,7 +107,15 @@ class MaskChip extends StatelessWidget {
               // ⚠️ 不要用 Center/Align：它会**横向撑满可用宽度**，
               // 在 Wrap 里会让每个 chip 变成整行宽条（曾经的 bug）。
               // 高度由"内边距 + 文字行高"决定（minHeight 32 仅在必要时兜底）。
-              child: Text(text, textAlign: TextAlign.center),
+              // ⚠️ 选中态必须显式给对比文字色 ✗（否则会"深底深字" ✗）；`Text.style` 会与
+              // 环境 `DefaultTextStyle` **合并** ✓ ⇒ 字号/字重等仍沿用主题 ✓ 不丢 ✓。
+              child: Text(
+                text,
+                textAlign: TextAlign.center,
+                style: selectedOnColor == null
+                    ? null
+                    : TextStyle(color: selectedOnColor),
+              ),
             ),
           ),
         ),
