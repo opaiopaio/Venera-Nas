@@ -39,7 +39,10 @@ String? _sliceCachedPath;
 /// ⇒ 冷启动时**首帧还没有图** ✗，那一帧只有底色（未设背景色时底色 = `scheme.surface`
 /// = 浅色主题**白** ✗）⇒ 用户实测"背景是白色然后闪出背景的" ✓（原话："首帧没有背景的预加载吗" ✓）。
 /// 做法 ✓：把图**提前解码**并写进**同一个模块级缓存** ✓（与 `_resolveImage` 命中缓存那条路完全一致 ✓）
-/// ⇒ 首个 `BackgroundSlice` 的**第一帧就有图** ✓，且**不再重复解码** ✓（见 `_resolveImage` 的提前返回 ✓）。
+/// ⇒ 首个 `BackgroundSlice` 的**第一帧就有图** ✓。
+/// ⚠️ 它**只是首帧预热** ✓：`_resolveImage` 命中缓存后**仍然照常**走 `FileImage` 解析 ✓
+///（那条流才是图的**真源** ✓；若在命中处提前返回 ⇒ 缓存句柄一旦失效背景就永久消失 ✗，
+///  见 `_resolveImage` 内的血泪注释 ✓）。
 ///
 /// 返回解码结果 ✓（调用方可忽略 ✓；测试用它断言"确实预热成功" ✓）。
 Future<ui.Image?> preloadBackgroundImage() async {
@@ -124,11 +127,13 @@ class _BackgroundSliceState extends State<BackgroundSlice> {
     // ⭐ 首帧同步命中缓存 ⇒ 本帧就能画出图（消除"先白一下再出图"）
     if (_sliceCachedPath == file.path && _sliceCachedImage != null) {
       _image = _sliceCachedImage;
-      // ⭐ 本轮（用户实测反馈 ✓）：预热已命中 ⇒ **不再走 `FileImage`** ✗ ——
-      // 否则启动时会把同一张图**再解码一次** ✗（预热的意义正是免掉这次解码 ✓）。
-      // 安全性 ✓：背景图文件名"每次选择都唯一"（见本文件顶部说明 ✓）⇒ 不会漏掉换图 ✓；
-      // 换图后路径不同 ⇒ 正常走下面的 `FileImage` 分支 ✓。
-      return;
+      // ⚠️⚠️ **这里绝对不能再 `return`** ✗✗（2026-10-10 血泪教训 ✓：曾为"省掉一次重复解码"在此提前
+      // `return` ✓ ⇒ 用户实测"**每次启动背景图片消失**" ✗，**Android 与 Windows 两端都坏** ✗）。
+      // 原因 ✓：本缓存（`_sliceCachedImage` ✓）里的 `ui.Image` **不是我们独占的** ✗ —— 它来自
+      // `FileImage` 的 `ImageInfo`（走 Flutter `ImageCache` ✓），被淘汰/释放后**句柄会失效** ✗；
+      // 顶部注释早已写明它"**只是免掉那一两帧空窗**" ✓ = **首帧优化**，**不是**图片来源 ✓。
+      // 一旦在此提前返回 ✗ ⇒ 再也没有 `FileImage.resolve` 兜底 ⇒ 失效的图**永久**画不出来 ✗。
+      // ⇒ 必须继续往下走：命中缓存只是"先画上" ✓，真正的解析永远交给 `FileImage` 流 ✓。
     }
     final stream = FileImage(
       file,
