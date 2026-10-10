@@ -461,17 +461,32 @@ class _ButtonState extends State<Button> {
   }
 }
 
-/// ⭐ 对比度工具（2026-10-11）：给定**实际填充色**，返回与它**成对**的可读前景色（文字与图标同用 ✓）。
+/// ⭐ 对比度工具（2026-10-11 ✓，2026-10-11 修正 ✓）：给定**实际填充色**，返回**对比度更高**的前景色。
 ///
-/// 规则 ✓：填充比主题表面**亮** ⇒ 用深前景 `onSurface` ✓；比表面**暗** ⇒ 用浅前景 `onInverseSurface` ✓。
-/// ⇒ 这两个值本身就是 `ColorScheme` 里的一对"深/浅"前景色 ✓（亮色/暗色主题自动互换 ✓），
-/// **不使用任何字面量/自调灰** ✗ ⇒ 既保证对比度，又完全跟随主题与自定义配色 ✓。
+/// ⚠️ 修正原因 ✗：原先用「填充 vs 主题表面谁更亮」判断 ✗ ⇒ **浅色主题 + 略暗于表面的浅色填充**
+/// 会误选 `onInverseSurface`（浅色 ✗）⇒ **浅字叠浅底、看不见** ✗（浅色模式下「扫描 NAS」「导入」等按钮 ✓）。
+///
+/// 规则 ✓：**按两种候选前景色与填充的对比度择优** ✓ —— 填充偏暗 ⇒ 浅前景 `onInverseSurface` ✓；
+/// 偏亮 ⇒ 深前景 `onSurface` ✓。两值均取自 `ColorScheme` ✓ ⇒ 跟随主题/自定义配色 ✓，无自调灰 ✗。
 Color onColorForFill(BuildContext context, Color fill) {
   final scheme = context.colorScheme;
-  return fill.computeLuminance() > scheme.surface.computeLuminance()
+  return _contrastRatio(fill, scheme.onSurface) >=
+          _contrastRatio(fill, scheme.onInverseSurface)
       ? scheme.onSurface
       : scheme.onInverseSurface;
 }
+
+/// WCAG 对比度（相对亮度比 ✓）；系数取自 WCAG 2.x 定义 ✓，非观感字面量 ✗。
+double _contrastRatio(Color a, Color b) {
+  final l1 = a.computeLuminance();
+  final l2 = b.computeLuminance();
+  final hi = l1 > l2 ? l1 : l2;
+  final lo = l1 > l2 ? l2 : l1;
+  return (hi + kContrastLuminanceOffset) / (lo + kContrastLuminanceOffset);
+}
+
+/// WCAG 相对亮度公式里的 0.05 偏移 ✓（规范常量 ✓，不是可调观感值 ✓）。
+const double kContrastLuminanceOffset = 0.05;
 
 /// ⭐ 第 0 步（2026-10-10 ✓）：图标按钮的底色策略 —— 现状有三种并存 ✓，统一到此枚举 ✓；
 /// 默认 `hover` = 与原先**逐字一致** ✓（不传的新参数一律不改变观感 ✓）。
