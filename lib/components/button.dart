@@ -338,7 +338,15 @@ class _ButtonState extends State<Button> {
                 child: SizedBox(
                   width: width,
                   height: height,
-                  child: Center(widthFactor: 1, child: child),
+                  // ⭐ 本轮（用户实测反馈 ✓）：内容盒的**高度必须由内容决定** ✗→✓ ——
+                  // 加 `heightFactor: 1` ⇒ 高度收缩到内容高度 ✓；原先为 `null` ✗ ⇒
+                  // 只要父级给了**有界**高度（例如 `ListTile.trailing` 那一格 ✓），
+                  // `Center` 就会**撑满父级高度** ✗ ⇒ `Select` 的描边框会贴住遮罩上下边 ✗。
+                  // 影响面 ✓：调用方传的约束若把高度**钉死**（默认按钮就是 32 ✓、显式 `height:` ✓），
+                  // 结果仍被约束钉在同一值 ⇒ **零影响** ✓；只有"高度由内容决定"那类调用方
+                  //（`Select` ✓、`CommentActionChip` ✓ 都传了无界 `maxHeight` ✓）
+                  // 才**恢复到它们重构前**的内容高度 ✓。
+                  child: Center(widthFactor: 1, heightFactor: 1, child: child),
                 ),
               ),
             ),
