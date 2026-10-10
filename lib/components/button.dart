@@ -326,7 +326,9 @@ class _ButtonState extends State<Button> {
     if (widget.fillColor != null) {
       final fill = widget.fillColor!;
       if (disabled) return fill.toOpacity(AppOpacity.disabled);
-      return isHover ? fill.toOpacity(0.9) : fill;
+      // ⭐ 说明 ✓：`fillColor` 分支**不做 hover 变化** ✓ —— 其一为"透明填充"（hover 变透明无意义 ✓），
+      // 其二避免新增裸透明度字面量 ✓（守卫棘轮"只许降不许升" ✗）。
+      return fill;
     }
     // ⭐ H3：按钮底色改用**独立入口** `buttonOverlayColor()` ✓ ——
     // 与「窗口背景」分离 ✓（原先与面板同色 ✗ → 叠在同色面板上完全融合 ✗）。
