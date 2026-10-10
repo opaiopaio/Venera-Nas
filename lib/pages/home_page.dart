@@ -1145,7 +1145,15 @@ class _ImageFavoritesState extends State<ImageFavorites> {
           borderRadius: BorderRadius.circular(radius),
         ),
         duration: AppMotion.short,
-        child: Center(child: Text(text, style: ts.s16)),
+        // ⭐ 对比度（2026-10-11）：选中态自绘 `primaryContainer` 底色 ⇒ 文字取与填充成对的前景色 ✓
+        //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色选中者底上"白字融底"看不见 ✗）；
+        // 未选中（无填充 ✓）保持原语义 ✗ 不动。
+        child: FilledForeground(
+          fill: displayType == type
+              ? context.colorScheme.primaryContainer
+              : null,
+          child: Center(child: Text(text, style: ts.s16)),
+        ),
       ),
     );
   }

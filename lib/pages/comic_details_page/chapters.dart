@@ -127,16 +127,21 @@ class _NormalComicChaptersState extends State<_NormalComicChapters> {
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpace.sm,
                         ),
-                        child: Center(
-                          child: Text(
-                            value,
-                            maxLines: 1,
-                            textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: visited
-                                  ? context.colorScheme.outline
-                                  : null,
+                        // ⭐ 对比度（2026-10-11）：章节格自绘底色 ⇒ 章号取与填充成对的前景色 ✓
+                        //（未读项原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色格底上"白字融底"看不见 ✗）
+                        child: FilledForeground(
+                          fill: context.colorScheme.surfaceContainer,
+                          child: Center(
+                            child: Text(
+                              value,
+                              maxLines: 1,
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: visited
+                                    ? context.colorScheme.outline
+                                    : null,
+                              ),
                             ),
                           ),
                         ),

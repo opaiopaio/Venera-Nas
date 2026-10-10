@@ -799,17 +799,22 @@ class _BackupWebdavSettingState extends State<_BackupWebdavSetting> {
                 color: Theme.of(context).colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              child: Row(
-                children: [
-                  const Icon(Icons.info_outline, size: AppIconSize.md),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      "This is only used for CBZ archive backup and restore."
-                          .tl,
+              // ⭐ 对比度（2026-10-11）：提示条自绘底色 ⇒ 图标/文字取与填充成对的前景色 ✓
+              //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色提示条上"白字融底"看不见 ✗）
+              child: FilledForeground(
+                fill: Theme.of(context).colorScheme.primaryContainer,
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, size: AppIconSize.md),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        "This is only used for CBZ archive backup and restore."
+                            .tl,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 12),
