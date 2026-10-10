@@ -479,6 +479,45 @@ Color onColorForFill(BuildContext context, Color fill) {
       : Colors.black;
 }
 
+/// ⭐ 共用包装（2026-10-11）：给**自绘底色**的子树套上与填充对比的前景色 ✓（文字与图标一起 ✓）。
+///
+/// 规则 ✓（全项目统一，勿自创变体 ✗）：
+/// - 有填充 ⇒ 前景 = `globalTextColor() ?? onColorForFill(context, 合成后的实色)` ✓
+///   （用户手动设了文字颜色 ⇒ 优先跟随 ✓，与 `Button` 的既有约定一致 ✓）；
+/// - **无填充/全透明 ⇒ 原样返回** ✗（透明与描边控件保持原有语义 ✓）；
+/// - 半透明填充**先与主题表面合成** ✓（`onColorForFill` 忽略 alpha ✗）。
+class FilledForeground extends StatelessWidget {
+  const FilledForeground({super.key, required this.fill, required this.child});
+
+  /// 该处**实际**的填充色 ✓；`null` = 没有填充 ⇒ 不做任何处理 ✓。
+  final Color? fill;
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    // 建立设置依赖 ✓：改「全局文字颜色」后前景即时刷新 ✓。
+    AppSettingsScope.of(context);
+    final fill = this.fill;
+    if (fill == null || fill.a == 0) return child;
+    final on =
+        globalTextColor() ??
+        onColorForFill(
+          context,
+          fill.a >= 1
+              ? fill
+              : Color.alphaBlend(fill, context.colorScheme.surface),
+        );
+    return DefaultTextStyle.merge(
+      style: TextStyle(color: on),
+      child: IconTheme.merge(
+        data: IconThemeData(color: on),
+        child: child,
+      ),
+    );
+  }
+}
+
 /// ⭐ 第 0 步（2026-10-10 ✓）：图标按钮的底色策略 —— 现状有三种并存 ✓，统一到此枚举 ✓；
 /// 默认 `hover` = 与原先**逐字一致** ✓（不传的新参数一律不改变观感 ✓）。
 enum IconButtonBackground { none, hover, always }

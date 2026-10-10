@@ -586,19 +586,20 @@ class _SliverGridComicsNoListenerState
         if (widget.selections == null) {
           return comic;
         }
+        // ⭐ 选中高亮：填充与前景**同源** ✓（与 `components/comic.dart` 的同一处逻辑共用 `FilledForeground` ✓，
+        // 避免第三份副本再漂移 ✓）。
+        final selectedFill = isSelected
+            ? Theme.of(context).colorScheme.secondaryContainer.toOpacity(0.72)
+            : null;
         return AnimatedContainer(
           key: ValueKey(comics[index].id),
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
-            color: isSelected
-                ? Theme.of(
-                    context,
-                  ).colorScheme.secondaryContainer.toOpacity(0.72)
-                : null,
+            color: selectedFill,
             borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           margin: const EdgeInsets.all(AppSpace.xs),
-          child: comic,
+          child: FilledForeground(fill: selectedFill, child: comic),
         );
       }, childCount: comics.length),
       gridDelegate: SliverGridDelegateWithComics(),

@@ -980,19 +980,20 @@ class _SliverGridComics extends StatelessWidget {
             child: comic,
           );
         }
+        // ⭐ 选中高亮：填充与前景**同源** ✓（选中时自绘底色 ⇒ 必须显式给对比前景 ✓，
+        // 否则夜间/全局白字会与浅色高亮融合、标题看不清 ✓）。
+        final selectedFill = isSelected
+            ? Theme.of(context).colorScheme.secondaryContainer.toOpacity(0.72)
+            : null;
         return AnimatedContainer(
           key: ValueKey(comics[index].id),
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
-            color: isSelected
-                ? Theme.of(
-                    context,
-                  ).colorScheme.secondaryContainer.toOpacity(0.72)
-                : null,
+            color: selectedFill,
             borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           margin: const EdgeInsets.all(AppSpace.xs),
-          child: comic,
+          child: FilledForeground(fill: selectedFill, child: comic),
         );
       }, childCount: comics.length),
       gridDelegate: SliverGridDelegateWithComics(),
