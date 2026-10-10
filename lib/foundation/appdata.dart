@@ -107,7 +107,8 @@ class Appdata with Init {
       var settings = data['settings'] as Map<String, dynamic>;
       for (var key in settings.keys) {
         if (!_disableRestore.contains(key) && settings[key] != null) {
-          this.settings[key] = settings[key];
+          // ⭐ 同步/恢复写入**全局**（绕过设备分流 ✓），否则会把对端值写进本机设备表 ✓。
+          this.settings._data[key] = settings[key];
         }
       }
     }
@@ -162,7 +163,8 @@ class Appdata with Init {
       for (var key in settings.keys) {
         if (_archiveSyncFields.contains(key)) {
           if (archiveSyncEnabled) {
-            this.settings[key] = settings[key];
+            // ⭐ 同步/恢复写入**全局**（绕过设备分流 ✓），否则会把对端值写进本机设备表 ✓。
+            this.settings._data[key] = settings[key];
           }
           continue;
         }
@@ -173,7 +175,8 @@ class Appdata with Init {
           continue;
         final deviceProtected = this.settings.isDeviceProtected(key);
         if (deviceProtected) continue;
-        this.settings[key] = settings[key];
+        // ⭐ 同步/恢复写入**全局**（绕过设备分流 ✓），否则会把对端值写进本机设备表 ✓。
+        this.settings._data[key] = settings[key];
       }
     }
     searchHistory = List.from(data['searchHistory'] ?? []);
@@ -464,6 +467,12 @@ class Settings with ChangeNotifier {
   }
 
   operator []=(String key, dynamic value) {
+    // ⭐ 修复（2026-10-10 用户实测 ✓）：**写入同样按设备分流** ✗→✓ —— 外观页的颜色类行是**直连** settings 赋值 ✗；
+    // 只做读取分流不够 ✓，这些值仍写进全局 ⇒ 依旧被云端覆盖 ✓。现受保护的键一律写入**设备表** ✓。
+    if (isDeviceProtected(key)) {
+      setDeviceReaderSetting(key, value);
+      return;
+    }
     _data[key] = value;
     if (key != "dataVersion") {
       notifyListeners();
@@ -554,11 +563,24 @@ class Settings with ChangeNotifier {
 
   /// ⭐ 2026-10-10（用户要求 ✓）：**外观类设置键集合** —— 这些键由「外观」开关管，其余键由「阅读」开关管 ✓。
   static const _appearanceDeviceKeys = <String>{
+    'color',
+    'globalIconColor',
+    'globalTextColor',
+    'textShadowColor',
+    'textGlowColor',
+    'globalFontFile',
+    'globalFontSource',
+    'backgroundImage',
+    'backgroundImageSource',
+    'windowOverlayColor',
+    'buttonOverlayColor',
+    'iconOverlayColor',
+    'tagOverlayColor',
+    'sourceTabOverlayColor',
     'theme_mode',
     'comicDisplayMode',
     'comicTileScale',
     'comicListDisplayMode',
-    'backgroundImage',
     'backgroundColor',
     'backgroundImageOpacity',
     'backgroundImageFit',
