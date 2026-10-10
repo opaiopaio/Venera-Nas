@@ -1118,6 +1118,7 @@ class _ReorderComicsPageState extends State<_ReorderComicsPage> {
         LocalFavoritesManager().reorder(comics, widget.name);
       });
     }
+    _scrollController.dispose();
     super.dispose();
   }
 

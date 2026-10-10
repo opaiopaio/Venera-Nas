@@ -140,6 +140,7 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
   void dispose() {
     scrollController.removeListener(onScroll);
     ReadLaterManager().removeListener(update);
+    scrollController.dispose();
     super.dispose();
   }
 

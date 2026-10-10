@@ -432,11 +432,15 @@ class _ComicSourceListState extends State<_ComicSourceList> {
 
   @override
   void dispose() {
-    super.dispose();
+    // 先把要落盘的文本取到局部变量 ✓，再释放 controller ✓，
+    // 最后才 `super.dispose()` ✓（原先在 `super.dispose()` 之后读写 `controller.text` ✗）。
+    final url = controller.text;
+    controller.dispose();
     if (changed) {
-      appdata.settings['comicSourceListUrl'] = controller.text;
+      appdata.settings['comicSourceListUrl'] = url;
       appdata.saveData();
     }
+    super.dispose();
   }
 
   @override

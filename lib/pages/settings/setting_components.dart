@@ -585,6 +585,7 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
 
   @override
   void dispose() {
+    scrollController.dispose();
     super.dispose();
     Future.microtask(() {
       updateSetting();
