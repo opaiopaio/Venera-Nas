@@ -94,6 +94,10 @@ class Appdata with Init {
     "disableSyncFields",
     "authorizationRequired",
     "smbDownloadPath",
+    // ⭐ 修复（2026-10-10 用户实测 ✓）：**设备专属设置表不得随同步/恢复覆盖** ✗→✓ ——
+    // 该表按 `deviceId` 分键保存各设备自己的配置 ✓；一旦被对端整表覆盖 ✗，本设备条目即丢失 ⇒
+    // 「启用设备特定设置」的读数全部失效（用户："同步 webdav 备份后依旧会覆盖外观设置" ✓）。
+    "deviceSpecificSettings",
   ];
 
   /// Restore data from a local backup file.
@@ -133,6 +137,10 @@ class Appdata with Init {
     "imageFavoritesDisplayType",
     "commentFontSize",
     "smbDownloadPath",
+    // ⭐ 修复（2026-10-10 用户实测 ✓）：**设备专属设置表不得随同步/恢复覆盖** ✗→✓ ——
+    // 该表按 `deviceId` 分键保存各设备自己的配置 ✓；一旦被对端整表覆盖 ✗，本设备条目即丢失 ⇒
+    // 「启用设备特定设置」的读数全部失效（用户："同步 webdav 备份后依旧会覆盖外观设置" ✓）。
+    "deviceSpecificSettings",
   ];
 
   static const _archiveSyncFields = ["backupWebdav", "backupWebdavPath"];
@@ -536,6 +544,10 @@ class Settings with ChangeNotifier {
     )[key] = value;
     notifyListeners();
   }
+
+  /// ⭐ 2026-10-10：清除**本设备**的全部「设备专属设置」✓（阅读 + 外观共用同一张表 ✓）。
+
+  void resetDeviceSpecificSettings() => resetDeviceReaderSettings();
 
   void resetDeviceReaderSettings() {
     var deviceId = _data['deviceId'] as String;

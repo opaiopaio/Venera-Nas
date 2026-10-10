@@ -88,6 +88,21 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
             appdata.saveData();
           },
         ).toSliver(),
+        // ⭐ 2026-10-10（用户要求 ✓）：与「阅读」页同款的**清除按钮** ✓（清掉本设备的全部设备专属设置 ✓）。
+        if (useDeviceSpecificSettings)
+          Center(
+            child: Button.normal(
+              onPressed: () {
+                setState(() {
+                  appdata.settings.resetDeviceSpecificSettings();
+                });
+                appdata.saveData();
+              },
+              child: Text(
+                "Clear specific appearance settings for this device".tl,
+              ),
+            ),
+          ).toSliver(),
         _SettingPartTitle(title: "Theme".tl, icon: Icons.palette),
         SelectSetting(
           title: "Theme Mode".tl,
