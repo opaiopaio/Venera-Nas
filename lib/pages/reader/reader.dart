@@ -277,6 +277,15 @@ class _ReaderState extends State<Reader>
       fullscreen();
     }
     autoPageTurningTimer?.cancel();
+    // ⭐ 修复（2026-10-10 全量代码审查发现 ✓）：**兜底 Timer 与历史写入 Timer 必须一并取消** ✗→✓
+    // 否则退出阅读器后它们仍会触发 `update()`（= `setState`）⇒ 在**已 dispose** 的 State 上报错 ✓。
+    //（背景 ✓：`_pageAnimatingFallback` 是修「切章节后内容区手势失效」时引入的 ✓，属本次遗漏 ✗。）
+    _pageAnimatingFallback?.cancel();
+    _pageAnimatingFallback = null;
+    _updateHistoryTimer?.cancel();
+    _updateHistoryTimer = null;
+    // ⭐ 置存活标志为 false ✓：让仍在途的 `animateToPage().whenComplete` 迟到回调失效 ✗（它无权再 setState ✓）。
+    _disposed = true;
     focusNode.dispose();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     stopVolumeEvent();
@@ -709,28 +718,55 @@ abstract mixin class _ReaderLocation {
   bool _pageAnimating = false;
   Timer? _pageAnimatingFallback;
 
+  /// ⭐ 修复（2026-10-10 全量审查 ✓）：**动画代次号** —— 连续翻页时旧动画的
+  /// `whenComplete` / 兜底回调可能**迟到** ✓，若无条件清标志，会把**新动画**刚置上的
+  /// `_pageAnimating` 误清 ✗ ⇒ 新动画期间 `AbsorbPointer` 不再吸收 ✓（动画中途能被点击改页 ✓）。
+  /// 回调里先比对代次 ✓，只允许"当前这次动画"改状态 ✓。
+  int _animToken = 0;
+
+  /// ⭐ 修复（2026-10-10 全量审查 ✓）：**存活标志** —— 本 mixin 没有 `mounted` ✗，
+  /// 但 `animateToPage(...).whenComplete` 仍可能在**阅读器已 dispose 之后**才回调 ✓，
+  /// 而它无权直接改 State 状态 ✗（`update()` 会 `setState` ⇒ 报错 ✓）。
+  /// 由 `_ReaderState.dispose()` 置 false ✓，所有迟到回调先查它 ✓。
+  bool _disposed = false;
+
   bool toPage(int page) {
     if (_validatePage(page)) {
       if (page == this.page && page != 1 && page != totalPages) {
         return false;
       }
+      // ⭐ 修复（2026-10-10 全量审查 ✓）：`_imageViewController` 在**章节加载期可能为空** ✗
+      //（此时 `images.dart` 返回 loading、从不设置 controller ✓），或在切章时**已被旧模式 dispose** ✓
+      // ⇒ 原先的 `_imageViewController!` 强解包会**直接崩溃** ✗（按 Home/End/PageUp 即可触发 ✓）。
+      // 现改为：为空时退化为"只改页码" ✓（不崩、也不做动画 ✓）。
+      final controller = _imageViewController;
+      if (controller == null) {
+        this.page = page;
+        update();
+        return true;
+      }
       final hasAnimation = enablePageAnimation(cid, type);
       if (hasAnimation) {
         _pendingPage = page;
         _pageAnimating = true;
+        final token = ++_animToken;
         update();
         // ⭐ 兜底 ✓：不再只依赖 Future 一定会回来 ✗ —— 兜底时长到点一定解除吸收 ✓
         //（正常路径由下面的 whenComplete 立即清除 ✓）。
+        // ⭐ 时长修正（2026-10-10 全量审查 ✓）：真实翻页动画只有 `AppMotion.short`(200ms ✓)，
+        // 原先的 `AppMotion.long * 2`(800ms ✗) 会让最坏阻塞翻页手感长达 800ms ⇒ 改为两倍最小动效 ✓。
         _pageAnimatingFallback?.cancel();
-        _pageAnimatingFallback = Timer(AppMotion.long * 2, () {
-          if (!_pageAnimating) return;
+        _pageAnimatingFallback = Timer(AppMotion.short * 2, () {
+          if (_disposed || token != _animToken || !_pageAnimating) return;
           _pageAnimating = false;
           _pendingPage = null;
           update();
         });
-        _imageViewController!.animateToPage(page).whenComplete(() {
+        controller.animateToPage(page).whenComplete(() {
           _pageAnimatingFallback?.cancel();
           _pageAnimatingFallback = null;
+          // ⭐ 代次校验 ✓：迟到的旧回调**不得**动新动画的状态 ✗。
+          if (_disposed || token != _animToken) return;
           _pageAnimating = false;
           if (_pendingPage == page) {
             _pendingPage = null;
@@ -740,7 +776,7 @@ abstract mixin class _ReaderLocation {
       } else {
         this.page = page;
         update();
-        _imageViewController!.toPage(page);
+        controller.toPage(page);
       }
       return true;
     }
@@ -778,6 +814,8 @@ abstract mixin class _ReaderLocation {
       _pageAnimatingFallback = null;
       _pageAnimating = false;
       _pendingPage = null;
+      // ⭐ 代次 +1 ✓：切章后，**切章前**那次动画的迟到回调一律失效 ✗（不得再改状态 ✓）。
+      _animToken++;
       _jumpToLastPageOnLoad = toLastPage;
       update();
       return true;
