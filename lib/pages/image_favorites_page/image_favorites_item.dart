@@ -271,7 +271,10 @@ class _ImageFavoritesItemState extends State<_ImageFavoritesItem> {
           ),
           child: Text(
             "${widget.imageFavoritesComic.images.length}/${widget.imageFavoritesComic.maxPageFromEp}",
-            style: ts.s12,
+            style: ts.s12.copyWith(
+              // ⭐ 对比度（2026-10-11）：自绘填充 ⇒ 文字取与填充成对的前景色 ✓（原先继承全局文字色 ✗）
+              color: onColorForFill(context, tagFillColor(context)),
+            ),
           ),
         ),
       ],

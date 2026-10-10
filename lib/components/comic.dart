@@ -724,7 +724,18 @@ class _ComicDescription extends StatelessWidget {
                               enableTranslate
                                   ? TagsTranslation.translateTag(s)
                                   : s.split(':').last,
-                              style: const TextStyle(fontSize: 12),
+                              style: TextStyle(
+                                fontSize: 12,
+                                // ⭐ 对比度（2026-10-11）：自绘填充 ⇒ 取与填充成对的前景色 ✓
+                                // 「不可用」用错误色填充 ⇒ 配 `onErrorContainer` ✓；其余走标签填充的配对色 ✓
+                                //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色标签底上"白字融底"看不见 ✗）
+                                color: s == "Unavailable"
+                                    ? context.colorScheme.onErrorContainer
+                                    : onColorForFill(
+                                        context,
+                                        tagFillColor(context),
+                                      ),
+                              ),
                               softWrap: true,
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
