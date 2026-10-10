@@ -867,7 +867,11 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
                 ? Icons.arrow_forward_ios
                 : Icons.arrow_back_ios_outlined,
             size: AppIconSize.lg,
-            color: Theme.of(context).colorScheme.onPrimaryContainer,
+            // ⭐ 图标取色（2026-10-11）：先让「全局图标颜色」优先 ✓（未设时仍用成对色 ✓）。
+            color: appIconColor(
+              context,
+              Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
           ),
         );
       case -1:
@@ -893,7 +897,11 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
                 child: Icon(
                   _getArrowIcon(isReversed, showFloatingButtonValue),
                   size: AppIconSize.lg,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  // ⭐ 图标取色（2026-10-11）：先让「全局图标颜色」优先 ✓。
+                  color: appIconColor(
+                    context,
+                    Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
                 ),
               ),
             ),
@@ -1250,7 +1258,9 @@ class _SelectImageOverlayContentState
                   "Click to select an image".tl,
                   style: TextStyle(
                     fontSize: 16,
-                    color: context.colorScheme.onSurface,
+                    // ⭐ 用户设置优先（2026-10-11）：自绘 `surface` 底色上的文字
+                    // 也要跟随「全局文字颜色」✓（原先写死 `onSurface` ✗ ⇒ 不受控制 ✗）。
+                    color: globalTextColor() ?? context.colorScheme.onSurface,
                   ),
                 ),
               ],

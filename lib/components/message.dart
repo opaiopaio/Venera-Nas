@@ -40,12 +40,18 @@ class _ToastOverlay extends StatelessWidget {
           color: Theme.of(context).colorScheme.inverseSurface,
           borderRadius: BorderRadius.circular(AppRadius.md),
           elevation: 2,
+          // ⭐ 用户设置优先（2026-10-11）：toast 自绘底色上的文字跟随「全局文字颜色」✓
+          //（原先写死 `onInverseSurface` ✗ ⇒ 不受设置控制 ✗）。
           textStyle: ts.withColor(
-            Theme.of(context).colorScheme.onInverseSurface,
+            globalTextColor() ?? Theme.of(context).colorScheme.onInverseSurface,
           ),
           child: IconTheme(
             data: IconThemeData(
-              color: Theme.of(context).colorScheme.onInverseSurface,
+              // ⭐ 图标取色（2026-10-11）：图标跟随「全局图标颜色」✓（未设时仍用成对色 ✓）。
+              color: appIconColor(
+                context,
+                Theme.of(context).colorScheme.onInverseSurface,
+              ),
             ),
             child: IntrinsicWidth(
               child: Container(

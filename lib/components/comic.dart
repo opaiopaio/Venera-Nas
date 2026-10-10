@@ -687,8 +687,12 @@ class _ComicDescription extends StatelessWidget {
               fontSize: 10.0,
               // ⭐ 对比度（2026-10-11）：卡片有自绘底色时用与填充成对的前景色 ✓；
               // 无底色时保持原 `onSurface` 语义 ✓（`subtitleColor == null` ✓）。
+              // ⭐ 用户设置优先（2026-10-11 ✓）：**两个分支都要让位给「全局文字颜色」** ✓ ——
+              // 原先用户层只包了"有底色"分支 ✗ ⇒ 未启用卡片底色时副标题不受文字颜色控制 ✗。
               color:
-                  subtitleColor ?? context.colorScheme.onSurface.toOpacity(0.7),
+                  globalTextColor() ??
+                  subtitleColor ??
+                  context.colorScheme.onSurface.toOpacity(0.7),
             ),
             maxLines: 1,
             softWrap: true,

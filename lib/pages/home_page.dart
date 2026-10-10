@@ -248,7 +248,8 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
                       ),
                       child: Icon(
                         Icons.error_outline,
-                        color: Colors.red,
+                        // ⭐ 图标取色（2026-10-11）：先让「全局图标颜色」优先 ✓（未设时仍用错误色 ✓）。
+                        color: appIconColor(context, context.colorScheme.error),
                         size: AppIconSize.sm,
                       ),
                     ),
@@ -326,9 +327,13 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
                         fill: context.colorScheme.errorContainer,
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.error_outline,
-                              color: Colors.red,
+                              // ⭐ 图标取色（2026-10-11）：先让「全局图标颜色」优先 ✓。
+                              color: appIconColor(
+                                context,
+                                context.colorScheme.error,
+                              ),
                               size: AppIconSize.sm,
                             ),
                             const SizedBox(width: 4),

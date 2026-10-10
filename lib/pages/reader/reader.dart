@@ -32,6 +32,7 @@ import 'package:venera_nas/foundation/image_provider/reader_image.dart';
 import 'package:venera_nas/foundation/local.dart';
 import 'package:venera_nas/foundation/log.dart';
 import 'package:venera_nas/foundation/res.dart';
+import 'package:venera_nas/foundation/text_style_settings.dart';
 import 'package:venera_nas/network/images.dart';
 import 'package:venera_nas/pages/settings/settings_page.dart';
 import 'package:venera_nas/utils/clipboard_image.dart';

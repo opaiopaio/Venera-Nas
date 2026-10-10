@@ -1521,7 +1521,9 @@ class _SwipeChangeChapterProgressState
         children: [
           Icon(
             widget.isPrev ? Icons.arrow_downward : Icons.arrow_upward,
-            color: context.colorScheme.onSurface,
+            // ⭐ 图标取色（2026-10-11）：显式色会压掉外层注入 ✗ ⇒ 经用户层再给 ✓
+            //（用户设了「图标颜色」优先 ✓，否则仍用原来的 `onSurface` ✓）。
+            color: appIconColor(context, context.colorScheme.onSurface),
             size: AppIconSize.xs,
           ),
           const SizedBox(width: 4),

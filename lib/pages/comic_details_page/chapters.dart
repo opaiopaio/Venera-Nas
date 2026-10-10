@@ -138,8 +138,17 @@ class _NormalComicChaptersState extends State<_NormalComicChapters> {
                               textAlign: TextAlign.center,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
+                                // ⭐ 用户设置优先（2026-10-11）：已读态也先取**注入色**再降透明度 ✓
+                                //（原先写死 `outline` ✗ ⇒ 压掉外层注入 ⇒ 已读章号不跟随文字颜色 ✗）。
                                 color: visited
-                                    ? context.colorScheme.outline
+                                    ? (globalTextColor() ??
+                                              onColorForFill(
+                                                context,
+                                                context
+                                                    .colorScheme
+                                                    .surfaceContainer,
+                                              ))
+                                          .toOpacity(AppOpacity.hint)
                                     : null,
                               ),
                             ),

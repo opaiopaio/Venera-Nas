@@ -221,9 +221,14 @@ class _ImageFavoritesGalleryPageState extends State<ImageFavoritesGalleryPage> {
                         isSelected
                             ? Icons.check_circle
                             : Icons.radio_button_unchecked,
-                        color: isSelected
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                        // ⭐ 图标取色（2026-10-11）：显式色会压掉外层注入 ✗ ⇒ 经用户层再给 ✓
+                        //（用户设了「图标颜色」优先 ✓，否则仍用原来的选中/未选中主题色 ✓）。
+                        color: appIconColor(
+                          context,
+                          isSelected
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                         size: 22,
                       ),
                     ),

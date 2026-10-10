@@ -16,6 +16,23 @@ import 'package:venera_nas/utils/io.dart';
 import 'package:venera_nas/utils/translations.dart';
 import 'package:venera_nas/foundation/design_tokens.dart';
 import 'package:venera_nas/foundation/app_theme.dart';
+import 'package:venera_nas/foundation/text_style_settings.dart';
+
+/// ⭐ 自绘填充输入框的文字样式（2026-10-11）✓ ——
+/// `TextField` **不读** `DefaultTextStyle` ✗ ⇒ 对比前景与「用户文字色优先」只能在这里显式给 ✓；
+/// 填充为全透明时返回 `null` ✓（无填充 ⇒ 保持主题默认文字色 ✓ 零回归 ✓）。
+TextStyle? _filledFieldTextStyle(BuildContext context) {
+  final fill = windowOverlayColor();
+  if (fill.a == 0) return null;
+  return TextStyle(
+    color:
+        globalTextColor() ??
+        onColorForFill(
+          context,
+          Color.alphaBlend(fill, context.colorScheme.surface),
+        ),
+  );
+}
 
 class ComicSourcePage extends StatelessWidget {
   const ComicSourcePage({super.key});
@@ -251,33 +268,33 @@ class _BodyState extends State<_Body> {
               title: Text("Add comic source".tl),
               leading: const Icon(Icons.dashboard_customize),
             ),
-            // ⭐ 对比度（2026-10-11）：输入框自绘填充（`fillColor`）⇒ 输入文字取与填充成对的前景色 ✓
-            //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色填充上"白字融底"看不见 ✗）
-            FilledForeground(
-              fill: windowOverlayColor(),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: "URL",
-                  filled: true,
-                  fillColor: windowOverlayColor(),
-                  border: OutlineInputBorder(
-                    borderRadius:
-                        windowOverlayBorderRadius() ??
-                        BorderRadius.circular(AppRadius.md),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSpace.md,
-                  ),
-                  suffix: IconButton(
-                    onPressed: () => handleAddSource(url),
-                    icon: const Icon(Icons.check),
-                  ),
+            // ⭐ 对比度（2026-10-11）：输入框自绘填充（`fillColor`）⇒ 输入文字必须**显式**给色 ✓ ——
+            // ⚠️ `TextField` **不读** `DefaultTextStyle` ✗（包 `FilledForeground` 在此无效 ✗）
+            // ⇒ 只能落到 `style`（+ `cursorColor` ✓）。
+            TextField(
+              style: _filledFieldTextStyle(context),
+              cursorColor: _filledFieldTextStyle(context)?.color,
+              decoration: InputDecoration(
+                hintText: "URL",
+                filled: true,
+                fillColor: windowOverlayColor(),
+                border: OutlineInputBorder(
+                  borderRadius:
+                      windowOverlayBorderRadius() ??
+                      BorderRadius.circular(AppRadius.md),
                 ),
-                onChanged: (value) {
-                  url = value;
-                },
-                onSubmitted: handleAddSource,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.md,
+                ),
+                suffix: IconButton(
+                  onPressed: () => handleAddSource(url),
+                  icon: const Icon(Icons.check),
+                ),
               ),
+              onChanged: (value) {
+                url = value;
+              },
+              onSubmitted: handleAddSource,
             ).paddingHorizontal(16).paddingBottom(8),
             Wrap(
               spacing: 8,
@@ -483,29 +500,29 @@ class _ComicSourceListState extends State<_ComicSourceList> {
                   leading: Icon(Icons.source_outlined),
                   title: Text("Repo URL".tl),
                 ),
-                // ⭐ 对比度（2026-10-11）：输入框自绘填充（`fillColor`）⇒ 输入文字取与填充成对的前景色 ✓
-                //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色填充上"白字融底"看不见 ✗）
-                FilledForeground(
-                  fill: windowOverlayColor(),
-                  child: TextField(
-                    controller: controller,
-                    decoration: InputDecoration(
-                      hintText: "URL",
-                      filled: true,
-                      fillColor: windowOverlayColor(),
-                      border: OutlineInputBorder(
-                        borderRadius:
-                            windowOverlayBorderRadius() ??
-                            BorderRadius.circular(AppRadius.md),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.md,
-                      ),
+                // ⭐ 对比度（2026-10-11）：输入框自绘填充（`fillColor`）⇒ 输入文字必须**显式**给色 ✓ ——
+                // ⚠️ `TextField` **不读** `DefaultTextStyle` ✗（包 `FilledForeground` 在此无效 ✗）
+                // ⇒ 只能落到 `style`（+ `cursorColor` ✓）。
+                TextField(
+                  style: _filledFieldTextStyle(context),
+                  cursorColor: _filledFieldTextStyle(context)?.color,
+                  controller: controller,
+                  decoration: InputDecoration(
+                    hintText: "URL",
+                    filled: true,
+                    fillColor: windowOverlayColor(),
+                    border: OutlineInputBorder(
+                      borderRadius:
+                          windowOverlayBorderRadius() ??
+                          BorderRadius.circular(AppRadius.md),
                     ),
-                    onChanged: (value) {
-                      changed = true;
-                    },
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.md,
+                    ),
                   ),
+                  onChanged: (value) {
+                    changed = true;
+                  },
                 ).paddingHorizontal(16).paddingBottom(8),
                 Text(
                   "The URL should point to a 'index.json' file".tl,

@@ -31,6 +31,7 @@ import 'package:venera_nas/utils/translations.dart';
 import 'dart:math' as math;
 import 'package:venera_nas/foundation/design_tokens.dart';
 import 'package:venera_nas/foundation/app_theme.dart';
+import 'package:venera_nas/foundation/text_style_settings.dart';
 
 part 'comments_page.dart';
 

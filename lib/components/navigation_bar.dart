@@ -608,8 +608,13 @@ class _SingleBottomNaviWidgetState extends State<_SingleBottomNaviWidget>
             ),
             // ⭐ 对比度（2026-10-11）：自绘底色 ⇒ 图标取与填充成对的前景色 ✓
             //（原先无颜色 ⇒ 继承全局图标色 ✗ ⇒ 浅底浅图标看不见 ✗）
+            // ⭐ 同源（2026-10-11）：对比度要按**真正覆盖图标的那层**算 ✓ ——
+            // 选中时图标压在 `secondaryContainer` 滑块上 ✗（不是外层底色 ✓）。
             child: Center(
-              child: FilledForeground(fill: outerFill, child: icon),
+              child: FilledForeground(
+                fill: value != 0 ? colorScheme.secondaryContainer : outerFill,
+                child: icon,
+              ),
             ),
           ),
         ),
