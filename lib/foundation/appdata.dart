@@ -40,6 +40,12 @@ class Appdata with Init {
         for (var field in customDisableSync) {
           json4sync["settings"].remove(field);
         }
+        // ⭐ 2026-10-10（用户要求 ✓）：**两个设备开关标志永不上传** ✗ ——
+        // 否则设备 1 开了开关，设备 2 同步后会被"自动打开" ✓（用户实测反馈 ✓）。
+        // ⚠️ **只排除这两个标志** ✗ —— 其余设置值一律保留 ✓（用户要求"同步文件都要包含所有页面的设置信息"✓）。
+        for (final field in _deviceSwitchFlagKeys) {
+          json4sync["settings"].remove(field);
+        }
         var data4sync = jsonEncode(json4sync);
         var file4sync = File(FilePath.join(App.dataPath, 'syncdata.json'));
         futures.add(file4sync.writeAsString(data4sync));
@@ -94,10 +100,11 @@ class Appdata with Init {
     "disableSyncFields",
     "authorizationRequired",
     "smbDownloadPath",
-    // ⭐ 重构（2026-10-10 用户方案 ✓）：**两个设备开关标志本身也不参与同步/恢复** ✓ ——
-    // 它们是**本设备**的选择（本机要不要跟着云端走 ✓），不该被对端改掉 ✓。
-    "deviceSpecificAppearanceEnabled",
-    "deviceSpecificReaderEnabled",
+    // ⭐ 2026-10-10（用户要求 ✓）：**背景图片在任何情况下都不应用** ✗ ——
+    // 图**文件**不随同步/备份传输 ✓（只传文件名 ✓）⇒ 应用了也只会指向本机不存在的图 ✗；
+    // 注意：**背景色 `backgroundColor` 不在此列** ✓（用户特意强调"除了背景，但是不包括背景色，只有背景图片" ✓）。
+    "backgroundImage",
+    ..._deviceSwitchFlagKeys,
     // ⭐ 迁移用：旧版第二层容器（值已搬进主表 ✓，容器不再被读取 ✓）也一并排除 ✓。
     "deviceSpecificSettings",
   ];
@@ -123,15 +130,28 @@ class Appdata with Init {
     saveData();
   }
 
-  /// Following fields are related to device-specific data and should not be synced.
+  /// ⭐ 2026-10-10（用户要求 ✓）：**两个「启用设备特定设置」开关标志** ——
+  /// 它们**永远只属于本机** ✗：既**不上传**（同步/备份快照里不含 ✓）、
+  /// 也**不在入方向被应用** ✓（对端值落在本机时会被丢弃 ✓）。
+  /// 用户原话 ✓："如果我设备 1 的该设置启动，那设备 2 通过云同步也就把他的设置自动打开了" ✗ —— 这就是要堵的洞 ✓。
+  static const _deviceSwitchFlagKeys = <String>[
+    "deviceSpecificAppearanceEnabled",
+    "deviceSpecificReaderEnabled",
+  ];
+
+  /// ⭐ 2026-10-10（用户要求 ✓）：**入方向（同步进来 / 备份恢复）永不应用** 的键 ✓。
+  ///
+  /// 规则 ✓：出方向**永远生成完整快照**（所有页面的设置值都包含 ✓，见 `saveData` 与
+  /// `utils/data_sync.dart` 的 `_backupLocalData` ✓）；**是否应用**则按**本机**开关决定 ✓
+  ///（`syncData` / `restoreFromBackup` 里的 `isDeviceProtected` ✓：本机开关 ON ⇒ 跳过 ✓、OFF ⇒ 应用 ✓）。
+  /// 本清单里的键则是**无论开关如何都不应用** ✓：
+  /// - 代理 / WebDAV / 设备 id / 收藏显示等本机或凭据相关项 ✓；
+  /// - **`backgroundImage`** ✗ —— 背景**图片**文件不随同步/备份传输 ✓（只传文件名 ✓），
+  ///   应用了只会指向本机不存在的图 ✓；⚠️ **但 `backgroundColor`（背景色）与
+  ///   `backgroundImageOpacity` / `backgroundImageFit` 不在此列** ✓ —— 用户明确要求
+  ///   "除了背景（图片），不包括背景色" ✓ ⇒ 它们**要能**在本机开关关时被恢复 ✓（原先被误列在此 ✗ 已移除 ✓）。
   static const _disableSync = [
-    // ⭐ 修复（2026-10-09 用户指示 ✓）：**背景信息与背景设置不参与同步** ✗ ——
-    // 用户原话："同步不要同步背景信息，背景的设置也不要同步，不然两个客户端背景不一致他就会给你换成白底"✓。
-    // 原因 ✓：另一端没有同名背景图文件 ⇒ 同步过来的路径无效 ⇒ 该端退化成白底 ✓。
     "backgroundImage",
-    "backgroundColor",
-    "backgroundImageOpacity",
-    "backgroundImageFit",
     "proxy",
     "authorizationRequired",
     "customImageProcessing",
@@ -145,9 +165,7 @@ class Appdata with Init {
     "imageFavoritesDisplayType",
     "commentFontSize",
     "smbDownloadPath",
-    // ⭐ 修复（2026-10-10 用户实测 ✓）：**设备专属设置表不得随同步/恢复覆盖** ✗→✓ ——
-    // 该表按 `deviceId` 分键保存各设备自己的配置 ✓；一旦被对端整表覆盖 ✗，本设备条目即丢失 ⇒
-    // 「启用设备特定设置」的读数全部失效（用户："同步 webdav 备份后依旧会覆盖外观设置" ✓）。
+    ..._deviceSwitchFlagKeys,
     "deviceSpecificSettings",
   ];
 

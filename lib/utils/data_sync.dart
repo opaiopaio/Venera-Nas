@@ -208,6 +208,10 @@ class DataSync with ChangeNotifier {
         // ⭐ 修复（2026-10-10 用户要求 ✓）：**双向阻隔 · 上行** ✗→✓ —— 上传前剔除**设备专属**数据
         //（`deviceId` 与 `deviceSpecificSettings` ✓）⇒ 云端**不持有任何设备的私有配置** ✓，
         // 也就不会在别处被下回、互相顶掉 ✓（用户："本地的设置配置也不会被自动备份上传" ✓）。
+        // ⭐ 2026-10-10（用户实测反馈 ✓）：**两个「启用设备特定设置」开关标志也必须剔除** ✗→✓ ——
+        // 否则设备 1 开了开关，设备 2 同步下来会被"自动打开" ✓（原话："设备 2 通过云同步也就把他的设置自动打开了" ✗）。
+        // ⚠️ **只剔标志** ✗ —— 其余设置值（含 `backgroundImage` / `backgroundColor` 等 ✓）一律保留 ✓
+        //（用户要求："同步文件都要包含所有页面的设置信息（值）" ✓ = 永远生成**完整快照** ✓）。
         if (name == 'appdata.json') {
           try {
             final decoded = jsonDecode(src.readAsStringSync());
@@ -218,6 +222,12 @@ class DataSync with ChangeNotifier {
               if (inner is Map) {
                 inner.remove('deviceSpecificSettings');
                 inner.remove('deviceId');
+                for (final flag in const <String>[
+                  'deviceSpecificAppearanceEnabled',
+                  'deviceSpecificReaderEnabled',
+                ]) {
+                  inner.remove(flag);
+                }
               }
               File(
                 FilePath.join(_backupDir, name),
