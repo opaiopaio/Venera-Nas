@@ -117,4 +117,23 @@ void main() {
     appdata.settings[scaleKey] = 0.8;
     expect(globalFontScale(), 0.8);
   });
+
+  testWidgets('T-GTS4 空字符串字体 + 缩放 1 + 只切总开关 ⇒ 渲染尺寸与度量逐项不变', (tester) async {
+    // 真实配置组合：`globalFontFamily` / `globalFontFile` 是**空字符串**（不是 'system'）
+    // ⇒ 必须一律按"未设置"处理（否则会被当成自定义字体 ⇒ 字体族/fallback 漂移 ⇒ 度量变 ✗）。
+    appdata.settings[familyKey] = '';
+    appdata.settings['globalFontFile'] = '';
+    appdata.settings[scaleKey] = 1;
+    appdata.settings[textKey] = '#123456';
+
+    appdata.settings[followKey] = true; // 总开关开：该页自定义项不生效
+    final on = await pipeline(tester);
+
+    appdata.settings[followKey] = false; // 总开关关：仅颜色生效（字体未设、缩放为 1）
+    expect(globalFontFamily(), isNull, reason: '空字符串必须等价于"未设置"');
+    expect(globalFontScale(), 1.0, reason: 'int 1 必须等价于不缩放');
+    final off = await pipeline(tester);
+
+    expect(off, on, reason: '只切总开关不允许改动任何字体度量或渲染尺寸');
+  });
 }
