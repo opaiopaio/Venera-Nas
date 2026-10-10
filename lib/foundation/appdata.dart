@@ -626,6 +626,10 @@ class Settings with ChangeNotifier {
     'commentFontSize',
     'enableClockAndBatteryInfoInReader',
     'enableCustomImageProcessing',
+    // ⭐ 补漏（2026-10-10 草稿回顾发现 ✓）：`customImageProcessing`（自定义图像处理脚本 ✓）
+    // 也是**阅读类**设置 ✗→✓ —— 原先只在集合外的 `enableCustomImageProcessing`（开关 ✓）在集合内 ✓，
+    // 而脚本内容本身漏了 ✗；它虽已在 `_disableSync`（从不参与同步 ✓）⇒ 无实际影响 ✓，但按"同类同管"补上更一致 ✓。
+    'customImageProcessing',
     'enablePageAnimation',
     'enableTapToTurnPages',
     'longPressZoomPosition',
