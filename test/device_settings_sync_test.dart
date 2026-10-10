@@ -45,6 +45,12 @@ void main() {
     appdata.settings.setEnabledDeviceSpecificSettings(false);
     appdata.settings['backgroundImage'] = '';
     appdata.settings['backgroundColor'] = 'transparent';
+    // ⚠️ 2026-10-10（隔离性 ✓）：用例之间共用同一个 `appdata` 单例 ⇒ 背景相关键必须逐个复位 ✗
+    //（否则 T-SY2 写入的值会漏到后续用例 ✓ —— T-SY7 的"默认空串"前提就会失效 ✓）。
+    appdata.settings['backgroundImageSource'] = '';
+    appdata.settings['backgroundImageOpacity'] = 1.0;
+    appdata.settings['backgroundImageFit'] = 'cover';
+    appdata.settings['globalFontFile'] = '';
     appdata.settings['color'] = 'system';
     appdata.settings['readerMode'] = 'scroll';
     // ⚠️ 2026-10-10（回归审查 P0-2 ✓）：**不再**在这里硬塞 `disableSyncFields` ✗ ——
@@ -314,6 +320,41 @@ void main() {
       appdata.settings['backgroundImage'],
       'kept.png',
       reason: '当前条开关关着 ⇒ 主表当前值胜出 ✓（不得被孤儿过期值覆盖 ✗）',
+    );
+  });
+
+  test('T-SY7 迁移：权威条目开关 OFF 时不得把"默认空串"键补齐成旧值（P1-10）', () async {
+    // 权威条目 = 当前 deviceId，开关 **OFF**，却带着旧的背景图/字体（用户当时**看不到**它们 ✗）
+    appdata.settings['deviceId'] = 'current-device';
+    appdata.settings.setEnabledAppearanceDeviceSettings(false);
+    // 主表保持**默认空串** ✓（正是重构前的真实形态：`Settings._create()` 预置默认值 ✓）
+    expect(appdata.settings['backgroundImage'], '');
+    expect(appdata.settings['backgroundImageSource'], '');
+    appdata.settings['deviceSpecificSettings'] = <String, dynamic>{
+      'current-device': <String, dynamic>{
+        'enabledAppearance': false,
+        'backgroundImage': 'ghost.png',
+        'backgroundImageSource': '/ghost/old.png',
+        'globalFontFile': 'ghost.ttf',
+      },
+    };
+    await appdata.saveData(false);
+
+    await appdata.doInit();
+
+    expect(
+      appdata.settings['backgroundImage'],
+      '',
+      reason:
+          '权威条目开关 OFF ⇒ 主表（= 用户看得到的）必须胜出 ✓；'
+          '按旧判据"值为空串"会把它补成 ghost.png ⇒ 升级后背景自己冒出来 ✗',
+    );
+    expect(appdata.settings['backgroundImageSource'], '');
+    expect(appdata.settings['globalFontFile'], '');
+    expect(
+      appdata.settings.isAppearanceDeviceSettingsEnabled(),
+      isFalse,
+      reason: '开关本身也要按权威条目（false）保持关闭 ✓',
     );
   });
 }

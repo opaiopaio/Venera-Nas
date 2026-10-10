@@ -698,10 +698,16 @@ class Settings with ChangeNotifier {
 
   /// ⭐⭐ 重构（2026-10-10 用户方案 ✓）：**只有一套值** ⇒ 本方法与 `[]` 完全等价 ✓
   ///（保留方法名只为兼容既有调用点 ✓；"设备优先/回落全局"的双层语义**已删除** ✗）。
+  ///
+  /// ⚠️⚠️ **契约已失效**（2026-10-10 全量代码审查 P1-11 ✓）：自 `03e694f` 起
+  /// `useDeviceSettings` / `getDeviceReaderSetting` / `setDeviceReaderSetting` **不再有任何隔离效果** ✗
+  /// —— 它们与 `[]` / `[]=` 取值、目标**完全相同** ✓。原"**三级作用域**（漫画专属 → 设备专属 → 全局 ✓）"
+  /// 现已是"**两级**（漫画专属 → 全局 ✓）" ✓；设备开关只剩"**入方向是否采用同步值**"这一个作用 ✓
+  ///（见 `isDeviceProtected` ✓ 与 `_disableSync` / `_disableRestore` ✓）。
+  /// ⇒ 后续**不要**照旧文档往这里加"设备专属键" ✗（会以为隔离生效 ✓ 而实际没有 ✓）。
   dynamic getDeviceReaderSetting(String key) => _data[key];
 
-  /// ⭐⭐ 重构（2026-10-10 用户方案 ✓）：写入**主表** ✓ —— 不再有第二层 ✗ ⇒
-  /// 开关翻转/条目增删都不可能再让值"消失"或"被空值遮住" ✓（整类 bug 从根上消失 ✓）。
+  /// ⚠️ 契约已失效 ✓ —— 与 `[]=` 完全等价 ✓，详见 [getDeviceReaderSetting] 的说明 ✓。
   void setDeviceReaderSetting(String key, dynamic value) {
     _data[key] = value;
     notifyListeners();
@@ -744,14 +750,19 @@ class Settings with ChangeNotifier {
         if (key == 'enabled' || key == 'enabledAppearance') continue;
         final value = e.value;
         if (value == null || (value is String && value.isEmpty)) continue;
-        final current = _data[key];
-        final currentIsEmpty =
-            current == null || (current is String && current.isEmpty);
         final keyIsAppearance = _isAppearanceDeviceKey(key);
         final keyIsReader = _isReaderDeviceKey(key);
         final deviceWins =
             (keyIsAppearance && appearanceOn) || (keyIsReader && readerOn);
-        if (deviceWins || currentIsEmpty) {
+        // ⭐⭐ 修正（2026-10-10 全量代码审查 P1-10 ✓）：**"补齐"判据必须是"键在 `_data` 中缺失"** ✗→✓ ——
+        // 旧判据用"当前值为 null / 空串" ✗，但 `_data` 由 `Settings._create()` **预置全部默认值** ✓
+        //（`:287` 起 ✓）⇒ 真正命中的只是**默认空串**键 ✓：`backgroundImage`、`backgroundImageSource`、
+        // `globalFontFile`、`globalFontSource`、`globalFontFamily` ✓ ⇒ 权威条目开关 **OFF** 时
+        //（按规则「OFF ⇒ 主表值才是用户看到的」✓）仍会把条目里的非空值搬进主表 ✗
+        // ⇒ 旧版"开开关选图 bgA → 再关回 OFF"（用户当时**看不到**背景 ✓）升级后会**自己冒出背景/字体** ✗。
+        // 现在 ✓：只在键**从未被赋值**（`containsKey == false` ✓）时才补齐 ✓；开关 OFF 的条目不动主表值 ✓。
+        final missing = !_data.containsKey(key);
+        if (deviceWins || missing) {
           _data[key] = value;
         }
       }
@@ -777,6 +788,11 @@ class Settings with ChangeNotifier {
   ///
   /// 设置组件（`_SwitchSetting` / `_SliderSetting` / `SelectSetting` 系）此前各自
   /// 内联这段三分支判定，现收口于此，避免同一逻辑散落多处。
+  ///
+  /// ⚠️⚠️ **`useDeviceSettings` 自 `03e694f` 起是**无效果的恒等参数** ✗**（2026-10-10 全量代码审查 P1-11 ✓）：
+  /// 传 true 与传 false 的**取值/写入目标完全一样** ✓（都走主表 ✓）⇒ 真实作用域只剩**两级**
+  /// （漫画专属 → 全局 ✓）。它保留只为兼容全仓 76 处既有传参 ✓；**新代码不必再传** ✓，
+  /// 也**不要**以为传了 true 就有"设备隔离" ✗（设备开关只影响**入方向是否采用同步值** ✓）。
   dynamic readSettingValue({
     required String key,
     String? comicId,
@@ -792,7 +808,7 @@ class Settings with ChangeNotifier {
     return this[key];
   }
 
-  /// 写入设置值（与 [readSettingValue] 对称的三级优先级）。
+  /// 写入设置值（与 [readSettingValue] 对称）；⚠️ `useDeviceSettings` 同样是**无效果参数** ✓（详见 [readSettingValue] ✓）。
   void writeSettingValue({
     required String key,
     required dynamic value,
