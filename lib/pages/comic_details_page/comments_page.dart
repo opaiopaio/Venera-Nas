@@ -274,6 +274,13 @@ class _CommentsPageState extends State<CommentsPage> {
       ),
     );
   }
+
+  @override
+  void dispose() {
+    // ⭐ 补释放 ✓：`controller` 由本 State 自建（第 40 行 ✓），此前全文没有 `dispose` ✗。
+    controller.dispose();
+    super.dispose();
+  }
 }
 
 class _CommentTile extends StatefulWidget {

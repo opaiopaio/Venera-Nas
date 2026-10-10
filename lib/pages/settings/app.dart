@@ -936,7 +936,9 @@ class _LocalPathDialogState extends State<_LocalPathDialog> {
 
   Future<void> _setLocalPath(String newPath) async {
     if (_isBusy) return;
-    if (!App.rootContext.mounted) return;
+    // ⭐ 先查**自身**存活 ✓（`App.rootContext.mounted` 几乎恒真 ✗，不能替代本 State 的 `mounted` ✗）；
+    // 再查根上下文 ✓ —— 随后要 `showLoadingDialog(App.rootContext, ...)` ✓。
+    if (!mounted || !App.rootContext.mounted) return;
 
     setState(() => _isBusy = true);
     var loadingDialog = showLoadingDialog(
@@ -947,7 +949,10 @@ class _LocalPathDialogState extends State<_LocalPathDialog> {
 
     var res = await LocalManager().setNewPath(newPath);
     if (!App.rootContext.mounted) return;
+    // 先关掉挂在根上下文上的加载弹窗 ✓（与 `_setNasPath` 同一形态 ✓），
+    // 再查**自身**存活 ✓ —— 否则 `setState` 会打到已 dispose 的 State ✗。
     loadingDialog.close();
+    if (!mounted) return;
     setState(() => _isBusy = false);
     if (res != null) {
       if (!mounted) return;
@@ -1046,7 +1051,9 @@ class _NasPathDialogState extends State<_NasPathDialog> {
       context.showMessage(message: "请输入有效的 SMB 地址 (smb://...)".tl);
       return;
     }
-    if (!App.rootContext.mounted) return;
+    // ⭐ 先查**自身**存活 ✓（`App.rootContext.mounted` 几乎恒真 ✗，不能替代本 State 的 `mounted` ✗）；
+    // 再查根上下文 ✓ —— 随后要 `showLoadingDialog(App.rootContext, ...)` ✓。
+    if (!mounted || !App.rootContext.mounted) return;
 
     setState(() => _isBusy = true);
     var loadingDialog = showLoadingDialog(

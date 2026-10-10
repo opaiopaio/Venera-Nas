@@ -1034,6 +1034,9 @@ class _BatteryWidgetState extends State<_BatteryWidget> {
     try {
       _batteryLevel = await _battery.batteryLevel;
       state = await _battery.batteryState;
+      // ⭐ 补 mounted 守卫 ✓（阅读器是高频进出页 ⇒ `await` 后本 State 可能已 dispose ✗）；
+      // 随后的 `Timer.periodic` 创建与既有取消逻辑（`dispose` 里 `_timer?.cancel()` ✓）保持原样 ✓。
+      if (!mounted) return;
       if (_batteryLevel > 0 && state != BatteryState.unknown) {
         setState(() {
           _hasBattery = true;

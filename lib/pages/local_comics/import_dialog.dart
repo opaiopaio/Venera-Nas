@@ -130,6 +130,8 @@ class _ImportComicsDialogState extends State<ImportComicsDialog> {
   Future<void> _startImport() async {
     final file = await selectFile(ext: ['venera-comics']);
     if (file == null) return;
+    // ⭐ 补 mounted 守卫 ✓（`await` 后本 State 可能已 dispose ✗；后续进度回调原本已有守卫 ✓）。
+    if (!mounted) return;
 
     setState(() {
       _isImporting = true;
