@@ -455,11 +455,14 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
           widget.comment.id!,
           !isLiked,
         );
+        // ⭐ 修复（2026-10-10 全量代码审查发现 ✓）：`await` 之后**必须**先查存活 ✗→✓ ——
+        // 原实现只在 else 分支护住了 ✓（`:462` ✓），成功分支会直接 `setState` ✗
+        // ⇒ 页面已弹出时即 "setState() called after dispose" ✓（同文件 `vote()` 与 `comments_page.dart` 已补 ✓，此处为漏网 ✓）。
+        if (!mounted) return;
         if (res.success) {
           isLiked = !isLiked;
           likes += isLiked ? 1 : -1;
         } else {
-          if (!mounted) return;
           context.showMessage(message: res.errorMessage ?? "Error");
         }
         setState(() {

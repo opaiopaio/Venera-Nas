@@ -247,6 +247,11 @@ class _CommentsPageState extends State<CommentsPage> {
                     controller.text,
                     widget.replyComment?.id,
                   );
+                  // ⭐ 修复（2026-10-10 全量代码审查发现 ✓）：`await` 之后、**读写 controller 与 setState 之前**
+                  // 必须先查存活 ✗→✓ —— 原实现只在 else 分支查了 `context.mounted` ✗；
+                  // 而本轮刚给该 State 加了 `controller.dispose()`（`:279-283` ✓）⇒ 续段会先命中
+                  // "A TextEditingController was used after being disposed" ✗ 再 setState 打到已 dispose 的 State ✓。
+                  if (!mounted) return;
                   if (!b.error) {
                     controller.text = "";
                     setState(() {
@@ -256,13 +261,14 @@ class _CommentsPageState extends State<CommentsPage> {
                       _page = 1;
                       maxPage = null;
                     });
-                  } else {
-                    if (!context.mounted) return;
-                    context.showMessage(message: b.errorMessage ?? "Error");
-                    setState(() {
-                      sending = false;
-                    });
+                    return;
                   }
+                  if (!context.mounted) return;
+                  context.showMessage(message: b.errorMessage ?? "Error");
+                  if (!mounted) return;
+                  setState(() {
+                    sending = false;
+                  });
                 },
                 icon: Icon(
                   Icons.send,

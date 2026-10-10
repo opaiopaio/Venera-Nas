@@ -277,11 +277,20 @@ class _ReaderState extends State<Reader>
       fullscreen();
     }
     autoPageTurningTimer?.cancel();
-    // ⭐ 修复（2026-10-10 全量代码审查发现 ✓）：**兜底 Timer 与历史写入 Timer 必须一并取消** ✗→✓
-    // 否则退出阅读器后它们仍会触发 `update()`（= `setState`）⇒ 在**已 dispose** 的 State 上报错 ✓。
-    //（背景 ✓：`_pageAnimatingFallback` 是修「切章节后内容区手势失效」时引入的 ✓，属本次遗漏 ✗。）
+    // ⭐ 修复（2026-10-10 全量代码审查发现 ✓）：**兜底 Timer 必须取消** ✗→✓
+    // 否则退出阅读器后它仍会触发 `update()`（= `setState`）⇒ 在**已 dispose** 的 State 上报错 ✓。
+    //（背景 ✓：`_pageAnimatingFallback` 是修「切章节后内容区手势失效」时引入的 ✓，属当时遗漏 ✗。）
     _pageAnimatingFallback?.cancel();
     _pageAnimatingFallback = null;
+    // ⭐⭐ 修正（2026-10-10 复核 ✓，**上一轮此处改错了** ✗）：**历史写入 Timer 不能直接取消** ✗ ——
+    // 它的回调体（`:426-429` ✓）只有 `HistoryManager().addHistoryAsync(history!)` ✓，
+    // **不读写 State、不 setState** ✓ ⇒ 取消它并不会避免任何报错 ✓，反而会**丢掉尚未到期的那次写入** ✗：
+    // 该 Timer 是 1 秒防抖 ✓（每次翻页 cancel+重启 ✓），而 `addHistoryAsync` **全仓只有这一处调用** ✓
+    // ⇒ 直接取消 ⇒ 退出阅读器时**回退到旧页码** ✗、首次阅读未落库的漫画**整条历史丢失** ✗。
+    // 正确做法 ✓：**先 flush 再取消** —— 立刻把当前进度写一次 ✓（幂等 ✓），随后取消 Timer 以免悬挂 ✓。
+    if (history != null) {
+      HistoryManager().addHistoryAsync(history!);
+    }
     _updateHistoryTimer?.cancel();
     _updateHistoryTimer = null;
     // ⭐ 置存活标志为 false ✓：让仍在途的 `animateToPage().whenComplete` 迟到回调失效 ✗（它无权再 setState ✓）。
@@ -778,10 +787,16 @@ abstract mixin class _ReaderLocation {
           update();
         });
         controller.animateToPage(page).whenComplete(() {
+          // ⭐⭐ 修复（2026-10-10 全量代码审查发现 ✓）：**代次/存活校验必须提到最前** ✗→✓ ——
+          // `_pageAnimatingFallback` 是**跨代共享**字段 ✓；被新动画顶掉的旧动画其 future 会**立即完成** ✓
+          //（Flutter `DrivenScrollActivity.dispose()` 会 `complete()` ✓）⇒ 旧回调迟到时若**先**取消 Timer ✗，
+          // 就会把**新一代的兜底 Timer** 掐掉 ✓，随后才因代次不符 `return` ✗ ⇒ 本代动画彻底没有兜底 ✓；
+          // 一旦这次动画"永不完成且不移动页边界"（仓库注释引 `reader_debug.log` 实证过 ✓）
+          // ⇒ `_pageAnimating` 永久为 true ⇒ `scaffold.dart:187-190` 的 `AbsorbPointer` **永久吸收内容区手势** ✗。
+          // 触发 ✓：键盘 PageDown/PageUp 连按两次 ✓ 或自动翻页与手势叠加 ✓。
+          if (_disposed || token != _animToken) return;
           _pageAnimatingFallback?.cancel();
           _pageAnimatingFallback = null;
-          // ⭐ 代次校验 ✓：迟到的旧回调**不得**动新动画的状态 ✗。
-          if (_disposed || token != _animToken) return;
           _pageAnimating = false;
           if (_pendingPage == page) {
             _pendingPage = null;
