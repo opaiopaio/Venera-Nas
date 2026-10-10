@@ -1,4 +1,4 @@
-﻿part of 'reader.dart';
+part of 'reader.dart';
 
 class _ReaderScaffold extends StatefulWidget {
   const _ReaderScaffold({required this.child});
@@ -29,6 +29,9 @@ class _ReaderSafeAreaScope extends InheritedWidget {
 
 class _ReaderScaffoldState extends State<_ReaderScaffold> {
   bool _isOpen = false;
+
+  /// ⚠️ 临时调试（定位完成后删除 ✗）
+  bool _lastAbsorbing = false;
 
   static const kTopBarHeight = 56.0;
 
@@ -156,6 +159,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
     setState(() {
       _isOpen = !_isOpen;
     });
+    _rdbg('SCAFFOLD toggle _isOpen=$_isOpen'); // ⚠️ 临时调试 ✗
   }
 
   bool? rotation;
@@ -167,6 +171,14 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
   @override
   Widget build(BuildContext context) {
     final isOnChapterCommentsPage = context.reader.isOnChapterCommentsPage;
+    // ⚠️ 临时调试（定位完成后删除 ✗）：吸收状态变化时记录 ✓
+    final absorbingNow = context.reader.isPageAnimating;
+    if (absorbingNow != _lastAbsorbing) {
+      _lastAbsorbing = absorbingNow;
+      _rdbg(
+        'SCAFFOLD absorbing=$absorbingNow isOpen=$_isOpen comments=$isOnChapterCommentsPage',
+      );
+    }
     final originalSafeAreaPadding = MediaQuery.of(context).padding;
     return Stack(
       children: [

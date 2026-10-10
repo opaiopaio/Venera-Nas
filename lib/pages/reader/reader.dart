@@ -61,6 +61,19 @@ part 'chapters.dart';
 
 part 'chapter_comments.dart';
 
+/// ⚠️ 临时调试日志（2026-10-10 ✓，用于定位"切换章节后内容区手势失效" ✗）
+/// **定位完成后必须整段删除** ✗ —— 它会同步写文件（每行一次 flush），仅用于本次排查 ✓。
+const _rdbgPath = r'D:\Project\Venera-Nas\workspace\reader_debug.log';
+
+void _rdbg(String msg) {
+  try {
+    File(_rdbgPath).writeAsStringSync(
+      '${DateTime.now().toIso8601String()} $msg\n',
+      mode: FileMode.append,
+    );
+  } catch (_) {}
+}
+
 extension _ReaderContext on BuildContext {
   _ReaderState get reader => findAncestorStateOfType<_ReaderState>()!;
 
@@ -682,6 +695,9 @@ abstract mixin class _ReaderLocation {
   void setPage(int page) {
     // Prevent page change during animation
     if (_animationCount > 0 && _pendingPage != null && page != _pendingPage) {
+      _rdbg(
+        'SETPAGE REJECT page=$page (animCount=$_animationCount pending=$_pendingPage)',
+      );
       return;
     }
     this.page = page;
@@ -710,14 +726,19 @@ abstract mixin class _ReaderLocation {
       }
       final hasAnimation = enablePageAnimation(cid, type);
       if (hasAnimation) {
+        _rdbg('TOPAGE $page anim++ => ${_animationCount + 1}');
         _pendingPage = page;
         _animationCount++;
         update();
         // ⭐ 同上 ✓：改用 `whenComplete`（出错也会执行 ✓），并**防止计数变负** ✗。
+        _rdbg('ANIMATE start to $page');
         _imageViewController!.animateToPage(page).whenComplete(() {
           if (_animationCount > 0) {
             _animationCount--;
           }
+          _rdbg(
+            'ANIMATE done => animCount=$_animationCount pending=$_pendingPage',
+          );
           if (_pendingPage == page) {
             _pendingPage = null;
           }
@@ -760,6 +781,9 @@ abstract mixin class _ReaderLocation {
       // ⇒ `isPageAnimating` 恒 true ⇒ `AbsorbPointer(absorbing: true)` **永久吸收**
       // ⇒ 漫画内容区（左右点击翻页、中央呼出控制栏）全部失效 ✗
       //（上下栏是 Stack 的兄弟节点、不在 AbsorbPointer 内 ⇒ 仍可点 ✓，与用户描述完全一致 ✓）。
+      _rdbg(
+        'TOCHAPTER c=$c (from chapter=$chapter page=$page) animCount=$_animationCount pending=$_pendingPage',
+      );
       _animationCount = 0;
       _pendingPage = null;
       _jumpToLastPageOnLoad = toLastPage;
