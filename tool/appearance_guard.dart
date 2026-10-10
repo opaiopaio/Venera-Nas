@@ -29,10 +29,22 @@ void main(List<String> args) {
       r'\.withOpacity\(0\.[0-9]+\)|\.toOpacity\(0\.[0-9]+\)|'
       r'\.withValues\(\s*alpha:\s*0\.[0-9]+\s*\)|\.withAlpha\(0x?[0-9a-fA-F]{1,2}\)',
     ),
-    '固定高度': RegExp(r'(?<!\w)height:\s*[0-9]+(\.[0-9]+)?\s*,'),
+    // ⭐ Batch B 覆盖漏洞修复 ✓：原正则**要求尾逗号** ✗ ⇒ `dart format` 把
+    // `SizedBox(height: 16)` 压成单行（无尾逗号）后**逃逸** ✗（全仓字面量 `height:`
+    // 实测 147 处 ✓，旧正则只覆盖其中带尾逗号的一小部分 ✓）。
+    // 现把终止符放宽为 `[,);}]` ✓ ⇒ 单行 `SizedBox(height: 16)` 与多行 `height: 16,`
+    // 两种形态都能命中 ✓，并把新增覆盖**显式记账**进基线 ✓（棘轮仍"只许降不许升" ✓）。
+    // ⚠️ `TextStyle(height: 1.5)` 的 `height` 是**字体行高**、不是控件高度 ✗ ⇒
+    // 统计前先用 `_removeBalancedCall` 整段剔除 `TextStyle(...)`（见 `_sanitizers` ✓）。
+    '固定高度': RegExp(r'(?<!\w)height:\s*[0-9]+(\.[0-9]+)?\s*[,);}]'),
     '表面色字面量': RegExp(r'color:\s*Colors\.(white|black|grey|gray)'),
     '硬编码图标尺寸': RegExp(r'(?<!\w)(size|iconSize):\s*[0-9]'),
     '裸间距数值': RegExp(r'EdgeInsets\.(all|symmetric|only|fromLTRB)\([^)]*[0-9]'),
+    // ⭐ Batch B 新增独立指标 ✓：`SizedBox(height: N)` 与 `SizedBox(width: N)` 是最高频的
+    // 裸间距站点（实测 height 147 处 + width 141 处 = 288 处 ✓），而上面那条
+    // 「裸间距数值」只认 `EdgeInsets.xxx(` ✗ ⇒ 此前**零覆盖** ✗。
+    // 本条独立记账 ✓，改用 `AppSpace` 令牌后应逐格下降 ✓。
+    'SizedBox 裸间距': RegExp(r'SizedBox\(\s*(height|width):\s*[0-9]'),
   };
 
   final counts = <String, int>{};
@@ -42,7 +54,9 @@ void main(List<String> args) {
       if (!f.path.endsWith('.dart')) continue;
       if (f.path.endsWith('design_tokens.dart')) continue; // 令牌定义本身不计入硬编码
       final text = f.readAsStringSync();
-      n += entry.value.allMatches(text).length;
+      // 部分指标需先剔除误报片段（见 `_sanitizers`）。
+      final scanned = _sanitizers[entry.key]?.call(text) ?? text;
+      n += entry.value.allMatches(scanned).length;
     }
     counts[entry.key] = n;
   }
@@ -80,4 +94,47 @@ void main(List<String> args) {
     exit(1);
   }
   stdout.writeln('\n外观规则守卫通过。');
+}
+
+/// 统计前需要剔除的误报片段（key 与 [main] 的 patterns 一一对应）。
+///
+/// `TextStyle(height: 1.5)` 的 `height` 是**字体行高**、不是控件高度 ✗ ⇒ 若直接统计
+/// 会把它误算成"固定高度" ✓，故「固定高度」先把 `TextStyle(...)` 调用整段剔除再计数 ✓。
+final _sanitizers = <String, String Function(String)>{
+  '固定高度': (text) => _removeBalancedCall(text, 'TextStyle('),
+};
+
+/// 删除 [text] 中所有以 [marker] 起始的**括号配对整段调用**。
+///
+/// [marker] 必须以 `(` 结尾（如 `TextStyle(`）。若括号不配对则保留原样返回，绝不误删 ✓。
+String _removeBalancedCall(String text, String marker) {
+  final out = StringBuffer();
+  var i = 0;
+  while (true) {
+    final start = text.indexOf(marker, i);
+    if (start < 0) {
+      out.write(text.substring(i));
+      return out.toString();
+    }
+    out.write(text.substring(i, start));
+    var depth = 0;
+    var j = start + marker.length - 1; // 指向 marker 末尾的 '('
+    var closed = false;
+    for (; j < text.length; j++) {
+      final c = text[j];
+      if (c == '(') depth++;
+      if (c == ')') {
+        depth--;
+        if (depth == 0) {
+          closed = true;
+          break;
+        }
+      }
+    }
+    if (!closed) {
+      out.write(text.substring(start));
+      return out.toString();
+    }
+    i = j + 1;
+  }
 }

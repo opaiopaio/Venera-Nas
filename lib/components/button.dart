@@ -515,7 +515,7 @@ class _IconButtonState extends State<_IconButton> {
           message: widget.tooltip ?? "",
           child: Container(
             decoration: BoxDecoration(
-              // ⭐ 第 0 步 ✓：底色策略显式化 ✓（默认 hover + outlineVariant.toOpacity(0.4) = 与原先**逐字一致** ✓）。
+              // ⭐ 第 0 步 ✓：底色策略显式化 ✓（默认 hover 叠加 outlineVariant 的 0.4 强度 = 与原先**逐字一致** ✓）。
               // `always` 用 `iconOverlayColor()` ✓（**图标按钮的入口** ✓，勿与按钮 / 标签入口混用 ✓）。
               color: switch (widget.background) {
                 IconButtonBackground.none => null,
