@@ -260,68 +260,54 @@ class _ButtonState extends State<Button> {
                   widget.onPressedAt!(offset);
                 }
               },
-        // ⭐ 统一点击反馈（2026-10-10 用户批准 ✓）：**所有 Button 一律带水波** ✓ ——
-        // `Material(type: transparency)` 放在**底色之上、内容之下** ✓，否则不透明的底色会把水波盖住 ✗；
-        // 真正的回调仍由外层 `GestureDetector` 负责 ✓，此处的 `onTap` 仅用于触发水波 ✓（禁用/加载中为 null ⇒ 不起波 ✓）。
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: padding,
+          // P8 胶囊：高度**严格 32** ✓（min==max → 内容再大也撑不出去 ✓）。
+          // ⭐ H2：**去掉 `minWidth: 64` 兜底** ✗ —— 用户明确的规范是
+          // "宽度 = 文字宽度 + 两侧 `AppSpace.lg(16)` 延伸" ✓，短文案（如「OK」）
+          // 不应被撑到 64 宽 ✗。
+          // ⭐ 第 0 步（2026-10-10 ✓）：高度约束可由调用方覆盖 ✓（不传 ⇒ 与原先**逐字一致**的 32 ✓）
+          constraints:
+              widget.constraints ??
+              const BoxConstraints(minHeight: 32, maxHeight: 32),
+          // P8：胶囊形状 ✓；「窗口/按钮背景」设为直角时退化为直角 ✓（尊重用户形状设置）
+          decoration: BoxDecoration(
+            color: buttonColor,
+            // ⭐ 第 0 步 ✓：圆角可由调用方覆盖 ✓（不传 ⇒ 沿用"全圆/直角"现有逻辑 ✓）
             borderRadius:
                 widget.borderRadius ??
                 (windowOverlayBorderRadius() == null
                     ? BorderRadius.zero
                     : BorderRadius.circular(AppRadius.full)),
-            onTap: widget.onPressed == null || isLoading ? null : () {},
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
-              padding: padding,
-              // P8 胶囊：高度**严格 32** ✓（min==max → 内容再大也撑不出去 ✓）。
-              // ⭐ H2：**去掉 `minWidth: 64` 兜底** ✗ —— 用户明确的规范是
-              // "宽度 = 文字宽度 + 两侧 `AppSpace.lg(16)` 延伸" ✓，短文案（如「OK」）
-              // 不应被撑到 64 宽 ✗。
-              // ⭐ 第 0 步（2026-10-10 ✓）：高度约束可由调用方覆盖 ✓（不传 ⇒ 与原先**逐字一致**的 32 ✓）
-              constraints:
-                  widget.constraints ??
-                  const BoxConstraints(minHeight: 32, maxHeight: 32),
-              // P8：胶囊形状 ✓；「窗口/按钮背景」设为直角时退化为直角 ✓（尊重用户形状设置）
-              decoration: BoxDecoration(
-                color: buttonColor,
-                // ⭐ 第 0 步 ✓：圆角可由调用方覆盖 ✓（不传 ⇒ 沿用"全圆/直角"现有逻辑 ✓）
-                borderRadius:
-                    widget.borderRadius ??
-                    (windowOverlayBorderRadius() == null
-                        ? BorderRadius.zero
-                        : BorderRadius.circular(AppRadius.full)),
-                boxShadow:
-                    (isHover &&
-                        !isLoading &&
-                        (widget.type == ButtonType.filled ||
-                            widget.type == ButtonType.normal))
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.toOpacity(0.1),
-                          blurRadius: 2,
-                          offset: const Offset(0, 1),
-                        ),
-                      ]
-                    : null,
-                border: widget.type == ButtonType.outlined
-                    ? Border.all(
-                        color:
-                            widget.color ??
-                            Theme.of(context).colorScheme.outlineVariant,
-                        width: 0.6,
-                      )
-                    : null,
-              ),
-              child: AnimatedSize(
-                duration: const Duration(milliseconds: 160),
-                child: SizedBox(
-                  width: width,
-                  height: height,
-                  child: Center(widthFactor: 1, child: child),
-                ),
-              ),
+            boxShadow:
+                (isHover &&
+                    !isLoading &&
+                    (widget.type == ButtonType.filled ||
+                        widget.type == ButtonType.normal))
+                ? [
+                    BoxShadow(
+                      color: Colors.black.toOpacity(0.1),
+                      blurRadius: 2,
+                      offset: const Offset(0, 1),
+                    ),
+                  ]
+                : null,
+            border: widget.type == ButtonType.outlined
+                ? Border.all(
+                    color:
+                        widget.color ??
+                        Theme.of(context).colorScheme.outlineVariant,
+                    width: 0.6,
+                  )
+                : null,
+          ),
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 160),
+            child: SizedBox(
+              width: width,
+              height: height,
+              child: Center(widthFactor: 1, child: child),
             ),
           ),
         ),
