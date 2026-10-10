@@ -37,6 +37,11 @@ class AppearanceWindowPage extends StatelessWidget {
           // ⭐ N1：总开关开启（跟随系统主题 ✓）时 → **隐藏**本页所有自定义项 ✓（只留标题与开关 ✓）。
           // 用 Dart 列表的条件展开 ✓，不移动既有代码 ✓（设置项与 key 一律不变 ✓）。
           if (appdata.settings['windowOverlayFollowTheme'] != true) ...[
+            // ⭐ 本轮（用户实测反馈 ✓）：本页按「同一种控件的颜色 + 不透明度」**成组** ✓，
+            // 组与组之间加**分割线** ✓ —— 沿用 `reader.dart` 既有的 sliver 分割线写法 ✓
+            //（`SliverToBoxAdapter` + `Divider` ✓）；高度取令牌 ✓ 且与 Flutter `Divider`
+            // 默认一致 ✓ ⇒ 不改变原有行距观感 ✓（令牌用于显式表达留白 ✓）。
+            const SliverToBoxAdapter(child: Divider(height: AppSpace.lg)),
             ColorSettingTile(
               // H3 改名 ✓：原来叫「窗口/按钮背景颜色」✗ —— 现在按钮有**独立**设置了 ✓，
               // 这一项只管**窗口**（面板/卡片/设置行/侧栏/顶栏 ✓），名实相符 ✓。
@@ -63,6 +68,8 @@ class AppearanceWindowPage extends StatelessWidget {
             ).toSliver(),
             // ⭐ H3：**按钮背景**独立控制 ✓ —— 与窗口分离后，胶囊按钮不再和面板同色融合 ✓。
             // 颜色默认「系统容器色」✓（`system` ✓）；不透明度默认 0.85 ✓（窗口默认 1.0 → 有层次 ✓）。
+            // ⭐ 组间分割线 ✓（本轮用户要求 ✓）。
+            const SliverToBoxAdapter(child: Divider(height: AppSpace.lg)),
             ColorSettingTile(
               title: "Button background color".tl,
               settingValue: (appdata.settings['buttonOverlayColor'] ?? 'system')
@@ -89,6 +96,8 @@ class AppearanceWindowPage extends StatelessWidget {
             // ⚠️ **归档复核更正** ✗（2026-10-09 ✓）：本段原写"颜色默认**跟随胶囊按钮**"✗ —— **与代码不符** ✓；
             // 实测 `iconOverlayColor` 的 `system` 分支与 `buttonOverlayColor` 同源 ✓，
             // 取的都是 **系统容器色**（`systemContainerColorCache` ✓，M2 起 ✓）→ 已按代码更正 ✓。
+            // ⭐ 组间分割线 ✓（本轮用户要求 ✓）。
+            const SliverToBoxAdapter(child: Divider(height: AppSpace.lg)),
             ColorSettingTile(
               title: "Icon button background color".tl,
               settingValue: (appdata.settings['iconOverlayColor'] ?? 'system')
@@ -116,6 +125,8 @@ class AppearanceWindowPage extends StatelessWidget {
             // 已按用户要求删除** ✗（见 `components/mask_chip.dart` 的 L1 注释 ✓），原表述**过期** ✓。
             // **现值** ✓：标签底色**只有本项这一个入口** ✓（`tagOverlayColor()` ✓）；
             // 颜色默认 `system` = 跟随**系统容器色** ✓；**想要主题色**就把该颜色显式设成对应颜色 ✓。
+            // ⭐ 组间分割线 ✓（本轮用户要求 ✓）。
+            const SliverToBoxAdapter(child: Divider(height: AppSpace.lg)),
             ColorSettingTile(
               title: "Tag background color".tl,
               settingValue: (appdata.settings['tagOverlayColor'] ?? 'system')
@@ -143,6 +154,8 @@ class AppearanceWindowPage extends StatelessWidget {
             // 应用点：`components/appbar.dart` 的 chip 填色与「+ 加号」填色 ✓。
             // ⭐ AG1（用户要求 ✓）：**去掉组标题行** ✗（用户："这个删掉" ✓），
             // 颜色项改名为「**发现/分类页漫画源颜色**」✓。
+            // ⭐ 组间分割线 ✓（本轮用户要求 ✓）。
+            const SliverToBoxAdapter(child: Divider(height: AppSpace.lg)),
             ColorSettingTile(
               title: "Source color on Discover and Categories".tl,
               settingValue:
@@ -165,6 +178,8 @@ class AppearanceWindowPage extends StatelessWidget {
               max: 1.0,
               onChanged: () => App.forceRebuild(),
             ).toSliver(),
+            // ⭐ 组间分割线 ✓（本轮用户要求 ✓）：圆角样式单独成组 ✓。
+            const SliverToBoxAdapter(child: Divider(height: AppSpace.lg)),
             SelectSetting(
               title: "Corner style".tl,
               settingKey: "windowOverlayCorner",

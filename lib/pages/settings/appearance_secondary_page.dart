@@ -41,6 +41,12 @@ class AppearanceSecondaryPage extends StatelessWidget {
           //（另有 `showLoadingDialog` 的 `DialogRoute` 与主题层 `dialogTheme` ✓）。
           // ⭐ N1：跟随系统主题（默认）时隐藏本节自定义项 ✓
           if (appdata.settings['secondaryPageFollowTheme'] != true) ...[
+            // ⭐ 本轮（用户实测反馈 ✓）：按**语义**分组 ✓ ——「二级页面（`secondaryPage*` ✓）」
+            //「菜单（`menuSurface*` ✓）」「侧滑窗口（`sideBar*` ✓）」三组 ✓，
+            // 组与组之间加**分割线** ✓ —— 沿用 `reader.dart` 既有的 sliver 分割线写法 ✓
+            //（`SliverToBoxAdapter` + `Divider` ✓）；高度取令牌 ✓ 且与 Flutter `Divider`
+            // 默认一致 ✓ ⇒ 不改变原有行距观感 ✓。
+            const SliverToBoxAdapter(child: Divider(height: AppSpace.lg)),
             _SwitchSetting(
               title: "Highlight secondary menu".tl,
               settingKey: "secondaryMenuDim",
@@ -86,6 +92,8 @@ class AppearanceSecondaryPage extends StatelessWidget {
             //    （不透明遮挡 / 变浅 / 0.22 ✓，见 `foundation/appdata.dart` 的 AW2 注释 ✓）；
             // ② 总开关 **OFF** ⇒ 三项**显示** ✓ 并可自定义 ✓。
             // ⇒ 即"**首装即可用**、自定义项默认关闭"✓ 的既定设计 ✓，**隐藏即代表使用默认值** ✓（非缺陷 ✓）。
+            // ⭐ 组间分割线 ✓（本轮用户要求 ✓）：二级页面组 → 菜单组 ✓。
+            const SliverToBoxAdapter(child: Divider(height: AppSpace.lg)),
             SelectSetting(
               title: "Menu style".tl,
               settingKey: "menuSurfaceMode",
@@ -120,6 +128,8 @@ class AppearanceSecondaryPage extends StatelessWidget {
             // ⭐ 2026-10-09（用户指示 ✓）：**侧滑窗口 / 侧边栏**独立一组 ✓（与上面两组同构 ✓）——
             // 范围：`components/side_bar.dart` 的 `showSideBar` 各调用点（漫画页收藏 / 选择章节 / 评论页）
             // + 收藏页「文件夹选择」✓。
+            // ⭐ 组间分割线 ✓（本轮用户要求 ✓）：菜单组 → 侧滑窗口组 ✓。
+            const SliverToBoxAdapter(child: Divider(height: AppSpace.lg)),
             _SwitchSetting(
               title: "Dim sidebar".tl,
               settingKey: "sideBarDim",

@@ -35,6 +35,13 @@ class AppearanceTextPage extends StatelessWidget {
           ).toSliver(),
           // ⭐ N1：跟随系统主题（默认）时隐藏本节自定义项 ✓
           if (appdata.settings['textFollowTheme'] != true) ...[
+            // ⭐ 本轮（用户实测反馈 ✓）：按「不同内容控制」分组 ✓ ——
+            // ① 字体颜色 + 字体 + 自定义字体文件 + 字号缩放 ✓；② 文字阴影（开关 + 颜色 + 模糊 + 两轴偏移 ✓）；
+            // ③ 文字发光（开关 + 颜色 + 半径 + 强度 ✓）；④ 末尾的「重置」单独成组 ✓。
+            // 组与组之间加**分割线** ✓ —— 沿用 `reader.dart` 既有的 sliver 分割线写法 ✓
+            //（`SliverToBoxAdapter` + `Divider` ✓）；高度取令牌 ✓ 且与 Flutter `Divider`
+            // 默认一致 ✓ ⇒ 不改变原有行距观感 ✓。
+            const SliverToBoxAdapter(child: Divider(height: AppSpace.lg)),
             ColorSettingTile(
               title: "Text color".tl,
               settingValue: (appdata.settings['globalTextColor'] ?? 'system')
@@ -77,6 +84,8 @@ class AppearanceTextPage extends StatelessWidget {
               max: 1.4,
               onChanged: () => App.forceRebuild(),
             ).toSliver(),
+            // ⭐ 组间分割线 ✓（本轮用户要求 ✓）：字体组 → 文字阴影组 ✓。
+            const SliverToBoxAdapter(child: Divider(height: AppSpace.lg)),
             _SwitchSetting(
               title: "Text shadow".tl,
               settingKey: "textShadowEnabled",
@@ -120,6 +129,8 @@ class AppearanceTextPage extends StatelessWidget {
               max: 4.0,
               onChanged: () => App.forceRebuild(),
             ).toSliver(),
+            // ⭐ 组间分割线 ✓（本轮用户要求 ✓）：文字阴影组 → 文字发光组 ✓。
+            const SliverToBoxAdapter(child: Divider(height: AppSpace.lg)),
             _SwitchSetting(
               title: "Text glow".tl,
               settingKey: "textGlowEnabled",
@@ -154,6 +165,8 @@ class AppearanceTextPage extends StatelessWidget {
               max: 1.0,
               onChanged: () => App.forceRebuild(),
             ).toSliver(),
+            // ⭐ 组间分割线 ✓（本轮用户要求 ✓）：文字发光组 → 末尾「重置」行 ✓。
+            const SliverToBoxAdapter(child: Divider(height: AppSpace.lg)),
             ListTile(
               title: Text("Reset".tl),
               trailing: const Icon(Icons.restart_alt),
