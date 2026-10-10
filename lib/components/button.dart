@@ -1,43 +1,5 @@
 part of 'components.dart';
 
-class HoverBox extends StatefulWidget {
-  const HoverBox({
-    super.key,
-    required this.child,
-    this.borderRadius = BorderRadius.zero,
-  });
-
-  final Widget child;
-
-  final BorderRadius borderRadius;
-
-  @override
-  State<HoverBox> createState() => _HoverBoxState();
-}
-
-class _HoverBoxState extends State<HoverBox> {
-  bool isHover = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => isHover = true),
-      onExit: (_) => setState(() => isHover = false),
-      cursor: SystemMouseCursors.click,
-      child: AnimatedContainer(
-        duration: AppMotion.short,
-        decoration: BoxDecoration(
-          color: isHover
-              ? Theme.of(context).colorScheme.surfaceContainerLow
-              : null,
-          borderRadius: widget.borderRadius,
-        ),
-        child: widget.child,
-      ),
-    );
-  }
-}
-
 enum ButtonType { filled, outlined, text, normal }
 
 /// P8 胶囊按钮的「图标 + 文字」内容（**统一**图标尺寸与间距 ✓）。
@@ -66,6 +28,12 @@ class Button extends StatefulWidget {
     this.padding,
     this.color,
     this.onPressedAt,
+    this.onLongPress,
+    this.onSecondaryTapAt,
+    this.constraints,
+    this.borderRadius,
+    this.hoverColor,
+    this.disabledColor,
     this.onPressed,
   });
 
@@ -78,6 +46,12 @@ class Button extends StatefulWidget {
     this.padding,
     this.color,
     this.onPressedAt,
+    this.onLongPress,
+    this.onSecondaryTapAt,
+    this.constraints,
+    this.borderRadius,
+    this.hoverColor,
+    this.disabledColor,
     this.isLoading = false,
   }) : type = ButtonType.filled;
 
@@ -90,6 +64,12 @@ class Button extends StatefulWidget {
     this.padding,
     this.color,
     this.onPressedAt,
+    this.onLongPress,
+    this.onSecondaryTapAt,
+    this.constraints,
+    this.borderRadius,
+    this.hoverColor,
+    this.disabledColor,
     this.isLoading = false,
   }) : type = ButtonType.outlined;
 
@@ -102,6 +82,12 @@ class Button extends StatefulWidget {
     this.padding,
     this.color,
     this.onPressedAt,
+    this.onLongPress,
+    this.onSecondaryTapAt,
+    this.constraints,
+    this.borderRadius,
+    this.hoverColor,
+    this.disabledColor,
     this.isLoading = false,
   }) : type = ButtonType.text;
 
@@ -114,13 +100,26 @@ class Button extends StatefulWidget {
     this.padding,
     this.color,
     this.onPressedAt,
+    this.onLongPress,
+    this.onSecondaryTapAt,
+    this.constraints,
+    this.borderRadius,
+    this.hoverColor,
+    this.disabledColor,
     this.isLoading = false,
   }) : type = ButtonType.normal;
 
   static Widget icon({
     Key? key,
     required Widget icon,
-    required VoidCallback onPressed,
+    VoidCallback? onPressed,
+    IconButtonBackground background = IconButtonBackground.hover,
+    Color? backgroundColor,
+    bool active = false,
+    Color? activeColor,
+    bool dense = false,
+    EdgeInsets? padding,
+    bool danger = false,
     double? size,
     Color? color,
     String? tooltip,
@@ -136,6 +135,13 @@ class Button extends StatefulWidget {
       tooltip: tooltip,
       behavior: behavior,
       isLoading: isLoading,
+      background: background,
+      backgroundColor: backgroundColor,
+      active: active,
+      activeColor: activeColor,
+      dense: dense,
+      padding: padding,
+      danger: danger,
     );
   }
 
@@ -156,6 +162,13 @@ class Button extends StatefulWidget {
   final EdgeInsets? padding;
 
   final Color? color;
+
+  final void Function()? onLongPress;
+  final void Function(Offset location)? onSecondaryTapAt;
+  final BoxConstraints? constraints;
+  final BorderRadius? borderRadius;
+  final Color? hoverColor;
+  final Color? disabledColor;
 
   @override
   State<Button> createState() => _ButtonState();
@@ -211,6 +224,11 @@ class _ButtonState extends State<Button> {
       onExit: (_) => setState(() => isHover = false),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
+        // ⭐ 第 0 步 ✓：补长按与右键能力 ✓（不传 ⇒ null ⇒ 行为与原先**逐字一致** ✓）
+        onLongPress: widget.onLongPress,
+        onSecondaryTapUp: widget.onSecondaryTapAt == null
+            ? null
+            : (details) => widget.onSecondaryTapAt!(details.globalPosition),
         // ⭐ H2：自绘按钮支持**禁用态** ✓ —— `onPressed == null` 即禁用 ✓
         //（与 M3 的 `onPressed: null` 写法一致 ✓，95 处 M3 替换可**机械**进行 ✓）。
         onTap: widget.onPressed == null
@@ -231,13 +249,19 @@ class _ButtonState extends State<Button> {
           // ⭐ H2：**去掉 `minWidth: 64` 兜底** ✗ —— 用户明确的规范是
           // "宽度 = 文字宽度 + 两侧 `AppSpace.lg(16)` 延伸" ✓，短文案（如「OK」）
           // 不应被撑到 64 宽 ✗。
-          constraints: const BoxConstraints(minHeight: 32, maxHeight: 32),
+          // ⭐ 第 0 步（2026-10-10 ✓）：高度约束可由调用方覆盖 ✓（不传 ⇒ 与原先**逐字一致**的 32 ✓）
+          constraints:
+              widget.constraints ??
+              const BoxConstraints(minHeight: 32, maxHeight: 32),
           // P8：胶囊形状 ✓；「窗口/按钮背景」设为直角时退化为直角 ✓（尊重用户形状设置）
           decoration: BoxDecoration(
             color: buttonColor,
-            borderRadius: windowOverlayBorderRadius() == null
-                ? BorderRadius.zero
-                : BorderRadius.circular(AppRadius.full),
+            // ⭐ 第 0 步 ✓：圆角可由调用方覆盖 ✓（不传 ⇒ 沿用"全圆/直角"现有逻辑 ✓）
+            borderRadius:
+                widget.borderRadius ??
+                (windowOverlayBorderRadius() == null
+                    ? BorderRadius.zero
+                    : BorderRadius.circular(AppRadius.full)),
             boxShadow:
                 (isHover &&
                     !isLoading &&
@@ -290,13 +314,17 @@ class _ButtonState extends State<Button> {
     final mask = buttonOverlayColor();
     if (widget.type == ButtonType.filled) {
       var color = widget.color ?? mask;
-      if (disabled) return color.toOpacity(AppOpacity.disabled);
-      return isHover ? color.toOpacity(0.9) : color;
+      if (disabled) {
+        return widget.disabledColor ?? color.toOpacity(AppOpacity.disabled);
+      }
+      return isHover ? (widget.hoverColor ?? color.toOpacity(0.9)) : color;
     }
     if (widget.type == ButtonType.normal) {
       var color = widget.color ?? mask;
-      if (disabled) return color.toOpacity(AppOpacity.disabled);
-      return isHover ? color.toOpacity(0.9) : color;
+      if (disabled) {
+        return widget.disabledColor ?? color.toOpacity(AppOpacity.disabled);
+      }
+      return isHover ? (widget.hoverColor ?? color.toOpacity(0.9)) : color;
     }
     // outlined / text：底色同样是遮罩色（未配置遮罩即透明 ✓），悬停时略加强 ✓
     if (widget.color != null) {
@@ -333,11 +361,23 @@ class _ButtonState extends State<Button> {
   }
 }
 
+/// ⭐ 第 0 步（2026-10-10 ✓）：图标按钮的底色策略 —— 现状有三种并存 ✓，统一到此枚举 ✓；
+/// 默认 `hover` = 与原先**逐字一致** ✓（不传的新参数一律不改变观感 ✓）。
+enum IconButtonBackground { none, hover, always }
+
 class _IconButton extends StatefulWidget {
   const _IconButton({
     super.key,
     required this.icon,
-    required this.onPressed,
+    // ⭐ 可空 ✓（支持禁用态 ✓；不传 ⇒ null = 禁用 ✓，与 M3 语义一致 ✓）
+    this.onPressed,
+    this.background = IconButtonBackground.hover,
+    this.backgroundColor,
+    this.active = false,
+    this.activeColor,
+    this.dense = false,
+    this.padding,
+    this.danger = false,
     this.size,
     this.color,
     this.tooltip,
@@ -347,7 +387,15 @@ class _IconButton extends StatefulWidget {
 
   final Widget icon;
 
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
+
+  final IconButtonBackground background;
+  final Color? backgroundColor;
+  final bool active;
+  final Color? activeColor;
+  final bool dense;
+  final EdgeInsets? padding;
+  final bool danger;
 
   final double? size;
 
@@ -372,7 +420,14 @@ class _IconButtonState extends State<_IconButton> {
     Widget icon = IconTheme(
       data: IconThemeData(
         size: iconSize,
-        color: widget.color ?? context.colorScheme.primary,
+        // ⭐ 第 0 步 ✓：`active` / `danger` 仅**覆盖前景色** ✓（不传则为原行为 ✓）
+        color:
+            widget.color ??
+            (widget.danger
+                ? context.colorScheme.error
+                : widget.active
+                ? (widget.activeColor ?? context.colorScheme.primary)
+                : context.colorScheme.primary),
       ),
       child: widget.icon,
     );
@@ -387,17 +442,30 @@ class _IconButtonState extends State<_IconButton> {
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         behavior: widget.behavior,
-        onTap: () {
-          if (widget.isLoading) return;
-          widget.onPressed();
-        },
+        onTap: widget.onPressed == null
+            ? null
+            : () {
+                if (widget.isLoading) return;
+                widget.onPressed!();
+              },
         child: Tooltip(
           message: widget.tooltip ?? "",
           child: Container(
             decoration: BoxDecoration(
-              color: isHover
-                  ? Theme.of(context).colorScheme.outlineVariant.toOpacity(0.4)
-                  : null,
+              // ⭐ 第 0 步 ✓：底色策略显式化 ✓（默认 hover + outlineVariant.toOpacity(0.4) = 与原先**逐字一致** ✓）。
+              // `always` 用 `iconOverlayColor()` ✓（**图标按钮的入口** ✓，勿与按钮 / 标签入口混用 ✓）。
+              color: switch (widget.background) {
+                IconButtonBackground.none => null,
+                IconButtonBackground.always =>
+                  widget.backgroundColor ?? iconOverlayColor(),
+                IconButtonBackground.hover =>
+                  isHover
+                      ? (widget.backgroundColor ??
+                            Theme.of(
+                              context,
+                            ).colorScheme.outlineVariant.toOpacity(0.4))
+                      : null,
+              },
               borderRadius: BorderRadius.circular((iconSize + 12) / 2),
             ),
             padding: const EdgeInsets.all(AppSpace.tiny),

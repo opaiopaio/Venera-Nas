@@ -171,8 +171,9 @@ class Appdata with Init {
         // ⭐ 修复（2026-10-10 用户要求 ✓）：**双向阻隔 · 下行** ✗→✓ —— 本设备已启用该键所属的
         // 「设备特定设置」开关 ⇒ **云端的值不再覆盖本地** ✓（用户："云端有该设置的选项也不会覆盖本地这部分设置" ✓）。
         // 原先只做了"写入哪张表" ✓，同步合并时仍无条件写全局 ✗ ⇒ 启用前改过的项会被云端盖掉 ✓，观感即"依旧被覆盖" ✓。
-        if (_disableSync.contains(key) || customDisableSync.contains(key))
+        if (_disableSync.contains(key) || customDisableSync.contains(key)) {
           continue;
+        }
         final deviceProtected = this.settings.isDeviceProtected(key);
         if (deviceProtected) continue;
         // ⭐ 同步/恢复写入**全局**（绕过设备分流 ✓），否则会把对端值写进本机设备表 ✓。
