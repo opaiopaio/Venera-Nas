@@ -171,9 +171,7 @@ class Appdata with Init {
         // 原先只做了"写入哪张表" ✓，同步合并时仍无条件写全局 ✗ ⇒ 启用前改过的项会被云端盖掉 ✓，观感即"依旧被覆盖" ✓。
         if (_disableSync.contains(key) || customDisableSync.contains(key))
           continue;
-        final deviceProtected = this.settings._isAppearanceDeviceKey(key)
-            ? this.settings.isAppearanceDeviceSettingsEnabled()
-            : this.settings.isDeviceSpecificSettingsEnabled();
+        final deviceProtected = this.settings.isDeviceProtected(key);
         if (deviceProtected) continue;
         this.settings[key] = settings[key];
       }
@@ -598,13 +596,50 @@ class Settings with ChangeNotifier {
   bool _isAppearanceDeviceKey(String key) =>
       _appearanceDeviceKeys.contains(key);
 
+  /// ⭐ 2026-10-10（用户指正 ✓）：**阅读类设置键集合** —— 仅这些键归「阅读」开关管 ✓；
+  /// 其余键（发现 / 本地收藏 / 应用 / 网络等页面的设置 ✓）**不受任何设备开关影响** ✓，照常参与同步 ✓。
+  static const _readerDeviceKeys = <String>{
+    'autoPageTurningInterval',
+    'commentFontSize',
+    'enableClockAndBatteryInfoInReader',
+    'enableCustomImageProcessing',
+    'enablePageAnimation',
+    'enableTapToTurnPages',
+    'longPressZoomPosition',
+    'pageUpAndDownAction',
+    'preloadImageCount',
+    'quickCollectImage',
+    'readerMode',
+    'readerScreenPicNumberForLandscape',
+    'readerScreenPicNumberForPortrait',
+    'readerScrollSpeed',
+    'reverseChapterOrder',
+    'reverseTapToTurnPages',
+    'showChapterComments',
+    'showChapterCommentsAtEnd',
+    'showPageNumberInReader',
+    'showSingleImageOnFirstPage',
+    'showSystemStatusBar',
+    'enableDoubleTapToZoom',
+    'enableLongPressToZoom',
+    'enableTurnPageByVolumeKey',
+    'limitImageWidth',
+  };
+
+  bool _isReaderDeviceKey(String key) => _readerDeviceKeys.contains(key);
+
+  /// ⭐ 该键是否受「设备特定设置」保护 ✓（**三组**：外观键看外观开关 ✓、阅读键看阅读开关 ✓、其余一律 false ✓）。
+  bool isDeviceProtected(String key) {
+    if (_isAppearanceDeviceKey(key)) return isAppearanceDeviceSettingsEnabled();
+    if (_isReaderDeviceKey(key)) return isDeviceSpecificSettingsEnabled();
+    return false;
+  }
+
   dynamic getDeviceReaderSetting(String key) {
     // ⭐ 2026-10-10（用户要求 ✓）：**按键归属选择开关** ✗→✓ —— 外观类键看「外观」开关 ✓，其余（阅读等 ✓）看「阅读」开关 ✓；
     // 两个开关各管一半 ⇒ 外观可随设备形态各异 ✓，阅读习惯仍可跨设备统一 ✓（用户："外观因为设备横竖使用问题肯定有不同设计，
     // 但是阅读习惯可能是统一的" ✓）。
-    final enabled = _isAppearanceDeviceKey(key)
-        ? isAppearanceDeviceSettingsEnabled()
-        : isDeviceSpecificSettingsEnabled();
+    final enabled = isDeviceProtected(key);
     if (!enabled) {
       return _data[key];
     }
