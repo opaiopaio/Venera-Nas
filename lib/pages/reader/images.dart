@@ -476,6 +476,10 @@ class _GalleryModeState extends State<_GalleryMode>
               controller.jumpToPage(totalPages);
             }
           } else {
+            // ⭐ 修复（2026-10-10 全量代码审查 ✓）：**用户手势应当打断在途动画** ✗→✓ ——
+            // 否则 `setPage` 的早退判据会把"动画途中拖拽/滑条到达的页码"静默丢弃 ✗
+            //（表现为 `_page` 与屏幕实际显示页暂时不一致 ✓）。
+            reader.cancelPageAnimation();
             reader.setPage(i);
             context.readerScaffold.update();
             // Auto close toolbar when entering chapter comments page

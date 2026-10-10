@@ -547,6 +547,10 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
       if (!mounted) return;
       context.showMessage(message: res.errorMessage ?? "Error");
     }
+    // ⭐ 修复（2026-10-10 全量代码审查 ✓）：`await` 之后**必须**再查一次 `mounted` ✗→✓ ——
+    // 原先只在错误分支查（第 547 行 ✓），成功分支会直接走到下面的 `setState` ✓；
+    // 若用户在请求返回前离开页面 ⇒ 在已 dispose 的 State 上 `setState` ✗。
+    if (!mounted) return;
     setState(() {
       isVotingUp = false;
       isVotingDown = false;

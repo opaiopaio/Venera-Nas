@@ -710,6 +710,21 @@ abstract mixin class _ReaderLocation {
     return toPage(page - 1);
   }
 
+  /// ⭐ 新增（2026-10-10 全量代码审查 ✓）：**打断在途翻页动画** ✓。
+  ///
+  /// 用途 ✓：供「用户手势改页」这类**明确意图**调用 ✓ —— 原 `setPage` 的早退判据是
+  /// "动画途中、目标页与 `_pendingPage` 不同就丢弃" ✗，于是**拖拽 / 底栏滑条**到达的页码会被
+  /// 静默忽略 ✗（`_page` 与屏幕实际显示页不一致，要等动画结束或兜底才恢复 ✓）。
+  /// 用户手势理应**打断动画** ✓，故先解除吸收与待定页、并把代次 +1（让旧回调失效 ✓），再改页 ✓。
+  void cancelPageAnimation() {
+    _animToken++;
+    _pageAnimatingFallback?.cancel();
+    _pageAnimatingFallback = null;
+    _pageAnimating = false;
+    _pendingPage = null;
+    update();
+  }
+
   // ⭐ 修复（2026-10-10 日志定位 ✓）：翻页动画标志必须**能自愈** ✗→✓
   // 实测日志（reader_debug.log ✓）证明 animateToPage 的 Future **可能永远不完成** ✗：
   // 同章内先 ANIMATE start to 2 之后再无 done ✓，随后 ANIMATE start to 16 却 done 了 ✓。
@@ -816,6 +831,7 @@ abstract mixin class _ReaderLocation {
       _pendingPage = null;
       // ⭐ 代次 +1 ✓：切章后，**切章前**那次动画的迟到回调一律失效 ✗（不得再改状态 ✓）。
       _animToken++;
+      // 说明 ✓：本段与上方 `cancelPageAnimation()` 语义相同 ✓，但切章**不应**额外触发一次 `update()`（下面已有 ✓）。
       _jumpToLastPageOnLoad = toLastPage;
       update();
       return true;
