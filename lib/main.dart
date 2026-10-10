@@ -297,11 +297,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     // 这样各处零散按钮（收藏页工具栏、搜索页设置/清除历史等）也能跟随层次设计。
     // 所有按钮统一走「窗口/按钮背景」这套设计：底色 = 遮罩色（未配置即透明），
     // 形状 = 圆角/直角设置。不再回退到主题色，也不依赖是否配置了遮罩色。
+    final buttonFill = iconOverlayColor();
     final overlayButtonStyle = ButtonStyle(
       // ⭐ I1：图标按钮（`IconButton`）的底色也走**按钮独立入口** ✓ ——
       // 原先用 `windowOverlayColor()` ✗ → 与面板同色、且**不受「按钮背景」设置控制** ✗
       //（用户实测："只有图标的按钮都不受控，还是受窗口遮罩控制" ✓）。
-      backgroundColor: WidgetStatePropertyAll(iconOverlayColor()),
+      backgroundColor: WidgetStatePropertyAll(buttonFill),
       // 让按钮的底色方块更小、彼此不粘连。
       minimumSize: const WidgetStatePropertyAll(Size(36, 36)),
       padding: const WidgetStatePropertyAll(
@@ -388,7 +389,24 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       // 而 `AppBackground` **始终**挂在 `MaterialApp.builder` 里（main.dart:634 ✓），且背景关闭时它自己也画 `scheme.surface` 底 ✓，
       // ⇒ 所有 Scaffold **无条件透明是安全且正确的** ✓（关闭背景时观感不变 ✓）。
       scaffoldBackgroundColor: Colors.transparent,
-      iconButtonTheme: IconButtonThemeData(style: overlayButtonStyle),
+      iconButtonTheme: IconButtonThemeData(
+        style: overlayButtonStyle.copyWith(
+          // ⭐ 对比度（2026-10-11）：`iconButtonTheme` 的底色是自绘的遮罩色 ✓（可被设成浅色 ✗）——
+          // 前景（图标 ✓）必须取与填充成对的黑/白 ✓，否则浅底浅图标看不见 ✗；
+          // 无填充（透明 ✓）时**不注入** ✗ → 完全保持原主题默认前景 ✓（零回归 ✓）。
+          // ⚠️ 仍**不接全局文字色** ✗（那会让图标跟着文字变色 ✗，见下方注 1 / 注 2 ✓）；
+          // 用户单独设了「全局图标色」时由 `appIconColor()` 在各调用点生效 ✓。
+          // ⚠️ 此处**不能用** `Theme.of(context)` ✗（本函数正在构造主题 ✓）→ 用局部 `scheme` ✓。
+          foregroundColor: WidgetStatePropertyAll(
+            buttonFill.a == 0
+                ? null
+                : onColorForFill(
+                    context,
+                    Color.alphaBlend(buttonFill, scheme.surface),
+                  ),
+          ),
+        ),
+      ),
       // ⭐ E1-④：`showDialog` 类弹层的暗罩同样受「突出二级菜单」开关控制 ✓ ——
       // 这类弹层（主页「扫描 NAS / 导入」、漫画源配置等 ✓）原先走 Flutter 默认
       // `Colors.black54` ✗（**不受开关控制** ✓，用户实测反馈 ✓）；`PopUpWidget`
