@@ -578,11 +578,14 @@ class _AppTabBarState extends State<AppTabBar> {
               // ⭐ 对比度（2026-10-11 ✓）：**未选中的标签**取 col 之前会固定用 `colorScheme.onSurface` ✗
               // ⇒ 深色主题下它是**浅色（近白）** ✗，而本 chip 底色可由「漫画源颜色」设为**浅色** ✓
               // ⇒ 浅底叠浅字、看不见 ✗（用户实测：这一排未选中项文字消失 ✓）。
-              // ⇒ 现在按**本 chip 实际填充色**的深浅自动配黑/白 ✓；用户**手动设了文字颜色**则优先跟随用户 ✓。
-              color: i == _controller.animation?.value.round()
-                  ? context.colorScheme.primary
-                  : (globalTextColor() ??
-                        onColorForFill(context, sourceTabOverlayColor())),
+              // ⇒ 现在按**本 chip 实际填充色**的深浅自动配黑/白 ✓。
+              // ⭐ 用户设置优先（2026-10-11 ✓）：**设了「文字颜色」时选中/未选中都跟随它** ✓ ——
+              // 原先用户层只包了未选中分支 ✗ ⇒ 选中项仍是主题色 ⇒ "这一排不受文字颜色控制" ✗。
+              color:
+                  globalTextColor() ??
+                  (i == _controller.animation?.value.round()
+                      ? context.colorScheme.primary
+                      : onColorForFill(context, sourceTabOverlayColor())),
               fontWeight: FontWeight.w500,
               // 启用「窗口/按钮背景」时把标签文字调大一点。
               fontSize: appdata.settings.customBackgroundActive ? 14 : null,
@@ -1173,16 +1176,19 @@ class TabActionButton extends StatelessWidget {
         ),
         child: IconTheme(
           data: IconThemeData(
-            // ⭐ AA1（用户要求 ✓）：**纯图标按钮** ✓ —— 去掉「添加」文字 ✗、图标**更大** ✓；
-            // 颜色先跟随本排主题色 ✓（`onSecondaryContainer` 配 `secondaryContainer` ✓），
-            // **不再跟随「图标按钮」的自定义色** ✗（原先走 `appIconColor()` ✗，用户实测指出 ✓）。
+            // ⭐ AA1（用户要求 ✓）：**纯图标按钮** ✓ —— 去掉「添加」文字 ✗、图标**更大** ✓。
             // ⭐ 对比度（2026-10-11）：本按钮自带 `sourceTabOverlayColor()` 底色 ✓（**与相邻 tab 同源** ✓），
-            // 底色可被改成浅色 ✓ ⇒ `onSecondaryContainer` 可能变成浅底浅图标 ✗ ⇒ 按**实际填充**配黑/白 ✓；
-            // ⚠️ **用户设了图标色时优先跟随** ✓（`appIconColor` 的既有约定 ✓）。
+            // 底色可被改成浅色 ✓ ⇒ 有填充时按**实际填充**配黑/白 ✓（无填充 ⇒ 原 `onSecondaryContainer` ✓）。
+            // ⭐ 图标取色（2026-10-11）：**本按钮的规则是"跟随图标颜色"** ✓（与相邻 tab 的文字色**本就允许不同** ✓）
+            // ⇒ 用户层 `appIconColor` 必须包住**两个分支** ✓（原先只包了有填充那支 ✗
+            //   ⇒ 三套外观全关时「+」不跟随「图标颜色」✗）；未设图标色 ⇒ 沿用原兜底色 ✓ 观感零变化 ✓。
             size: AppIconSize.lg,
-            color: fill == null
-                ? context.colorScheme.onSecondaryContainer
-                : appIconColor(context, onColorForFill(context, fill)),
+            color: appIconColor(
+              context,
+              fill == null
+                  ? context.colorScheme.onSecondaryContainer
+                  : onColorForFill(context, fill),
+            ),
           ),
           child: icon, // 只留图标 ✓（真正的图标按钮 ✓）
         ),

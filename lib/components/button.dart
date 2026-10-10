@@ -231,7 +231,10 @@ class _ButtonState extends State<Button> {
       height = height - padding.vertical;
     }
     Widget child = IconTheme(
-      data: IconThemeData(color: textColor),
+      // ⭐ 图标取色（2026-10-11）：**图标跟随「全局图标颜色」** ✓（与全项目约定一致 ✓）——
+      // 原先直接套 `textColor` ✗ ⇒ 胶囊按钮里的图标吃的是**文字色** ✗，与本文件 423 行
+      // 「图标不接全局文字色」的约定自相矛盾 ✓；未设图标色时回退 `textColor` ✓（零回归 ✓）。
+      data: IconThemeData(color: appIconColor(context, textColor)),
       child: DefaultTextStyle(
         style: TextStyle(color: textColor, fontSize: 14),
         child: isLoading
@@ -482,8 +485,10 @@ Color onColorForFill(BuildContext context, Color fill) {
 /// ⭐ 共用包装（2026-10-11）：给**自绘底色**的子树套上与填充对比的前景色 ✓（文字与图标一起 ✓）。
 ///
 /// 规则 ✓（全项目统一，勿自创变体 ✗）：
-/// - 有填充 ⇒ 前景 = `globalTextColor() ?? onColorForFill(context, 合成后的实色)` ✓
-///   （用户手动设了文字颜色 ⇒ 优先跟随 ✓，与 `Button` 的既有约定一致 ✓）；
+/// - **文字** ⇒ `globalTextColor() ?? onColorForFill(context, 合成后的实色)` ✓
+///   （用户手动设了文字颜色 ⇒ 优先跟随 ✓）；
+/// - **图标** ⇒ `appIconColor(context, onColorForFill(context, 合成后的实色))` ✓
+///   （用户设了「图标颜色」⇒ 优先跟随 ✓，否则按填充取黑/白 ✓；⚠️ 图标**不**跟随文字颜色 ✗）；
 /// - **无填充/全透明 ⇒ 原样返回** ✗（透明与描边控件保持原有语义 ✓）；
 /// - 半透明填充**先与主题表面合成** ✓（`onColorForFill` 忽略 alpha ✗）。
 class FilledForeground extends StatelessWidget {
@@ -500,18 +505,20 @@ class FilledForeground extends StatelessWidget {
     AppSettingsScope.of(context);
     final fill = this.fill;
     if (fill == null || fill.a == 0) return child;
-    final on =
-        globalTextColor() ??
-        onColorForFill(
-          context,
-          fill.a >= 1
-              ? fill
-              : Color.alphaBlend(fill, context.colorScheme.surface),
-        );
+    final effectiveFill = fill.a >= 1
+        ? fill
+        : Color.alphaBlend(fill, context.colorScheme.surface);
+    // ⭐ 文字与图标**分开取色** ✗→✓：文字跟随「全局文字颜色」✓、图标跟随「全局图标颜色」✓。
+    //（原先两层都注入文字色 ✗ ⇒ 设了文字颜色后，填充上的图标（侧栏/设置左栏 ✓）也跟着文字变色 ✗。）
+    final onText = globalTextColor() ?? onColorForFill(context, effectiveFill);
+    final onIcon = appIconColor(
+      context,
+      onColorForFill(context, effectiveFill),
+    );
     return DefaultTextStyle.merge(
-      style: TextStyle(color: on),
+      style: TextStyle(color: onText),
       child: IconTheme.merge(
-        data: IconThemeData(color: on),
+        data: IconThemeData(color: onIcon),
         child: child,
       ),
     );
@@ -586,10 +593,13 @@ class _IconButtonState extends State<_IconButton> {
             ),
           )
         : null;
-    // `active` / `danger` 是语义覆盖色 ✓；普通态按是否有实心填充决定 ✓。
-    final Color? normalOn = contrastOn == null
-        ? context.colorScheme.primary
-        : appIconColor(context, contrastOn);
+    // ⭐ 普通态：**先让用户设的「图标颜色」优先** ✓（`appIconColor` 的既有约定 ✓），
+    // 没设时才按填充取对比色 / 回退主题主色 ✓（原先 `contrastOn == null` 分支恒为 `primary` ✗
+    // ⇒ 「图标颜色」对这类按钮无效 ✗）。
+    final Color? normalOn = appIconColor(
+      context,
+      contrastOn ?? context.colorScheme.primary,
+    );
     Widget icon = IconTheme(
       data: IconThemeData(
         size: iconSize,
