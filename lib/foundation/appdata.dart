@@ -517,7 +517,26 @@ class Settings with ChangeNotifier {
   }
 
   void setEnabledDeviceSpecificSettings(bool enabled) {
+    // 「阅读」开关（沿用旧字段 `enabled` ✓，兼容已有数据 ✓）。
+
     setDeviceReaderSetting("enabled", enabled);
+  }
+
+  /// ⭐ 2026-10-10（用户要求 ✓）：**「外观」独立开关** ✗→✓ —— 外观随设备形态（横竖屏/窗口大小）差异明显，
+
+  /// 而阅读习惯往往跨设备统一 ⇒ 两者应各自决定"是否按设备独立保存" ✓。
+
+  void setEnabledAppearanceDeviceSettings(bool enabled) {
+    setDeviceReaderSetting("enabledAppearance", enabled);
+  }
+
+  bool isAppearanceDeviceSettingsEnabled() {
+    final deviceId = _data['deviceId'] as String;
+
+    if (deviceId.isEmpty) return false;
+
+    return _data['deviceSpecificSettings'][deviceId]?["enabledAppearance"] ==
+        true;
   }
 
   bool isDeviceSpecificSettingsEnabled() {
@@ -528,8 +547,58 @@ class Settings with ChangeNotifier {
     return _data['deviceSpecificSettings'][deviceId]?["enabled"] == true;
   }
 
+  /// ⭐ 2026-10-10（用户要求 ✓）：**外观类设置键集合** —— 这些键由「外观」开关管，其余键由「阅读」开关管 ✓。
+  static const _appearanceDeviceKeys = <String>{
+    'theme_mode',
+    'comicDisplayMode',
+    'comicTileScale',
+    'comicListDisplayMode',
+    'backgroundImage',
+    'backgroundColor',
+    'backgroundImageOpacity',
+    'backgroundImageFit',
+    'secondaryPageFollowTheme',
+    'secondaryMenuDim',
+    'secondaryPageMode',
+    'secondaryPageTint',
+    'secondaryPageTintStrength',
+    'menuSurfaceMode',
+    'menuSurfaceTint',
+    'menuSurfaceTintStrength',
+    'sideBarDim',
+    'sideBarSurfaceMode',
+    'sideBarSurfaceTint',
+    'sideBarSurfaceTintStrength',
+    'textFollowTheme',
+    'globalFontFamily',
+    'globalFontScale',
+    'textShadowEnabled',
+    'textShadowBlur',
+    'textShadowOffsetX',
+    'textShadowOffsetY',
+    'textGlowEnabled',
+    'textGlowRadius',
+    'textGlowStrength',
+    'windowOverlayFollowTheme',
+    'windowOverlayOpacity',
+    'buttonOverlayOpacity',
+    'iconOverlayOpacity',
+    'tagOverlayOpacity',
+    'sourceTabOverlayOpacity',
+    'windowOverlayCorner',
+  };
+
+  bool _isAppearanceDeviceKey(String key) =>
+      _appearanceDeviceKeys.contains(key);
+
   dynamic getDeviceReaderSetting(String key) {
-    if (!isDeviceSpecificSettingsEnabled()) {
+    // ⭐ 2026-10-10（用户要求 ✓）：**按键归属选择开关** ✗→✓ —— 外观类键看「外观」开关 ✓，其余（阅读等 ✓）看「阅读」开关 ✓；
+    // 两个开关各管一半 ⇒ 外观可随设备形态各异 ✓，阅读习惯仍可跨设备统一 ✓（用户："外观因为设备横竖使用问题肯定有不同设计，
+    // 但是阅读习惯可能是统一的" ✓）。
+    final enabled = _isAppearanceDeviceKey(key)
+        ? isAppearanceDeviceSettingsEnabled()
+        : isDeviceSpecificSettingsEnabled();
+    if (!enabled) {
       return _data[key];
     }
     var deviceId = _data['deviceId'] as String;

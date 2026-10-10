@@ -71,7 +71,7 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
     // ⭐ 2026-10-10（用户要求 ✓）：**按设备独立保存本页设置** ✓ —— 与「阅读」页同一套机制 ✓：
     // 启用后本设备改的值只写在本设备 ✓，同步来的配置不会覆盖它 ✓。
     final useDeviceSpecificSettings = appdata.settings
-        .isDeviceSpecificSettingsEnabled();
+        .isAppearanceDeviceSettingsEnabled();
 
     return SmoothCustomScrollView(
       slivers: [
@@ -83,7 +83,8 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
           value: useDeviceSpecificSettings,
           onChanged: (b) {
             setState(() {
-              appdata.settings.setEnabledDeviceSpecificSettings(b);
+              // ⭐ 外观页用**外观专用**开关 ✓（阅读页仍用 setEnabledDeviceSpecificSettings ✓），两者互不影响 ✓。
+              appdata.settings.setEnabledAppearanceDeviceSettings(b);
             });
             appdata.saveData();
           },

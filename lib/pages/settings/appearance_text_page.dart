@@ -16,7 +16,7 @@ class AppearanceTextPage extends StatelessWidget {
     // ⭐ 2026-10-10（用户要求 ✓）：**按设备独立保存本页设置** ✓ —— 与「阅读」页同一套机制 ✓：
     // 启用后本设备改的值只写在本设备 ✓，同步来的配置不会覆盖它 ✓。
     final useDeviceSpecificSettings = appdata.settings
-        .isDeviceSpecificSettingsEnabled();
+        .isAppearanceDeviceSettingsEnabled();
     return PopUpWidgetScaffold(
       // ⭐ 批次 4a（2026-10-09 用户指示 ✓）：本页是**二级页面** ✓，补 `popupStyle: true` ⇒ 表面走切片+色调 ⇒ 跟随自定义 ✓。
       // ⚠️ 推送方式**暂不改** ✗：`showPopUpWidget` 走 `rootNavigator: true`（`pop_up_widget.dart:128-131` ✓），
