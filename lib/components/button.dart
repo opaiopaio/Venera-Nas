@@ -35,6 +35,7 @@ class Button extends StatefulWidget {
     this.hoverColor,
     this.disabledColor,
     this.fillColor,
+    this.borderWidth = 0.6,
     this.textColor,
     this.onPressed,
   });
@@ -55,6 +56,7 @@ class Button extends StatefulWidget {
     this.hoverColor,
     this.disabledColor,
     this.fillColor,
+    this.borderWidth = 0.6,
     this.textColor,
     this.isLoading = false,
   }) : type = ButtonType.filled;
@@ -75,6 +77,7 @@ class Button extends StatefulWidget {
     this.hoverColor,
     this.disabledColor,
     this.fillColor,
+    this.borderWidth = 0.6,
     this.textColor,
     this.isLoading = false,
   }) : type = ButtonType.outlined;
@@ -95,6 +98,7 @@ class Button extends StatefulWidget {
     this.hoverColor,
     this.disabledColor,
     this.fillColor,
+    this.borderWidth = 0.6,
     this.textColor,
     this.isLoading = false,
   }) : type = ButtonType.text;
@@ -115,6 +119,7 @@ class Button extends StatefulWidget {
     this.hoverColor,
     this.disabledColor,
     this.fillColor,
+    this.borderWidth = 0.6,
     this.textColor,
     this.isLoading = false,
   }) : type = ButtonType.normal;
@@ -183,6 +188,11 @@ class Button extends StatefulWidget {
   /// ⭐ 第 0 步补充 ✓：**显式指定填充色**（`Colors.transparent` 即"只有描边、不填充" ✓），
   /// 用于复现"手搓描边胶囊"等**原本没有底色**的控件 ✓；不影响描边色（描边仍看 `color` ✓）。
   final Color? fillColor;
+
+  /// ⭐ 第三批补充（2026-10-10 ✓）：**描边宽度**可由调用方覆盖 ✓，默认 **0.6** = 改造前**逐字一致** ✓。
+  /// 引入原因 ✓：`components/select.dart` 的 `Select` 锚点原为 `Border.all(color: …)` = 宽度 **1.0** ✗，
+  /// 要把它收编进 `Button.outlined` 且**观感不变** ✓ ⇒ 必须先能表达这个值 ✓（**仅 `ButtonType.outlined` 生效** ✓）。
+  final double borderWidth;
 
   /// ⭐ 第 0 步补充 ✓：**显式指定文字/图标颜色**（null ⇒ 沿用原有分支 ✓），
   /// 用于复现"用继承默认文字色"的手搓件 ✓（迁移时传 `DefaultTextStyle.of(context).style.color` ⇒ 逐字复现 ✓）。
@@ -317,7 +327,7 @@ class _ButtonState extends State<Button> {
                       color:
                           widget.color ??
                           Theme.of(context).colorScheme.outlineVariant,
-                      width: 0.6,
+                      width: widget.borderWidth,
                     )
                   : null,
             ),
