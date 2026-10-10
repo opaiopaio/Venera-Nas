@@ -662,17 +662,16 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
   Widget buildItem(String key) {
     Widget removeButton = Padding(
       padding: const EdgeInsets.only(right: AppSpace.sm),
-      child: IconButton(
+      // ⭐ 外观构件统一 · 第四批（2026-10-10 ✓）：原先此处手写"紧凑化魔法组合" ✗
+      //（`padding: zero` + `constraints 32×32` ✓）⇒ 现走唯一实现 `CompactIconButton` ✓
+      //（内部与原先**逐字一致** ⇒ 观感不变 ✓）。
+      child: CompactIconButton(
         onPressed: () {
           setState(() {
             keys.remove(key);
           });
         },
         icon: const Icon(Icons.delete_outline),
-        // 紧凑化 ✓：`IconButton` 默认 48×48 ✗ 会把行撑得比行高还高 →
-        // `ListTile` 内容贴底、不在遮罩里垂直居中 ✗（用户实测 ✓）；与图片收藏的网格按钮同法 ✓。
-        padding: EdgeInsets.zero,
-        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
       ),
     );
 

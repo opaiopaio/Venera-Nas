@@ -73,4 +73,43 @@ void main() {
       reason: 'SelectToolbar 应是多选工具条的唯一实现',
     );
   });
+
+  test('T-CU3：紧凑图标按钮必须走规范构件 CompactIconButton（第四批）', () {
+    // 背景 ✗：`IconButton` 默认 48×48 会把定高行撑高 ⇒ 内容贴底 ✗（用户实测 ✓）；
+    // 于是两处各写了一遍同一个"魔法组合"（padding zero + 32×32 ✓）
+    // ⇒ 已统一到 `lib/components/compact_icon_button.dart` ✓。本测试防止回退 ✗。
+    const compactFiles = <String>[
+      'lib/pages/settings/setting_components.dart',
+      'lib/pages/image_favorites_page/image_favorites_item.dart',
+    ];
+
+    for (final path in compactFiles) {
+      final src = File(path).readAsStringSync();
+      expect(
+        src.contains('CompactIconButton('),
+        isTrue,
+        reason: '$path 的紧凑图标按钮应使用规范构件 CompactIconButton',
+      );
+      // "魔法组合"的稳定指纹 ✓：手写版本必然同时带这两行 ✓。
+      final magic = RegExp(
+        r'padding:\s*EdgeInsets\.zero,\s*\n\s*constraints:\s*const BoxConstraints\(\s*minWidth:\s*32,\s*minHeight:\s*32\)',
+      );
+      expect(
+        magic.hasMatch(src),
+        isFalse,
+        reason: '$path 不应再手写紧凑化魔法组合（应走 CompactIconButton）',
+      );
+    }
+
+    // 规范实现内部必须恰好带上那两行 ✓（保证"唯一实现" ✓）。
+    final impl2 = File(
+      'lib/components/compact_icon_button.dart',
+    ).readAsStringSync();
+    expect(
+      impl2.contains('padding: EdgeInsets.zero') &&
+          impl2.contains('minWidth: 32, minHeight: 32'),
+      isTrue,
+      reason: 'CompactIconButton 应保留原来的紧凑化参数（保证观感不变）',
+    );
+  });
 }

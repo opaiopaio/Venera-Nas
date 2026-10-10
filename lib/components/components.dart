@@ -56,6 +56,7 @@ part 'pop_up_widget.dart';
 part 'scroll.dart';
 part 'select.dart';
 part 'select_toolbar.dart';
+part 'compact_icon_button.dart';
 part 'side_bar.dart';
 part 'comic.dart';
 part 'effects.dart';

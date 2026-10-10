@@ -244,11 +244,12 @@ class _ImageFavoritesItemState extends State<_ImageFavoritesItem> {
             softWrap: true,
           ),
         ),
-        IconButton(
+        // ⭐ 外观构件统一 · 第四批（2026-10-10 ✓）：原先此处手写"紧凑化魔法组合" ✗
+        //（`padding: zero` + `constraints 32×32` ✓，注释还写着"与图片收藏的网格按钮同法" ✓）
+        // ⇒ 现走唯一实现 `CompactIconButton` ✓（内部与原先**逐字一致** ⇒ 观感不变 ✓）。
+        CompactIconButton(
           icon: const Icon(Icons.grid_view, size: AppIconSize.sm),
           tooltip: 'Gallery View'.tl,
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
           onPressed: () {
             App.mainNavigatorKey?.currentContext?.to(
               () =>
