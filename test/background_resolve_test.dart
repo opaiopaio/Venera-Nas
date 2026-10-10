@@ -43,7 +43,12 @@ void main() {
     );
   });
 
-  testWidgets('T-BG2 建切片的同一帧就必须把背景交给 ImageCache 解析', (tester) async {
+  testWidgets('T-BG2 命中模块缓存的那一帧仍必须把 FileImage 交给 ImageCache', (tester) async {
+    // ⚠️ 2026-10-10（回归审查 P0-2 ✓）：旧版本只泵**一个**新切片 ✗ ⇒ `_sliceCachedImage` 还是 null ✓
+    // ⇒ 走的是"无缓存"分支 ✓ ⇒ 把历史那句 `return;` 加回去它**依然是绿** ✓ = **假绿** ✗。
+    // 现在改为两步 ✓：① 先泵一个切片并等真实解码完成（模块缓存被填 ✓）；
+    // ② 清空 `ImageCache` 后泵**第二个**切片（全新 State ⇒ `_path` 为空而模块缓存已满 ✓）
+    // ⇒ 真正进入"命中缓存"分支 ✓ ⇒ 此时 `FileImage` 仍必须进 `ImageCache` ✓（有 `return` 就会红 ✓）。
     final tempDir = Directory.systemTemp.createTempSync('venera-bg-resolve-');
     addTearDown(() {
       try {
@@ -72,9 +77,40 @@ void main() {
     PaintingBinding.instance.imageCache.clear();
     PaintingBinding.instance.imageCache.clearLiveImages();
 
+    // ① 第一个切片：真实解码（`runAsync` 才能跑真 I/O ✓）⇒ 监听器写入模块缓存 ✓。
     await tester.pumpWidget(
       AppSettingsScope(
-        child: MaterialApp(home: Scaffold(body: const BackgroundSlice())),
+        child: MaterialApp(
+          home: Scaffold(body: BackgroundSlice(key: const ValueKey('first'))),
+        ),
+      ),
+    );
+    await tester.runAsync(() async {
+      for (var i = 0; i < 80; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 25));
+        if (_sliceCacheFilled(provider)) break;
+      }
+    });
+    // 多泵两帧 ✓：让切片的监听器回调真正跑完并写入**模块级缓存** ✓（只等 ImageCache 会太早 ✓）。
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump();
+    expect(
+      _sliceCacheFilled(provider),
+      isTrue,
+      reason: '前置条件：第一个切片必须已把图解码进 ImageCache ✓（否则第二步进不了"命中模块缓存"分支 ✓）',
+    );
+
+    // ② 清掉 ImageCache ✓（模块缓存保留 ✓）⇒ 换一个全新 State 的切片 ✓ ⇒ 真正命中缓存分支 ✓。
+    PaintingBinding.instance.imageCache.clear();
+    PaintingBinding.instance.imageCache.clearLiveImages();
+    expect(PaintingBinding.instance.imageCache.containsKey(provider), isFalse);
+
+    await tester.pumpWidget(
+      AppSettingsScope(
+        child: MaterialApp(
+          home: Scaffold(body: BackgroundSlice(key: const ValueKey('second'))),
+        ),
       ),
     );
     await tester.pump();
@@ -83,10 +119,17 @@ void main() {
       PaintingBinding.instance.imageCache.containsKey(provider),
       isTrue,
       reason:
-          '背景切片没有把 FileImage 交给 ImageCache ⇒ 解析被跳过 ✗'
-          '（这正是"每次启动背景图片消失"的机制 ✓）',
+          '命中模块缓存时**也必须继续**把 FileImage 交给 ImageCache 解析 ✗→✓；'
+          '若在此处提前 return（历史事故 ✗）⇒ 这里为 false ⇒ "每次启动背景图片消失" 会重现 ✓',
     );
   });
+}
+
+/// 模块级缓存是否已被填上（用于等真实解码完成 ✓，不直接读私有变量 ✓）。
+bool _sliceCacheFilled(FileImage provider) {
+  // 模块缓存写入时必定伴随 `ImageCache` 里有这张图 ✓（两者由同一个监听器一起写 ✓），
+  // 且我们只在**清缓存之前**用它做等待判据 ✓。
+  return PaintingBinding.instance.imageCache.containsKey(provider);
 }
 
 /// 去掉 `//` 行注释与 `/* */` 块注释（避免把注释里的字样当成代码 ✗）。

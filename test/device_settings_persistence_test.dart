@@ -96,8 +96,16 @@ void main() {
     );
 
     // ④ 重启（真重读同一份存储 ✓）⇒ 仍在 ✓
+    // ⚠️ 2026-10-10（回归审查 P1-6 ✓）：`doInit()` **只赋值、不清内存** ✗ ⇒ 不先破坏内存态的话
+    // 这条断言**恒真** ✓（= 假绿 ✗，根本没覆盖"从文件读回" ✓）。故先清空内存值 ✓。
+    appdata.settings['backgroundImage'] = '';
+    expect(appdata.settings['backgroundImage'], '');
     await appdata.doInit();
-    expect(appdata.settings['backgroundImage'], 'bg.png', reason: '重启后仍必须读到 ✓');
+    expect(
+      appdata.settings['backgroundImage'],
+      'bg.png',
+      reason: '重启必须从 appdata.json **真的读回** ✓（先清空内存再 doInit ⇒ 不落盘就会红 ✓）',
+    );
     expect(
       readSavedSettings()['backgroundImage'],
       'bg.png',

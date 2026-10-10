@@ -33,23 +33,33 @@ class Appdata with Init {
       var file = File(FilePath.join(App.dataPath, 'appdata.json'));
       futures.add(file.writeAsString(data));
 
-      var disableSyncFields = json["settings"]["disableSyncFields"] as String;
-      if (disableSyncFields.isNotEmpty) {
-        var json4sync = jsonDecode(data);
-        List<String> customDisableSync = splitField(disableSyncFields);
+      // ⭐ 2026-10-10（回归审查 P0-1 ✓）：同步快照**无论如何都要生成** ✗→✓ ——
+      // 原先只在用户自定义过 `disableSyncFields` 时才写 `syncdata.json` ✗，而该字段**默认是空串** ✓
+      // ⇒ 上行退回**原始 `appdata.json`** ✗ ⇒ `deviceId` / 旧 `deviceSpecificSettings` 容器 /
+      // 两个开关标志**全部进云端** ✓（= 用户报的"开关被同步过去" ✓）。
+      // 现在 ✓：**始终**产出过滤后的 `syncdata.json`，且**只**剔除这几类 ✗ ——
+      // 其余设置值（含 `backgroundImage` / `backgroundColor` ✓、webdav 等 ✓）**一律保留** ✓
+      //（用户要求"同步文件都要包含所有页面的设置信息（值）" ✓ = 永远完整快照 ✓）。
+      var json4sync = jsonDecode(data);
+      var syncSettings = json4sync["settings"];
+      if (syncSettings is Map) {
+        final customDisableSync = splitField(
+          syncSettings["disableSyncFields"] as String? ?? '',
+        );
         for (var field in customDisableSync) {
-          json4sync["settings"].remove(field);
+          syncSettings.remove(field);
         }
-        // ⭐ 2026-10-10（用户要求 ✓）：**两个设备开关标志永不上传** ✗ ——
-        // 否则设备 1 开了开关，设备 2 同步后会被"自动打开" ✓（用户实测反馈 ✓）。
-        // ⚠️ **只排除这两个标志** ✗ —— 其余设置值一律保留 ✓（用户要求"同步文件都要包含所有页面的设置信息"✓）。
+        syncSettings.remove("deviceId");
+        syncSettings.remove("deviceSpecificSettings");
         for (final field in _deviceSwitchFlagKeys) {
-          json4sync["settings"].remove(field);
+          syncSettings.remove(field);
         }
-        var data4sync = jsonEncode(json4sync);
-        var file4sync = File(FilePath.join(App.dataPath, 'syncdata.json'));
-        futures.add(file4sync.writeAsString(data4sync));
       }
+      json4sync.remove("deviceSpecificSettings");
+      json4sync.remove("deviceId");
+      var data4sync = jsonEncode(json4sync);
+      var file4sync = File(FilePath.join(App.dataPath, 'syncdata.json'));
+      futures.add(file4sync.writeAsString(data4sync));
 
       await Future.wait(futures);
     } finally {
@@ -100,10 +110,12 @@ class Appdata with Init {
     "disableSyncFields",
     "authorizationRequired",
     "smbDownloadPath",
-    // ⭐ 2026-10-10（用户要求 ✓）：**背景图片在任何情况下都不应用** ✗ ——
-    // 图**文件**不随同步/备份传输 ✓（只传文件名 ✓）⇒ 应用了也只会指向本机不存在的图 ✗；
+    // ⭐ 2026-10-10（用户要求 + 回归审查 P1-6 ✓）：**背景图片相关**（文件名 + 本机选取路径）任何情况下都不应用 ✗ ——
+    // 图**文件**不随同步/备份传输 ✓（只传文件名/路径 ✓）⇒ 应用了也只会指向本机不存在的图 ✗、
+    // 设置页还会显示对端的选取路径 ✗ ⇒ 两者一起排除 ✓（`backgroundImage` 与 `backgroundImageSource` 必须同时 ✗）。
     // 注意：**背景色 `backgroundColor` 不在此列** ✓（用户特意强调"除了背景，但是不包括背景色，只有背景图片" ✓）。
     "backgroundImage",
+    "backgroundImageSource",
     ..._deviceSwitchFlagKeys,
     // ⭐ 迁移用：旧版第二层容器（值已搬进主表 ✓，容器不再被读取 ✓）也一并排除 ✓。
     "deviceSpecificSettings",
@@ -152,6 +164,7 @@ class Appdata with Init {
   ///   "除了背景（图片），不包括背景色" ✓ ⇒ 它们**要能**在本机开关关时被恢复 ✓（原先被误列在此 ✗ 已移除 ✓）。
   static const _disableSync = [
     "backgroundImage",
+    "backgroundImageSource",
     "proxy",
     "authorizationRequired",
     "customImageProcessing",
@@ -698,29 +711,35 @@ class Settings with ChangeNotifier {
   /// 里的值**搬进主表** ✓，然后清空该表 ✓。
   ///
   /// 规则 ✓（**不丢老用户配置** ✓、**幂等** ✓）：
-  /// ① **开关标志**：任一旧条目里 `enabledAppearance` / `enabled` 为 true ⇒ 置位新标志 ✓（保留用户此前的开关状态 ✓）；
-  /// ② **设置值**：按"旧开关是否开着"决定优先级 ✓ ——
-  ///    · 该旧条目开关**开着** ⇒ 设备层的非空值就是用户当时**实际看到**的值 ⇒ **覆盖主表** ✓；
-  ///    · 开关**关着** ⇒ 主表值才是用户看到的 ✓ ⇒ 仅在主表为空时用设备层非空值**补齐** ✓；
-  /// ③ **空值一律跳过** ✓（绝不用空值覆盖任何非空值 ✗）；
-  /// ④ 多条目（历史 id 孤儿 ✓）时按**后写覆盖先写**的次序处理 ✓ —— 最后一次写入的值胜出 ✓；
+  /// ① ⭐ **权威条目**（2026-10-10 回归审查 P1-5 ✓）：**存在当前 `deviceId` 的条目时，只用它** ✗ ——
+  ///    其余历史条目**完全不参与** ✓；只有当前条目**不存在**时才认领"**最后一条**"历史条目 ✓
+  ///    （沿用 `f9c64ea` 的 `keys.last` 语义 ✓，不把多条目的开关 OR 起来 ✗ —— 否则"当前条开关关 +
+  ///    孤儿条开关开"会**静默把开关打开** ✓ 并让孤儿过期值覆盖主表 ✗）；
+  /// ② **开关标志**：由**权威条目**的 `enabledAppearance` / `enabled` 决定 ✓（true ⇒ 置位 ✓，缺省/false ⇒ 不置位 ✓）；
+  /// ③ **设置值**：按**权威条目自己的旧开关**决定优先级 ✓ ——
+  ///    · 旧开关**开着** ⇒ 它里面的非空值就是用户当时**实际看到**的值 ⇒ **覆盖主表** ✓；
+  ///    · 开关**关着** ⇒ 主表值才是用户看到的 ✓ ⇒ 仅在主表为空时用其非空值**补齐** ✓；
+  /// ④ **空值一律跳过** ✓（绝不用空值覆盖任何非空值 ✗）；
   /// ⑤ 处理完把 `deviceSpecificSettings` **清空** ✓ 并返回 true（调用方据此落盘一次 ✓）；
   ///    清空后再启动 ⇒ 该方法直接返回 false ✓ = **幂等** ✓。
   bool _migrateDeviceSpecificSettings() {
     final old = _data['deviceSpecificSettings'];
     if (old is! Map || old.isEmpty) return false;
-    bool isOn(Map entry, String flag) => entry[flag] == true;
-    for (final entry in old.values) {
-      if (entry is! Map) continue;
-      final appearanceOn = isOn(entry, 'enabledAppearance');
-      final readerOn = isOn(entry, 'enabled');
-      if (appearanceOn) {
-        _data['deviceSpecificAppearanceEnabled'] = true;
-      }
-      if (readerOn) {
-        _data['deviceSpecificReaderEnabled'] = true;
-      }
-      for (final e in entry.entries) {
+    final deviceId = _data['deviceId'] as String? ?? '';
+    // ① 选权威条目 ✓：当前 id 优先 ✓；没有才认领最后一条历史条目 ✓（其余条目不参与 ✗）。
+    Map<dynamic, dynamic>? authoritative;
+    if (deviceId.isNotEmpty && old[deviceId] is Map) {
+      authoritative = old[deviceId] as Map;
+    } else if (old.isNotEmpty) {
+      final last = old[old.keys.last];
+      if (last is Map) authoritative = last;
+    }
+    if (authoritative != null) {
+      final appearanceOn = authoritative['enabledAppearance'] == true;
+      final readerOn = authoritative['enabled'] == true;
+      if (appearanceOn) _data['deviceSpecificAppearanceEnabled'] = true;
+      if (readerOn) _data['deviceSpecificReaderEnabled'] = true;
+      for (final e in authoritative.entries) {
         final key = e.key.toString();
         if (key == 'enabled' || key == 'enabledAppearance') continue;
         final value = e.value;

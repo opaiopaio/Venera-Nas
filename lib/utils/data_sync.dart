@@ -413,10 +413,12 @@ class DataSync with ChangeNotifier {
       );
 
       try {
-        var disableFields = appdata.settings['disableSyncFields'];
-        var data = await exportAppData(
-          disableFields != null && disableFields.toString().isNotEmpty,
-        );
+        // ⭐ 2026-10-10（回归审查 P0-1 ✓）：上行**固定用过滤后的 `syncdata.json`** ✗→✓ ——
+        // 原先按"用户是否自定义过 `disableSyncFields`"二选一 ✗，默认（空串 ✓）时退回**原始 `appdata.json`**
+        // ⇒ `deviceId` / 旧 `deviceSpecificSettings` 容器 / 两个开关标志全部进云端 ✓。
+        // 现在恒为 `true` ✓：`exportAppData(true)` 打包 `syncdata.json` ✓（由 `saveData` **始终**生成 ✓，
+        // 只剔那三类 ✓、其余设置值完整保留 ✓）。
+        var data = await exportAppData(true);
         var now = DateTime.now().millisecondsSinceEpoch;
         var filename = '$now.venera';
         var files = await client.readDir('/');
