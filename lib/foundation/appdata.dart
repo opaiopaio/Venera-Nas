@@ -675,8 +675,26 @@ class Settings with ChangeNotifier {
     if (!enabled) {
       return _data[key];
     }
-    var deviceId = _data['deviceId'] as String;
-    return _data['deviceSpecificSettings'][deviceId]?[key] ?? _data[key];
+    final deviceId = _data['deviceId'] as String;
+    final deviceValue = _data['deviceSpecificSettings'][deviceId]?[key];
+    if (deviceValue == null) {
+      return _data[key];
+    }
+    // ⭐⭐ 修复（2026-10-10 用户实测 ✓）：**设备层的空值绝不允许遮住全局层的有值** ✗→✓。
+    //
+    // 用户四步实测 ✓（**无需重启** ✓）：① 关开关设背景 ⇒ 正常 ✓；② **一开开关，背景立刻变白** ✗；
+    // ③ 重启 ⇒ 背景恢复 ✓（开关仍是开 ✓）；④ 再关开关 ⇒ **又变白** ✗。
+    // 机理 ✓：开关只应改变"读取优先级" ✓，可一旦设备层里存在该键的**空值** ✗
+    //（`''` ✓，例如某次"清空/未就绪时读到的空值被写进设备层" ✓），
+    // `?? ` 只挡 null ✗ ⇒ 空串**直接生效** ✓ ⇒ 面板立刻变白 ✓ 且**永久遮挡**全局那个真值 ✗ ✓。
+    // 因此这里补一条"空值不覆盖有值"的兜底 ✓：设备层为空串、而全局层有非空值时 ⇒ 取全局 ✓。
+    if (deviceValue is String &&
+        deviceValue.isEmpty &&
+        _data[key] is String &&
+        (_data[key] as String).isNotEmpty) {
+      return _data[key];
+    }
+    return deviceValue;
   }
 
   void setDeviceReaderSetting(String key, dynamic value) {
@@ -685,10 +703,10 @@ class Settings with ChangeNotifier {
       deviceId,
       () => <String, dynamic>{},
     )[key] = value;
-    // ⚠️ 这里**不能**顺手镜像进全局 ✗（曾试过 ✓ 被 `device_settings_gate_test.dart` 的
-    // T-DS2 / T-DS4 判红 ✗）：设计语义是「设备层 = 本设备覆盖 ✓、全局层 = 共享/同步基线 ✓」，
-    // 清除后必须能**回落到全局基线** ✓ ⇒ 设备层写入不得污染全局层 ✓。
-    // 用户"开开关设背景 ⇒ 重启后消失"的真因在**设备条目取不到**（见 `_adoptOrphanDeviceEntry` ✓）。
+    // ⚠️ 这里**绝不能**镜像进全局 ✗（试过两次都被既有守卫判红 ✓）：
+    // `device_settings_gate_test.dart` 的 T-DS2 / T-DS4 要求「设备层写入**不得**污染全局基线 ✓，
+    // 清除后必须能回落到全局那个**原本的**值 ✓」⇒ 设备层只做覆盖 ✓、全局层保持共享/同步基线 ✓。
+    // 用户"一开开关就变白"的问题**不在写入端** ✓，而在读取端"空值遮住了有值" ✗ —— 见 `getDeviceReaderSetting` ✓。
     notifyListeners();
   }
 

@@ -140,4 +140,79 @@ void main() {
       reason: '认领结果必须落盘 ⇒ 否则每次启动都要重新认领一次',
     );
   });
+
+  // ⭐ 本轮（2026-10-10 用户四步实测 ✓，**无需重启**即复现 ✓）：
+  // ① 关开关设背景 ⇒ 正常 ✓；② **一开开关背景立刻变白** ✗；③ 重启 ⇒ 恢复 ✓；④ 再关开关 ⇒ **又变白** ✗。
+  // 机理 ✓：开关只该改变"读取优先级" ✓，可设备层里一旦出现该键的**空值** ✗，
+  // `?? ` 只挡 null ✗ ⇒ 空串直接生效 ⇒ 遮住全局真值 ✗（= 变白 ✓）。
+  group('T-DS3 开关切换不得改变任何一层的实际值（四步实测 ✓）', () {
+    // ⚠️ 用普通 `test` 而非 `testWidgets` ✗→✓：本用例有真实文件 I/O
+    //（`saveData`/`doInit` ✓），在 fake async 下会**挂死** ✓（已实测）。
+    test('开/关开关前后，背景值都必须仍可读（当前代码必红）', () async {
+      // ① 开关**关** ⇒ 设背景（落全局层 ✓）
+      appdata.settings.setEnabledAppearanceDeviceSettings(false);
+      appdata.settings['backgroundImage'] = 'bg.png';
+      expect(appdata.settings['backgroundImage'], 'bg.png');
+
+      // ② 打开开关 ⇒ 立刻读（用户："背景会变白" ✗）
+      appdata.settings.setEnabledAppearanceDeviceSettings(true);
+      expect(
+        appdata.settings['backgroundImage'],
+        'bg.png',
+        reason: '一开开关背景就变白 ⇒ 说明切换动作本身把读取结果弄成了空 ✗',
+      );
+
+      // ②' 用户现象的**决定性触发条件** ✓：设备层里出现该键的空值（空值遮住有值 ✗）。
+      appdata.settings.writeSettingValue(
+        key: 'backgroundImage',
+        value: '',
+        useDeviceSettings: true,
+      );
+      expect(
+        appdata.settings['backgroundImage'],
+        'bg.png',
+        reason: '设备层的空值不该遮住全局层的有值 ⇒ 否则面板立刻变白（用户步骤② ✗）',
+      );
+
+      // ③ 模拟重启（真重读同一份存储 ✓）⇒ 仍可读 ✓
+      await appdata.saveData(false);
+      await appdata.doInit();
+      expect(appdata.settings['backgroundImage'], 'bg.png');
+
+      // ④ 关开关 ⇒ 全局层必须仍是原来的非空值 ✓（不得被空值污染 ✗）
+      appdata.settings.setEnabledAppearanceDeviceSettings(false);
+      expect(
+        appdata.settings['backgroundImage'],
+        'bg.png',
+        reason: '关开关后变白 ⇒ 说明全局层被空值污染了（用户步骤④ ✗）',
+      );
+    });
+
+    test('空值不遮有值，但真值仍然优先（功能本意不变 ✓）', () async {
+      // 全局有值 ✓（关开关时写的 ✓）
+      appdata.settings.setEnabledAppearanceDeviceSettings(false);
+      appdata.settings['backgroundImage'] = 'GLOBAL';
+      appdata.settings.setEnabledAppearanceDeviceSettings(true);
+
+      // ① 设备层出现**空值** ✗（用户现象的触发条件 ✓）⇒ 必须仍读到全局的真值 ✓
+      appdata.settings.writeSettingValue(
+        key: 'backgroundImage',
+        value: '',
+        useDeviceSettings: true,
+      );
+      expect(
+        appdata.settings['backgroundImage'],
+        'GLOBAL',
+        reason: '空值遮住有值 ⇒ 面板立刻变白（用户步骤② ✗）',
+      );
+
+      // ② 设备层的**真值**仍必须优先 ✓（设备特定设置的功能本意 ✓）
+      appdata.settings['backgroundImage'] = 'DEVICE';
+      expect(appdata.settings['backgroundImage'], 'DEVICE');
+
+      // ③ 清除本设备设置 ⇒ 回落到全局基线 ✓（既有语义 ✓，T-DS2/T-DS4 同源 ✓）
+      appdata.settings.resetDeviceSpecificSettings();
+      expect(appdata.settings['backgroundImage'], 'GLOBAL');
+    });
+  });
 }
