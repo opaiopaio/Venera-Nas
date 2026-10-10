@@ -461,32 +461,23 @@ class _ButtonState extends State<Button> {
   }
 }
 
-/// ⭐ 对比度工具（2026-10-11 ✓，2026-10-11 修正 ✓）：给定**实际填充色**，返回**对比度更高**的前景色。
+/// ⭐ 对比度工具（2026-10-11 ✓，同日二次修正 ✓）：给定**按钮实际填充色**，返回**保证可读**的前景色。
 ///
-/// ⚠️ 修正原因 ✗：原先用「填充 vs 主题表面谁更亮」判断 ✗ ⇒ **浅色主题 + 略暗于表面的浅色填充**
-/// 会误选 `onInverseSurface`（浅色 ✗）⇒ **浅字叠浅底、看不见** ✗（浅色模式下「扫描 NAS」「导入」等按钮 ✓）。
+/// ⚠️ 两次修正的原因 ✗：
+/// ① 起初用「填充 vs 主题表面谁更亮」✗ ⇒ 浅色主题下略暗于表面的浅填充被误判为"暗底" ⇒ 浅字浅底 ✗；
+/// ② 改用「`onSurface` / `onInverseSurface` 谁对比度高」✗ ⇒ **深色主题下这两个可能都是浅色** ✗
+///（`inverseSurface` 在深色主题里是浅色 ⇒ `onInverseSurface` 也浅 ✗）⇒ 遇到"跟随主题、但渲染为**浅色**"
+/// 的按钮时仍然**浅字叠浅底** ✗（用户实测：深色模式下这类按钮文字与底色融合 ✓）。
 ///
-/// 规则 ✓：**按两种候选前景色与填充的对比度择优** ✓ —— 填充偏暗 ⇒ 浅前景 `onInverseSurface` ✓；
-/// 偏亮 ⇒ 深前景 `onSurface` ✓。两值均取自 `ColorScheme` ✓ ⇒ 跟随主题/自定义配色 ✓，无自调灰 ✗。
+/// ⭐ 最终规则 ✓：**只看填充自身的亮度** ✓ —— 亮填充配深字、暗填充配浅字 ✓，
+/// 在**黑/白**两个绝对前景之间取 ✓ ⇒ **与主题无关、任何填充都保证可读** ✓。
+/// ⚠️ 仅在用户**未手动控制文字颜色**时才会走到这里 ✓（调用方已用 `globalTextColor()` 兜底 ✓）。
 Color onColorForFill(BuildContext context, Color fill) {
-  final scheme = context.colorScheme;
-  return _contrastRatio(fill, scheme.onSurface) >=
-          _contrastRatio(fill, scheme.onInverseSurface)
-      ? scheme.onSurface
-      : scheme.onInverseSurface;
+  // `estimateBrightnessForColor` 走 Flutter 的亮度阈值（相对亮度 0.15 ✓）⇒ 与"人眼觉得深浅"一致 ✓。
+  return ThemeData.estimateBrightnessForColor(fill) == Brightness.dark
+      ? Colors.white
+      : Colors.black;
 }
-
-/// WCAG 对比度（相对亮度比 ✓）；系数取自 WCAG 2.x 定义 ✓，非观感字面量 ✗。
-double _contrastRatio(Color a, Color b) {
-  final l1 = a.computeLuminance();
-  final l2 = b.computeLuminance();
-  final hi = l1 > l2 ? l1 : l2;
-  final lo = l1 > l2 ? l2 : l1;
-  return (hi + kContrastLuminanceOffset) / (lo + kContrastLuminanceOffset);
-}
-
-/// WCAG 相对亮度公式里的 0.05 偏移 ✓（规范常量 ✓，不是可调观感值 ✓）。
-const double kContrastLuminanceOffset = 0.05;
 
 /// ⭐ 第 0 步（2026-10-10 ✓）：图标按钮的底色策略 —— 现状有三种并存 ✓，统一到此枚举 ✓；
 /// 默认 `hover` = 与原先**逐字一致** ✓（不传的新参数一律不改变观感 ✓）。
