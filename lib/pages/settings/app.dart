@@ -410,11 +410,14 @@ class _LogsPageState extends State<LogsPage> {
                           ),
                         ),
                         // ⭐ 对比度（2026-10-11）：胶囊自绘底色 ⇒ 等级文字取与填充成对的前景色 ✓
-                        //（原先按等级写死黑/白 ✗ ⇒ 与自定义主题色不匹配 ⇒ 浅底白字看不见 ✗）
+                        //（原先按等级写死黑/白 ✗ ⇒ 与自定义主题色不匹配 ⇒ 浅底白字看不见 ✗）；
+                        // ⭐ 填充是**主题成对色**（`error` / `errorContainer` / `primaryContainer` ✓）⇒
+                        // 「用户文字色」**不得**覆盖它 ✗（否则"等级"这层语义色被用户色顶掉 ✓）。
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(5, 0, 5, 1),
                           child: FilledForeground(
                             fill: levelFill,
+                            userColorWins: false,
                             child: Text(logToShow[index].level.name),
                           ),
                         ),

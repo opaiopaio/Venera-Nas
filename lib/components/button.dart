@@ -232,7 +232,7 @@ class _ButtonState extends State<Button> {
     }
     Widget child = IconTheme(
       // ⭐ 图标取色（2026-10-11）：**图标跟随「全局图标颜色」** ✓（与全项目约定一致 ✓）——
-      // 原先直接套 `textColor` ✗ ⇒ 胶囊按钮里的图标吃的是**文字色** ✗，与本文件 423 行
+      // 原先直接套 `textColor` ✗ ⇒ 胶囊按钮里的图标吃的是**文字色** ✗，与本文件
       // 「图标不接全局文字色」的约定自相矛盾 ✓；未设图标色时回退 `textColor` ✓（零回归 ✓）。
       data: IconThemeData(color: appIconColor(context, textColor)),
       child: DefaultTextStyle(
@@ -451,7 +451,9 @@ class _ButtonState extends State<Button> {
         base = global ?? context.colorScheme.onSurface;
       }
     } else {
-      // 有填充 ⇒ 用**与填充成对**的前景色 ✓（取色全部来自 `ColorScheme` ✓，不引入任何新字面量 ✓）。
+      // 有填充 ⇒ 用**与填充成对**的前景色 ✓ —— 按填充亮度取**绝对黑/白** ✓
+      //（`onColorForFill` 返回的是 `Colors.black` / `Colors.white` ✓ —— 这是外观体系**允许的唯一例外** ✓：
+      //  主题色板里的成对色只在"原本的搭配"下成对 ✓，填充可被用户改成任意色 ⇒ 必须回到绝对黑/白 ✓）。
       // ⭐ 例外（2026-10-11 用户要求 ✓）：**用户启用了自定义文字颜色时，对比色不生效** ✗ ——
       // `globalTextColor()` 返回 null 表示"跟随系统/未启用"✓（见 `text_style_settings.dart:27` ✓）；
       // 非 null 表示用户**显式选了文字颜色** ✓ ⇒ 此时**文字跟随自定义色** ✓（用户明确要求 ✓），
@@ -475,11 +477,25 @@ class _ButtonState extends State<Button> {
 /// ⭐ 最终规则 ✓：**只看填充自身的亮度** ✓ —— 亮填充配深字、暗填充配浅字 ✓，
 /// 在**黑/白**两个绝对前景之间取 ✓ ⇒ **与主题无关、任何填充都保证可读** ✓。
 /// ⚠️ 仅在用户**未手动控制文字颜色**时才会走到这里 ✓（调用方已用 `globalTextColor()` 兜底 ✓）。
+/// ⚠️ **全透明填充不要直接传进来** ✗ —— 透明会被判为暗 ⇒ 返回白字 ⇒ 浅色主题下"白字浅底" ✗；
+/// 请用 [fillForeground]（它会短路 ✓）。
 Color onColorForFill(BuildContext context, Color fill) {
   // `estimateBrightnessForColor` 走 Flutter 的亮度阈值（相对亮度 0.15 ✓）⇒ 与"人眼觉得深浅"一致 ✓。
   return ThemeData.estimateBrightnessForColor(fill) == Brightness.dark
       ? Colors.white
       : Colors.black;
+}
+
+/// ⭐ 手写调用点的**统一入口**（2026-10-11）：全透明/无填充 ⇒ 返回 [fallback]（原语义 ✓）；
+/// 否则按**合成后**的实色取黑/白 ✓（半透明先与主题表面合成 ✗ —— `onColorForFill` 忽略 alpha ✓）。
+///
+/// ⚠️ 不要在调用点各自拼 `fill.a == 0 ? … : onColorForFill(…)` ✗ —— 全项目只走本函数，避免漏点 ✓。
+Color? fillForeground(BuildContext context, Color? fill, {Color? fallback}) {
+  if (fill == null || fill.a == 0) return fallback;
+  final effectiveFill = fill.a >= 1
+      ? fill
+      : Color.alphaBlend(fill, context.colorScheme.surface);
+  return onColorForFill(context, effectiveFill);
 }
 
 /// ⭐ 共用包装（2026-10-11）：给**自绘底色**的子树套上与填充对比的前景色 ✓（文字与图标一起 ✓）。
@@ -491,11 +507,29 @@ Color onColorForFill(BuildContext context, Color fill) {
 ///   （用户设了「图标颜色」⇒ 优先跟随 ✓，否则按填充取黑/白 ✓；⚠️ 图标**不**跟随文字颜色 ✗）；
 /// - **无填充/全透明 ⇒ 原样返回** ✗（透明与描边控件保持原有语义 ✓）；
 /// - 半透明填充**先与主题表面合成** ✓（`onColorForFill` 忽略 alpha ✗）。
+///
+/// ⚠️ **`userColorWins: false`** ✗：填充若是**主题成对色**（`primaryContainer` /
+/// `errorContainer` 等 ✓）或**选中态标识**（选中一眼可辨靠的就是成对色 ✓），
+/// 前景必须**保持成对色** ✗ —— 此时用户设的「全局文字颜色」**不得**覆盖它 ⇒ 传 `false` ✓。
+/// 填充来自**用户可配置的遮罩色**（`windowOverlayColor()` / `tagFillColor()` 等 ✓）时保持默认 `true` ✓。
+///
+/// ⚠️ **作用域限制** ✗（只加说明，勿为此重构 ✓）：`DefaultTextStyle.merge` **只对读环境样式的
+/// `Text` 生效** ✗ —— `Material` 会把子树文字重置为 `textTheme.bodyMedium`（`material.dart` ✓），
+/// `ListTile` 的标题走自己的 `titleTextStyle`/`textColor`（`list_tile.dart` ✓）⇒
+/// **这两类文字不吃本包装** ✓，要改请走主题注入（`listTileTheme.textColor` 等 ✓）。
 class FilledForeground extends StatelessWidget {
-  const FilledForeground({super.key, required this.fill, required this.child});
+  const FilledForeground({
+    super.key,
+    required this.fill,
+    required this.child,
+    this.userColorWins = true,
+  });
 
   /// 该处**实际**的填充色 ✓；`null` = 没有填充 ⇒ 不做任何处理 ✓。
   final Color? fill;
+
+  /// 用户设的「全局文字颜色」是否**优先于**对比色 ✓（主题成对色/选中态 ⇒ 传 `false` ✗）。
+  final bool userColorWins;
 
   final Widget child;
 
@@ -510,11 +544,9 @@ class FilledForeground extends StatelessWidget {
         : Color.alphaBlend(fill, context.colorScheme.surface);
     // ⭐ 文字与图标**分开取色** ✗→✓：文字跟随「全局文字颜色」✓、图标跟随「全局图标颜色」✓。
     //（原先两层都注入文字色 ✗ ⇒ 设了文字颜色后，填充上的图标（侧栏/设置左栏 ✓）也跟着文字变色 ✗。）
-    final onText = globalTextColor() ?? onColorForFill(context, effectiveFill);
-    final onIcon = appIconColor(
-      context,
-      onColorForFill(context, effectiveFill),
-    );
+    final contrast = onColorForFill(context, effectiveFill);
+    final onText = userColorWins ? (globalTextColor() ?? contrast) : contrast;
+    final onIcon = appIconColor(context, contrast);
     return DefaultTextStyle.merge(
       style: TextStyle(color: onText),
       child: IconTheme.merge(
@@ -585,13 +617,7 @@ class _IconButtonState extends State<_IconButton> {
     // 底色可被设成浅色 ✗ ⇒ 普通图标不能固定用主题色 ✗，须按填充亮度取黑/白 ✓；
     // `active` / `danger` 是语义覆盖色 ✓、用户设了图标色也优先跟随 ✓（`appIconColor` 的既有约定 ✓）。
     final Color? contrastOn = widget.background == IconButtonBackground.always
-        ? onColorForFill(
-            context,
-            Color.alphaBlend(
-              widget.backgroundColor ?? iconOverlayColor(),
-              context.colorScheme.surface,
-            ),
-          )
+        ? fillForeground(context, widget.backgroundColor ?? iconOverlayColor())
         : null;
     // ⭐ 普通态：**先让用户设的「图标颜色」优先** ✓（`appIconColor` 的既有约定 ✓），
     // 没设时才按填充取对比色 / 回退主题主色 ✓（原先 `contrastOn == null` 分支恒为 `primary` ✗

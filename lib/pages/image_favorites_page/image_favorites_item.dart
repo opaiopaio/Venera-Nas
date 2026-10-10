@@ -273,10 +273,10 @@ class _ImageFavoritesItemState extends State<_ImageFavoritesItem> {
             "${widget.imageFavoritesComic.images.length}/${widget.imageFavoritesComic.maxPageFromEp}",
             style: ts.s12.copyWith(
               // ⭐ 对比度（2026-10-11）：自绘填充 ⇒ 文字取与填充成对的前景色 ✓（原先继承全局文字色 ✗）；
-              // ⚠️ **用户设了全局文字色时优先跟随** ✓（`globalTextColor()` 非 null ⇒ 用它 ✓）。
+              // ⚠️ 用户设了全局文字色 ⇒ 优先跟随 ✓；填充透明 ⇒ 回退继承 ✓（原语义 ✓）。
               color:
                   globalTextColor() ??
-                  onColorForFill(context, tagFillColor(context)),
+                  fillForeground(context, tagFillColor(context)),
             ),
           ),
         ),

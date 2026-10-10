@@ -411,7 +411,9 @@ class _FolderTile extends StatelessWidget {
     // 建立设置依赖：本控件的外观由设置算出 → 设置变化时由框架精准重建
     // （见 ../workspace/archive/doc-private-legacy-20261009/03-implementation/11-refresh-mechanism.md）
     AppSettingsScope.of(context);
-    // ⭐ 对比度（2026-10-11）：仅在启用「窗口/按钮背景」时才画底色 ✓（否则 `null` = 无填充 ✓）。
+    // ⭐ 对比度（2026-10-11）：底色走「窗口/按钮背景」统一入口 ✓
+    //（⚠️ 该 `null` 分支实际**不可达** ✓：`customBackgroundActive` 恒为 true（`cornerStyleActive => true` ✓）
+    //  ⇒ 只为与其它调用点写法一致 ✓，勿据此推断"零回归" ✗）。
     final fill = appdata.settings.customBackgroundActive
         ? windowOverlayColor()
         : null;
@@ -437,18 +439,15 @@ class _FolderTile extends StatelessWidget {
                 Icon(
                   Icons.folder,
                   size: AppIconSize.xl,
-                  // 用户设了图标色 ⇒ 优先跟随 ✓（`appIconColor` 的既有约定 ✓）；否则按填充取对比色 ✓。
+                  // 用户设了图标色 ⇒ 优先跟随 ✓（`appIconColor` 的既有约定 ✓）；否则按填充取对比色 ✓；
+                  // 填充为**透明** ⇒ 回退原 `secondary` ✓（原语义 ✓）。
                   color: appIconColor(
                     context,
-                    fill == null
-                        ? Theme.of(context).colorScheme.secondary
-                        : onColorForFill(
-                            context,
-                            Color.alphaBlend(
-                              fill,
-                              Theme.of(context).colorScheme.surface,
-                            ),
-                          ),
+                    fillForeground(
+                      context,
+                      fill,
+                      fallback: Theme.of(context).colorScheme.secondary,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),

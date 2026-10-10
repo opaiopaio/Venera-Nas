@@ -585,7 +585,11 @@ class _AppTabBarState extends State<AppTabBar> {
                   globalTextColor() ??
                   (i == _controller.animation?.value.round()
                       ? context.colorScheme.primary
-                      : onColorForFill(context, sourceTabOverlayColor())),
+                      : fillForeground(
+                          context,
+                          sourceTabOverlayColor(),
+                          fallback: context.colorScheme.onSurface,
+                        )),
               fontWeight: FontWeight.w500,
               // 启用「窗口/按钮背景」时把标签文字调大一点。
               fontSize: appdata.settings.customBackgroundActive ? 14 : null,
@@ -1159,7 +1163,8 @@ class TabActionButton extends StatelessWidget {
         ? (windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.md))
         : BorderRadius.circular(AppRadius.md);
     // ⭐ 对比度（2026-10-11）：本按钮与「漫画源」标签共用底色口诀 ✓ ——
-    // 底色只在启用「窗口/按钮背景」时才画 ✓（`null` = 无填充 ⇒ 保持原主题前景 ✗）。
+    // 底色取「漫画源颜色」统一入口 ✓（⚠️ 该 `null` 分支实际**不可达** ✓：`customBackgroundActive`
+    // 恒为 true（`cornerStyleActive => true` ✓）⇒ 这里只为与同排写法保持一致 ✓，勿据此推断"零回归" ✗）。
     final fill = appdata.settings.customBackgroundActive
         ? sourceTabOverlayColor()
         : null;
@@ -1185,9 +1190,11 @@ class TabActionButton extends StatelessWidget {
             size: AppIconSize.lg,
             color: appIconColor(
               context,
-              fill == null
-                  ? context.colorScheme.onSecondaryContainer
-                  : onColorForFill(context, fill),
+              fillForeground(
+                context,
+                fill,
+                fallback: context.colorScheme.onSecondaryContainer,
+              ),
             ),
           ),
           child: icon, // 只留图标 ✓（真正的图标按钮 ✓）

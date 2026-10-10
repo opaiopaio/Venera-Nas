@@ -892,13 +892,13 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                             borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                           // ⭐ 对比度（2026-10-11）：自绘填充 ⇒ 文字取与填充成对的前景色 ✓；
-                          // ⚠️ **用户设了全局文字色时优先跟随** ✓（`globalTextColor()` 非 null ⇒ 用它 ✓）。
+                          // ⚠️ 用户设了全局文字色 ⇒ 优先跟随 ✓；填充透明 ⇒ 回退"继承环境样式" ✓（原语义 ✓）。
                           child: Text(
                             e,
                             style: TextStyle(
                               color:
                                   globalTextColor() ??
-                                  onColorForFill(
+                                  fillForeground(
                                     context,
                                     tagFillColor(context),
                                   ),
@@ -934,10 +934,10 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                                 //（原先 icon/text 都是 `colorScheme.primary` ✗ → 改底色后仍"看着像主题色" ✗，
                                 //  用户实测反馈"切换没反应、依旧跟随主题" ✓）。
                                 // ⭐ 对比度（2026-10-11）：胶囊自绘填充 ⇒ 图标也取与填充成对的前景色 ✓
-                                //（用户设了图标色 ⇒ `appIconColor` 优先跟随 ✓；否则按填充自动配黑/白 ✓）。
+                                //（用户设了图标色 ⇒ `appIconColor` 优先跟随 ✓；填充透明 ⇒ 回退继承 ✓）。
                                 color: appIconColor(
                                   context,
-                                  onColorForFill(
+                                  fillForeground(
                                     context,
                                     tagFillColor(context),
                                   ),
@@ -948,11 +948,11 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                               Text(
                                 "@c updates".tlParams({'c': _availableUpdates}),
                                 // ⭐ 对比度（2026-10-11）：自绘填充 ⇒ 文字取与填充成对的前景色 ✓；
-                                // ⚠️ **用户设了全局文字色时优先跟随** ✓（`globalTextColor()` 非 null ⇒ 用它 ✓）。
+                                // ⚠️ 用户设了全局文字色 ⇒ 优先跟随 ✓；填充透明 ⇒ 回退继承 ✓（原语义 ✓）。
                                 style: TextStyle(
                                   color:
                                       globalTextColor() ??
-                                      onColorForFill(
+                                      fillForeground(
                                         context,
                                         tagFillColor(context),
                                       ),
@@ -1157,11 +1157,13 @@ class _ImageFavoritesState extends State<ImageFavorites> {
         duration: AppMotion.short,
         // ⭐ 对比度（2026-10-11）：选中态自绘 `primaryContainer` 底色 ⇒ 文字取与填充成对的前景色 ✓
         //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色选中者底上"白字融底"看不见 ✗）；
+        // ⭐ 这是**选中态标识**（选中一眼可辨靠的就是主题成对色 ✓）⇒ 「用户文字色」不得覆盖它 ✗；
         // 未选中（无填充 ✓）保持原语义 ✗ 不动。
         child: FilledForeground(
           fill: displayType == type
               ? context.colorScheme.primaryContainer
               : null,
+          userColorWins: false,
           child: Center(child: Text(text, style: ts.s16)),
         ),
       ),

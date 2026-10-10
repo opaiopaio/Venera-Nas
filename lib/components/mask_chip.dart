@@ -124,9 +124,10 @@ class MaskChip extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: selectedOnColor == null
                       ? null
-                      // ⭐ 用户设置优先（2026-10-11）：选中态也要让位给「全局文字颜色」✓
-                      //（否则"设了文字颜色但选中项不变"✗；未设时仍是成对色 `onPrimaryContainer` ✓）。
-                      : TextStyle(color: globalTextColor() ?? selectedOnColor),
+                      // ⭐ 选中态 = **主题成对色** ✓（`primaryContainer` 配 `onPrimaryContainer` ✓）⇒
+                      // 「选中一眼可辨」靠的就是这层成对色 ✗ ⇒ **用户文字色不得覆盖它** ✓
+                      //（填充来自用户可配置遮罩色的**未选中态**才走"用户优先" ✓，见上面的包装 ✓）。
+                      : TextStyle(color: selectedOnColor),
                 ),
               ),
             ),
