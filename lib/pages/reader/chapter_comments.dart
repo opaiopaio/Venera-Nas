@@ -395,18 +395,24 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
   }
 
   Widget buildReply() {
-    return Container(
-      margin: const EdgeInsets.only(left: AppSpace.sm),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant,
-          width: 0.6,
+    // ⭐ 外观构件统一 · 第一批（2026-10-10 ✓）：手搓描边胶囊 → 规范构件 `Button.outlined` ✓
+    // **按现状传参 1:1 复现** ✓：无底色（fillColor: transparent）✓、圆角 xl ✓、高度由内容决定 ✓、
+    // 内边距 h:md / v:xs ✓、文字与图标用**继承的默认色** ✓、描边沿用 outlined 默认（outlineVariant 0.6）✓。
+    return Padding(
+      padding: const EdgeInsets.only(left: AppSpace.sm),
+      child: Button.outlined(
+        fillColor: Colors.transparent,
+        textColor: DefaultTextStyle.of(context).style.color,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        constraints: const BoxConstraints(
+          minHeight: 0,
+          maxHeight: double.infinity,
         ),
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        onTap: () {
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.md,
+          vertical: AppSpace.xs,
+        ),
+        onPressed: () {
           // Get the parent page's widget to access comicTitle and chapterTitle
           var parentState = context
               .findAncestorStateOfType<_ChapterCommentsPageState>();
@@ -423,20 +429,14 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
             showBarrier: false,
           );
         },
-        child:
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.insert_comment_outlined, size: AppIconSize.xs),
-                const SizedBox(width: 8),
-                Text(widget.comment.replyCount.toString()),
-              ],
-            ).padding(
-              const EdgeInsets.symmetric(
-                horizontal: AppSpace.md,
-                vertical: AppSpace.xs,
-              ),
-            ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.insert_comment_outlined, size: AppIconSize.xs),
+            const SizedBox(width: 8),
+            Text(widget.comment.replyCount.toString()),
+          ],
+        ),
       ),
     );
   }
@@ -446,18 +446,24 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
   var likes = 0;
 
   Widget buildLike() {
-    return Container(
-      margin: const EdgeInsets.only(left: AppSpace.sm),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant,
-          width: 0.6,
+    // ⭐ 外观构件统一 · 第一批（2026-10-10 ✓）：手搓描边胶囊 → 规范构件 `Button.outlined` ✓
+    // **按现状传参 1:1 复现** ✓：无底色（fillColor: transparent）✓、圆角 xl ✓、高度由内容决定 ✓、
+    // 内边距 h:md / v:xs ✓、文字与图标用**继承的默认色** ✓、描边沿用 outlined 默认（outlineVariant 0.6）✓。
+    return Padding(
+      padding: const EdgeInsets.only(left: AppSpace.sm),
+      child: Button.outlined(
+        fillColor: Colors.transparent,
+        textColor: DefaultTextStyle.of(context).style.color,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        constraints: const BoxConstraints(
+          minHeight: 0,
+          maxHeight: double.infinity,
         ),
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        onTap: () async {
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.md,
+          vertical: AppSpace.xs,
+        ),
+        onPressed: () async {
           if (isLiking) return;
           setState(() {
             isLiking = true;
@@ -479,33 +485,27 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
             isLiking = false;
           });
         },
-        child:
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isLiking)
-                  const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(),
-                  )
-                else if (isLiked)
-                  Icon(
-                    Icons.favorite,
-                    size: AppIconSize.xs,
-                    color: context.useTextColor(Colors.red),
-                  )
-                else
-                  const Icon(Icons.favorite_border, size: AppIconSize.xs),
-                const SizedBox(width: 8),
-                Text(likes.toString()),
-              ],
-            ).padding(
-              const EdgeInsets.symmetric(
-                horizontal: AppSpace.md,
-                vertical: AppSpace.xs,
-              ),
-            ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isLiking)
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(),
+              )
+            else if (isLiked)
+              Icon(
+                Icons.favorite,
+                size: AppIconSize.xs,
+                color: context.useTextColor(Colors.red),
+              )
+            else
+              const Icon(Icons.favorite_border, size: AppIconSize.xs),
+            const SizedBox(width: 8),
+            Text(likes.toString()),
+          ],
+        ),
       ),
     );
   }

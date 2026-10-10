@@ -34,6 +34,8 @@ class Button extends StatefulWidget {
     this.borderRadius,
     this.hoverColor,
     this.disabledColor,
+    this.fillColor,
+    this.textColor,
     this.onPressed,
   });
 
@@ -52,6 +54,8 @@ class Button extends StatefulWidget {
     this.borderRadius,
     this.hoverColor,
     this.disabledColor,
+    this.fillColor,
+    this.textColor,
     this.isLoading = false,
   }) : type = ButtonType.filled;
 
@@ -70,6 +74,8 @@ class Button extends StatefulWidget {
     this.borderRadius,
     this.hoverColor,
     this.disabledColor,
+    this.fillColor,
+    this.textColor,
     this.isLoading = false,
   }) : type = ButtonType.outlined;
 
@@ -88,6 +94,8 @@ class Button extends StatefulWidget {
     this.borderRadius,
     this.hoverColor,
     this.disabledColor,
+    this.fillColor,
+    this.textColor,
     this.isLoading = false,
   }) : type = ButtonType.text;
 
@@ -106,6 +114,8 @@ class Button extends StatefulWidget {
     this.borderRadius,
     this.hoverColor,
     this.disabledColor,
+    this.fillColor,
+    this.textColor,
     this.isLoading = false,
   }) : type = ButtonType.normal;
 
@@ -169,6 +179,14 @@ class Button extends StatefulWidget {
   final BorderRadius? borderRadius;
   final Color? hoverColor;
   final Color? disabledColor;
+
+  /// ⭐ 第 0 步补充 ✓：**显式指定填充色**（`Colors.transparent` 即"只有描边、不填充" ✓），
+  /// 用于复现"手搓描边胶囊"等**原本没有底色**的控件 ✓；不影响描边色（描边仍看 `color` ✓）。
+  final Color? fillColor;
+
+  /// ⭐ 第 0 步补充 ✓：**显式指定文字/图标颜色**（null ⇒ 沿用原有分支 ✓），
+  /// 用于复现"用继承默认文字色"的手搓件 ✓（迁移时传 `DefaultTextStyle.of(context).style.color` ⇒ 逐字复现 ✓）。
+  final Color? textColor;
 
   @override
   State<Button> createState() => _ButtonState();
@@ -303,6 +321,13 @@ class _ButtonState extends State<Button> {
     // 显式传 `widget.color` 时以显式色为准 ✓（危险操作如"删除"用 error 色的例外 ✓）。
     // ⭐ H2 禁用态：`onPressed == null` → 整体 **0.38 不透明度** ✓（P8 规范已写明 ✓）。
     final disabled = widget.onPressed == null;
+    // ⭐ 第 0 步补充 ✓：**fillColor 优先**（显式填充，含 `Colors.transparent` = 不填充 ✓）
+    // ⇒ 复现"无底色"控件时，hover 也不会突然出现底色 ✓（透明叠加仍透明 ✓）。
+    if (widget.fillColor != null) {
+      final fill = widget.fillColor!;
+      if (disabled) return fill.toOpacity(AppOpacity.disabled);
+      return isHover ? fill.toOpacity(0.9) : fill;
+    }
     // ⭐ H3：按钮底色改用**独立入口** `buttonOverlayColor()` ✓ ——
     // 与「窗口背景」分离 ✓（原先与面板同色 ✗ → 叠在同色面板上完全融合 ✗）。
     // 颜色默认跟随**系统容器色** ✓；不透明度默认自动加强一档 ✓（默认不再融合 ✓）。
@@ -346,6 +371,12 @@ class _ButtonState extends State<Button> {
     // ⚠️ 图标（`IconTheme`）与 `iconButtonTheme` **不接**全局文字色 ✗（否则图标跟着变色）。
     final global = globalTextColor();
     // ⭐ H2 禁用态：文字与图标一并降到 **0.38 不透明度** ✓（P8 规范 ✓）
+    // ⭐ 第 0 步补充 ✓：显式 textColor 优先 ✓（null ⇒ 沿用下面原有分支 ✓）
+    if (widget.textColor != null) {
+      return widget.onPressed == null
+          ? widget.textColor!.toOpacity(AppOpacity.disabled)
+          : widget.textColor!;
+    }
     final Color base;
     if (widget.color != null) {
       base = context.colorScheme.onPrimary;
