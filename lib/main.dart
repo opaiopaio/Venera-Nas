@@ -41,13 +41,9 @@ void main(List<String> args) {
         await init();
         // 加载自定义字体文件（若已配置）
         await loadCustomFont();
-        // ⭐ 本轮（用户实测反馈 ✓）：**首帧之前预加载全局背景图** ✓ ——
-        // 否则冷启动首帧只有底色（未设背景色时 = 浅色主题白 ✗）⇒ 观感"先白后闪出背景" ✗。
-        // ⚠️ 只在 **Android** 走这条路 ✓ —— 该现象是 Android 冷启动特有 ✓（见历史草稿 ✓），
-        // 桌面/Windows 的启动路径与观感**一律保持原样** ✗ 不动 ✓。
-        if (App.isAndroid) {
-          await preloadBackgroundImage();
-        }
+        // ⚠️ 冷启动"首帧前预加载背景图"的尝试已**整体回退** ✗（用户实测两次"背景图片消失" ✓，
+        // 两端都受影响 ✓）⇒ 启动路径恢复为**本次尝试之前**的已知良好状态 ✓；
+        // 要重做请先按 `project-docs` 的冷启动排查清单在真机验证 ✓（见本轮报告 ✓）。
         runApp(const MyApp());
         if (App.isDesktop) {
           await windowManager.ensureInitialized();

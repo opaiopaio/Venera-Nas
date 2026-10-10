@@ -5,18 +5,12 @@ import android.app.Activity
 import android.content.ContentResolver
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.BitmapFactory
-import android.graphics.Color
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
 import android.util.Log
-import android.view.Gravity
 import android.view.KeyEvent
 import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
@@ -34,7 +28,6 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugins.GeneratedPluginRegistrant
-import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.atomic.AtomicInteger
@@ -58,9 +51,6 @@ class MainActivity : FlutterFragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ⭐ 用户实测反馈（安卓冷启动"背景是白色然后闪出背景"）：尽早把**已保存的背景**铺到窗口底 ✓。
-        applyLaunchBackground()
-
         if (intent?.action == Intent.ACTION_SEND) {
             if (intent.type == "text/plain") {
                 val text = intent.getStringExtra(Intent.EXTRA_TEXT)
@@ -68,12 +58,6 @@ class MainActivity : FlutterFragmentActivity() {
                     handleSharedText(text)
             }
         }
-    }
-
-    override fun onPostCreate(savedInstanceState: Bundle?) {
-        super.onPostCreate(savedInstanceState)
-        // 引擎/主题切换（LaunchTheme → NormalTheme）之后可能被重置 ⇒ 这里再落一次 ✓（幂等 ✓）。
-        applyLaunchBackground()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -273,88 +257,6 @@ class MainActivity : FlutterFragmentActivity() {
         } else {
             "No Proxy"
         }
-    }
-
-    // ⭐ 用户实测反馈（安卓冷启动"背景是白色然后闪出背景"）：Flutter 首帧之前可见的那一层
-    // 就是 **windowBackground**（见 `res/values/styles.xml` 的注释：它在"Flutter UI initializes"
-    // 期间显示）—— 浅色主题下它是**白色** ✗，而 App 的背景是用户选的壁纸 ⇒ 观感"先白后闪出背景" ✗。
-    // 这里把 **App 已保存的背景**（图优先 ✓、其次背景色 ✓）铺到窗口底 ⇒ 引擎初始化这段时间看到的就是
-    // 背景本身 ✓（Flutter 首帧由 Dart 侧预加载 ✓ 接上，见 `lib/components/background_slice.dart` ✓）。
-    //
-    // 读的是 Dart 侧**同一份**文件 ✓：`filesDir/appdata.json`（`App.dataPath` =
-    // `getApplicationSupportDirectory()` = `filesDir` ✓，见 path_provider_android 的
-    // `getApplicationSupportPath()` ✓）：
-    //   · `settings.backgroundImage` = 文件名 ✓，图存于 `filesDir/background/` ✓；
-    //   · `settings.backgroundColor` = `#RRGGBB` ✓（`system` / `transparent` 一律忽略 ✓）。
-    //
-    // ⚠️ 全程 try/catch ✓：读不到 / 解不出就**静默回退**到主题默认色 ✓
-    // ⇒ 不会影响启动 ✓、也不会改变"未配置背景"用户的观感 ✓、与其它平台无关 ✓。
-    private var launchBackground: Drawable? = null
-
-    private fun applyLaunchBackground() {
-        if (launchBackground == null) {
-            launchBackground = buildLaunchBackground()
-        }
-        launchBackground?.let {
-            try {
-                window.setBackgroundDrawable(it)
-            } catch (e: Throwable) {
-                Log.w("Venera", "setBackgroundDrawable failed: ${e.message}")
-            }
-        }
-    }
-
-    private fun buildLaunchBackground(): Drawable? {
-        try {
-            val jsonFile = File(filesDir, "appdata.json")
-            if (!jsonFile.exists()) return null
-            val settings = JSONObject(jsonFile.readText()).optJSONObject("settings") ?: return null
-
-            val imageName = settings.optString("backgroundImage", "")
-            if (imageName.isNotEmpty()) {
-                val imageFile = File(File(filesDir, "background"), imageName)
-                if (imageFile.exists()) {
-                    // 先只读尺寸 ✓，再按**屏幕量级**采样解码 ✓（避免大壁纸整张解进内存 ⇒ OOM ✗）。
-                    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                    BitmapFactory.decodeFile(imageFile.absolutePath, bounds)
-                    val bitmap = BitmapFactory.decodeFile(
-                        imageFile.absolutePath,
-                        BitmapFactory.Options().apply { inSampleSize = sampleSizeFor(bounds) }
-                    )
-                    if (bitmap != null) {
-                        val drawable = BitmapDrawable(resources, bitmap)
-                        // ⚠️ `Drawable.setGravity` 是 API 23+ ✓ ⇒ 低版本不加（默认拉伸铺满 ✓，不会崩 ✓）。
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                            drawable.setGravity(Gravity.FILL)
-                        }
-                        return drawable
-                    }
-                }
-            }
-
-            val color = settings.optString("backgroundColor", "transparent")
-            if (color.length == 7 && color.startsWith("#")) {
-                return ColorDrawable(Color.parseColor(color))
-            }
-        } catch (e: Throwable) {
-            Log.w("Venera", "buildLaunchBackground failed: ${e.message}")
-        }
-        return null
-    }
-
-    /// 采样率取 2 的幂 ✓，直到长边不超过**屏幕长边** ✓（`inSampleSize` 必须是 2 的幂 ✓）。
-    private fun sampleSizeFor(bounds: BitmapFactory.Options): Int {
-        var sample = 1
-        val target = maxOf(
-            resources.displayMetrics.widthPixels,
-            resources.displayMetrics.heightPixels
-        )
-        if (target <= 0) return sample
-        val longest = maxOf(bounds.outWidth, bounds.outHeight)
-        while (longest / (sample * 2) >= target) {
-            sample *= 2
-        }
-        return sample
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
