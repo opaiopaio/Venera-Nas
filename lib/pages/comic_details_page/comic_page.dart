@@ -868,44 +868,47 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 36,
-      margin: const EdgeInsets.symmetric(
+    final loading = isLoading ?? false;
+    final active = isActive ?? false;
+    return Padding(
+      // 与原 `Container.margin` **逐字一致** ✓
+      padding: const EdgeInsets.symmetric(
         horizontal: AppSpace.xs,
         vertical: AppSpace.tiny,
       ),
-      decoration: BoxDecoration(
+      child: Button.outlined(
+        // ⭐ 外观构件统一 · 第三批（2026-10-10 ✓）：原先**自绘**描边胶囊 ✗ ⇒ 现走规范构件 `Button.outlined` ✓，
+        // 并按**现状逐项传参** ⇒ 观感逐字不变 ✓：
+        // 无底色 ✓ / 圆角 18 ✓ / 高度 36 ✓ / 描边沿用 outlined 默认（outlineVariant 0.6 ✓）/
+        // 文字用继承的默认色 ✓ / 图标尺寸与颜色由内层 IconTheme 保留 ✓ / 水平内边距 16 ✓ / 长按继承 ✓。
+        fillColor: Colors.transparent,
+        textColor: DefaultTextStyle.of(context).style.color,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: context.colorScheme.outlineVariant,
-          width: 0.6,
-        ),
-      ),
-      child: InkWell(
-        onTap: () {
-          if (!(isLoading ?? false)) {
+        constraints: const BoxConstraints(minHeight: 36, maxHeight: 36),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg),
+        onPressed: () {
+          if (!loading) {
             onPressed();
           }
         },
         onLongPress: onLongPressed,
-        borderRadius: BorderRadius.circular(18),
         child: IconTheme.merge(
           data: IconThemeData(size: AppIconSize.md, color: iconColor),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (isLoading ?? false)
+              if (loading)
                 const SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 1.8),
                 )
               else
-                (isActive ?? false) ? (activeIcon ?? icon) : icon,
+                active ? (activeIcon ?? icon) : icon,
               const SizedBox(width: 8),
               Text(text),
             ],
-          ).paddingHorizontal(16),
+          ),
         ),
       ),
     );

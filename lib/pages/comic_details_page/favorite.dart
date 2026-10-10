@@ -625,8 +625,6 @@ class _HoverButton extends StatefulWidget {
 }
 
 class _HoverButtonState extends State<_HoverButton> {
-  bool isHovered = false;
-
   @override
   Widget build(BuildContext context) {
     final removeColor = context.colorScheme.error;
@@ -634,33 +632,31 @@ class _HoverButtonState extends State<_HoverButton> {
     final addColor = context.colorScheme.primary;
     final addHoverColor = Color.lerp(addColor, Colors.black, 0.2)!;
 
-    return MouseRegion(
-      onEnter: widget.enabled ? (_) => setState(() => isHovered = true) : null,
-      onExit: widget.enabled ? (_) => setState(() => isHovered = false) : null,
-      child: GestureDetector(
-        onTap: widget.enabled ? widget.onTap : null,
-        child: AnimatedContainer(
-          duration: AppMotion.short,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpace.sm,
-            vertical: AppSpace.xs,
-          ),
-          decoration: BoxDecoration(
-            color: widget.enabled
-                ? (widget.isFavorite
-                      ? (isHovered ? removeHoverColor : removeColor)
-                      : (isHovered ? addHoverColor : addColor))
-                : context.colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-          ),
-          child: Text(
-            widget.isFavorite ? "Remove".tl : "Add".tl,
-            style: ts.s12.copyWith(
-              color: widget.enabled
-                  ? context.colorScheme.onPrimary
-                  : context.colorScheme.onSurfaceVariant,
-            ),
-          ),
+    // ⭐ 外观构件统一 · 第三批（2026-10-10 ✓）：原先**自绘**实心胶囊 ✗ ⇒ 现走规范构件 `Button.filled` ✓，
+    // 并按**现状逐项传参** ⇒ 观感逐字不变 ✓：
+    // 底色 primary/error ✓ / hover 为 `Color.lerp(底色, black, 0.2)` ✓ / 禁用底为 surfaceContainerLow ✓ /
+    // 圆角 AppRadius.lg ✓ / 内边距 h sm · v xs ✓ / **高度由内容决定** ✓（传无界约束 ✓）/
+    // 文字样式仍由内层 `Text` 自带 ✓（s12 + onPrimary / onSurfaceVariant ✓，优先于 Button 的默认文字样式 ✓）。
+    return Button.filled(
+      color: widget.isFavorite ? removeColor : addColor,
+      hoverColor: widget.isFavorite ? removeHoverColor : addHoverColor,
+      disabledColor: context.colorScheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      constraints: const BoxConstraints(
+        minHeight: 0,
+        maxHeight: double.infinity,
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.sm,
+        vertical: AppSpace.xs,
+      ),
+      onPressed: widget.enabled ? widget.onTap : null,
+      child: Text(
+        widget.isFavorite ? "Remove".tl : "Add".tl,
+        style: ts.s12.copyWith(
+          color: widget.enabled
+              ? context.colorScheme.onPrimary
+              : context.colorScheme.onSurfaceVariant,
         ),
       ),
     );
