@@ -620,7 +620,6 @@ class _FavoriteFolder extends StatelessWidget {
               // ⭐ 修复（2026-10-10 全量代码审查 ✓）：删除是**网络请求** ✗→✓ ——
               // `await` 期间用户可能返回/切页/关浮层 ⇒ 本 State 卸载、`comicListKey.currentState` 变 null ✗
               // ⇒ 原先的强解包 `!` 会崩 ✓。现先查存活、再把 `!` 换成 `?.` ✓。
-              if (!mounted) return;
               if (res) {
                 comicListKey.currentState?.remove(comic);
               }
