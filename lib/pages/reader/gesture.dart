@@ -149,15 +149,11 @@ class _ReaderGestureDetectorState
         behavior: HitTestBehavior.translucent,
         onTapDown: (details) {
           _lastTapLocation = details.globalPosition;
-          _rdbg('GESTURE tapDown ${details.globalPosition}'); // ⚠️ 临时调试 ✗
         },
         onSecondaryTapDown: (details) {
           onSecondaryTapUp(details.globalPosition);
         },
         onTap: () {
-          _rdbg(
-            'GESTURE onTap ignore=$_ignoreNextTap prevent=$_preventNextTap longPress=$_longPressInProgress',
-          ); // ⚠️ 临时调试 ✗
           if (_ignoreNextTap) {
             _ignoreNextTap = false;
             return;
