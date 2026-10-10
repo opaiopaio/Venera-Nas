@@ -71,7 +71,12 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
     var readerMode = context.reader.mode;
 
     // 横向阅读的时候, 如果纵向滑就触发收藏, 纵向阅读的时候, 如果横向滑动就触发收藏
-    if (appdata.settings['quickCollectImage'] == 'Swipe') {
+    if (appdata.settings.getReaderSetting(
+          context.reader.cid,
+          context.reader.type.sourceKey,
+          'quickCollectImage',
+        ) ==
+        'Swipe') {
       if (_imageFavoriteDragListener == null) {
         double distance = 0;
         _imageFavoriteDragListener = _DragListener(
@@ -186,7 +191,12 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
             ),
           ),
         ),
-        if (appdata.settings['showPageNumberInReader'] == true &&
+        if (appdata.settings.getReaderSetting(
+                  context.reader.cid,
+                  context.reader.type.sourceKey,
+                  'showPageNumberInReader',
+                ) ==
+                true &&
             !isOnChapterCommentsPage)
           buildPageInfoText(),
         if (!isOnChapterCommentsPage) buildStatusInfo(),
@@ -666,7 +676,12 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
   }
 
   Widget buildStatusInfo() {
-    if (appdata.settings['enableClockAndBatteryInfoInReader']) {
+    if (appdata.settings.getReaderSetting(
+          context.reader.cid,
+          context.reader.type.sourceKey,
+          'enableClockAndBatteryInfoInReader',
+        ) ==
+        true) {
       return Positioned(
         bottom: 13,
         right: 25,
