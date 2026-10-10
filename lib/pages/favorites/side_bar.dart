@@ -204,41 +204,56 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
   /// `windowOverlayColor()` ✓、圆角 `windowOverlayBorderRadius()` ✓、未启用自定义背景时的
   /// 左侧 2px `primary` 竖条 ✓、`padding: only(left: AppSpace.lg)` ✓。
   /// 两者唯一的行内容差异由调用方以 `child` 传入 ✓：本地行是名字加计数角标 ✓，网络行只有标题 ✓。
+  ///
+  /// ⭐ 本轮（用户实测反馈 ✓）：**鼠标悬停高亮与点击涟漪必须留在本行的圆角遮罩内** ✗→✓ ——
+  /// 原先 `InkWell` 包着**带 `margin` 的** `Container` ✗ ⇒ `InkWell` 的墨迹矩形 = **含 margin 的
+  /// 整行宽度** ✓（且没传 `borderRadius` ✗）：Flutter 的高亮/涟漪就是按 `InkWell`
+  /// **自身矩形**（+ `borderRadius` ✓）绘制的（见 SDK `ink_highlight.dart` / `ink_well.dart` ✓）⇒
+  /// 墨迹会左右各越出圆角遮罩一截 ✗（用户："超出遮罩本身" ✓）。
+  /// 现把 `margin` 搬到 `InkWell` **外面** ✓，并把与遮罩**同一个** `windowOverlayBorderRadius()`
+  /// 传给 `InkWell` ✓ ⇒ 墨迹被裁进与遮罩**完全重合**的圆角矩形 ✓；
+  /// ⚠️ 行的占位（含 margin ✓）、行高、文字/图标位置、计数角标、选中态颜色与 2px 竖条一律不变 ✓
+  ///（**不裁剪内容** ✓ —— 只让墨迹与遮罩同矩形 ✓）。
   Widget _buildFolderRow({
     required bool isSelected,
     required VoidCallback onTap,
     required Widget child,
   }) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        height: 42,
-        alignment: Alignment.centerLeft,
-        margin: appdata.settings.customBackgroundActive
-            ? const EdgeInsets.symmetric(
-                horizontal: AppSpace.sm,
-                vertical: AppSpace.xxs,
-              )
-            : null,
-        decoration: BoxDecoration(
-          color: isSelected
-              ? context.colorScheme.primaryContainer.toOpacity(0.36)
-              : windowOverlayColor(),
-          // 跟随「圆角/直角」设置（未启用自定义背景时为 null，保持原样）。
-          borderRadius: windowOverlayBorderRadius(),
-          border: appdata.settings.customBackgroundActive
-              ? null
-              : Border(
-                  left: BorderSide(
-                    color: isSelected
-                        ? context.colorScheme.primary
-                        : Colors.transparent,
-                    width: 2,
+    return Padding(
+      // ⚠️ 与原先 `Container(margin:)` **等值** ✓（只是移到 `InkWell` 外层 ⇒ 墨迹不再算进 margin ✓）。
+      padding: appdata.settings.customBackgroundActive
+          ? const EdgeInsets.symmetric(
+              horizontal: AppSpace.sm,
+              vertical: AppSpace.xxs,
+            )
+          : EdgeInsets.zero,
+      child: InkWell(
+        onTap: onTap,
+        // 与下方遮罩 `decoration` 的圆角**同源取值** ✓ ⇒ 墨迹矩形与遮罩矩形完全重合 ✓。
+        borderRadius: windowOverlayBorderRadius(),
+        child: Container(
+          height: 42,
+          alignment: Alignment.centerLeft,
+          decoration: BoxDecoration(
+            color: isSelected
+                ? context.colorScheme.primaryContainer.toOpacity(0.36)
+                : windowOverlayColor(),
+            // 跟随「圆角/直角」设置（未启用自定义背景时为 null，保持原样）。
+            borderRadius: windowOverlayBorderRadius(),
+            border: appdata.settings.customBackgroundActive
+                ? null
+                : Border(
+                    left: BorderSide(
+                      color: isSelected
+                          ? context.colorScheme.primary
+                          : Colors.transparent,
+                      width: 2,
+                    ),
                   ),
-                ),
+          ),
+          padding: const EdgeInsets.only(left: AppSpace.lg),
+          child: child,
         ),
-        padding: const EdgeInsets.only(left: AppSpace.lg),
-        child: child,
       ),
     );
   }
