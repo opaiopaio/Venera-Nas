@@ -461,6 +461,10 @@ class _CommentTileState extends State<_CommentTile> {
             if (!mounted) return;
             context.showMessage(message: res.errorMessage ?? "Error");
           }
+          // ⭐ 修复（2026-10-10 全量代码审查 ✓）：`await` 之后**必须**再查一次 `mounted` ✗→✓ ——
+          // 原代码只在错误分支查了（第 461 行 ✓），**成功分支**会直接走到这里的 `setState` ✓；
+          // 若用户在请求返回前离开评论页 ⇒ 对已 dispose 的 State `setState` ✗。
+          if (!mounted) return;
           setState(() {
             isLiking = false;
           });

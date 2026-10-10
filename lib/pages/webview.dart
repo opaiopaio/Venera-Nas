@@ -132,15 +132,23 @@ class _AppWebviewState extends State<AppWebview> {
               MenuEntry(
                 icon: Icons.open_in_browser,
                 text: "Open in browser".tl,
-                onClick: () async =>
-                    launchUrlString((await controller?.getUrl())!.toString()),
+                onClick: () async {
+                  // ⭐ 修复（2026-10-10 全量代码审查 ✓）：**去掉双重空断言** ✗→✓ ——
+                  // 原先 `(await controller?.getUrl())!`：controller 可能尚为 null（首帧前点「More」✓），
+                  // 或 URL 尚未就绪 ⇒ 直接抛 null check 异常 ✗。现先取值并判空 ✓。
+                  final url = await controller?.getUrl();
+                  if (url == null) return;
+                  launchUrlString(url.toString());
+                },
               ),
               MenuEntry(
                 icon: Icons.copy,
                 text: "Copy link".tl,
-                onClick: () async => Clipboard.setData(
-                  ClipboardData(text: (await controller?.getUrl())!.toString()),
-                ),
+                onClick: () async {
+                  final url = await controller?.getUrl();
+                  if (url == null) return;
+                  Clipboard.setData(ClipboardData(text: url.toString()));
+                },
               ),
               MenuEntry(
                 icon: Icons.refresh,

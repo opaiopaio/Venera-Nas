@@ -353,12 +353,17 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                           Button.filled(
                             child: Text("Update".tl),
                             onPressed: () {
+                              // ⭐ 修复（2026-10-10 全量代码审查 ✓）：**必须先取值、再 pop** ✗→✓
+                              // 原顺序是先 `context.pop()`（会立刻卸载 Flyout 子树 ✓）再读
+                              // `selectUpdatePageNumKey.currentState!` ✗ ⇒ GlobalKey 立即变 null ⇒ 点「Update」**必崩** ✓。
+                              final pageNum = selectUpdatePageNumKey
+                                  .currentState
+                                  ?.updatePageNum;
                               context.pop();
+                              if (pageNum == null) return;
                               importNetworkFolder(
                                 networkSource!,
-                                selectUpdatePageNumKey
-                                    .currentState!
-                                    .updatePageNum,
+                                pageNum,
                                 widget.folder,
                                 networkFolder!,
                               ).then((value) {

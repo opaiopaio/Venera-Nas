@@ -774,7 +774,9 @@ class _ImportComicsWidgetState extends State<_ImportComicsWidget> {
   }
 
   void selectAndImport() async {
-    height = key.currentContext!.size!.height;
+    // ⭐ 修复（2026-10-10 全量代码审查 ✓）：**去掉双重空断言** ✗→✓ ——
+    // `key.currentContext!.size!` 在浮层尚未首帧构建时会直接抛 null check ✗；改为可选链并保留原值 ✓。
+    height = key.currentContext?.size?.height ?? height;
 
     setState(() {
       loading = true;
@@ -796,6 +798,10 @@ class _ImportComicsWidgetState extends State<_ImportComicsWidget> {
       if (!mounted) return;
       context.pop();
     } else {
+      // ⭐ 修复（2026-10-10 全量代码审查 ✓）：**失败分支也要查存活** ✗→✓ ——
+      // 导入可能长达数分钟，且系统目录选择器会让本 State 失焦 ✓；用户取消/按 Esc/点遮罩都会卸载本 State ✗
+      // ⇒ 原先此处无守卫的 `setState` 会崩 ✓（成功分支本就有守卫 ✓）。
+      if (!mounted) return;
       setState(() {
         loading = false;
       });
