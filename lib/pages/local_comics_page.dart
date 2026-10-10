@@ -278,22 +278,14 @@ class _LocalComicsPageState extends State<LocalComicsPage> {
     );
 
     List<Widget> selectActions = [
-      IconButton(
-        icon: const Icon(Icons.select_all),
-        tooltip: "Select All".tl,
-        onPressed: selectAll,
+      // ⭐ 外观构件统一 · 第二批（2026-10-10 ✓）：多选工具条改用**唯一实现** `SelectToolbar` ✓；
+      // 本页原有的自定义多选菜单通过 `extra` 追加 ✓（顺序与原先一致 ✓）。
+      SelectToolbar(
+        onSelectAll: selectAll,
+        onDeSelect: deSelect,
+        onInvert: invertSelection,
+        extra: [buildMultiSelectMenu()],
       ),
-      IconButton(
-        icon: const Icon(Icons.deselect),
-        tooltip: "Deselect".tl,
-        onPressed: deSelect,
-      ),
-      IconButton(
-        icon: const Icon(Icons.flip),
-        tooltip: "Invert Selection".tl,
-        onPressed: invertSelection,
-      ),
-      buildMultiSelectMenu(),
     ];
 
     List<Widget> normalActions = [

@@ -280,37 +280,23 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   Widget build(BuildContext context) {
     List<Widget> selectActions = [
-      IconButton(
-        icon: const Icon(Icons.select_all),
-        tooltip: "Select All".tl,
-        onPressed: selectAll,
-      ),
-      IconButton(
-        icon: const Icon(Icons.deselect),
-        tooltip: "Deselect".tl,
-        onPressed: deSelect,
-      ),
-      IconButton(
-        icon: const Icon(Icons.flip),
-        tooltip: "Invert Selection".tl,
-        onPressed: invertSelection,
-      ),
-      IconButton(
-        icon: const Icon(Icons.delete),
-        tooltip: "Delete".tl,
-        onPressed: selectedComics.isEmpty
-            ? null
-            : () {
-                final comicsToDelete = List<History>.from(selectedComics.keys);
-                setState(() {
-                  multiSelectMode = false;
-                  selectedComics.clear();
-                });
+      // ⭐ 外观构件统一 · 第二批（2026-10-10 ✓）：多选工具条改用**唯一实现** `SelectToolbar` ✓。
+      SelectToolbar(
+        onSelectAll: selectAll,
+        onDeSelect: deSelect,
+        onInvert: invertSelection,
+        deleteEnabled: selectedComics.isNotEmpty,
+        onDelete: () {
+          final comicsToDelete = List<History>.from(selectedComics.keys);
+          setState(() {
+            multiSelectMode = false;
+            selectedComics.clear();
+          });
 
-                for (final comic in comicsToDelete) {
-                  _removeHistory(comic);
-                }
-              },
+          for (final comic in comicsToDelete) {
+            _removeHistory(comic);
+          }
+        },
       ),
     ];
 

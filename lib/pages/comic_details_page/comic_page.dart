@@ -957,20 +957,12 @@ class _SelectDownloadChapterState extends State<_SelectDownloadChapter> {
         title: Text("Download".tl),
         backgroundColor: context.colorScheme.surfaceContainerLow,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.select_all),
-            tooltip: "Select All".tl,
-            onPressed: selectAll,
-          ),
-          IconButton(
-            icon: const Icon(Icons.deselect),
-            tooltip: "Deselect".tl,
-            onPressed: deSelect,
-          ),
-          IconButton(
-            icon: const Icon(Icons.flip),
-            tooltip: "Invert Selection".tl,
-            onPressed: invertSelection,
+          // ⭐ 外观构件统一 · 第二批（2026-10-10 ✓）：多选工具条改用**唯一实现** `SelectToolbar` ✓；
+          // 本页只需全选/取消/反选 ✓（不传删除 ✓ ⇒ 不渲染 ✓，与原先一致 ✓）。
+          SelectToolbar(
+            onSelectAll: selectAll,
+            onDeSelect: deSelect,
+            onInvert: invertSelection,
           ),
         ],
       ),

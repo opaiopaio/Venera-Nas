@@ -1,4 +1,4 @@
-﻿part of 'image_favorites_page.dart';
+part of 'image_favorites_page.dart';
 
 class ImageFavoritesGalleryPage extends StatefulWidget {
   const ImageFavoritesGalleryPage({super.key, required this.comic});
@@ -115,20 +115,13 @@ class _ImageFavoritesGalleryPageState extends State<ImageFavoritesGalleryPage> {
           ),
           title: Text(selectedImages.length.toString()),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.select_all),
-              tooltip: "Select All".tl,
-              onPressed: selectAll,
-            ),
-            IconButton(
-              icon: const Icon(Icons.deselect),
-              tooltip: "Deselect".tl,
-              onPressed: deselectAll,
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              tooltip: "Delete".tl,
-              onPressed: deleteSelected,
+            // ⭐ 外观构件统一 · 第二批（2026-10-10 ✓）：多选工具条改用**唯一实现** `SelectToolbar` ✓；
+            // 本页删除图标原为 `Icons.delete_outline` ✓ ⇒ 通过 `deleteIcon` 保持**逐字一致** ✓。
+            SelectToolbar(
+              onSelectAll: selectAll,
+              onDeSelect: deselectAll,
+              onDelete: deleteSelected,
+              deleteIcon: Icons.delete_outline,
             ),
           ],
         );

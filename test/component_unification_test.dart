@@ -37,4 +37,40 @@ void main() {
       );
     }
   });
+
+  test('T-CU2：多选工具条必须走规范构件 SelectToolbar（第二批）', () {
+    // 背景 ✗：这 6 个页面原先各自逐行重写同一组按钮（全选/取消/反选/删除 ✓）
+    // ⇒ 已统一到 `lib/components/select_toolbar.dart` ✓。本测试防止回退 ✗。
+    const toolbarFiles = <String>[
+      'lib/pages/home_page.dart',
+      'lib/pages/history_page.dart',
+      'lib/pages/local_comics_page.dart',
+      'lib/pages/comic_details_page/comic_page.dart',
+      'lib/pages/image_favorites_page/image_favorites_page.dart',
+      'lib/pages/image_favorites_page/image_favorites_gallery_page.dart',
+    ];
+
+    for (final path in toolbarFiles) {
+      final src = File(path).readAsStringSync();
+      expect(
+        src.contains('SelectToolbar('),
+        isTrue,
+        reason: '$path 的多选工具条应使用规范构件 SelectToolbar',
+      );
+      // tooltip 文案是稳定的"手写指纹" ✓：手写版本必然带它 ✓。
+      expect(
+        RegExp(r'tooltip:\s*"Invert Selection"').hasMatch(src),
+        isFalse,
+        reason: '$path 不应再手写多选工具条按钮（应走 SelectToolbar）',
+      );
+    }
+
+    // 规范实现内部应只剩一处该文案 ✓（保证"唯一实现" ✓）。
+    final impl = File('lib/components/select_toolbar.dart').readAsStringSync();
+    expect(
+      RegExp(r'"Invert Selection"').allMatches(impl).length,
+      equals(1),
+      reason: 'SelectToolbar 应是多选工具条的唯一实现',
+    );
+  });
 }

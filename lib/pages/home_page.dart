@@ -1369,36 +1369,23 @@ class _ReadLaterPageState extends State<_ReadLaterPage> {
   @override
   Widget build(BuildContext context) {
     List<Widget> selectActions = [
-      IconButton(
-        icon: const Icon(Icons.select_all),
-        tooltip: "Select All".tl,
-        onPressed: selectAll,
-      ),
-      IconButton(
-        icon: const Icon(Icons.deselect),
-        tooltip: "Deselect".tl,
-        onPressed: deSelect,
-      ),
-      IconButton(
-        icon: const Icon(Icons.flip),
-        tooltip: "Invert Selection".tl,
-        onPressed: invertSelection,
-      ),
-      IconButton(
-        icon: const Icon(Icons.delete),
-        tooltip: "Delete".tl,
-        onPressed: selectedComics.isEmpty
-            ? null
-            : () {
-                final toDelete = List<ReadLaterItem>.from(selectedComics.keys);
-                setState(() {
-                  multiSelectMode = false;
-                  selectedComics.clear();
-                });
-                for (final comic in toDelete) {
-                  ReadLaterManager().remove(comic.id, comic.type);
-                }
-              },
+      // ⭐ 外观构件统一 · 第二批（2026-10-10 ✓）：多选工具条改用**唯一实现** `SelectToolbar` ✓
+      // —— 原本此处与其它 5 个页面逐行重复 ✓；按钮构造方式与原先**逐字一致** ⇒ 外观不变 ✓。
+      SelectToolbar(
+        onSelectAll: selectAll,
+        onDeSelect: deSelect,
+        onInvert: invertSelection,
+        deleteEnabled: selectedComics.isNotEmpty,
+        onDelete: () {
+          final toDelete = List<ReadLaterItem>.from(selectedComics.keys);
+          setState(() {
+            multiSelectMode = false;
+            selectedComics.clear();
+          });
+          for (final comic in toDelete) {
+            ReadLaterManager().remove(comic.id, comic.type);
+          }
+        },
       ),
     ];
 
