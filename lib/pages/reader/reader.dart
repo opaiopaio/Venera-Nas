@@ -694,9 +694,9 @@ abstract mixin class _ReaderLocation {
 
   void setPage(int page) {
     // Prevent page change during animation
-    if (_animationCount > 0 && _pendingPage != null && page != _pendingPage) {
+    if (_pageAnimating && _pendingPage != null && page != _pendingPage) {
       _rdbg(
-        'SETPAGE REJECT page=$page (animCount=$_animationCount pending=$_pendingPage)',
+        'SETPAGE REJECT page=$page (animating=$_pageAnimating pending=$_pendingPage)',
       );
       return;
     }
@@ -717,7 +717,13 @@ abstract mixin class _ReaderLocation {
     return toPage(page - 1);
   }
 
-  int _animationCount = 0;
+  // ⭐ 修复（2026-10-10 日志定位 ✓）：翻页动画标志必须**能自愈** ✗→✓
+  // 实测日志（reader_debug.log ✓）证明 animateToPage 的 Future **可能永远不完成** ✗：
+  // 同章内先 ANIMATE start to 2 之后再无 done ✓，随后 ANIMATE start to 16 却 done 了 ✓。
+  // ⇒ 旧计数永久 > 0 ⇒ isPageAnimating 恒真 ⇒ AbsorbPointer(absorbing: true) **永久吸收内容区手势** ✗。
+  // 现改为：布尔标志 + **兜底 Timer**（正常结束立即清除 ✓；异常时由兜底强制清除 ✓）。
+  bool _pageAnimating = false;
+  Timer? _pageAnimatingFallback;
 
   bool toPage(int page) {
     if (_validatePage(page)) {
@@ -726,19 +732,26 @@ abstract mixin class _ReaderLocation {
       }
       final hasAnimation = enablePageAnimation(cid, type);
       if (hasAnimation) {
-        _rdbg('TOPAGE $page anim++ => ${_animationCount + 1}');
+        _rdbg('TOPAGE $page animating=true');
         _pendingPage = page;
-        _animationCount++;
+        _pageAnimating = true;
         update();
-        // ⭐ 同上 ✓：改用 `whenComplete`（出错也会执行 ✓），并**防止计数变负** ✗。
+        // ⭐ 兜底 ✓：不再只依赖 Future 一定会回来 ✗ —— 兜底时长到点一定解除吸收 ✓
+        //（正常路径由下面的 whenComplete 立即清除 ✓）。
+        _pageAnimatingFallback?.cancel();
+        _pageAnimatingFallback = Timer(AppMotion.long * 2, () {
+          if (!_pageAnimating) return;
+          _rdbg('ANIMATE fallback release');
+          _pageAnimating = false;
+          _pendingPage = null;
+          update();
+        });
         _rdbg('ANIMATE start to $page');
         _imageViewController!.animateToPage(page).whenComplete(() {
-          if (_animationCount > 0) {
-            _animationCount--;
-          }
-          _rdbg(
-            'ANIMATE done => animCount=$_animationCount pending=$_pendingPage',
-          );
+          _pageAnimatingFallback?.cancel();
+          _pageAnimatingFallback = null;
+          _pageAnimating = false;
+          _rdbg('ANIMATE done pending=$_pendingPage');
           if (_pendingPage == page) {
             _pendingPage = null;
           }
@@ -754,7 +767,7 @@ abstract mixin class _ReaderLocation {
     return false;
   }
 
-  bool get isPageAnimating => _animationCount > 0;
+  bool get isPageAnimating => _pageAnimating;
 
   bool _validateChapter(int chapter) {
     return chapter >= 1 && chapter <= maxChapter;
@@ -782,9 +795,11 @@ abstract mixin class _ReaderLocation {
       // ⇒ 漫画内容区（左右点击翻页、中央呼出控制栏）全部失效 ✗
       //（上下栏是 Stack 的兄弟节点、不在 AbsorbPointer 内 ⇒ 仍可点 ✓，与用户描述完全一致 ✓）。
       _rdbg(
-        'TOCHAPTER c=$c (from chapter=$chapter page=$page) animCount=$_animationCount pending=$_pendingPage',
+        'TOCHAPTER c=$c (from chapter=$chapter page=$page) animating=$_pageAnimating pending=$_pendingPage',
       );
-      _animationCount = 0;
+      _pageAnimatingFallback?.cancel();
+      _pageAnimatingFallback = null;
+      _pageAnimating = false;
       _pendingPage = null;
       _jumpToLastPageOnLoad = toLastPage;
       update();
