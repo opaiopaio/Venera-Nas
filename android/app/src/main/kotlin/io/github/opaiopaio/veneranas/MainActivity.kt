@@ -5,12 +5,18 @@ import android.app.Activity
 import android.content.ContentResolver
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
+import android.graphics.Color
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
 import android.util.Log
+import android.view.Gravity
 import android.view.KeyEvent
 import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
@@ -28,6 +34,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugins.GeneratedPluginRegistrant
+import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.atomic.AtomicInteger
@@ -51,6 +58,11 @@ class MainActivity : FlutterFragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // ⭐ 用户要求（安卓冷启动"先白底再闪出背景" ✓）：把**已保存的背景**读出来铺到窗口底 ✓。
+        // 这一层就是 `res/values/styles.xml` 注释里说的"Flutter UI initializes 期间可见"的 windowBackground ✓，
+        // 而 `drawable/launch_background.xml` 写死白 ✗ ⇒ 先白后出图 ✓。本方法**只读** ✓（见下方注释 ✓）。
+        applyLaunchBackground()
+
         if (intent?.action == Intent.ACTION_SEND) {
             if (intent.type == "text/plain") {
                 val text = intent.getStringExtra(Intent.EXTRA_TEXT)
@@ -58,6 +70,12 @@ class MainActivity : FlutterFragmentActivity() {
                     handleSharedText(text)
             }
         }
+    }
+
+    override fun onPostCreate(savedInstanceState: Bundle?) {
+        super.onPostCreate(savedInstanceState)
+        // 主题切换（LaunchTheme → NormalTheme ✓）之后窗口底可能被重置 ⇒ 再落一次 ✓（幂等 ✓）。
+        applyLaunchBackground()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -257,6 +275,96 @@ class MainActivity : FlutterFragmentActivity() {
         } else {
             "No Proxy"
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // ⭐ 用户要求（安卓冷启动"背景是白色然后闪出背景" ✓）：把**已保存的背景**铺到窗口底 ✓。
+    //
+    // 这一层就是 Android 官方为"Flutter UI 初始化期间"保留的 windowBackground（见
+    // `res/values/styles.xml` 的注释 ✓）：浅色主题下它是**白色** ✗，而 App 背景是用户选的壁纸 ⇒
+    // "先白后闪出背景" ✓。把用户已保存的背景读出来铺上 ⇒ 引擎初始化这段看到的就是背景本身 ✓。
+    //
+    // ⚠️⚠️ **本段全程只读** ✗→✓（曾逐行核对 ✓）：只用 `File.exists()` / `readText()` /
+    // `BitmapFactory.decodeFile()` ✓；**绝不**创建/写入/截断/删除任何文件 ✓
+    //（本文件里 `FileOutputStream` 等写入只出现在既有的 `onPickedDirectory` / `openFile` ✓ 与本段无关 ✓）。
+    //
+    // 读的是 Dart 侧**同一份**存储 ✓（已逐项核对 ✓）：
+    //   · 文件 = `<filesDir>/appdata.json` ✓ —— Dart 侧 `App.dataPath` = `getApplicationSupportDirectory()`
+    //     = `filesDir` ✓（`appdata.dart:33` ✓、path_provider_android 的 `getApplicationSupportPath()` ✓）；
+    //   · 结构 = `{"settings": {...}, "searchHistory": [...]}` ✓（`appdata.dart:78-79` ✓）；
+    //   · 键 = `settings.backgroundImage`（**文件名** ✓，图存于 `<filesDir>/background/` ✓，
+    //     见 `window_overlay.dart:29-34` 与 `appdata.dart:343` ✓）
+    //     与 `settings.backgroundColor`（`#RRGGBB` ✓；`system` / `transparent` 一律忽略 ✓）。
+    //   ⚠️ **不再做任何设备层查找** ✓ —— 设备设置已按用户方案重构为"只有一套值" ✓
+    //     （全部在顶层 `settings` 里 ✓，`deviceSpecificSettings` 仅剩迁移后的空容器 ✓）。
+    //
+    // 异常一律**静默回退**到主题色 ✓（读不到/解不出就什么都不做 ⇒ 与改动前一致 ✓，绝不影响启动 ✓）。
+    private var launchBackground: Drawable? = null
+
+    private fun applyLaunchBackground() {
+        if (launchBackground == null) {
+            launchBackground = buildLaunchBackground()
+        }
+        launchBackground?.let {
+            try {
+                window.setBackgroundDrawable(it)
+            } catch (e: Throwable) {
+                Log.w("Venera", "setBackgroundDrawable failed: ${e.message}")
+            }
+        }
+    }
+
+    private fun buildLaunchBackground(): Drawable? {
+        try {
+            val jsonFile = File(filesDir, "appdata.json")
+            if (!jsonFile.exists()) return null
+            val settings = JSONObject(jsonFile.readText()).optJSONObject("settings") ?: return null
+
+            val imageName = settings.optString("backgroundImage", "")
+            if (imageName.isNotEmpty()) {
+                val imageFile = File(File(filesDir, "background"), imageName)
+                if (imageFile.exists()) {
+                    // 先只读尺寸 ✓，再按**屏幕量级**采样解码 ✓（避免大壁纸整张解进内存 ⇒ OOM ✗）。
+                    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                    BitmapFactory.decodeFile(imageFile.absolutePath, bounds)
+                    val bitmap = BitmapFactory.decodeFile(
+                        imageFile.absolutePath,
+                        BitmapFactory.Options().apply { inSampleSize = sampleSizeFor(bounds) }
+                    )
+                    if (bitmap != null) {
+                        val drawable = BitmapDrawable(resources, bitmap)
+                        // ⚠️ `Drawable.setGravity` 是 API 23+ ✓ ⇒ 低版本不加 ✓（默认拉伸铺满 ✓，不会崩 ✓）。
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            drawable.setGravity(Gravity.FILL)
+                        }
+                        return drawable
+                    }
+                }
+            }
+
+            val color = settings.optString("backgroundColor", "transparent")
+            if (color.length == 7 && color.startsWith("#")) {
+                return ColorDrawable(Color.parseColor(color))
+            }
+        } catch (e: Throwable) {
+            Log.w("Venera", "buildLaunchBackground failed: ${e.message}")
+        }
+        return null
+    }
+
+    /// 采样率取 2 的幂 ✓，直到长边不超过**屏幕长边** ✓（`inSampleSize` 必须是 2 的幂 ✓）。
+    private fun sampleSizeFor(bounds: BitmapFactory.Options): Int {
+        var sample = 1
+        val target = maxOf(
+            resources.displayMetrics.widthPixels,
+            resources.displayMetrics.heightPixels
+        )
+        if (target <= 0) return sample
+        val longest = maxOf(bounds.outWidth, bounds.outHeight)
+        while (longest / (sample * 2) >= target) {
+            sample *= 2
+        }
+        return sample
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
