@@ -173,6 +173,13 @@ void main() {
       reason: '前景必须随设置即时刷新（`AppSettingsScope.of` 依赖）',
     );
   });
+  testWidgets('T-FF7 「跟随系统主题」总开关开启 ⇒ 全局文字色不生效（走对比色）', (tester) async {
+    appdata.settings[textKey] = '#123456';
+    appdata.settings[followKey] = true;
+    expect(globalTextColor(), isNull, reason: '总开关开启 ⇒ 该页自定义项一律不生效');
+    final r = await pumpFill(tester, const Color(0xFF101010));
+    expect(r.text, Colors.white, reason: '暗填充 ⇒ 按亮度取白字（不是用户设的那色）');
+  });
 }
 
 /// 探针 key：从当前树里读**刷新后**的文字色 ✓（用于"改设置即刷新"用例 ✓）。
