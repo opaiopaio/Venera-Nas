@@ -575,9 +575,14 @@ class _AppTabBarState extends State<AppTabBar> {
           padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg),
           child: DefaultTextStyle(
             style: DefaultTextStyle.of(context).style.copyWith(
+              // ⭐ 对比度（2026-10-11 ✓）：**未选中的标签**取 col 之前会固定用 `colorScheme.onSurface` ✗
+              // ⇒ 深色主题下它是**浅色（近白）** ✗，而本 chip 底色可由「漫画源颜色」设为**浅色** ✓
+              // ⇒ 浅底叠浅字、看不见 ✗（用户实测：这一排未选中项文字消失 ✓）。
+              // ⇒ 现在按**本 chip 实际填充色**的深浅自动配黑/白 ✓；用户**手动设了文字颜色**则优先跟随用户 ✓。
               color: i == _controller.animation?.value.round()
                   ? context.colorScheme.primary
-                  : context.colorScheme.onSurface,
+                  : (globalTextColor() ??
+                        onColorForFill(context, sourceTabOverlayColor())),
               fontWeight: FontWeight.w500,
               // 启用「窗口/按钮背景」时把标签文字调大一点。
               fontSize: appdata.settings.customBackgroundActive ? 14 : null,
