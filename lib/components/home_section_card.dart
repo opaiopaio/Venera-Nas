@@ -76,8 +76,11 @@ class HomeSectionCard extends StatelessWidget {
                 count.toString(),
                 style: ts.s12.copyWith(
                   // ⭐ 对比度（2026-10-11）：本角标**自己画了填充** ✓ ⇒ 文字必须取与填充成对的前景色 ✓
-                  //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 「标签遮罩」为浅色时"浅底白字"看不见 ✗）
-                  color: onColorForFill(context, tagFillColor(context)),
+                  //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 「标签遮罩」为浅色时"浅底白字"看不见 ✗）；
+                  // ⚠️ **用户设了全局文字色时优先跟随** ✓（`globalTextColor()` 非 null ⇒ 用它 ✓）。
+                  color:
+                      globalTextColor() ??
+                      onColorForFill(context, tagFillColor(context)),
                 ),
               ),
             ),

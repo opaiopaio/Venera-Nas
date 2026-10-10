@@ -11,6 +11,7 @@ import 'package:venera_nas/foundation/comic_source/comic_source.dart';
 import 'package:venera_nas/foundation/consts.dart';
 import 'package:venera_nas/foundation/history.dart';
 import 'package:venera_nas/foundation/image_provider/image_favorites_provider.dart';
+import 'package:venera_nas/foundation/text_style_settings.dart';
 import 'package:venera_nas/pages/comic_details_page/comic_page.dart';
 import 'package:venera_nas/pages/image_favorites_page/type.dart';
 import 'package:venera_nas/pages/reader/reader.dart';

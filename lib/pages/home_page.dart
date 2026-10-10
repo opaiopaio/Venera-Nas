@@ -31,6 +31,7 @@ import 'package:venera_nas/utils/translations.dart';
 import 'local_comics_page.dart';
 import 'local_comics/import_dialog.dart';
 import 'package:venera_nas/foundation/design_tokens.dart';
+import 'package:venera_nas/foundation/text_style_settings.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -885,15 +886,17 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                             color: tagFillColor(context),
                             borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
-                          // ⭐ 对比度（2026-10-11）：自绘填充 ⇒ 文字取与填充成对的前景色 ✓
-                          //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色标签底上"白字融底"看不见 ✗）
+                          // ⭐ 对比度（2026-10-11）：自绘填充 ⇒ 文字取与填充成对的前景色 ✓；
+                          // ⚠️ **用户设了全局文字色时优先跟随** ✓（`globalTextColor()` 非 null ⇒ 用它 ✓）。
                           child: Text(
                             e,
                             style: TextStyle(
-                              color: onColorForFill(
-                                context,
-                                tagFillColor(context),
-                              ),
+                              color:
+                                  globalTextColor() ??
+                                  onColorForFill(
+                                    context,
+                                    tagFillColor(context),
+                                  ),
                             ),
                           ),
                         );
@@ -939,13 +942,15 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                               const SizedBox(width: AppSpace.sm),
                               Text(
                                 "@c updates".tlParams({'c': _availableUpdates}),
-                                // ⭐ 对比度（2026-10-11）：自绘填充 ⇒ 文字取与填充成对的前景色 ✓
-                                //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色标签底上"白字融底"看不见 ✗）
+                                // ⭐ 对比度（2026-10-11）：自绘填充 ⇒ 文字取与填充成对的前景色 ✓；
+                                // ⚠️ **用户设了全局文字色时优先跟随** ✓（`globalTextColor()` 非 null ⇒ 用它 ✓）。
                                 style: TextStyle(
-                                  color: onColorForFill(
-                                    context,
-                                    tagFillColor(context),
-                                  ),
+                                  color:
+                                      globalTextColor() ??
+                                      onColorForFill(
+                                        context,
+                                        tagFillColor(context),
+                                      ),
                                 ),
                               ),
                             ],

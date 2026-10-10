@@ -358,16 +358,18 @@ class ComicTile extends StatelessWidget {
                     // ⭐ 对比度（2026-10-11）：`hasWindowOverlay` 时卡片有一层**自绘底色** ✓
                     //（见下方 `Container` ✓）⇒ 该分支下副标题必须用与填充成对的前景色 ✓，
                     // 否则继承全局文字色 ⇒ 浅色卡片底上"白字融底"看不见 ✗；
+                    // ⚠️ **用户设了全局文字色时优先跟随** ✓（`globalTextColor()` 非 null ⇒ 用它 ✓）；
                     // 未启用遮罩时保持原 `onSurface` 语义 ✗ 不动。
-                    subtitleColor: appdata.settings.hasWindowOverlay
-                        ? onColorForFill(
-                            context,
-                            Color.alphaBlend(
-                              windowOverlayColor(),
-                              context.colorScheme.surface,
-                            ),
-                          )
-                        : null,
+                    subtitleColor: !appdata.settings.hasWindowOverlay
+                        ? null
+                        : (globalTextColor() ??
+                              onColorForFill(
+                                context,
+                                Color.alphaBlend(
+                                  windowOverlayColor(),
+                                  context.colorScheme.surface,
+                                ),
+                              )),
                     description: comic.description,
                     badge: badge ?? comic.language,
                     tags: comic.tags,
@@ -749,13 +751,16 @@ class _ComicDescription extends StatelessWidget {
                                 fontSize: 12,
                                 // ⭐ 对比度（2026-10-11）：自绘填充 ⇒ 取与填充成对的前景色 ✓
                                 // 「不可用」用错误色填充 ⇒ 配 `onErrorContainer` ✓；其余走标签填充的配对色 ✓
-                                //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色标签底上"白字融底"看不见 ✗）
-                                color: s == "Unavailable"
-                                    ? context.colorScheme.onErrorContainer
-                                    : onColorForFill(
-                                        context,
-                                        tagFillColor(context),
-                                      ),
+                                //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色标签底上"白字融底"看不见 ✗）；
+                                // ⚠️ **用户设了全局文字色时优先跟随** ✓（两个分支都要让位 ✓）。
+                                color:
+                                    globalTextColor() ??
+                                    (s == "Unavailable"
+                                        ? context.colorScheme.onErrorContainer
+                                        : onColorForFill(
+                                            context,
+                                            tagFillColor(context),
+                                          )),
                               ),
                               softWrap: true,
                               overflow: TextOverflow.ellipsis,

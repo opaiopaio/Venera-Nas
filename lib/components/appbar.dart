@@ -1176,12 +1176,13 @@ class TabActionButton extends StatelessWidget {
             // ⭐ AA1（用户要求 ✓）：**纯图标按钮** ✓ —— 去掉「添加」文字 ✗、图标**更大** ✓；
             // 颜色先跟随本排主题色 ✓（`onSecondaryContainer` 配 `secondaryContainer` ✓），
             // **不再跟随「图标按钮」的自定义色** ✗（原先走 `appIconColor()` ✗，用户实测指出 ✓）。
-            // ⭐ 对比度（2026-10-11）：本按钮自带 `sourceTabOverlayColor()` 底色 ⇒ 底色可被改成浅色 ✓，
-            // 此时`onSecondaryContainer` 可能变成浅底浅图标 ✗ ⇒ 按**实际填充**的深浅自动配黑/白 ✓。
+            // ⭐ 对比度（2026-10-11）：本按钮自带 `sourceTabOverlayColor()` 底色 ✓（**与相邻 tab 同源** ✓），
+            // 底色可被改成浅色 ✓ ⇒ `onSecondaryContainer` 可能变成浅底浅图标 ✗ ⇒ 按**实际填充**配黑/白 ✓；
+            // ⚠️ **用户设了图标色时优先跟随** ✓（`appIconColor` 的既有约定 ✓）。
             size: AppIconSize.lg,
             color: fill == null
                 ? context.colorScheme.onSecondaryContainer
-                : onColorForFill(context, fill),
+                : appIconColor(context, onColorForFill(context, fill)),
           ),
           child: icon, // 只留图标 ✓（真正的图标按钮 ✓）
         ),
