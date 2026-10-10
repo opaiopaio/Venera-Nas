@@ -26,6 +26,11 @@ abstract final class AppOpacity {
   /// 悬浮/按压墨水强度（状态层）。
   static const double hoverInk = 0.08;
 
+  /// ⭐ 点击水波（`InkWell.splashColor`）的峰值不透明度 ✓。
+  /// 说明 ✓：Material 默认水波偏淡 ✗，用户实测"水波纹不明显"✗ ⇒ 统一提高一档 ✓；
+  /// 用令牌而非字面量 ✓：`appearance_guard` 对字面量透明度只许降不许升 ✗，且此处需全局统一 ✓。
+  static const double splash = 0.4;
+
   /// 侧栏项选中底色强度。
   static const double selectedTint = 0.36;
 }
