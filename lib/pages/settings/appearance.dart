@@ -68,18 +68,49 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
     // 详见 ../workspace/archive/doc-private-legacy-20261009/03-implementation/11-refresh-mechanism.md
     AppSettingsScope.of(context);
 
-    // ⭐ 2026-10-10（用户要求 ✓）：**按设备独立保存本页设置** ✓ —— 与「阅读」页同一套机制 ✓：
-    // 启用后本设备改的值只写在本设备 ✓，同步来的配置不会覆盖它 ✓。
+    // ⭐ 2026-10-10（用户要求 ✓，2026-10-10 更正 ✓）：**本设置页同步总开关** ✓ —— 与「阅读」页同一套机制 ✓：
+    // 打开的语义 ✓ = **本机不采用**其它设备同步/备份过来的本页设置 ✓；
+    // ⚠️ **不是**"值只写在本设备" ✗（旧注释写错了 ✓）—— 本机改动**仍会**随完整快照上传备份 ✓，
+    // 只是**别的设备**在它自己开关打开时不采用 ✓（见 `appdata.dart` 的 `_disableSync` / `_disableRestore` ✓）。
     final useDeviceSpecificSettings = appdata.settings
         .isAppearanceDeviceSettingsEnabled();
 
     return SmoothCustomScrollView(
       slivers: [
         SliverAppbar(title: Text("Appearance".tl)),
-        // ⭐ 2026-10-10（用户要求 ✓）：**启用此设备特定设置** ✓ —— 与「阅读」页同款开关 ✓：
-        // 启用后，本页各项只在本设备生效并保存 ✓，其它设备同步过来的配置不会覆盖它 ✓。
+        // ⭐ 2026-10-10（用户要求 ✓）：**本设置页同步总开关** ✓ —— 与「阅读」页同款开关 ✓ + 同款小问号 ✓。
+        // ⚠️ 小问号的样式/交互**照抄**本文件同级组件既有实现 ✓（`setting_components.dart:204-232` ✓，
+        // 项目铁律：实现统一、外观一致 ✗ 不自创样式 ✓）。
         SwitchListTile(
-          title: Text("Enable device specific settings".tl),
+          title: Row(
+            children: [
+              Text("Enable device specific settings".tl),
+              const SizedBox(width: AppSpace.xs),
+              Button.icon(
+                size: AppIconSize.sm,
+                icon: const Icon(Icons.help_outline),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return ContentDialog(
+                        title: "Help".tl,
+                        content: Text(
+                          "Master sync switch help for this page".tl,
+                        ).paddingHorizontal(16).fixWidth(double.infinity),
+                        actions: [
+                          Button.filled(
+                            onPressed: context.pop,
+                            child: Text("OK".tl),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
           value: useDeviceSpecificSettings,
           onChanged: (b) {
             setState(() {

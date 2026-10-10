@@ -134,8 +134,39 @@ class _ReaderSettingsState extends State<ReaderSettings> {
         if (comicId == null)
           SliverMainAxisGroup(
             slivers: [
+              // ⭐ 2026-10-10（用户要求 ✓）：**本设置页同步总开关** ✓（标题取值已改 ✓）+ 同款小问号 ✓
+              //（样式照抄 `setting_components.dart:204-232` ✓，不自创 ✓）。
               SwitchListTile(
-                title: Text("Enable device specific settings".tl),
+                title: Row(
+                  children: [
+                    Text("Enable device specific settings".tl),
+                    const SizedBox(width: AppSpace.xs),
+                    Button.icon(
+                      size: AppIconSize.sm,
+                      icon: const Icon(Icons.help_outline),
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return ContentDialog(
+                              title: "Help".tl,
+                              content: Text(
+                                "Master sync switch help for the reader page"
+                                    .tl,
+                              ).paddingHorizontal(16).fixWidth(double.infinity),
+                              actions: [
+                                Button.filled(
+                                  onPressed: context.pop,
+                                  child: Text("OK".tl),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ],
+                ),
                 value: useDeviceSpecificSettings,
                 onChanged: (b) {
                   setState(() {

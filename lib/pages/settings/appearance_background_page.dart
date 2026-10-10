@@ -15,8 +15,10 @@ class AppearanceBackgroundPage extends StatelessWidget {
     // 建立设置依赖 ✓：改设置后本页即时刷新 ✓（禁止 forceRebuild 整树遍历 ✗）
     AppSettingsScope.of(context);
 
-    // ⭐ 2026-10-10（用户要求 ✓）：**按设备独立保存本页设置** ✓ —— 与「阅读」页同一套机制 ✓：
-    // 启用后本设备改的值只写在本设备 ✓，同步来的配置不会覆盖它 ✓。
+    // ⭐ 2026-10-10（用户要求 ✓，同日更正 ✓）：**本设置页同步总开关** ✓ —— 与「阅读」页同一套机制 ✓：
+    // 打开的语义 ✓ = **本机不采用**其它设备同步/备份过来的本页设置 ✓（本页特别地：背景**图片**与字体
+    // **文件**本来就不参与同步 ✓，只有背景色/透明度/填充方式等参数会 ✓）；
+    // ⚠️ **不是**"值只写在本设备" ✗（旧注释写错了 ✓）—— 本机改动**仍会**随完整快照上传 ✓。
     final useDeviceSpecificSettings = appdata.settings
         .isAppearanceDeviceSettingsEnabled();
     return PopUpWidgetScaffold(
