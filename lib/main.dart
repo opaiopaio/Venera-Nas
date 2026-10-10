@@ -41,9 +41,14 @@ void main(List<String> args) {
         await init();
         // 加载自定义字体文件（若已配置）
         await loadCustomFont();
-        // ⚠️ 冷启动"首帧前预加载背景图"的尝试已**整体回退** ✗（用户实测两次"背景图片消失" ✓，
-        // 两端都受影响 ✓）⇒ 启动路径恢复为**本次尝试之前**的已知良好状态 ✓；
-        // 要重做请先按 `project-docs` 的冷启动排查清单在真机验证 ✓（见本轮报告 ✓）。
+        // ⭐ 2026-10-10（用户要求 ✓）：**首帧背景图预热** ✓ ——
+        // 只把图**填进 Flutter 自己的 `ImageCache`** ✓（不自建缓存 ✗、不改 widget 的解析路径 ✗），
+        // 这样首帧的 `BackgroundSlice` 能直接命中缓存 ⇒ 第一帧就有图 ✓（消除"白一下" ✓）。
+        // ⚠️ 仅 **Android** ✓（该白闪是 Android 冷启动特有 ✓，桌面路径**保持原样** ✗ 不动 ✓）；
+        // 内部自带**令牌超时 + 静默回退** ✓ ⇒ 绝不会拖慢启动、也不会抛异常 ✓。
+        if (App.isAndroid) {
+          await preloadBackgroundImageIntoCache();
+        }
         runApp(const MyApp());
         if (App.isDesktop) {
           await windowManager.ensureInitialized();

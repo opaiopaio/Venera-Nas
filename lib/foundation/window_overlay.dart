@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,48 @@ import 'package:venera_nas/foundation/app_theme.dart';
 import 'package:venera_nas/foundation/app_settings_scope.dart';
 import 'package:venera_nas/foundation/appdata.dart';
 import 'package:venera_nas/foundation/design_tokens.dart';
+
+/// ⭐ 2026-10-10（用户要求 ✓）：**首帧背景图预热** —— 请在 `runApp` 之前调用 ✓（仅 Android ✓）。
+///
+/// 背景 ✓：用户实测"第一次改得更好" ✓ —— 因为第一次除了**原生窗口底**还有 **Dart 首帧预热** ✓；
+/// 只留原生层时 ✓，Flutter 画出第一帧的瞬间背景图**还没解码好** ✗ ⇒ `AppBackground` 画占位色
+///（未设底色时 = 浅色主题**白** ✗）⇒ 就是那"白一下" ✓。
+///
+/// ⚠️ 做法刻意**只填 Flutter 自己的 `ImageCache`** ✓：
+/// - 用与 `BackgroundSlice` **完全相同的 `FileImage` provider 语义**预热 ✓；
+/// - **不自建任何模块级缓存** ✗、**不改 `_resolveImage`** ✗ ⇒ 图的**真源永远是 widget 自己的
+///   `FileImage` 解析** ✓ —— 上次事故（在命中缓存分支 `return` 导致解析被永久跳过 ✗）在结构上**不可能重演** ✓。
+/// - 预热失败/超时一律**静默** ✓（图不存在/损坏 ⇒ 什么都不做 ✓，绝不抛到 `main()` ✓）；
+///   超时后图仍在后台继续解码 ✓ ⇒ 后续帧照样能命中 ✓（只是首帧没赶上 ✓）。
+Future<void> preloadBackgroundImageIntoCache() async {
+  try {
+    if (!appdata.settings.backgroundFeatureActive) return;
+    final file = currentBackgroundImageFile();
+    if (file == null) return;
+    final provider = FileImage(file);
+    // 已在缓存里 ⇒ 零成本返回 ✓。
+    if (PaintingBinding.instance.imageCache.containsKey(provider)) return;
+    final completer = Completer<void>();
+    final listener = ImageStreamListener(
+      (info, _) {
+        if (!completer.isCompleted) completer.complete();
+      },
+      onError: (_, _) {
+        if (!completer.isCompleted) completer.complete();
+      },
+    );
+    final stream = provider.resolve(ImageConfiguration.empty);
+    stream.addListener(listener);
+    try {
+      await completer.future.timeout(AppStartup.backgroundPreloadTimeout);
+    } finally {
+      // 排掉自己的监听器 ✓（图留在 `ImageCache` 里 ✓ ⇒ widget 自己解析时命中 ✓）。
+      stream.removeListener(listener);
+    }
+  } catch (_) {
+    // 静默回退 ✓：不影响启动 ✓、不改变任何渲染语义 ✓（widget 自己会照常解析 ✓）。
+  }
+}
 
 /// 「窗口/按钮/选项背景」与全局背景相关的**通用 helper**。
 ///

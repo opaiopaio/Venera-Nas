@@ -53,6 +53,14 @@ abstract final class AppMotion {
   static const Curve standard = Curves.easeInOut;
 }
 
+/// 启动期（冷启动）相关的时间预算 —— 统一令牌，避免在业务代码里写字面量时长。
+abstract final class AppStartup {
+  /// ⭐ 2026-10-10（用户要求 ✓）：首帧背景图**预热**的等待上限 ✓ ——
+  /// 只为"让首帧命中 `ImageCache`" ✓；超时即放弃等待 ✓（图仍在后台继续解码 ✓），
+  /// **绝不允许**拖慢冷启动 ✗（用户实测要求"启动瞬间就是背景" ✓，但更不接受启动变慢 ✗）。
+  static const Duration backgroundPreloadTimeout = Duration(milliseconds: 600);
+}
+
 /// 全局字号缩放范围（设置页滑块与 TextScaler 上限都取自这里）。
 abstract final class AppTextScale {
   static const double min = 0.8;
