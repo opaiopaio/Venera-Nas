@@ -241,73 +241,96 @@ class _ButtonState extends State<Button> {
       onEnter: (_) => setState(() => isHover = true),
       onExit: (_) => setState(() => isHover = false),
       cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        // ⭐ 第 0 步 ✓：补长按与右键能力 ✓（不传 ⇒ null ⇒ 行为与原先**逐字一致** ✓）
-        onLongPress: widget.onLongPress,
-        onSecondaryTapUp: widget.onSecondaryTapAt == null
-            ? null
-            : (details) => widget.onSecondaryTapAt!(details.globalPosition),
-        // ⭐ H2：自绘按钮支持**禁用态** ✓ —— `onPressed == null` 即禁用 ✓
-        //（与 M3 的 `onPressed: null` 写法一致 ✓，95 处 M3 替换可**机械**进行 ✓）。
-        onTap: widget.onPressed == null
-            ? null
-            : () {
-                if (isLoading) return;
-                widget.onPressed!();
-                if (widget.onPressedAt != null) {
-                  var renderBox = context.findRenderObject() as RenderBox;
-                  var offset = renderBox.localToGlobal(Offset.zero);
-                  widget.onPressedAt!(offset);
-                }
-              },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          padding: padding,
-          // P8 胶囊：高度**严格 32** ✓（min==max → 内容再大也撑不出去 ✓）。
-          // ⭐ H2：**去掉 `minWidth: 64` 兜底** ✗ —— 用户明确的规范是
-          // "宽度 = 文字宽度 + 两侧 `AppSpace.lg(16)` 延伸" ✓，短文案（如「OK」）
-          // 不应被撑到 64 宽 ✗。
-          // ⭐ 第 0 步（2026-10-10 ✓）：高度约束可由调用方覆盖 ✓（不传 ⇒ 与原先**逐字一致**的 32 ✓）
-          constraints:
-              widget.constraints ??
-              const BoxConstraints(minHeight: 32, maxHeight: 32),
-          // P8：胶囊形状 ✓；「窗口/按钮背景」设为直角时退化为直角 ✓（尊重用户形状设置）
-          decoration: BoxDecoration(
-            color: buttonColor,
-            // ⭐ 第 0 步 ✓：圆角可由调用方覆盖 ✓（不传 ⇒ 沿用"全圆/直角"现有逻辑 ✓）
-            borderRadius:
-                widget.borderRadius ??
-                (windowOverlayBorderRadius() == null
-                    ? BorderRadius.zero
-                    : BorderRadius.circular(AppRadius.full)),
-            boxShadow:
-                (isHover &&
-                    !isLoading &&
-                    (widget.type == ButtonType.filled ||
-                        widget.type == ButtonType.normal))
-                ? [
-                    BoxShadow(
-                      color: Colors.black.toOpacity(0.1),
-                      blurRadius: 2,
-                      offset: const Offset(0, 1),
-                    ),
-                  ]
-                : null,
-            border: widget.type == ButtonType.outlined
-                ? Border.all(
-                    color:
-                        widget.color ??
-                        Theme.of(context).colorScheme.outlineVariant,
-                    width: 0.6,
-                  )
-                : null,
-          ),
-          child: AnimatedSize(
+      child: Material(
+        // ⭐ 水波统一（2026-10-10 用户实测 ✓）：**Material 必须放在底色之上** ✗→✓
+        // 上一版把 Material/InkWell 包在 AnimatedContainer **外层** ✗ ⇒ 墨水被容器的不透明底色**盖住**
+        // ⇒ 点击完全看不到水波 ✗（用户怀疑"被覆盖" ✓ —— 实测确认 ✓）。
+        // 现放进**容器内层** ✓ ⇒ 墨水绘制在底色之上、内容之下 ✓（Flutter 语义：墨水由最近的 Material 绘制 ✓）。
+        // 同时把**真正的回调**从 GestureDetector 移到 InkWell ✓ —— 同一个手势识别器负责水波与功能 ✓，
+        // 不再出现"内层抢走手势、外层收不到点击"的事故 ✗（2026-10-10 曾因此让全仓按钮点不动 ✓）。
+        type: MaterialType.transparency,
+        child: InkWell(
+          borderRadius:
+              widget.borderRadius ??
+              (windowOverlayBorderRadius() == null
+                  ? BorderRadius.zero
+                  : BorderRadius.circular(AppRadius.full)),
+          // 水波/按压反馈用**令牌透明度** ✓（不写字面量 ✗，守卫棘轮"只许降不许升" ✓）。
+          splashColor: Theme.of(
+            context,
+          ).colorScheme.onSurface.toOpacity(AppOpacity.tintStrengthDefault),
+          highlightColor: Theme.of(
+            context,
+          ).colorScheme.onSurface.toOpacity(AppOpacity.hoverInk),
+          // ⭐ 第 0 步 ✓：补长按与右键能力 ✓（不传 ⇒ null ⇒ 行为与原先**逐字一致** ✓）
+          onLongPress: widget.onLongPress,
+          onSecondaryTapUp: widget.onSecondaryTapAt == null
+              ? null
+              : (details) => widget.onSecondaryTapAt!(details.globalPosition),
+          // ⭐ H2：自绘按钮支持**禁用态** ✓ —— `onPressed == null` 即禁用 ✓
+          //（与 M3 的 `onPressed: null` 写法一致 ✓，95 处 M3 替换可**机械**进行 ✓）。
+          onTap: widget.onPressed == null
+              ? null
+              : () {
+                  if (isLoading) return;
+                  widget.onPressed!();
+                  if (widget.onPressedAt != null) {
+                    var renderBox = context.findRenderObject() as RenderBox;
+                    var offset = renderBox.localToGlobal(Offset.zero);
+                    widget.onPressedAt!(offset);
+                  }
+                },
+          child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
-            child: SizedBox(
-              width: width,
-              height: height,
-              child: Center(widthFactor: 1, child: child),
+            // P8 胶囊：高度**严格 32** ✓（min==max → 内容再大也撑不出去 ✓）。
+            // ⭐ H2：**去掉 `minWidth: 64` 兜底** ✗ —— 用户明确的规范是
+            // "宽度 = 文字宽度 + 两侧 `AppSpace.lg(16)` 延伸" ✓，短文案（如「OK」）
+            // 不应被撑到 64 宽 ✗。
+            // ⭐ 第 0 步（2026-10-10 ✓）：高度约束可由调用方覆盖 ✓（不传 ⇒ 与原先**逐字一致**的 32 ✓）
+            constraints:
+                widget.constraints ??
+                const BoxConstraints(minHeight: 32, maxHeight: 32),
+            // P8：胶囊形状 ✓；「窗口/按钮背景」设为直角时退化为直角 ✓（尊重用户形状设置）
+            decoration: BoxDecoration(
+              color: buttonColor,
+              // ⭐ 第 0 步 ✓：圆角可由调用方覆盖 ✓（不传 ⇒ 沿用"全圆/直角"现有逻辑 ✓）
+              borderRadius:
+                  widget.borderRadius ??
+                  (windowOverlayBorderRadius() == null
+                      ? BorderRadius.zero
+                      : BorderRadius.circular(AppRadius.full)),
+              boxShadow:
+                  (isHover &&
+                      !isLoading &&
+                      (widget.type == ButtonType.filled ||
+                          widget.type == ButtonType.normal))
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.toOpacity(0.1),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
+                      ),
+                    ]
+                  : null,
+              border: widget.type == ButtonType.outlined
+                  ? Border.all(
+                      color:
+                          widget.color ??
+                          Theme.of(context).colorScheme.outlineVariant,
+                      width: 0.6,
+                    )
+                  : null,
+            ),
+            child: Padding(
+              padding: padding,
+              child: AnimatedSize(
+                duration: const Duration(milliseconds: 160),
+                child: SizedBox(
+                  width: width,
+                  height: height,
+                  child: Center(widthFactor: 1, child: child),
+                ),
+              ),
             ),
           ),
         ),
