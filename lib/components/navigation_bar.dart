@@ -385,6 +385,60 @@ class NaviPaneState extends State<NaviPane>
   }
 }
 
+/// 侧栏条目的**统一外壳** ✓ —— `_SideNaviWidget` 与 `_PaneActionWidget` 原先逐字复制了
+/// 同一套 `InkWell + AnimatedContainer` 外观 ✓；现收编为唯一实现 ✓。
+///
+/// ⚠️ 逐项 1:1 复现（**外观零变化** ✓）：`duration: 180ms` 保持**字面量** ✗（不动令牌 ✗）、
+/// 水平内边距 `AppSpace.md` ✓、`minHeight: 38` ✓、圆角取 `windowOverlayBorderRadius() ??
+/// AppRadius.lg` ✓、末尾 `.paddingVertical(4)` ✓；`selected` 为真时底色 `primaryContainer` ✓，
+/// 否则 `windowOverlayColor()` ✓（与原先两个部件的取值一一对应 ✓）。
+class _PaneEntryShell extends StatelessWidget {
+  const _PaneEntryShell({
+    required this.icon,
+    required this.label,
+    required this.showTitle,
+    required this.onTap,
+    this.selected = false,
+  });
+
+  final Widget icon;
+
+  final String label;
+
+  final bool showTitle;
+
+  final VoidCallback onTap;
+
+  /// 是否当前选中项（`_SideNaviWidget` 传 `enabled` ✓，`_PaneActionWidget` 恒为 false ✓）。
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderRadius =
+        windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.lg);
+    return InkWell(
+      borderRadius: borderRadius,
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
+        constraints: const BoxConstraints(minHeight: 38),
+        decoration: BoxDecoration(
+          // 选中项用主题高亮；未选中项在配置了「窗口/按钮背景」时用该色，
+          // 呈现类似鼠标悬停的层次感。
+          color: selected
+              ? Theme.of(context).colorScheme.primaryContainer
+              : windowOverlayColor(),
+          borderRadius: borderRadius,
+        ),
+        child: showTitle
+            ? Row(children: [icon, const SizedBox(width: 12), Text(label)])
+            : Align(alignment: Alignment.centerLeft, child: icon),
+      ),
+    ).paddingVertical(4);
+  }
+}
+
 class _SideNaviWidget extends StatelessWidget {
   const _SideNaviWidget({
     required this.enabled,
@@ -404,31 +458,13 @@ class _SideNaviWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final icon = Icon(enabled ? entry.activeIcon : entry.icon);
-    return InkWell(
-      borderRadius:
-          windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.lg),
+    return _PaneEntryShell(
+      icon: Icon(enabled ? entry.activeIcon : entry.icon),
+      label: entry.label,
+      showTitle: showTitle,
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
-        constraints: const BoxConstraints(minHeight: 38),
-        decoration: BoxDecoration(
-          // 选中项用主题高亮；未选中项在配置了「窗口/按钮背景」时用该色，
-          // 呈现类似鼠标悬停的层次感。
-          color: enabled ? colorScheme.primaryContainer : windowOverlayColor(),
-          borderRadius:
-              windowOverlayBorderRadius() ??
-              BorderRadius.circular(AppRadius.lg),
-        ),
-        child: showTitle
-            ? Row(
-                children: [icon, const SizedBox(width: 12), Text(entry.label)],
-              )
-            : Align(alignment: Alignment.centerLeft, child: icon),
-      ),
-    ).paddingVertical(4);
+      selected: enabled,
+    );
   }
 }
 
@@ -445,29 +481,12 @@ class _PaneActionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = Icon(entry.icon);
-    return InkWell(
+    return _PaneEntryShell(
+      icon: Icon(entry.icon),
+      label: entry.label,
+      showTitle: showTitle,
       onTap: entry.onTap,
-      borderRadius:
-          windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.lg),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
-        constraints: const BoxConstraints(minHeight: 38),
-        decoration: BoxDecoration(
-          // 侧栏左下角的操作项（搜索/设置）同样使用「窗口/按钮背景」。
-          color: windowOverlayColor(),
-          borderRadius:
-              windowOverlayBorderRadius() ??
-              BorderRadius.circular(AppRadius.lg),
-        ),
-        child: showTitle
-            ? Row(
-                children: [icon, const SizedBox(width: 12), Text(entry.label)],
-              )
-            : Align(alignment: Alignment.centerLeft, child: icon),
-      ),
-    ).paddingVertical(4);
+    );
   }
 }
 

@@ -196,6 +196,53 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
     );
   }
 
+  /// 本地与网络文件夹行的**统一外壳** ✓ —— `buildLocalFolder` 与 `buildNetworkFolder`
+  /// 原先逐字复制了同一套 `InkWell + Container` 外观 ✓；现收编为唯一实现 ✓。
+  ///
+  /// ⚠️ 逐项 1:1 复现（**外观零变化** ✓）：`height: 42` ✓、`alignment: centerLeft` ✓、
+  /// `margin` 随 `customBackgroundActive` ✓、底色 `primaryContainer.toOpacity(0.36)` 或
+  /// `windowOverlayColor()` ✓、圆角 `windowOverlayBorderRadius()` ✓、未启用自定义背景时的
+  /// 左侧 2px `primary` 竖条 ✓、`padding: only(left: AppSpace.lg)` ✓。
+  /// 两者唯一的行内容差异由调用方以 `child` 传入 ✓：本地行是名字加计数角标 ✓，网络行只有标题 ✓。
+  Widget _buildFolderRow({
+    required bool isSelected,
+    required VoidCallback onTap,
+    required Widget child,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        height: 42,
+        alignment: Alignment.centerLeft,
+        margin: appdata.settings.customBackgroundActive
+            ? const EdgeInsets.symmetric(
+                horizontal: AppSpace.sm,
+                vertical: AppSpace.xxs,
+              )
+            : null,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? context.colorScheme.primaryContainer.toOpacity(0.36)
+              : windowOverlayColor(),
+          // 跟随「圆角/直角」设置（未启用自定义背景时为 null，保持原样）。
+          borderRadius: windowOverlayBorderRadius(),
+          border: appdata.settings.customBackgroundActive
+              ? null
+              : Border(
+                  left: BorderSide(
+                    color: isSelected
+                        ? context.colorScheme.primary
+                        : Colors.transparent,
+                    width: 2,
+                  ),
+                ),
+        ),
+        padding: const EdgeInsets.only(left: AppSpace.lg),
+        child: child,
+      ),
+    );
+  }
+
   Widget buildLocalFolder(String name) {
     bool isSelected = name == favPage.folder && !favPage.isNetwork;
     int count = 0;
@@ -207,7 +254,8 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
     var folderName = name == _localAllFolderLabel
         ? "All".tl
         : getFavoriteDataOrNull(name)?.title ?? name;
-    return InkWell(
+    return _buildFolderRow(
+      isSelected: isSelected,
       onTap: () {
         if (isSelected) {
           return;
@@ -215,50 +263,22 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
         favPage.setFolder(false, name);
         widget.onSelected?.call();
       },
-      child: Container(
-        height: 42,
-        alignment: Alignment.centerLeft,
-        margin: appdata.settings.customBackgroundActive
-            ? const EdgeInsets.symmetric(
-                horizontal: AppSpace.sm,
-                vertical: AppSpace.xxs,
-              )
-            : null,
-        decoration: BoxDecoration(
-          color: isSelected
-              ? context.colorScheme.primaryContainer.toOpacity(0.36)
-              : windowOverlayColor(),
-          // 跟随「圆角/直角」设置（未启用自定义背景时为 null，保持原样）。
-          borderRadius: windowOverlayBorderRadius(),
-          border: appdata.settings.customBackgroundActive
-              ? null
-              : Border(
-                  left: BorderSide(
-                    color: isSelected
-                        ? context.colorScheme.primary
-                        : Colors.transparent,
-                    width: 2,
-                  ),
-                ),
-        ),
-        padding: const EdgeInsets.only(left: AppSpace.lg),
-        child: Row(
-          children: [
-            Expanded(child: Text(folderName)),
-            Container(
-              margin: EdgeInsets.only(right: AppSpace.sm),
-              padding: EdgeInsets.symmetric(
-                horizontal: AppSpace.sm,
-                vertical: AppSpace.xxs,
-              ),
-              decoration: BoxDecoration(
-                color: context.colorScheme.surfaceContainer,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              child: Text(count.toString()),
+      child: Row(
+        children: [
+          Expanded(child: Text(folderName)),
+          Container(
+            margin: EdgeInsets.only(right: AppSpace.sm),
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpace.sm,
+              vertical: AppSpace.xxs,
             ),
-          ],
-        ),
+            decoration: BoxDecoration(
+              color: context.colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Text(count.toString()),
+          ),
+        ],
       ),
     );
   }
@@ -269,7 +289,8 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
       return const SizedBox();
     }
     bool isSelected = key == favPage.folder && favPage.isNetwork;
-    return InkWell(
+    return _buildFolderRow(
+      isSelected: isSelected,
       onTap: () {
         if (isSelected) {
           return;
@@ -277,35 +298,7 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
         favPage.setFolder(true, key);
         widget.onSelected?.call();
       },
-      child: Container(
-        height: 42,
-        alignment: Alignment.centerLeft,
-        margin: appdata.settings.customBackgroundActive
-            ? const EdgeInsets.symmetric(
-                horizontal: AppSpace.sm,
-                vertical: AppSpace.xxs,
-              )
-            : null,
-        decoration: BoxDecoration(
-          color: isSelected
-              ? context.colorScheme.primaryContainer.toOpacity(0.36)
-              : windowOverlayColor(),
-          // 跟随「圆角/直角」设置（未启用自定义背景时为 null，保持原样）。
-          borderRadius: windowOverlayBorderRadius(),
-          border: appdata.settings.customBackgroundActive
-              ? null
-              : Border(
-                  left: BorderSide(
-                    color: isSelected
-                        ? context.colorScheme.primary
-                        : Colors.transparent,
-                    width: 2,
-                  ),
-                ),
-        ),
-        padding: const EdgeInsets.only(left: AppSpace.lg),
-        child: Text(data.title),
-      ),
+      child: Text(data.title),
     );
   }
 

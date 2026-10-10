@@ -4,8 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// ⭐ 外观构件统一守卫 · 第一批（2026-10-10 ✓）
 ///
-/// 「评论 / 点赞」的描边胶囊已收编为规范构件 `Button.outlined` ✓。
-/// 本测试防止它们**回退**成手搓 `Container(0.6 描边 + AppRadius.xl) + InkWell` ✗。
+/// 「评论 / 点赞」的描边胶囊已收编为**唯一实现** `CommentActionChip` ✓
+///（构件内部走规范构件 `Button.outlined` ✓，见 Batch E 2026-10-10 ✓）。
+/// 本测试防止它们**回退**成手搓 `Container(0.6 描边 + AppRadius.xl) + InkWell` ✗，
+/// 也防止两个页面再次各自直接构造 `Button.outlined` ✗。
 ///
 /// 说明 ✓：本项目已有先例（`ap1_static_regression_test.dart` 用同类静态守卫 ✓）。
 void main() {
@@ -14,19 +16,28 @@ void main() {
     'lib/pages/reader/chapter_comments.dart',
   ];
 
-  test('T-CU1：评论/点赞描边胶囊必须走规范构件 Button.outlined', () {
+  test('T-CU1：评论/点赞描边胶囊必须走唯一实现 CommentActionChip', () {
     for (final path in targets) {
       final src = File(path).readAsStringSync();
 
-      // 1) 必须有规范构件（每个文件 2 处：回复 + 点赞）
-      final uses = RegExp(r'Button\.outlined\(').allMatches(src).length;
+      // 1) 必须走唯一实现（每个文件 2 处：回复 + 点赞）
+      final uses = RegExp(r'CommentActionChip\(').allMatches(src).length;
       expect(
         uses >= 2,
         isTrue,
-        reason: '$path 应使用规范构件 Button.outlined（期望 ≥2 处，实际 $uses）',
+        reason: '$path 应使用唯一实现 CommentActionChip（期望 ≥2 处，实际 $uses）',
       );
 
-      // 2) 不得再出现"手搓描边胶囊"的旧结构特征
+      // 2) 不得在页面里直接构造 Button.outlined（唯一实现在构件内）
+      final direct = RegExp(r'Button\.outlined\(').allMatches(src).length;
+      expect(
+        direct,
+        equals(0),
+        reason:
+            '$path 不应再直接构造 Button.outlined（应走 CommentActionChip，实际 $direct 处）',
+      );
+
+      // 3) 不得再出现"手搓描边胶囊"的旧结构特征
       final legacy = RegExp(
         r'borderRadius: BorderRadius\.circular\(AppRadius\.xl\),\s*\n\s*onTap:',
       ).allMatches(src).length;
@@ -36,6 +47,16 @@ void main() {
         reason: '$path 不应再有手搓描边胶囊（Container + InkWell + 0.6 描边，实际 $legacy 处）',
       );
     }
+
+    // 唯一实现内部必须恰好一处 `Button.outlined` ✓（保证"唯一实现" ✓）。
+    final impl = File(
+      'lib/components/comment_action_chip.dart',
+    ).readAsStringSync();
+    expect(
+      RegExp(r'Button\.outlined\(').allMatches(impl).length,
+      equals(1),
+      reason: 'CommentActionChip 应是评论/点赞描边胶囊的唯一实现',
+    );
   });
 
   test('T-CU2：多选工具条必须走规范构件 SelectToolbar（第二批）', () {

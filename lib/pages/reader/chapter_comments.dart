@@ -396,48 +396,28 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
 
   Widget buildReply() {
     // ⭐ 外观构件统一 · 第一批（2026-10-10 ✓）：手搓描边胶囊 → 规范构件 `Button.outlined` ✓
-    // **按现状传参 1:1 复现** ✓：无底色（fillColor: transparent）✓、圆角 xl ✓、高度由内容决定 ✓、
-    // 内边距 h:md / v:xs ✓、文字与图标用**继承的默认色** ✓、描边沿用 outlined 默认（outlineVariant 0.6）✓。
-    return Padding(
-      padding: const EdgeInsets.only(left: AppSpace.sm),
-      child: Button.outlined(
-        fillColor: Colors.transparent,
-        textColor: DefaultTextStyle.of(context).style.color,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        constraints: const BoxConstraints(
-          minHeight: 0,
-          maxHeight: double.infinity,
-        ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpace.md,
-          vertical: AppSpace.xs,
-        ),
-        onPressed: () {
-          // Get the parent page's widget to access comicTitle and chapterTitle
-          var parentState = context
-              .findAncestorStateOfType<_ChapterCommentsPageState>();
-          showSideBar(
-            context,
-            ChapterCommentsPage(
-              comicId: widget.comicId,
-              epId: widget.epId,
-              source: widget.source,
-              comicTitle: parentState?.widget.comicTitle ?? '',
-              chapterTitle: parentState?.widget.chapterTitle ?? '',
-              replyComment: widget.comment,
-            ),
-            showBarrier: false,
-          );
-        },
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.insert_comment_outlined, size: AppIconSize.xs),
-            const SizedBox(width: 8),
-            Text(widget.comment.replyCount.toString()),
-          ],
-        ),
-      ),
+    // ⭐ 外观构件统一 · 第五批（Batch E ✓ 2026-10-10）：唯一实现收编到 `CommentActionChip` ✓
+    //（原参数逐项搬进构件 ✓，此处只保留业务回调与内容 ✓）。
+    return CommentActionChip(
+      icon: const Icon(Icons.insert_comment_outlined, size: AppIconSize.xs),
+      text: widget.comment.replyCount.toString(),
+      onPressed: () {
+        // Get the parent page's widget to access comicTitle and chapterTitle
+        var parentState = context
+            .findAncestorStateOfType<_ChapterCommentsPageState>();
+        showSideBar(
+          context,
+          ChapterCommentsPage(
+            comicId: widget.comicId,
+            epId: widget.epId,
+            source: widget.source,
+            comicTitle: parentState?.widget.comicTitle ?? '',
+            chapterTitle: parentState?.widget.chapterTitle ?? '',
+            replyComment: widget.comment,
+          ),
+          showBarrier: false,
+        );
+      },
     );
   }
 
@@ -447,66 +427,45 @@ class _ChapterCommentTileState extends State<_ChapterCommentTile> {
 
   Widget buildLike() {
     // ⭐ 外观构件统一 · 第一批（2026-10-10 ✓）：手搓描边胶囊 → 规范构件 `Button.outlined` ✓
-    // **按现状传参 1:1 复现** ✓：无底色（fillColor: transparent）✓、圆角 xl ✓、高度由内容决定 ✓、
-    // 内边距 h:md / v:xs ✓、文字与图标用**继承的默认色** ✓、描边沿用 outlined 默认（outlineVariant 0.6）✓。
-    return Padding(
-      padding: const EdgeInsets.only(left: AppSpace.sm),
-      child: Button.outlined(
-        fillColor: Colors.transparent,
-        textColor: DefaultTextStyle.of(context).style.color,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        constraints: const BoxConstraints(
-          minHeight: 0,
-          maxHeight: double.infinity,
-        ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpace.md,
-          vertical: AppSpace.xs,
-        ),
-        onPressed: () async {
-          if (isLiking) return;
-          setState(() {
-            isLiking = true;
-          });
-          var res = await widget.source.likeCommentFunc!(
-            widget.comicId,
-            widget.epId,
-            widget.comment.id!,
-            !isLiked,
-          );
-          if (res.success) {
-            isLiked = !isLiked;
-            likes += isLiked ? 1 : -1;
-          } else {
-            if (!mounted) return;
-            context.showMessage(message: res.errorMessage ?? "Error");
-          }
-          setState(() {
-            isLiking = false;
-          });
-        },
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isLiking)
-              const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(),
-              )
-            else if (isLiked)
-              Icon(
-                Icons.favorite,
-                size: AppIconSize.xs,
-                color: context.useTextColor(Colors.red),
-              )
-            else
-              const Icon(Icons.favorite_border, size: AppIconSize.xs),
-            const SizedBox(width: 8),
-            Text(likes.toString()),
-          ],
-        ),
-      ),
+    // ⭐ 外观构件统一 · 第五批（Batch E ✓ 2026-10-10）：唯一实现收编到 `CommentActionChip` ✓
+    //（加载态仍按现状只替换**左侧图标** ✓，不改成 Button.isLoading ✗）。
+    return CommentActionChip(
+      icon: isLiking
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(),
+            )
+          : isLiked
+          ? Icon(
+              Icons.favorite,
+              size: AppIconSize.xs,
+              color: context.useTextColor(Colors.red),
+            )
+          : const Icon(Icons.favorite_border, size: AppIconSize.xs),
+      text: likes.toString(),
+      onPressed: () async {
+        if (isLiking) return;
+        setState(() {
+          isLiking = true;
+        });
+        var res = await widget.source.likeCommentFunc!(
+          widget.comicId,
+          widget.epId,
+          widget.comment.id!,
+          !isLiked,
+        );
+        if (res.success) {
+          isLiked = !isLiked;
+          likes += isLiked ? 1 : -1;
+        } else {
+          if (!mounted) return;
+          context.showMessage(message: res.errorMessage ?? "Error");
+        }
+        setState(() {
+          isLiking = false;
+        });
+      },
     );
   }
 

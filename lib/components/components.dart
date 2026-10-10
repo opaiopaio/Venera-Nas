@@ -59,6 +59,7 @@ part 'select_toolbar.dart';
 part 'compact_icon_button.dart';
 part 'side_bar.dart';
 part 'comic.dart';
+part 'comment_action_chip.dart';
 part 'effects.dart';
 part 'gesture.dart';
 part 'code.dart';
