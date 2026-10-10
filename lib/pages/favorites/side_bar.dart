@@ -219,6 +219,12 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
     required VoidCallback onTap,
     required Widget child,
   }) {
+    // 选中项用主题高亮缩放；未选中项在配置了「窗口/按钮背景」时用该色 ✓。
+    final fill = isSelected
+        ? context.colorScheme.primaryContainer.toOpacity(
+            AppOpacity.selectedTint,
+          )
+        : windowOverlayColor();
     return Padding(
       // ⚠️ 与原先 `Container(margin:)` **等值** ✓（只是移到 `InkWell` 外层 ⇒ 墨迹不再算进 margin ✓）。
       padding: appdata.settings.customBackgroundActive
@@ -231,28 +237,31 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
         onTap: onTap,
         // 与下方遮罩 `decoration` 的圆角**同源取值** ✓ ⇒ 墨迹矩形与遮罩矩形完全重合 ✓。
         borderRadius: windowOverlayBorderRadius(),
-        child: Container(
-          height: 42,
-          alignment: Alignment.centerLeft,
-          decoration: BoxDecoration(
-            color: isSelected
-                ? context.colorScheme.primaryContainer.toOpacity(0.36)
-                : windowOverlayColor(),
-            // 跟随「圆角/直角」设置（未启用自定义背景时为 null，保持原样）。
-            borderRadius: windowOverlayBorderRadius(),
-            border: appdata.settings.customBackgroundActive
-                ? null
-                : Border(
-                    left: BorderSide(
-                      color: isSelected
-                          ? context.colorScheme.primary
-                          : Colors.transparent,
-                      width: 2,
+        child: FilledForeground(
+          // ⭐ 对比度（2026-10-11）：自绘底色 ⇒ 行文字/图标取与填充成对的前景色 ✓
+          //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅底浅字/深底深字看不见 ✗）
+          fill: fill,
+          child: Container(
+            height: 42,
+            alignment: Alignment.centerLeft,
+            decoration: BoxDecoration(
+              color: fill,
+              // 跟随「圆角/直角」设置（未启用自定义背景时为 null，保持原样）。
+              borderRadius: windowOverlayBorderRadius(),
+              border: appdata.settings.customBackgroundActive
+                  ? null
+                  : Border(
+                      left: BorderSide(
+                        color: isSelected
+                            ? context.colorScheme.primary
+                            : Colors.transparent,
+                        width: 2,
+                      ),
                     ),
-                  ),
+            ),
+            padding: const EdgeInsets.only(left: AppSpace.lg),
+            child: child,
           ),
-          padding: const EdgeInsets.only(left: AppSpace.lg),
-          child: child,
         ),
       ),
     );
@@ -291,7 +300,11 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
               color: context.colorScheme.surfaceContainer,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: Text(count.toString()),
+            // ⭐ 对比度（2026-10-11）：角标自绘底色 ⇒ 计数取与填充成对的前景色 ✓
+            child: FilledForeground(
+              fill: context.colorScheme.surfaceContainer,
+              child: Text(count.toString()),
+            ),
           ),
         ],
       ),

@@ -367,6 +367,12 @@ class _LogsPageState extends State<LogsPage> {
         itemCount: logToShow.length,
         itemBuilder: (context, index) {
           index = logToShow.length - index - 1;
+          // 等级胶囊底色：与 `level.index` 一一对应（0=错误 ✓ 1=警告 ✓ 2=普通 ✓）。
+          final levelFill = [
+            Theme.of(context).colorScheme.error,
+            Theme.of(context).colorScheme.errorContainer,
+            Theme.of(context).colorScheme.primaryContainer,
+          ][logToShow[index].level.index];
           return Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: SelectionArea(
@@ -384,32 +390,32 @@ class _LogsPageState extends State<LogsPage> {
                             Radius.circular(AppRadius.xl),
                           ),
                         ),
+                        // ⭐ 对比度（2026-10-11）：胶囊自绘底色 ⇒ 标题取与填充成对的前景色 ✓
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(5, 0, 5, 1),
-                          child: Text(logToShow[index].title),
+                          child: FilledForeground(
+                            fill: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                            child: Text(logToShow[index].title),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 3),
                       Container(
                         decoration: BoxDecoration(
-                          color: [
-                            Theme.of(context).colorScheme.error,
-                            Theme.of(context).colorScheme.errorContainer,
-                            Theme.of(context).colorScheme.primaryContainer,
-                          ][logToShow[index].level.index],
+                          color: levelFill,
                           borderRadius: const BorderRadius.all(
                             Radius.circular(AppRadius.xl),
                           ),
                         ),
+                        // ⭐ 对比度（2026-10-11）：胶囊自绘底色 ⇒ 等级文字取与填充成对的前景色 ✓
+                        //（原先按等级写死黑/白 ✗ ⇒ 与自定义主题色不匹配 ⇒ 浅底白字看不见 ✗）
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(5, 0, 5, 1),
-                          child: Text(
-                            logToShow[index].level.name,
-                            style: TextStyle(
-                              color: logToShow[index].level.index == 0
-                                  ? Colors.white
-                                  : Colors.black,
-                            ),
+                          child: FilledForeground(
+                            fill: levelFill,
+                            child: Text(logToShow[index].level.name),
                           ),
                         ),
                       ),
@@ -579,23 +585,31 @@ class _WebdavSettingState extends State<_WebdavSetting> {
             AnimatedSize(
               duration: AppMotion.short,
               child: autoSync
-                  ? Container(
-                      padding: const EdgeInsets.all(AppSpace.sm),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.info_outline, size: AppIconSize.md),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              "Once the operation is successful, app will automatically sync data with the server."
-                                  .tl,
+                  ? FilledForeground(
+                      // ⭐ 对比度（2026-10-11）：提示条自绘底色 ⇒ 图标/文字取与填充成对的前景色 ✓
+                      //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色提示条上"白字融底"看不见 ✗）
+                      fill: Theme.of(context).colorScheme.primaryContainer,
+                      child: Container(
+                        padding: const EdgeInsets.all(AppSpace.sm),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.info_outline,
+                              size: AppIconSize.md,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                "Once the operation is successful, app will automatically sync data with the server."
+                                    .tl,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     )
                   : const SizedBox.shrink(),

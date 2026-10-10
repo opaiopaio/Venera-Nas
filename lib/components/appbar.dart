@@ -1155,6 +1155,11 @@ class TabActionButton extends StatelessWidget {
     final radius = appdata.settings.customBackgroundActive
         ? (windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.md))
         : BorderRadius.circular(AppRadius.md);
+    // ⭐ 对比度（2026-10-11）：本按钮与「漫画源」标签共用底色口诀 ✓ ——
+    // 底色只在启用「窗口/按钮背景」时才画 ✓（`null` = 无填充 ⇒ 保持原主题前景 ✗）。
+    final fill = appdata.settings.customBackgroundActive
+        ? sourceTabOverlayColor()
+        : null;
     final content = InkWell(
       onTap: onPressed,
       borderRadius: radius,
@@ -1169,10 +1174,14 @@ class TabActionButton extends StatelessWidget {
         child: IconTheme(
           data: IconThemeData(
             // ⭐ AA1（用户要求 ✓）：**纯图标按钮** ✓ —— 去掉「添加」文字 ✗、图标**更大** ✓；
-            // 颜色**跟随本排主题色** ✓（`onSecondaryContainer` 配 `secondaryContainer` ✓），
+            // 颜色先跟随本排主题色 ✓（`onSecondaryContainer` 配 `secondaryContainer` ✓），
             // **不再跟随「图标按钮」的自定义色** ✗（原先走 `appIconColor()` ✗，用户实测指出 ✓）。
+            // ⭐ 对比度（2026-10-11）：本按钮自带 `sourceTabOverlayColor()` 底色 ⇒ 底色可被改成浅色 ✓，
+            // 此时`onSecondaryContainer` 可能变成浅底浅图标 ✗ ⇒ 按**实际填充**的深浅自动配黑/白 ✓。
             size: AppIconSize.lg,
-            color: context.colorScheme.onSecondaryContainer,
+            color: fill == null
+                ? context.colorScheme.onSecondaryContainer
+                : onColorForFill(context, fill),
           ),
           child: icon, // 只留图标 ✓（真正的图标按钮 ✓）
         ),
@@ -1186,7 +1195,7 @@ class TabActionButton extends StatelessWidget {
         // ⭐ AA1（用户要求 ✓）：填色与本排标签一致（主题 `secondaryContainer` ✓），
         // **不再跟随「图标按钮」的自定义色** ✗（原先 `iconOverlayColor()` ✗，用户实测指出 ✓）。
         // ⭐ AF1（用户要求 ✓）：「+ 加号」与 chip 用**同一个**入口 ✓（同属这一排 ✓）。
-        color: sourceTabOverlayColor(),
+        color: fill,
         borderRadius: radius,
         clipBehavior: Clip.antiAlias,
         child: content,

@@ -74,9 +74,14 @@ class _FollowUpdatesWidgetState
                   borderRadius: BorderRadius.circular(AppRadius.md),
                   color: context.colorScheme.primaryContainer,
                 ),
-                child: Text(
-                  '@c updates'.tlParams({'c': _count}),
-                  style: ts.s16,
+                // ⭐ 对比度（2026-10-11）：角标自绘底色 ⇒ 文字取与填充成对的前景色 ✓
+                //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色角标底上"白字融底"看不见 ✗）
+                child: FilledForeground(
+                  fill: context.colorScheme.primaryContainer,
+                  child: Text(
+                    '@c updates'.tlParams({'c': _count}),
+                    style: ts.s16,
+                  ),
                 ),
               )
             : null,

@@ -630,13 +630,21 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
                 ),
               ]);
             },
-            child: Text(text).padding(padding),
+            // ⭐ 对比度（2026-10-11）：标签自绘底色 ⇒ 文字取与填充成对的前景色 ✓
+            //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色标签底上"白字融底"看不见 ✗）
+            child: FilledForeground(
+              fill: color,
+              child: Text(text).padding(padding),
+            ),
           ),
         );
       } else {
-        return Container(
-          decoration: BoxDecoration(color: color, borderRadius: borderRadius),
-          child: Text(text).padding(padding),
+        return FilledForeground(
+          fill: color,
+          child: Container(
+            decoration: BoxDecoration(color: color, borderRadius: borderRadius),
+            child: Text(text).padding(padding),
+          ),
         );
       }
     }

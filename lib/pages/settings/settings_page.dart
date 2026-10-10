@@ -191,6 +191,10 @@ class _SettingsPageState extends State<SettingsPage> {
     Widget buildItem(String name, int id) {
       final bool selected = id == currentPage;
 
+      final fill = selected
+          ? colors.primaryContainer.toOpacity(AppOpacity.selectedTint)
+          : windowOverlayColor();
+
       Widget content = AnimatedContainer(
         key: ValueKey(id),
         duration: AppMotion.short,
@@ -198,9 +202,7 @@ class _SettingsPageState extends State<SettingsPage> {
         height: 46,
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
         decoration: BoxDecoration(
-          color: selected
-              ? colors.primaryContainer.toOpacity(0.36)
-              : windowOverlayColor(),
+          color: fill,
           // 配置了「窗口/按钮背景」时，左栏菜单项也用圆角方框（与侧栏一致）。
           borderRadius: appdata.settings.cornerStyleActive
               ? BorderRadius.circular(windowOverlayRadius())
@@ -212,14 +214,19 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
         ),
-        child: Row(
-          children: [
-            Icon(icons[id]),
-            const SizedBox(width: 16),
-            Text(name, style: ts.s16),
-            const Spacer(),
-            if (selected) const Icon(Icons.arrow_right),
-          ],
+        // ⭐ 对比度（2026-10-11）：自绘底色 ⇒ 行图标/文字取与填充成对的前景色 ✓
+        //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅底浅字/深底深字看不见 ✗）
+        child: FilledForeground(
+          fill: fill,
+          child: Row(
+            children: [
+              Icon(icons[id]),
+              const SizedBox(width: 16),
+              Text(name, style: ts.s16),
+              const Spacer(),
+              if (selected) const Icon(Icons.arrow_right),
+            ],
+          ),
         ),
       );
 

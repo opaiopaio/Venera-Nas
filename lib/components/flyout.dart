@@ -215,6 +215,10 @@ class FlyoutContent extends StatelessWidget {
     // 建立设置依赖：本控件的外观由设置算出 → 设置变化时由框架精准重建
     // （见 ../workspace/archive/doc-private-legacy-20261009/03-implementation/11-refresh-mechanism.md）
     AppSettingsScope.of(context);
+    // 本面板实际填充色 ✓（对比度换算与 Material 底色**同源** ✓，避免两处取值漂移 ✗）。
+    final overlayFill = appdata.settings.customBackgroundActive
+        ? windowOverlayColor()
+        : context.colorScheme.surface.toOpacity(0.82);
     return IntrinsicWidth(
       child: BlurEffect(
         borderRadius:
@@ -222,9 +226,7 @@ class FlyoutContent extends StatelessWidget {
         child: Material(
           borderRadius: BorderRadius.circular(AppRadius.md),
           type: MaterialType.card,
-          color: appdata.settings.customBackgroundActive
-              ? windowOverlayColor()
-              : context.colorScheme.surface.toOpacity(0.82),
+          color: overlayFill,
           child: Container(
             constraints: const BoxConstraints(minWidth: _minFlyoutWidth),
             padding: const EdgeInsets.symmetric(
@@ -237,25 +239,30 @@ class FlyoutContent extends StatelessWidget {
                   ? Border.all(color: context.colorScheme.outlineVariant)
                   : null,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+            child: FilledForeground(
+              // ⭐ 对比度（2026-10-11）：面板自绘底色 ⇒ 标题取与填充成对的前景色 ✓
+              //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色面板上"白字融底"看不见 ✗）
+              fill: overlayFill,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
-                ),
-                if (content != null) content!,
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [const Spacer(), ...actions],
-                ),
-              ],
+                  if (content != null) content!,
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [const Spacer(), ...actions],
+                  ),
+                ],
+              ),
             ),
           ),
         ).paddingAll(4),

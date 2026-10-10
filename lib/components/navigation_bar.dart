@@ -416,6 +416,11 @@ class _PaneEntryShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final borderRadius =
         windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.lg);
+    // 选中项用主题高亮；未选中项在配置了「窗口/按钮背景」时用该色，
+    // 呈现类似鼠标悬停的层次感。
+    final fill = selected
+        ? Theme.of(context).colorScheme.primaryContainer
+        : windowOverlayColor();
     return InkWell(
       borderRadius: borderRadius,
       onTap: onTap,
@@ -423,17 +428,15 @@ class _PaneEntryShell extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: AppSpace.md),
         constraints: const BoxConstraints(minHeight: 38),
-        decoration: BoxDecoration(
-          // 选中项用主题高亮；未选中项在配置了「窗口/按钮背景」时用该色，
-          // 呈现类似鼠标悬停的层次感。
-          color: selected
-              ? Theme.of(context).colorScheme.primaryContainer
-              : windowOverlayColor(),
-          borderRadius: borderRadius,
+        decoration: BoxDecoration(color: fill, borderRadius: borderRadius),
+        // ⭐ 对比度（2026-10-11）：自绘底色 ⇒ 行文字/图标取与填充成对的前景色 ✓
+        //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅底浅字/深底深字看不见 ✗）
+        child: FilledForeground(
+          fill: fill,
+          child: showTitle
+              ? Row(children: [icon, const SizedBox(width: 12), Text(label)])
+              : Align(alignment: Alignment.centerLeft, child: icon),
         ),
-        child: showTitle
-            ? Row(children: [icon, const SizedBox(width: 12), Text(label)])
-            : Align(alignment: Alignment.centerLeft, child: icon),
       ),
     ).paddingVertical(4);
   }
@@ -572,6 +575,10 @@ class _SingleBottomNaviWidgetState extends State<_SingleBottomNaviWidget>
       widget.enabled ? widget.entry.activeIcon : widget.entry.icon,
       size: context.width < changePoint ? AppIconSize.xl : AppIconSize.lg,
     );
+    // 配置了「窗口/按钮背景」时，未悬停也显示该底色（与主页/收藏等一致）。
+    final outerFill = isHovering
+        ? colorScheme.surfaceContainer
+        : windowOverlayColor();
     return Center(
       child: Container(
         width: 64,
@@ -587,10 +594,7 @@ class _SingleBottomNaviWidgetState extends State<_SingleBottomNaviWidget>
                         : 12),
             ),
           ),
-          // 配置了「窗口/按钮背景」时，未悬停也显示该底色（与主页/收藏等一致）。
-          color: isHovering
-              ? colorScheme.surfaceContainer
-              : windowOverlayColor(),
+          color: outerFill,
         ),
         child: Center(
           child: Container(
@@ -602,7 +606,11 @@ class _SingleBottomNaviWidgetState extends State<_SingleBottomNaviWidget>
                   ? colorScheme.secondaryContainer
                   : Colors.transparent,
             ),
-            child: Center(child: icon),
+            // ⭐ 对比度（2026-10-11）：自绘底色 ⇒ 图标取与填充成对的前景色 ✓
+            //（原先无颜色 ⇒ 继承全局图标色 ✗ ⇒ 浅底浅图标看不见 ✗）
+            child: Center(
+              child: FilledForeground(fill: outerFill, child: icon),
+            ),
           ),
         ),
       ),

@@ -89,17 +89,22 @@ class _AuthPinSettingState extends State<AuthPinSetting> {
                   color: context.colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.info_outline, size: AppIconSize.md),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        "PIN is stored locally and cannot be recovered. If forgotten, app data must be cleared."
-                            .tl,
+                // ⭐ 对比度（2026-10-11）：提示条自绘底色 ⇒ 图标/文字取与填充成对的前景色 ✓
+                //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色提示条上"白字融底"看不见 ✗）
+                child: FilledForeground(
+                  fill: context.colorScheme.primaryContainer,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, size: AppIconSize.md),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "PIN is stored locally and cannot be recovered. If forgotten, app data must be cleared."
+                              .tl,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 24),

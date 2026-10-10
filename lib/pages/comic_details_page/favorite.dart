@@ -324,7 +324,12 @@ class _NetworkSectionState extends State<_NetworkSection> {
                     color: context.colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(AppRadius.lg),
                   ),
-                  child: Text("Added".tl, style: ts.s12),
+                  // ⭐ 对比度（2026-10-11）：角标自绘底色 ⇒ 文字取与填充成对的前景色 ✓
+                  //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色角标底上"白字融底"看不见 ✗）
+                  child: FilledForeground(
+                    fill: context.colorScheme.primaryContainer,
+                    child: Text("Added".tl, style: ts.s12),
+                  ),
                 ),
             ],
           ),
@@ -419,7 +424,12 @@ class _NetworkSectionState extends State<_NetworkSection> {
                       color: context.colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(AppRadius.lg),
                     ),
-                    child: Text("Added".tl, style: ts.s12),
+                    // ⭐ 对比度（2026-10-11）：角标自绘底色 ⇒ 文字取与填充成对的前景色 ✓
+                    //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色角标底上"白字融底"看不见 ✗）
+                    child: FilledForeground(
+                      fill: context.colorScheme.primaryContainer,
+                      child: Text("Added".tl, style: ts.s12),
+                    ),
                   ),
               ],
             ),
@@ -550,7 +560,12 @@ class _LocalSectionState extends State<_LocalSection> {
                       color: context.colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(AppRadius.lg),
                     ),
-                    child: Text("Added".tl, style: ts.s12),
+                    // ⭐ 对比度（2026-10-11）：角标自绘底色 ⇒ 文字取与填充成对的前景色 ✓
+                    //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色角标底上"白字融底"看不见 ✗）
+                    child: FilledForeground(
+                      fill: context.colorScheme.primaryContainer,
+                      child: Text("Added".tl, style: ts.s12),
+                    ),
                   ),
               ],
             ),
