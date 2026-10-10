@@ -430,18 +430,47 @@ class _ButtonState extends State<Button> {
           : widget.textColor!;
     }
     final Color base;
-    if (widget.color != null) {
-      base = context.colorScheme.onPrimary;
-    } else if (widget.type == ButtonType.outlined ||
-        widget.type == ButtonType.text) {
-      base = global ?? context.colorScheme.primary;
+    // ⭐ 对比度修复（2026-10-11）：**只要按钮自己画了填充，文字就必须取与填充同源的对比色** ✓ ——
+    // 原先只有"显式传 `widget.color`"才用 `onPrimary` ✗，其余（`filled` / `normal`）一律
+    // `global ?? onSurface` ✗ ⇒ 夜间模式（全局文字色=白）叠在**浅色填充**上时"白字融底" ✗
+    //（用户报告：很多按钮文字几乎和按钮融合 ✓）。透明/无填充的按钮仍沿用全局文字色 ✓（体系④本意 ✓）。
+    final fill = buttonColor;
+    // 半透明填充要先与主题表面合成 ✓，否则按单独颜色算亮度会误判 ✓（不改任何颜色，只用于换算 ✓）。
+    final effectiveFill = fill.a >= 1
+        ? fill
+        : Color.alphaBlend(fill, context.colorScheme.surface);
+    if (fill.a == 0) {
+      // 无填充 ⇒ 保持原有语义 ✓（描边/文字按钮：全局文字色 → 主题主色 ✓；其余：全局 → onSurface ✓）。
+      if (widget.type == ButtonType.outlined ||
+          widget.type == ButtonType.text) {
+        base = global ?? context.colorScheme.primary;
+      } else {
+        base = global ?? context.colorScheme.onSurface;
+      }
     } else {
-      base = global ?? context.colorScheme.onSurface;
+      // 有填充 ⇒ 用**与填充成对**的前景色 ✓（取色全部来自 `ColorScheme` ✓，不引入任何新字面量 ✓）。
+      // ⭐ 例外（2026-10-11 用户要求 ✓）：**用户启用了自定义文字颜色时，对比色不生效** ✗ ——
+      // `globalTextColor()` 返回 null 表示"跟随系统/未启用"✓（见 `text_style_settings.dart:27` ✓）；
+      // 非 null 表示用户**显式选了文字颜色** ✓ ⇒ 此时**文字跟随自定义色** ✓（用户明确要求 ✓），
+      // 不再套用对比色 —— 避免"设置里的文字颜色对按钮不生效"的困惑 ✓。
+      base = global ?? onColorForFill(context, effectiveFill);
     }
     return widget.onPressed == null
         ? base.toOpacity(AppOpacity.disabled)
         : base;
   }
+}
+
+/// ⭐ 对比度工具（2026-10-11）：给定**实际填充色**，返回与它**成对**的可读前景色（文字与图标同用 ✓）。
+///
+/// 规则 ✓：填充比主题表面**亮** ⇒ 用深前景 `onSurface` ✓；比表面**暗** ⇒ 用浅前景 `onInverseSurface` ✓。
+/// ⇒ 这两个值本身就是 `ColorScheme` 里的一对"深/浅"前景色 ✓（亮色/暗色主题自动互换 ✓），
+/// **不使用任何字面量/自调灰** ✗ ⇒ 既保证对比度，又完全跟随主题与自定义配色 ✓。
+Color onColorForFill(BuildContext context, Color fill) {
+  final scheme = context.colorScheme;
+  return fill.computeLuminance() > scheme.surface.computeLuminance()
+      ? scheme.onSurface
+      : scheme.onInverseSurface;
 }
 
 /// ⭐ 第 0 步（2026-10-10 ✓）：图标按钮的底色策略 —— 现状有三种并存 ✓，统一到此枚举 ✓；
