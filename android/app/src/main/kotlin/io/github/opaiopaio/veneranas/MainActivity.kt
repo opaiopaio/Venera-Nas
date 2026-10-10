@@ -78,6 +78,14 @@ class MainActivity : FlutterFragmentActivity() {
         applyLaunchBackground()
     }
 
+    override fun onPostResume() {
+        super.onPostResume()
+        // ⭐ 加固（2026-10-10 ✓）：**首帧前的最后一道保险** ✓ —— 若 Flutter 嵌入层在 onCreate/onPostCreate
+        // 之后才把 NormalTheme 的窗口底铺上 ✗（`?android:colorBackground` = 浅色系统下白 ✗），
+        // 这里在 `onResume` 之后再落一次 ✓ ⇒ 引擎初始化那段看到的仍是背景 ✓（幂等 ✓，只设 drawable ✓）。
+        applyLaunchBackground()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (intent.action == Intent.ACTION_SEND) {
@@ -315,15 +323,30 @@ class MainActivity : FlutterFragmentActivity() {
     }
 
     private fun buildLaunchBackground(): Drawable? {
-        try {
+        // ⚠️ 读 JSON 单独一层 try：读不到就整体放弃（回退主题色 ✓，与改动前一致 ✓）。
+        val settings = try {
             val jsonFile = File(filesDir, "appdata.json")
             if (!jsonFile.exists()) return null
-            val settings = JSONObject(jsonFile.readText()).optJSONObject("settings") ?: return null
+            JSONObject(jsonFile.readText()).optJSONObject("settings") ?: return null
+        } catch (e: Throwable) {
+            Log.w("Venera", "launch background: read appdata.json failed: ${e.message}")
+            return null
+        }
 
+        // ⭐ 修复（2026-10-10 用户要求 ✓）：**图片这一段必须独立 try** ✗→✓ ——
+        // 原先图片解码包在最外层 try 里 ✗ ⇒ 一旦解码抛异常（大图 OOM / 解码器异常 ✓），
+        // 会**跳过下面的 `backgroundColor` 兜底** ✗ ⇒ 直接回退主题色 ⇒ 浅色系统下就是**白** ✗，
+        // 表现与用户报的"启动还是白一下"一模一样 ✓。现在图片失败也会继续尝试背景色 ✓。
+        val imageDrawable = try {
             val imageName = settings.optString("backgroundImage", "")
-            if (imageName.isNotEmpty()) {
+            if (imageName.isEmpty()) {
+                null
+            } else {
                 val imageFile = File(File(filesDir, "background"), imageName)
-                if (imageFile.exists()) {
+                if (!imageFile.exists()) {
+                    Log.w("Venera", "launch background: image not found: ${imageFile.absolutePath}")
+                    null
+                } else {
                     // 先只读尺寸 ✓，再按**屏幕量级**采样解码 ✓（避免大壁纸整张解进内存 ⇒ OOM ✗）。
                     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                     BitmapFactory.decodeFile(imageFile.absolutePath, bounds)
@@ -331,23 +354,37 @@ class MainActivity : FlutterFragmentActivity() {
                         imageFile.absolutePath,
                         BitmapFactory.Options().apply { inSampleSize = sampleSizeFor(bounds) }
                     )
-                    if (bitmap != null) {
+                    if (bitmap == null) {
+                        Log.w("Venera", "launch background: decode returned null: ${imageFile.name}")
+                        null
+                    } else {
                         val drawable = BitmapDrawable(resources, bitmap)
                         // ⚠️ `Drawable.setGravity` 是 API 23+ ✓ ⇒ 低版本不加 ✓（默认拉伸铺满 ✓，不会崩 ✓）。
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             drawable.setGravity(Gravity.FILL)
                         }
-                        return drawable
+                        drawable
                     }
                 }
             }
-
-            val color = settings.optString("backgroundColor", "transparent")
-            if (color.length == 7 && color.startsWith("#")) {
-                return ColorDrawable(Color.parseColor(color))
-            }
         } catch (e: Throwable) {
-            Log.w("Venera", "buildLaunchBackground failed: ${e.message}")
+            Log.w("Venera", "launch background: decode image failed: ${e.message}")
+            null
+        }
+        if (imageDrawable != null) return imageDrawable
+
+        val color = try {
+            settings.optString("backgroundColor", "transparent")
+        } catch (e: Throwable) {
+            "transparent"
+        }
+        if (color.length == 7 && color.startsWith("#")) {
+            return try {
+                ColorDrawable(Color.parseColor(color))
+            } catch (e: Throwable) {
+                Log.w("Venera", "launch background: parse color failed: $color")
+                null
+            }
         }
         return null
     }
