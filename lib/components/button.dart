@@ -256,10 +256,9 @@ class _ButtonState extends State<Button> {
                   ? BorderRadius.zero
                   : BorderRadius.circular(AppRadius.full)),
           // 水波/按压反馈用**令牌透明度** ✓（不写字面量 ✗，守卫棘轮"只许降不许升" ✓）。
-          // ⭐ 2026-10-10 用户实测 ✓：水波"不明显"✗ ⇒ 水波提到 `AppOpacity.splash` ✓（按压反馈仍用 `hoverInk` ✓）。
           splashColor: Theme.of(
             context,
-          ).colorScheme.onSurface.toOpacity(AppOpacity.splash),
+          ).colorScheme.onSurface.toOpacity(AppOpacity.tintStrengthDefault),
           highlightColor: Theme.of(
             context,
           ).colorScheme.onSurface.toOpacity(AppOpacity.hoverInk),
