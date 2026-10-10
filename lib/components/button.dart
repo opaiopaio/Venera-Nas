@@ -297,9 +297,18 @@ class _ButtonState extends State<Button> {
             // "宽度 = 文字宽度 + 两侧 `AppSpace.lg(16)` 延伸" ✓，短文案（如「OK」）
             // 不应被撑到 64 宽 ✗。
             // ⭐ 第 0 步（2026-10-10 ✓）：高度约束可由调用方覆盖 ✓（不传 ⇒ 与原先**逐字一致**的 32 ✓）
+            // ⭐ 本轮（用户拍板 ✓）：**显式 `height` 必须真的生效** ✗→✓ ——
+            // 原先恒定 `minHeight: 32` 与 `maxHeight: 32` ✗ ⇒ 即使 `height` 换算出的内容盒更高，
+            // 也会被上限剪回 32 ✗（该参数此前**形同虚设** ✓：实测传 40 仍渲染成 32 ✗）。
+            // `height` 的既有语义 = **含内边距的总高** ✓（见上方 `height - padding.vertical` ✓）⇒
+            // 显式传 `height` 时改用**不设上下限**的约束 ✓，让内层 `SizedBox(height:)` 说了算 ✓。
+            // ⚠️ 默认（既不传 `height` 也不传 `constraints`）仍**严格 32** ✓ —— 全仓 161 个 `Button`
+            // 调用点中**无人传 `height`** ✓（扫描实测 ✓）⇒ 观感零变化 ✓。
             constraints:
                 widget.constraints ??
-                const BoxConstraints(minHeight: 32, maxHeight: 32),
+                (widget.height != null
+                    ? const BoxConstraints()
+                    : const BoxConstraints(minHeight: 32, maxHeight: 32)),
             // P8：胶囊形状 ✓；「窗口/按钮背景」设为直角时退化为直角 ✓（尊重用户形状设置）
             decoration: BoxDecoration(
               color: buttonColor,

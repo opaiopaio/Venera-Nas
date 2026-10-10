@@ -130,6 +130,93 @@ void main() {
       reason: '描边胶囊被定高行撑满 ⇒ 与"高度由内容决定"不符',
     );
   });
+
+  // ⭐ 本轮（用户拍板 ✓）：显式 `height` 必须真的生效 —— 它此前被默认约束
+  // `minHeight: 32 / maxHeight: 32` 的 `maxHeight` 剪掉了 ✗（`height` 形同虚设 ✓）。
+  group('T-BH5 显式 height 生效（本轮修复 ✓）', () {
+    testWidgets('height 恰为传入值（含内边距的总高 ✓）', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          Center(
+            child: Button.normal(
+              height: 40,
+              onPressed: () {},
+              child: const Text('OK'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.getSize(find.byType(Button)).height,
+        40,
+        reason: '显式 height 被默认 maxHeight 剪成 32 ⇒ "按传入值渲染"失效',
+      );
+    });
+
+    testWidgets('height 是含内边距的总高 ✓（自定义 padding 后仍是该总高 ✓）', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          Center(
+            child: Button.normal(
+              height: 40,
+              padding: const EdgeInsets.symmetric(vertical: AppSpace.sm),
+              onPressed: () {},
+              child: const Text('OK'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.getSize(find.byType(Button)).height,
+        40,
+        reason:
+            'height 的既有语义 = 含 padding 的总高（见 build 里 height - padding.vertical ✓）',
+      );
+    });
+
+    testWidgets('height 小于默认 32 时同样按传入值 ✓（不保留 32 兜底 ✓）', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          Center(
+            child: Button.normal(
+              height: 20,
+              onPressed: () {},
+              child: const Text('OK'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.getSize(find.byType(Button)).height,
+        20,
+        reason: '显式 height 必须"说了算"⇒ 不应保留 32 兜底 ✗',
+      );
+    });
+
+    testWidgets('显式 constraints 仍然优先（既有行为不变 ✓）', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          Center(
+            child: Button.normal(
+              height: 40,
+              constraints: const BoxConstraints(minHeight: 50, maxHeight: 50),
+              onPressed: () {},
+              child: const Text('OK'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.getSize(find.byType(Button)).height,
+        50,
+        reason: '传了 constraints 时应以 constraints 为准（与既有优先级一致 ✓）',
+      );
+    });
+  });
 }
 
 /// `Button` 的底色分支会读 `AppSettingsScope` ✓（`button.dart` 的 `buttonColor` ✓）⇒ 必须提供 ✓。
