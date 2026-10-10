@@ -234,6 +234,10 @@ class DataSync with ChangeNotifier {
     SingleInstanceCookieJar.instance?.dispose();
 
     for (var name in _backupFiles) {
+      // ⭐ 修复（2026-10-10 用户实测 ✓）：**设置文件不走整文件覆盖** ✗→✓ —— 原先把对端的 appdata.json 整份盖到本机 ✗，
+      // 本机 deviceId 与 deviceSpecificSettings 一并被抹掉 ✗ ⇒ 两个「设备特定设置」开关都读成 false ⇒ 同步照旧覆盖一切 ✓
+      //（用户实测：对端为 1.8.0 上传的旧配置 ✓）。现跳过该文件 ✓，其内容由下方 syncData 按字段合并 ✓。
+      if (name == 'appdata.json') continue;
       var src = File(FilePath.join(_backupDir, name));
       if (src.existsSync()) {
         var dst = File(FilePath.join(App.dataPath, name));
@@ -276,8 +280,8 @@ class DataSync with ChangeNotifier {
       FilePath.join(App.dataPath, "cookie.db"),
     )..init();
 
-    // Reload in-memory appdata from the restored appdata.json
-    var restoredAppdata = File(FilePath.join(App.dataPath, 'appdata.json'));
+    // Reload in-memory appdata from the **backup copy**（本机设置文件未被覆盖 ✓，合并由 syncData 按字段进行 ✓）
+    var restoredAppdata = File(FilePath.join(_backupDir, 'appdata.json'));
     if (restoredAppdata.existsSync()) {
       try {
         var json = jsonDecode(await restoredAppdata.readAsString());
