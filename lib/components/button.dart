@@ -498,12 +498,9 @@ class _IconButtonState extends State<_IconButton> {
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         behavior: widget.behavior,
-        onTap: widget.onPressed == null
-            ? null
-            : () {
-                if (widget.isLoading) return;
-                widget.onPressed!();
-              },
+        // ⭐ 水波统一（2026-10-10 ✓）：**真回调移入内层 `InkWell`** ✓ —— 与 `Button` 同一套做法 ✓。
+        // 同一个手势识别器既负责水波又负责功能 ✓ ⇒ 不会出现"内层抢走手势、外层收不到点击"✗
+        //（2026-10-10 曾因两层手势并存导致全仓按钮点不动 ✓）；此处外层仅保留 `behavior` 供命中测试 ✓。
         child: Tooltip(
           message: widget.tooltip ?? "",
           child: Container(
@@ -524,8 +521,31 @@ class _IconButtonState extends State<_IconButton> {
               },
               borderRadius: BorderRadius.circular((iconSize + 12) / 2),
             ),
-            padding: const EdgeInsets.all(AppSpace.tiny),
-            child: icon,
+            child: Material(
+              // ⭐ 水波统一（2026-10-10 ✓）：`Material` 必须放在**底色之上** ✗→✓
+              //（否则墨水被不透明底色盖住、点击看不到水波 ✗ —— 用户实测已确认此点 ✓）。
+              type: MaterialType.transparency,
+              child: InkWell(
+                borderRadius: BorderRadius.circular((iconSize + 12) / 2),
+                onTap: widget.onPressed == null
+                    ? null
+                    : () {
+                        if (widget.isLoading) return;
+                        widget.onPressed!();
+                      },
+                // 水波/按压用**令牌透明度** ✓（不写字面量 ✗，守卫棘轮"只许降不许升" ✓）。
+                splashColor: Theme.of(context).colorScheme.onSurface.toOpacity(
+                  AppOpacity.tintStrengthDefault,
+                ),
+                highlightColor: Theme.of(
+                  context,
+                ).colorScheme.onSurface.toOpacity(AppOpacity.hoverInk),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpace.tiny),
+                  child: icon,
+                ),
+              ),
+            ),
           ),
         ),
       ),
