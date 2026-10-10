@@ -187,6 +187,7 @@ class SliverAppbar extends StatelessWidget {
         title: title,
         actions: actions,
         topPadding: MediaQuery.of(context).padding.top,
+        fontScale: _barTextScale(context),
         radius: radius,
         style: style,
       ),
@@ -195,6 +196,19 @@ class SliverAppbar extends StatelessWidget {
 }
 
 const _kAppBarHeight = 52.0;
+
+/// ⭐ 本轮（用户实测反馈 ✓）：顶栏高度用的缩放系数 —— **必须与文字同源** ✓，
+/// 即取环境 `MediaQuery` 的 `textScaler` ✓（`main.dart` 的 `MaterialApp.builder` 注入的就是它 ✓）。
+///
+/// 为什么不用 `globalFontScale()` ✗：那只反映设置页的**app 内缩放** ✓，而文字**实际**生效的
+/// 系数由 `main.dart` 写进 `MediaQuery` ✓ —— app 内缩放恰为 1 时该处**不注入** ⇒
+/// 平台/系统字号会穿透进来 ✓。两种来源在 ① app 内缩放小于 1 ✓、
+/// ② app 内缩放为 1 而系统字号不为 1 ✓ 时会分叉 ⇒ 表现为"文字变了而顶栏没变" ✗。
+/// 改用同一来源后顶栏与文字始终同步 ✓。
+///
+/// 数值观感 ✓：app 内缩放与系统字号都为 1 时本系数就是 1 ⇒ 高度与改前**完全一致** ✓。
+double _barTextScale(BuildContext context) =>
+    MediaQuery.textScalerOf(context).scale(1.0);
 
 class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   final Widget? leading;
@@ -205,6 +219,11 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
 
   final double topPadding;
 
+  /// ⭐ 本轮：顶栏高度用的缩放系数 ✓ —— 由 [SliverAppbar] 从环境 `MediaQuery`
+  /// 取得（与文字同源 ✓，见 `_barTextScale` ✓）；`minExtent`/`maxExtent` 是
+  /// **无 context 的 getter** ✗，故必须这样传进来 ✓。
+  final double fontScale;
+
   final double radius;
 
   final AppbarStyle style;
@@ -214,6 +233,7 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     required this.title,
     this.actions,
     required this.topPadding,
+    required this.fontScale,
     this.radius = 0,
     this.style = AppbarStyle.blur,
   });
@@ -270,12 +290,10 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  double get maxExtent =>
-      (_kAppBarHeight + topPadding) * globalFontScale().clamp(1.0, 1.4);
+  double get maxExtent => (_kAppBarHeight + topPadding) * fontScale;
 
   @override
-  double get minExtent =>
-      (_kAppBarHeight + topPadding) * globalFontScale().clamp(1.0, 1.4);
+  double get minExtent => (_kAppBarHeight + topPadding) * fontScale;
 
   @override
   bool shouldRebuild(SliverPersistentHeaderDelegate oldDelegate) {
@@ -284,6 +302,7 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
         title != oldDelegate.title ||
         actions != oldDelegate.actions ||
         topPadding != oldDelegate.topPadding ||
+        fontScale != oldDelegate.fontScale ||
         radius != oldDelegate.radius ||
         style != oldDelegate.style;
   }
@@ -890,6 +909,7 @@ class _SliverSearchBarState extends State<SliverSearchBar>
         editingController: _editingController,
         controller: _controller,
         topPadding: MediaQuery.of(context).padding.top,
+        fontScale: _barTextScale(context),
         onChanged: widget.onChanged,
         action: widget.action,
         focusNode: widget.focusNode,
@@ -913,6 +933,10 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
 
   final double topPadding;
 
+  /// ⭐ 本轮：顶栏高度用的缩放系数 ✓（与文字同源 ✓，见 `_barTextScale` ✓）——
+  /// `minExtent`/`maxExtent` 是**无 context 的 getter** ✗，故由 [SliverSearchBar] 传入 ✓。
+  final double fontScale;
+
   final void Function(String)? onChanged;
 
   final Widget? action;
@@ -923,6 +947,7 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
     required this.editingController,
     required this.controller,
     required this.topPadding,
+    required this.fontScale,
     this.onChanged,
     this.action,
     this.focusNode,
@@ -937,7 +962,11 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     return Container(
-      constraints: BoxConstraints(minHeight: _kAppBarHeight + topPadding),
+      // ⭐ 本轮：内部下限与 `maxExtent`/`minExtent` **同源同系数** ✓ —— 若此处仍按
+      // 未缩放值算 ✗，app 内缩放小于 1 时它会顶住 sliver 给的高度 ⇒ 溢出 ✗。
+      constraints: BoxConstraints(
+        minHeight: (_kAppBarHeight + topPadding) * fontScale,
+      ),
       width: double.infinity,
       padding: EdgeInsets.only(top: topPadding),
       decoration: BoxDecoration(
@@ -992,19 +1021,18 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  double get maxExtent =>
-      (_kAppBarHeight + topPadding) * globalFontScale().clamp(1.0, 1.4);
+  double get maxExtent => (_kAppBarHeight + topPadding) * fontScale;
 
   @override
-  double get minExtent =>
-      (_kAppBarHeight + topPadding) * globalFontScale().clamp(1.0, 1.4);
+  double get minExtent => (_kAppBarHeight + topPadding) * fontScale;
 
   @override
   bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
     return oldDelegate is! _SliverSearchBarDelegate ||
         editingController != oldDelegate.editingController ||
         controller != oldDelegate.controller ||
-        topPadding != oldDelegate.topPadding;
+        topPadding != oldDelegate.topPadding ||
+        fontScale != oldDelegate.fontScale;
   }
 }
 

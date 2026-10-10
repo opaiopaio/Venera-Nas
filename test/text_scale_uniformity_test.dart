@@ -2,8 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:venera_nas/components/components.dart';
+import 'package:venera_nas/foundation/app_settings_scope.dart';
 import 'package:venera_nas/foundation/design_tokens.dart';
 import 'package:venera_nas/foundation/widget_utils.dart';
+import 'package:venera_nas/utils/translations.dart';
 
 /// ⭐ 本轮（用户实测反馈 ✓）：「字号缩放」一致性守护。
 ///
@@ -77,6 +80,144 @@ void main() {
       }
     });
   });
+
+  group('T-TS3 顶栏高度与文字同源（本轮修复 ✓）', () {
+    setUpAll(() {
+      // `_SliverSearchBarDelegate.build` 里用 `.tl` ✓ ⇒ 需要翻译表就绪 ✓。
+      // 本测试不加载资源（`AppTranslation.init()` 走 `rootBundle` ✗）⇒ 直接建一张空表 ✓
+      //（`translations` 是 `late final` ✓ 只能赋一次 ⇒ 已初始化时忽略 ✓）。
+      try {
+        AppTranslation.translations = <String, Map<String, String>>{};
+      } catch (_) {
+        // 已被别的代码建过表 ✓ —— 无需重复 ✓。
+      }
+    });
+
+    // 背景 ✗：`_MySliverAppBarDelegate` / `_SliverSearchBarDelegate` 原先用
+    // `globalFontScale().clamp(1.0, 1.4)` 自算高度 ✗ —— 那只是**设置页的 app 内缩放** ✓，
+    // 与文字真正吃到的 `MediaQuery.textScaler` 会分叉 ⇒ "文字变了顶栏没变" ✗。
+    // 现改为同一个来源（`_barTextScale` ✓）后，三条不变量如下 ✓。
+    const barHeight = 52.0; // = `_kAppBarHeight`（测试里顶栏 topPadding 为 0）
+
+    test('appbar.dart 的**代码**不再用 globalFontScale 自算高度', () {
+      final src = _stripComments(
+        File('lib/components/appbar.dart').readAsStringSync(),
+      );
+      expect(
+        src.contains('globalFontScale'),
+        isFalse,
+        reason: '顶栏高度又回到了"设置页缩放"这条并行路径 ⇒ 会与文字分叉',
+      );
+      expect(
+        src.contains('MediaQuery.textScalerOf('),
+        isTrue,
+        reason: '顶栏高度必须与文字同源（取环境 MediaQuery 的 textScaler）',
+      );
+    });
+
+    testWidgets('app 内缩放与系统字号都为 1 ⇒ 高度与改前完全一致（不变量 ✓）', (tester) async {
+      for (final sliver in const ['appbar', 'search']) {
+        final extent = await _maxExtentOf(
+          tester,
+          appScale: 1.0,
+          systemScale: 1.0,
+          sliver: sliver,
+        );
+        expect(
+          extent,
+          barHeight,
+          reason: '$sliver：app 缩放与系统字号都为 1 时高度与改前不一致 ⇒ 观感回归',
+        );
+      }
+    });
+
+    testWidgets('app 内缩放 0.8 ⇒ 顶栏随文字一起缩小（旧实现不缩 ✗）', (tester) async {
+      for (final sliver in const ['appbar', 'search']) {
+        final extent = await _maxExtentOf(
+          tester,
+          appScale: 0.8,
+          systemScale: 1.0,
+          sliver: sliver,
+        );
+        expect(
+          extent,
+          closeTo(barHeight * 0.8, 0.01),
+          reason: '$sliver：字号缩小后顶栏未跟随 ⇒ 与文字分叉',
+        );
+      }
+    });
+
+    testWidgets('app 内缩放为 1 而系统字号 1.2 ⇒ 顶栏随文字一起放大（旧实现不放大 ✗）', (tester) async {
+      for (final sliver in const ['appbar', 'search']) {
+        final extent = await _maxExtentOf(
+          tester,
+          appScale: 1.0,
+          systemScale: 1.2,
+          sliver: sliver,
+        );
+        expect(
+          extent,
+          closeTo(barHeight * 1.2, 0.01),
+          reason: '$sliver：系统字号放大后顶栏未跟随 ⇒ 与文字分叉',
+        );
+      }
+    });
+  });
+}
+
+/// 去掉 `//` 行注释与 `/* */` 块注释（避免把注释里的符号名当成代码 ✗）。
+String _stripComments(String src) => src
+    .replaceAll(RegExp(r'/\*[\s\S]*?\*/'), '')
+    .replaceAll(RegExp(r'//[^\n]*'), '');
+
+/// 复刻 `main.dart` 的 `MaterialApp.builder` 层次 ✓（**嵌套顺序即优先级** ✓，
+/// "最近的祖先获胜" ✓）：
+/// ① 最内层按 `main.dart` 的条件叠 **app 内缩放** ✓（恰为 1 时**不注入** ⇒ 系统字号穿透 ✓）；
+/// ② 最外层才是"**系统字号**"那层 MediaQuery ✓（等价于线上 `WidgetsApp` 提供的字号 ✓）。
+/// 页面实际吃到的就是 ① 有则 ①、无则 ② ✓ —— 与线上一致 ✓。
+Future<double> _maxExtentOf(
+  WidgetTester tester, {
+  required double appScale,
+  required double systemScale,
+  required String sliver,
+}) async {
+  await tester.pumpWidget(
+    AppSettingsScope(
+      child: MaterialApp(
+        builder: (context, child) {
+          final base = MediaQuery.of(context);
+          Widget result = child!;
+          if (AppTextScale.clamp(appScale) != AppTextScale.defaultValue) {
+            result = MediaQuery(
+              data: base.copyWith(
+                textScaler: TextScaler.linear(AppTextScale.clamp(appScale)),
+              ),
+              child: result,
+            );
+          }
+          return MediaQuery(
+            data: base.copyWith(textScaler: TextScaler.linear(systemScale)),
+            child: result,
+          );
+        },
+        home: Scaffold(
+          body: CustomScrollView(
+            slivers: [
+              if (sliver == 'appbar')
+                SliverAppbar(title: const Text('T'))
+              else
+                SliverSearchBar(controller: SearchBarController()),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+  final header = tester.widget<SliverPersistentHeader>(
+    find.byType(SliverPersistentHeader),
+  );
+  return header.delegate.maxExtent;
 }
 
 /// 与 `main.dart` 的 `builder` 同构：**最内层**包 `textScaler` ✓（缩放为 1 时不包 ✓，
