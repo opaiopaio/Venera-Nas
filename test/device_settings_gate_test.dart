@@ -140,7 +140,9 @@ void main() {
     expect(appdata.settings['color'], 'CLOUD', reason: '开关关闭时应与云端一致（零回归 ✓）');
   });
 
-  test('T-DS4：清除本设备设置 ⇒ 只关开关、值全部保留 ✓', () {
+  test('T-DS4：resetDeviceSpecificSettings ⇒ 只关开关、值全部保留 ✓（API 覆盖 ✓）', () {
+    // ⚠️ 2026-10-10（用户要求 ✓）：该 API 的 **UI 入口（两个"清除"按钮）已删除** ✗ ——
+    // 但 API 保留 ✓（语义仍是"关开关、值保留" ✓），故这里的覆盖**继续保留** ✓（不因为删按钮而丢覆盖 ✗）。
     appdata.settings.setEnabledAppearanceDeviceSettings(true);
     appdata.settings['color'] = 'LOCAL';
 
@@ -149,12 +151,12 @@ void main() {
     expect(
       appdata.settings.isAppearanceDeviceSettingsEnabled(),
       isFalse,
-      reason: '清除按钮的新语义 = 关闭开关（这些键重新参与同步 ✓）',
+      reason: '该 API 的语义 = 关闭开关（这些键重新参与同步 ✓）',
     );
     expect(
       appdata.settings['color'],
       'LOCAL',
-      reason: '清除按钮**不得**清值（用户方案：不丢数据 ✓；旧版会清成默认 ✗）',
+      reason: '该 API **不得**清值（用户方案：不丢数据 ✓；旧版会清成默认 ✗）',
     );
   });
 }

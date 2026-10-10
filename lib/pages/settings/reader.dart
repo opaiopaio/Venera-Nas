@@ -144,20 +144,8 @@ class _ReaderSettingsState extends State<ReaderSettings> {
                   appdata.saveData();
                 },
               ).toSliver(),
-              if (useDeviceSpecificSettings)
-                Center(
-                  child: Button.normal(
-                    onPressed: () {
-                      setState(() {
-                        appdata.settings.resetDeviceReaderSettings();
-                      });
-                      appdata.saveData();
-                    },
-                    child: Text(
-                      "Clear specific reader settings for this device".tl,
-                    ),
-                  ),
-                ).toSliver(),
+              // ⚠️ 2026-10-10（用户要求 ✓）：**「清除该设备的特殊阅读设置」按钮已删除** ✗ ——
+              // 与外观页同款按钮一并去掉 ✓（新语义下它只关开关、值保留 ✓ ⇒ 冗余且易误解 ✓，两处交互一致 ✓）。
               SliverToBoxAdapter(child: Divider()),
             ],
           ),
