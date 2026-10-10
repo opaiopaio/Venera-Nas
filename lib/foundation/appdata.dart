@@ -166,9 +166,16 @@ class Appdata with Init {
           }
           continue;
         }
-        if (!_disableSync.contains(key) && !customDisableSync.contains(key)) {
-          this.settings[key] = settings[key];
-        }
+        // ⭐ 修复（2026-10-10 用户要求 ✓）：**双向阻隔 · 下行** ✗→✓ —— 本设备已启用该键所属的
+        // 「设备特定设置」开关 ⇒ **云端的值不再覆盖本地** ✓（用户："云端有该设置的选项也不会覆盖本地这部分设置" ✓）。
+        // 原先只做了"写入哪张表" ✓，同步合并时仍无条件写全局 ✗ ⇒ 启用前改过的项会被云端盖掉 ✓，观感即"依旧被覆盖" ✓。
+        if (_disableSync.contains(key) || customDisableSync.contains(key))
+          continue;
+        final deviceProtected = this.settings._isAppearanceDeviceKey(key)
+            ? this.settings.isAppearanceDeviceSettingsEnabled()
+            : this.settings.isDeviceSpecificSettingsEnabled();
+        if (deviceProtected) continue;
+        this.settings[key] = settings[key];
       }
     }
     searchHistory = List.from(data['searchHistory'] ?? []);

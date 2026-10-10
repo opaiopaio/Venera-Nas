@@ -205,6 +205,29 @@ class DataSync with ChangeNotifier {
     for (var name in _backupFiles) {
       var src = File(FilePath.join(App.dataPath, name));
       if (src.existsSync()) {
+        // ⭐ 修复（2026-10-10 用户要求 ✓）：**双向阻隔 · 上行** ✗→✓ —— 上传前剔除**设备专属**数据
+        //（`deviceId` 与 `deviceSpecificSettings` ✓）⇒ 云端**不持有任何设备的私有配置** ✓，
+        // 也就不会在别处被下回、互相顶掉 ✓（用户："本地的设置配置也不会被自动备份上传" ✓）。
+        if (name == 'appdata.json') {
+          try {
+            final decoded = jsonDecode(src.readAsStringSync());
+            if (decoded is Map<String, dynamic>) {
+              decoded.remove('deviceSpecificSettings');
+              decoded.remove('deviceId');
+              final inner = decoded['settings'];
+              if (inner is Map) {
+                inner.remove('deviceSpecificSettings');
+                inner.remove('deviceId');
+              }
+              File(
+                FilePath.join(_backupDir, name),
+              ).writeAsStringSync(jsonEncode(decoded));
+              continue;
+            }
+          } catch (_) {
+            // 解析失败则退回原样拷贝（不阻断同步 ✓）
+          }
+        }
         src.copySync(FilePath.join(_backupDir, name));
       }
     }
