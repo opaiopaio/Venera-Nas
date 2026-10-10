@@ -371,14 +371,13 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
     // 建立设置依赖：二级页面样式/色调/强度变化时由框架精准重建本弹层表面
     // （取代历史上的整树遍历刷新；见 ../workspace/archive/doc-private-legacy-20261009/03-implementation/11-refresh-mechanism.md）
     AppSettingsScope.of(context);
-    // ⭐ 对比度（2026-10-11）：下滑时顶栏会叠一层**自绘**色调遮罩 ✓ ——
-    // 先与主题表面合成得到实际实色 ✓（`onColorForFill` 只看 RGB ✗），供标题取对比前景 ✓。
+    // ⭐ 下滑时顶栏叠的这层色调遮罩 —— **只定义一次** ✓（底色与对比度换算**同源** ✓，避免两处各写一份 ✓）。
+    final topBarTint = Theme.of(context).colorScheme.surfaceTint.withAlpha(20);
+    // ⭐ 对比度（2026-10-11）：先与主题表面合成得到实际实色 ✓（`onColorForFill` 只看 RGB ✗），
+    // 供标题取对比前景 ✓。
     final topBarFill = top
         ? null
-        : Color.alphaBlend(
-            Theme.of(context).colorScheme.surfaceTint.withAlpha(20),
-            Theme.of(context).colorScheme.surface,
-          );
+        : Color.alphaBlend(topBarTint, Theme.of(context).colorScheme.surface);
     // 内容（Material 透明，避免"半透明 Material 底色"被当成实色渲染）；
     // 表面（背景切片 + 色调层）统一由 build 末尾的 [SecondaryPageSurface] 提供 ✓
     Widget content = Material(
@@ -389,11 +388,7 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
             height: 56 + context.padding.top,
             padding: EdgeInsets.only(top: context.padding.top),
             width: double.infinity,
-            decoration: BoxDecoration(
-              color: top
-                  ? null
-                  : Theme.of(context).colorScheme.surfaceTint.withAlpha(20),
-            ),
+            decoration: BoxDecoration(color: top ? null : topBarTint),
             child: Row(
               children: [
                 const SizedBox(width: 8),
