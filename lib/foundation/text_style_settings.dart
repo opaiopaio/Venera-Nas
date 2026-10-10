@@ -142,6 +142,40 @@ TextStyle? globalTextStyle() {
   return TextStyle(color: color, fontFamily: family, shadows: shadows);
 }
 
+/// 把「前景色 + 字体族」注入整套 [TextTheme]，**逐字段保留原有度量** ✓。
+///
+/// ⚠️ **不要**改用 `TextTheme.apply(...)` ✗：Flutter 的 `TextStyle.apply` 生成结果时
+/// `fontSize` / `letterSpacing` / `wordSpacing` / `height` 取的是**该方法的参数**、不是 `this.*` ✗
+///（`painting/text_style.dart`）⇒ 只传颜色/字体时会**把整套主题文字的字号与行高清空** ✗
+/// ⇒ 表现：**显式写死字号**的标题（`ts.s18` 等 ✓）不变 ✗，而**继承主题字号**的选项行文字
+///（`ListTile` 标题等 ✓）塌回环境默认 ⇒ "只改了文字颜色，选项文字却变小" ✗。
+TextTheme applyTextThemeOverrides(
+  TextTheme base, {
+  Color? color,
+  String? fontFamily,
+}) {
+  // `merge` 只覆盖**非 null** 字段 ⇒ 字号/行高/字距等一律原样保留 ✓。
+  TextStyle? m(TextStyle? s) =>
+      s?.merge(TextStyle(color: color, fontFamily: fontFamily));
+  return base.copyWith(
+    displayLarge: m(base.displayLarge),
+    displayMedium: m(base.displayMedium),
+    displaySmall: m(base.displaySmall),
+    headlineLarge: m(base.headlineLarge),
+    headlineMedium: m(base.headlineMedium),
+    headlineSmall: m(base.headlineSmall),
+    titleLarge: m(base.titleLarge),
+    titleMedium: m(base.titleMedium),
+    titleSmall: m(base.titleSmall),
+    bodyLarge: m(base.bodyLarge),
+    bodyMedium: m(base.bodyMedium),
+    bodySmall: m(base.bodySmall),
+    labelLarge: m(base.labelLarge),
+    labelMedium: m(base.labelMedium),
+    labelSmall: m(base.labelSmall),
+  );
+}
+
 /// 把全局文字样式（颜色/字体/**阴影+发光**）合并进整套 [TextTheme]。
 ///
 /// 必要性：`DefaultTextStyle` 只能覆盖 `Text` 这类默认样式文本；

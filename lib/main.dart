@@ -438,39 +438,41 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     // 注 2：**不要**把全局文字色注入 `iconTheme` ✗（同上）。
     if (gStyle != null) {
       final fg = gStyle.color;
-      // ListTile 的标题/副标题样式（全局文字样式自身已含颜色/字体/阴影/发光 ✓）
-      final titleStyle = theme.textTheme.bodyLarge?.merge(gStyle);
-      final subStyle = theme.textTheme.bodyMedium?.merge(gStyle);
       theme = theme.copyWith(
         // 颜色/字体/**阴影/发光** 注入整套主题文字（按钮、标签栏等控件的文字才会生效）
+        // ⚠️ **不能用 `TextTheme.apply(...)`** ✗：它会把整表的字号/行高/字距清空 ✗
+        //（Flutter `TextStyle.apply` 的这几个字段取的是**参数**而非 `this.*` ✓）⇒ 见 `applyTextThemeOverrides` ✓。
         textTheme: decorateTextTheme(
-          theme.textTheme.apply(
+          applyTextThemeOverrides(
+            theme.textTheme,
+            color: fg,
             fontFamily: gStyle.fontFamily,
-            bodyColor: fg,
-            displayColor: fg,
           ),
         ),
         primaryTextTheme: decorateTextTheme(
-          theme.primaryTextTheme.apply(
+          applyTextThemeOverrides(
+            theme.primaryTextTheme,
+            color: fg,
             fontFamily: gStyle.fontFamily,
-            bodyColor: fg,
-            displayColor: fg,
           ),
         ),
         // ⚠️ **必须同时更新 `listTileTheme`**：`ThemeData` 在**构造时**就把
-        // ListTile 的默认文字样式算成了 `colorScheme.onSurface`（近黑 ✗），
+        // ListTile 的默认文字色算成了 `colorScheme.onSurface`（近黑 ✗），
         // 之后 `copyWith(textTheme:)` **不会重算**它 → 所有基于 `ListTile` 的
-        // 设置行都会"不跟随全局文字颜色"（实测：行内 innerDefault=onSurface ✗，
-        // 而 innerThemeBodyLarge=全局色 ✓）。这里显式接上全局文字样式 ✓。
+        // 设置行都会"不跟随全局文字颜色" ✗。
+        // ⭐ 只用 **`textColor`**（颜色 ✓）—— 它会由 `ListTile` 以 `copyWith(color:)` 合并到
+        // **框架自己的**默认标题/副标题/两侧文字样式上 ✓ ⇒ 字号/行高保持 ✓。
+        // ⚠️ **不要**注入从 `theme.textTheme` 派生的 `titleTextStyle`/`subtitleTextStyle` ✗：
+        // 本 Flutter 版本的 `ThemeData.textTheme` 各样式**不含度量**（`fontSize`/`height`/`letterSpacing`
+        // 为 null ✓，真实度量由 `MaterialApp` 侧补全 ✓）⇒ 直接塞进 `ListTileThemeData` 会**顶掉**
+        // 带度量的默认样式 ✗ ⇒ **只改了文字颜色，选项行文字却变小** ✗（用户报告的现象 ✓）。
         listTileTheme: theme.listTileTheme.copyWith(
-          titleTextStyle: titleStyle,
-          subtitleTextStyle: subStyle,
-          leadingAndTrailingTextStyle: subStyle,
+          textColor: fg,
           // ⭐ B1/B2（用户实测：侧栏「本地/网络」、主页「同步数据」刷新图标
           // 始终"固定黑"、不随「图标颜色」变化 ✗）真因：
           // `ThemeData` 在**构造时**就把 `ListTileThemeData.iconColor` 烘焙成
           // `colorScheme.onSurfaceVariant`（近黑 ✗），之后 `copyWith(textTheme:)`
-          // **不会重算** ✗ —— 与之前 `listTileTheme` 文字色是同一个坑 ✓。
+          // **不会重算** ✗ —— 与上面 `listTileTheme` 文字色是同一个坑 ✓。
           // ListTile 的 leading/trailing 图标由 `ListTileThemeData.iconColor` 决定 ✗，
           // 优先级**高于** `iconTheme` ✗ → 不显式接上，图标就永远是黑色 ✗。
           iconColor:
