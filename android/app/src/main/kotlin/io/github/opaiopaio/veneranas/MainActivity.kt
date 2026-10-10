@@ -84,6 +84,17 @@ class MainActivity : FlutterFragmentActivity() {
         // 之后才把 NormalTheme 的窗口底铺上 ✗（`?android:colorBackground` = 浅色系统下白 ✗），
         // 这里在 `onResume` 之后再落一次 ✓ ⇒ 引擎初始化那段看到的仍是背景 ✓（幂等 ✓，只设 drawable ✓）。
         applyLaunchBackground()
+        // ⭐ P1-4 ✓：**第二次**恢复时（此时 Flutter 首帧早已画好 ✓）释放位图 ✓，避免整会话常驻 ✗。
+        postResumeCount++
+        if (postResumeCount >= 2) {
+            releaseLaunchBackgroundIfDone()
+        }
+    }
+
+    override fun onDestroy() {
+        // ⭐ P1-4 ✓：退出一并把位图还回去 ✓（先换纯色再 recycle ✓，避免绘制已回收位图 ✗）。
+        releaseLaunchBackgroundIfDone()
+        super.onDestroy()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -309,6 +320,10 @@ class MainActivity : FlutterFragmentActivity() {
     // 异常一律**静默回退**到主题色 ✓（读不到/解不出就什么都不做 ⇒ 与改动前一致 ✓，绝不影响启动 ✓）。
     private var launchBackground: Drawable? = null
 
+    /// 兜底纯色（`backgroundColor` ✓，没有则 null ⇒ 释放时保持主题色 ✓）／`onPostResume` 计数 ✓。
+    private var lastLaunchColor: Int? = null
+    private var postResumeCount = 0
+
     private fun applyLaunchBackground() {
         if (launchBackground == null) {
             launchBackground = buildLaunchBackground()
@@ -339,7 +354,18 @@ class MainActivity : FlutterFragmentActivity() {
         // 表现与用户报的"启动还是白一下"一模一样 ✓。现在图片失败也会继续尝试背景色 ✓。
         val imageDrawable = try {
             val imageName = settings.optString("backgroundImage", "")
-            if (imageName.isEmpty()) {
+            // ⭐ P1-3（2026-10-10 回归审查 ✓）：**fit / opacity 不匹配时不铺图** ✗→✓ ——
+            // 老实现一律 `BitmapDrawable` + `Gravity.FILL` ✗ ⇒ 宽高比被**压扁铺满** ✓，
+            // 而 Flutter 首帧按 `cover` 保持比例裁切 ✓ ⇒ 启动层与首帧之间**肉眼可见跳变** ✗。
+            // 规则 ✓：`opacity < 1` ⇒ 不铺（Dart 侧还要叠底色 ✓，本就是半透明 ✓）；
+            // `fit == cover`（默认 ✓）⇒ 下面**按屏幕比例居中裁切**后再 FILL ⇒ 与 cover 一致 ✓；
+            // `fit == fill` ⇒ 直接 FILL ⇒ 与 Dart 一致 ✓；
+            // 其余 fit（contain / none / scaleDown / repeat…）✗ ⇒ 不铺图、退回背景色 ✓
+            //（宁可少铺，也不要"启动一段压扁、首帧突然正常"的跳变 ✓）。
+            val opacity = settings.optDouble("backgroundImageOpacity", 1.0)
+            val fit = settings.optString("backgroundImageFit", "cover")
+            val fitSupported = fit == "cover" || fit == "fill"
+            if (imageName.isEmpty() || opacity < 1.0 || !fitSupported) {
                 null
             } else {
                 val imageFile = File(File(filesDir, "background"), imageName)
@@ -347,18 +373,30 @@ class MainActivity : FlutterFragmentActivity() {
                     Log.w("Venera", "launch background: image not found: ${imageFile.absolutePath}")
                     null
                 } else {
-                    // 先只读尺寸 ✓，再按**屏幕量级**采样解码 ✓（避免大壁纸整张解进内存 ⇒ OOM ✗）。
+                    // 先只读尺寸 ✓，再按**屏幕长边**采样解码 ✓（解码长边 ≤ 屏幕长边 ⇒ 内存可控 ✓，
+                    // 旧实现只保证"< 2× 屏幕长边" ✗ ⇒ 4K 壁纸仍按原分辨率解 ✓ ≈ 36–92MB ✗）。
                     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                     BitmapFactory.decodeFile(imageFile.absolutePath, bounds)
                     val bitmap = BitmapFactory.decodeFile(
                         imageFile.absolutePath,
-                        BitmapFactory.Options().apply { inSampleSize = sampleSizeFor(bounds) }
+                        BitmapFactory.Options().apply {
+                            inSampleSize = sampleSizeFor(bounds)
+                            // ⭐ P1-4 ✓：壁纸用 RGB_565 足够 ✓，内存直接减半 ✓。
+                            inPreferredConfig = android.graphics.Bitmap.Config.RGB_565
+                        }
                     )
                     if (bitmap == null) {
                         Log.w("Venera", "launch background: decode returned null: ${imageFile.name}")
                         null
                     } else {
-                        val drawable = BitmapDrawable(resources, bitmap)
+                        // ⭐ P1-3 ✓：cover ⇒ 先按屏幕比例**居中裁切**（等价 Flutter 的 BoxFit.cover ✓），
+                        // 这样后面的 `Gravity.FILL` 只做等比铺满、不会再压扁 ✓。
+                        val cropped = if (fit == "cover") {
+                            centerCropToScreen(bitmap) ?: bitmap
+                        } else {
+                            bitmap
+                        }
+                        val drawable = BitmapDrawable(resources, cropped)
                         // ⚠️ `Drawable.setGravity` 是 API 23+ ✓ ⇒ 低版本不加 ✓（默认拉伸铺满 ✓，不会崩 ✓）。
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             drawable.setGravity(Gravity.FILL)
@@ -380,7 +418,9 @@ class MainActivity : FlutterFragmentActivity() {
         }
         if (color.length == 7 && color.startsWith("#")) {
             return try {
-                ColorDrawable(Color.parseColor(color))
+                val parsed = Color.parseColor(color)
+                lastLaunchColor = parsed
+                ColorDrawable(parsed)
             } catch (e: Throwable) {
                 Log.w("Venera", "launch background: parse color failed: $color")
                 null
@@ -389,7 +429,8 @@ class MainActivity : FlutterFragmentActivity() {
         return null
     }
 
-    /// 采样率取 2 的幂 ✓，直到长边不超过**屏幕长边** ✓（`inSampleSize` 必须是 2 的幂 ✓）。
+    /// 采样率取 2 的幂 ✓，使**解码后的长边 ≤ 屏幕长边** ✓
+    ///（`inSampleSize` 必须是 2 的幂 ✓；P1-4 修复：旧实现只保证 "< 2× 屏幕长边" ✗ ⇒ 4K 壁纸仍按原分辨率解码 ✓ ≈ 36–92MB ✗）。
     private fun sampleSizeFor(bounds: BitmapFactory.Options): Int {
         var sample = 1
         val target = maxOf(
@@ -401,7 +442,61 @@ class MainActivity : FlutterFragmentActivity() {
         while (longest / (sample * 2) >= target) {
             sample *= 2
         }
+        // 再进一档 ✓：保证 `longest / sample <= target` ✓（宁可略小一点，也不多留一倍内存 ✗）。
+        if (longest / sample > target) {
+            sample *= 2
+        }
         return sample
+    }
+
+    /// ⭐ P1-3（2026-10-10 回归审查 ✓）：按**屏幕宽高比**居中裁切 ✓（等价 Flutter `BoxFit.cover` ✓）。
+    /// 失败（尺寸异常 / OOM ✓）返回 null ⇒ 调用方退回原图 ✓（保持旧行为 ✗，不阻断启动 ✓）。
+    private fun centerCropToScreen(src: android.graphics.Bitmap): android.graphics.Bitmap? {
+        return try {
+            val screenW = resources.displayMetrics.widthPixels
+            val screenH = resources.displayMetrics.heightPixels
+            if (screenW <= 0 || screenH <= 0 || src.width <= 0 || src.height <= 0) return null
+            val targetRatio = screenW.toFloat() / screenH.toFloat()
+            val srcRatio = src.width.toFloat() / src.height.toFloat()
+            val w: Int
+            val h: Int
+            if (srcRatio > targetRatio) {
+                // 源更宽 ⇒ 裁两侧 ✓
+                h = src.height
+                w = (src.height * targetRatio).toInt().coerceAtLeast(1)
+            } else {
+                // 源更高 ⇒ 裁上下 ✓
+                w = src.width
+                h = (src.width / targetRatio).toInt().coerceAtLeast(1)
+            }
+            val x = ((src.width - w) / 2).coerceAtLeast(0)
+            val y = ((src.height - h) / 2).coerceAtLeast(0)
+            val cropped = android.graphics.Bitmap.createBitmap(src, x, y, w, h)
+            if (cropped != src) {
+                src.recycle()
+            }
+            cropped
+        } catch (e: Throwable) {
+            Log.w("Venera", "launch background: center crop failed: ${e.message}")
+            null
+        }
+    }
+
+    /// ⭐ P1-4（2026-10-10 回归审查 ✓）：**首帧之后**把窗口底换成纯色并释放位图 ✓ ——
+    /// 旧实现让 drawable 与位图**整会话常驻** ✗（无 recycle / 无置空 ✓）。
+    /// 触发点 ✓：第二次 `onPostResume`（届时首帧早已由 Flutter 绘制 ✓，窗口底不再可见 ✓）——
+    /// 刻意**不在第一次**就撤 ✓，否则可能把启动期的背景提前撤掉 ✗（用户已确认闪白修好 ✓）。
+    private fun releaseLaunchBackgroundIfDone() {
+        val drawable = launchBackground ?: return
+        try {
+            lastLaunchColor?.let { window.setBackgroundDrawable(ColorDrawable(it)) }
+            launchBackground = null
+            if (drawable is BitmapDrawable) {
+                drawable.bitmap?.takeIf { !it.isRecycled }?.recycle()
+            }
+        } catch (e: Throwable) {
+            Log.w("Venera", "release launch background failed: ${e.message}")
+        }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
