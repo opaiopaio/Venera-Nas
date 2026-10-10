@@ -713,8 +713,11 @@ abstract mixin class _ReaderLocation {
         _pendingPage = page;
         _animationCount++;
         update();
-        _imageViewController!.animateToPage(page).then((_) {
-          _animationCount--;
+        // ⭐ 同上 ✓：改用 `whenComplete`（出错也会执行 ✓），并**防止计数变负** ✗。
+        _imageViewController!.animateToPage(page).whenComplete(() {
+          if (_animationCount > 0) {
+            _animationCount--;
+          }
           if (_pendingPage == page) {
             _pendingPage = null;
           }
@@ -751,6 +754,14 @@ abstract mixin class _ReaderLocation {
     if (_validateChapter(c) && !isLoading) {
       chapter = c;
       page = 1;
+      // ⭐ 修复（2026-10-10 用户实测 ✓）：**切章节必须复位翻页动画计数** ✗→✓
+      // 旧行为 ✗：`animateToPage(...).then(...)` 只在动画**正常完成**时递减 `_animationCount`；
+      // 切章节会取消在飞的动画 / 替换页面 ⇒ `.then` **永不触发** ⇒ 计数**永久 > 0**
+      // ⇒ `isPageAnimating` 恒 true ⇒ `AbsorbPointer(absorbing: true)` **永久吸收**
+      // ⇒ 漫画内容区（左右点击翻页、中央呼出控制栏）全部失效 ✗
+      //（上下栏是 Stack 的兄弟节点、不在 AbsorbPointer 内 ⇒ 仍可点 ✓，与用户描述完全一致 ✓）。
+      _animationCount = 0;
+      _pendingPage = null;
       _jumpToLastPageOnLoad = toLastPage;
       update();
       return true;
