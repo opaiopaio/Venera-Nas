@@ -355,14 +355,6 @@ class AccountInfoItem {
   AccountInfoItem({required this.title, this.data, this.onTap, this.builder});
 }
 
-class LoadImageRequest {
-  String url;
-
-  Map<String, String> headers;
-
-  LoadImageRequest(this.url, this.headers);
-}
-
 class ExplorePageData {
   final String title;
 

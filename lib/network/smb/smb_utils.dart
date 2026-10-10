@@ -32,19 +32,3 @@ String smbPathFromUrl(String url) {
   if (segments.length <= 1) return '';
   return segments.sublist(1).join('/');
 }
-
-/// Build a share-relative path for a file from an `smb://` URL.
-///
-/// Alias for [smbPathFromUrl].
-String smbFilePathFromUrl(String url) => smbPathFromUrl(url);
-
-/// Normalize an SMB path for display or joining.
-///
-/// Strips trailing slashes and ensures consistent formatting.
-String normalizeSmbPath(String path) {
-  var normalized = path;
-  while (normalized.endsWith('/') || normalized.endsWith('\\')) {
-    normalized = normalized.substring(0, normalized.length - 1);
-  }
-  return normalized;
-}

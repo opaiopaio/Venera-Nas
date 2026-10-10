@@ -1,15 +1,4 @@
 extension ListExt<T> on List<T> {
-  /// Remove all blank value and return the list.
-  List<T> getNoBlankList() {
-    List<T> newList = [];
-    for (var value in this) {
-      if (value.toString() != "") {
-        newList.add(value);
-      }
-    }
-    return newList;
-  }
-
   T? firstWhereOrNull(bool Function(T element) test) {
     for (var element in this) {
       if (test(element)) {
@@ -48,27 +37,6 @@ extension StringExt on String {
   /// convert this to a one-element list.
   List<String> toList() => [this];
 
-  String _nums() {
-    String res = "";
-    for (int i = 0; i < length; i++) {
-      res += this[i].isNum ? this[i] : "";
-    }
-    return res;
-  }
-
-  String get nums => _nums();
-
-  String setValueAt(String value, int index) {
-    return replaceRange(index, index + 1, value);
-  }
-
-  String? subStringOrNull(int start, [int? end]) {
-    if (start < 0 || (end != null && end > length)) {
-      return null;
-    }
-    return substring(start, end);
-  }
-
   String replaceLast(String from, String to) {
     if (isEmpty || from.isEmpty) {
       return this;
@@ -102,12 +70,6 @@ extension StringExt on String {
 abstract class ListOrNull {
   static List<T>? from<T>(Iterable<dynamic>? i) {
     return i == null ? null : List.from(i);
-  }
-}
-
-abstract class MapOrNull {
-  static Map<K, V>? from<K, V>(Map<dynamic, dynamic>? i) {
-    return i == null ? null : Map<K, V>.from(i);
   }
 }
 

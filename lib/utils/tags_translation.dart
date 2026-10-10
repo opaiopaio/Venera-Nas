@@ -113,16 +113,6 @@ extension TagsTranslation on String {
     return result ?? convertIfNeeded(text);
   }
 
-  String _categoryTextDynamic(String c) {
-    if (App.locale.languageCode == "zh") {
-      return translateTagsCategoryToCN;
-    } else {
-      return this;
-    }
-  }
-
-  String get categoryTextDynamic => _categoryTextDynamic(this);
-
   String get translateTagsCategoryToCN =>
       tagsCategoryTranslations[this] ?? this;
 
@@ -191,9 +181,6 @@ extension TagsTranslation on String {
   static Map<String, String> get otherTags => _data["other"] ?? const {};
 
   static Map<String, String> get mixedTags => _data["mixed"] ?? const {};
-
-  static Map<String, String> get characterTags =>
-      _data["character"] ?? const {};
 
   static Map<String, String> get artistTags => _data["artist"] ?? const {};
 

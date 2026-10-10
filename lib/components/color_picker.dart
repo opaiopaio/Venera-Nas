@@ -45,9 +45,6 @@ Color? resolveColorSettingValue(String? value) {
   return _kNamedColorSettingValues[value];
 }
 
-/// 将颜色编码为设置值 `#RRGGBB`。
-String colorToSettingValue(Color color) => _colorToHex(color);
-
 String _colorToHex(Color color) {
   final v = color.toARGB32();
   final r = (v >> 16) & 0xFF;

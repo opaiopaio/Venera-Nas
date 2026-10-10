@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 import 'package:flutter_saf/flutter_saf.dart';
 import 'package:venera_nas/foundation/app.dart';
-import 'package:venera_nas/utils/ext.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart' as s;
 import 'package:file_selector/file_selector.dart' as file_selector;
@@ -95,34 +94,8 @@ extension FileExtension on File {
 }
 
 extension DirectoryExtension on Directory {
-  /// Calculate the size of the directory.
-  Future<int> get size async {
-    if (!existsSync()) return 0;
-    int total = 0;
-    for (var f in listSync(recursive: true)) {
-      if (FileSystemEntity.typeSync(f.path) == FileSystemEntityType.file) {
-        total += await File(f.path).length();
-      }
-    }
-    return total;
-  }
-
-  /// Change the base name of the directory.
-  Directory renameX(String newName) {
-    newName = sanitizeFileName(newName);
-    return renameSync(path.replaceLast(name, newName));
-  }
-
   File joinFile(String name) {
     return File(FilePath.join(path, name));
-  }
-
-  /// Delete the contents of the directory.
-  void deleteContentsSync({recursive = true}) {
-    if (!existsSync()) return;
-    for (var f in listSync()) {
-      f.deleteIfExistsSync(recursive: recursive);
-    }
   }
 
   /// Delete the contents of the directory.

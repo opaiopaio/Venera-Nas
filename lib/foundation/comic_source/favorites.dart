@@ -60,11 +60,6 @@ class FavoriteData {
   });
 }
 
-FavoriteData getFavoriteData(String key) {
-  var source = ComicSource.find(key) ?? (throw "Unknown source key: $key");
-  return source.favoriteData!;
-}
-
 FavoriteData? getFavoriteDataOrNull(String key) {
   var source = ComicSource.find(key);
   return source?.favoriteData;

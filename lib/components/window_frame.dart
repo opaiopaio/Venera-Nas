@@ -660,13 +660,6 @@ class _VirtualWindowFrameState extends State<VirtualWindowFrame>
   }
 }
 
-// ignore: non_constant_identifier_names
-TransitionBuilder VirtualWindowFrameInit() {
-  return (_, Widget? child) {
-    return VirtualWindowFrame(child: child!);
-  };
-}
-
 void debug() {
   ComicSourceManager().reload();
 }

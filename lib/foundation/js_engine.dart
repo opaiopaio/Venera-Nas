@@ -34,17 +34,6 @@ import 'comic_source/comic_source.dart';
 import 'consts.dart';
 import 'log.dart';
 
-class JavaScriptRuntimeException implements Exception {
-  final String message;
-
-  JavaScriptRuntimeException(this.message);
-
-  @override
-  String toString() {
-    return "JSException: $message";
-  }
-}
-
 class JsEngine with _JSEngineApi, JsUiApi, Init {
   factory JsEngine() => _cache ?? (_cache = JsEngine._create());
 
