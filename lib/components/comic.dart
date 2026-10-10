@@ -1141,64 +1141,66 @@ class ComicListState extends State<ComicList> {
         ).fixWidth(84),
         Expanded(
           child: Center(
-            child: Material(
-              color: Theme.of(context).colorScheme.surfaceContainer,
+            child: Button.normal(
+              // ⭐ 外观构件统一 · 第三批（2026-10-10 ✓）：原先**自绘** `Material + InkWell` ✗ ⇒ 现走 `Button.normal` ✓，
+              // 按**现状逐项传参** ⇒ 观感逐字不变 ✓：底色 surfaceContainer（用 `fillColor` ✓）/
+              // 圆角 AppRadius.md ✓ / 内边距 h lg · v tiny ✓ / 文字用继承默认色 ✓ / **高度由内容决定** ✓。
+              // 同排的「Back」「Next」本就走 `Button.normal` ✓ ⇒ 三者实现就此统一 ✓（原为同排两种实现 ✗）。
+              fillColor: Theme.of(context).colorScheme.surfaceContainer,
+              textColor: DefaultTextStyle.of(context).style.color,
               borderRadius: BorderRadius.circular(AppRadius.md),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                onTap: () {
-                  String value = '';
-                  showDialog(
-                    context: App.rootContext,
-                    builder: (context) {
-                      return ContentDialog(
-                        title: "Jump to page".tl,
-                        content: TextField(
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(labelText: "Page".tl),
-                          inputFormatters: <TextInputFormatter>[
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          onChanged: (v) {
-                            value = v;
-                          },
-                        ).paddingHorizontal(16),
-                        actions: [
-                          Button.filled(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                              var page = int.tryParse(value);
-                              if (page == null) {
-                                context.showMessage(message: "Invalid page".tl);
-                              } else {
-                                if (page > 0 &&
-                                    (_maxPage == null || page <= _maxPage!)) {
-                                  setState(() {
-                                    _error = null;
-                                    _page = page;
-                                  });
-                                } else {
-                                  context.showMessage(
-                                    message: "Invalid page".tl,
-                                  );
-                                }
-                              }
-                            },
-                            child: Text("Jump".tl),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpace.lg,
-                    vertical: AppSpace.tiny,
-                  ),
-                  child: Text("Page $_page / ${_maxPage ?? '?'}"),
-                ),
+              constraints: const BoxConstraints(
+                minHeight: 0,
+                maxHeight: double.infinity,
               ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpace.lg,
+                vertical: AppSpace.tiny,
+              ),
+              onPressed: () {
+                String value = '';
+                showDialog(
+                  context: App.rootContext,
+                  builder: (context) {
+                    return ContentDialog(
+                      title: "Jump to page".tl,
+                      content: TextField(
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(labelText: "Page".tl),
+                        inputFormatters: <TextInputFormatter>[
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        onChanged: (v) {
+                          value = v;
+                        },
+                      ).paddingHorizontal(16),
+                      actions: [
+                        Button.filled(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            var page = int.tryParse(value);
+                            if (page == null) {
+                              context.showMessage(message: "Invalid page".tl);
+                            } else {
+                              if (page > 0 &&
+                                  (_maxPage == null || page <= _maxPage!)) {
+                                setState(() {
+                                  _error = null;
+                                  _page = page;
+                                });
+                              } else {
+                                context.showMessage(message: "Invalid page".tl);
+                              }
+                            }
+                          },
+                          child: Text("Jump".tl),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+              child: Text("Page $_page / ${_maxPage ?? '?'}"),
             ),
           ),
         ),
