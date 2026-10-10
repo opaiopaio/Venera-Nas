@@ -12,6 +12,11 @@ class AppearanceTextPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // 建立设置依赖 ✓：开关/设置变化后本页即时刷新 ✓（禁止 forceRebuild 整树遍历 ✗）
     AppSettingsScope.of(context);
+
+    // ⭐ 2026-10-10（用户要求 ✓）：**按设备独立保存本页设置** ✓ —— 与「阅读」页同一套机制 ✓：
+    // 启用后本设备改的值只写在本设备 ✓，同步来的配置不会覆盖它 ✓。
+    final useDeviceSpecificSettings = appdata.settings
+        .isDeviceSpecificSettingsEnabled();
     return PopUpWidgetScaffold(
       // ⭐ 批次 4a（2026-10-09 用户指示 ✓）：本页是**二级页面** ✓，补 `popupStyle: true` ⇒ 表面走切片+色调 ⇒ 跟随自定义 ✓。
       // ⚠️ 推送方式**暂不改** ✗：`showPopUpWidget` 走 `rootNavigator: true`（`pop_up_widget.dart:128-131` ✓），
@@ -25,6 +30,7 @@ class AppearanceTextPage extends StatelessWidget {
             title: "Follow system theme".tl,
             subtitle: "On: use the default look; Off: customize below".tl,
             settingKey: "textFollowTheme",
+            useDeviceSettings: useDeviceSpecificSettings,
             onChanged: () => App.forceRebuild(),
           ).toSliver(),
           // ⭐ N1：跟随系统主题（默认）时隐藏本节自定义项 ✓
@@ -43,6 +49,7 @@ class AppearanceTextPage extends StatelessWidget {
             SelectSetting(
               title: "Font".tl,
               settingKey: "globalFontFamily",
+              useDeviceSettings: useDeviceSpecificSettings,
               optionTranslation: {
                 "system": "Follow system".tl,
                 "Microsoft YaHei": "微软雅黑",
@@ -64,6 +71,7 @@ class AppearanceTextPage extends StatelessWidget {
             _SliderSetting(
               title: "Font scale".tl,
               settingsIndex: "globalFontScale",
+              useDeviceSettings: useDeviceSpecificSettings,
               interval: 0.05,
               min: 0.8,
               max: 1.4,
@@ -72,6 +80,7 @@ class AppearanceTextPage extends StatelessWidget {
             _SwitchSetting(
               title: "Text shadow".tl,
               settingKey: "textShadowEnabled",
+              useDeviceSettings: useDeviceSpecificSettings,
               onChanged: () => App.forceRebuild(),
             ).toSliver(),
             ColorSettingTile(
@@ -87,6 +96,7 @@ class AppearanceTextPage extends StatelessWidget {
             _SliderSetting(
               title: "Shadow blur".tl,
               settingsIndex: "textShadowBlur",
+              useDeviceSettings: useDeviceSpecificSettings,
               interval: 0.5,
               min: 0.0,
               max: 10.0,
@@ -95,6 +105,7 @@ class AppearanceTextPage extends StatelessWidget {
             _SliderSetting(
               title: "Shadow offset X".tl,
               settingsIndex: "textShadowOffsetX",
+              useDeviceSettings: useDeviceSpecificSettings,
               interval: 0.5,
               min: -4.0,
               max: 4.0,
@@ -103,6 +114,7 @@ class AppearanceTextPage extends StatelessWidget {
             _SliderSetting(
               title: "Shadow offset Y".tl,
               settingsIndex: "textShadowOffsetY",
+              useDeviceSettings: useDeviceSpecificSettings,
               interval: 0.5,
               min: -4.0,
               max: 4.0,
@@ -111,6 +123,7 @@ class AppearanceTextPage extends StatelessWidget {
             _SwitchSetting(
               title: "Text glow".tl,
               settingKey: "textGlowEnabled",
+              useDeviceSettings: useDeviceSpecificSettings,
               onChanged: () => App.forceRebuild(),
             ).toSliver(),
             ColorSettingTile(
@@ -126,6 +139,7 @@ class AppearanceTextPage extends StatelessWidget {
             _SliderSetting(
               title: "Glow radius".tl,
               settingsIndex: "textGlowRadius",
+              useDeviceSettings: useDeviceSpecificSettings,
               interval: 1.0,
               min: 0.0,
               max: 20.0,
@@ -134,6 +148,7 @@ class AppearanceTextPage extends StatelessWidget {
             _SliderSetting(
               title: "Glow strength".tl,
               settingsIndex: "textGlowStrength",
+              useDeviceSettings: useDeviceSpecificSettings,
               interval: 0.05,
               min: 0.0,
               max: 1.0,

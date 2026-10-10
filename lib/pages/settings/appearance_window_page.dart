@@ -12,6 +12,11 @@ class AppearanceWindowPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // 建立设置依赖 ✓：开关/设置变化后本页即时刷新 ✓（禁止 forceRebuild 整树遍历 ✗）
     AppSettingsScope.of(context);
+
+    // ⭐ 2026-10-10（用户要求 ✓）：**按设备独立保存本页设置** ✓ —— 与「阅读」页同一套机制 ✓：
+    // 启用后本设备改的值只写在本设备 ✓，同步来的配置不会覆盖它 ✓。
+    final useDeviceSpecificSettings = appdata.settings
+        .isDeviceSpecificSettingsEnabled();
     return PopUpWidgetScaffold(
       // ⭐ 批次 4a（2026-10-09 用户指示 ✓）：本页是**二级页面** ✓，补 `popupStyle: true` ⇒ 表面走切片+色调 ⇒ 跟随自定义 ✓。
       // ⚠️ 推送方式**暂不改** ✗：`showPopUpWidget` 走 `rootNavigator: true`（`pop_up_widget.dart:128-131` ✓），
@@ -26,6 +31,7 @@ class AppearanceWindowPage extends StatelessWidget {
             title: "Follow system theme".tl,
             subtitle: "On: use the default look; Off: customize below".tl,
             settingKey: "windowOverlayFollowTheme",
+            useDeviceSettings: useDeviceSpecificSettings,
             onChanged: () => App.forceRebuild(),
           ).toSliver(),
           // ⭐ N1：总开关开启（跟随系统主题 ✓）时 → **隐藏**本页所有自定义项 ✓（只留标题与开关 ✓）。
@@ -49,6 +55,7 @@ class AppearanceWindowPage extends StatelessWidget {
               // H3 改名 ✓（同上，只管窗口 ✓）
               title: "Window background opacity".tl,
               settingsIndex: "windowOverlayOpacity",
+              useDeviceSettings: useDeviceSpecificSettings,
               interval: 0.05,
               min: 0.0,
               max: 1.0,
@@ -71,6 +78,7 @@ class AppearanceWindowPage extends StatelessWidget {
             _SliderSetting(
               title: "Button background opacity".tl,
               settingsIndex: "buttonOverlayOpacity",
+              useDeviceSettings: useDeviceSpecificSettings,
               interval: 0.05,
               min: 0.0,
               max: 1.0,
@@ -96,6 +104,7 @@ class AppearanceWindowPage extends StatelessWidget {
             _SliderSetting(
               title: "Icon button background opacity".tl,
               settingsIndex: "iconOverlayOpacity",
+              useDeviceSettings: useDeviceSpecificSettings,
               interval: 0.05,
               min: 0.0,
               max: 1.0,
@@ -122,6 +131,7 @@ class AppearanceWindowPage extends StatelessWidget {
             _SliderSetting(
               title: "Tag background opacity".tl,
               settingsIndex: "tagOverlayOpacity",
+              useDeviceSettings: useDeviceSpecificSettings,
               interval: 0.05,
               min: 0.0,
               max: 1.0,
@@ -149,6 +159,7 @@ class AppearanceWindowPage extends StatelessWidget {
             _SliderSetting(
               title: "Source buttons opacity".tl,
               settingsIndex: "sourceTabOverlayOpacity",
+              useDeviceSettings: useDeviceSpecificSettings,
               interval: 0.05,
               min: 0.0,
               max: 1.0,
@@ -157,6 +168,7 @@ class AppearanceWindowPage extends StatelessWidget {
             SelectSetting(
               title: "Corner style".tl,
               settingKey: "windowOverlayCorner",
+              useDeviceSettings: useDeviceSpecificSettings,
               optionTranslation: {
                 "rounded": "Rounded".tl,
                 "square": "Square".tl,

@@ -68,13 +68,31 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
     // 详见 ../workspace/archive/doc-private-legacy-20261009/03-implementation/11-refresh-mechanism.md
     AppSettingsScope.of(context);
 
+    // ⭐ 2026-10-10（用户要求 ✓）：**按设备独立保存本页设置** ✓ —— 与「阅读」页同一套机制 ✓：
+    // 启用后本设备改的值只写在本设备 ✓，同步来的配置不会覆盖它 ✓。
+    final useDeviceSpecificSettings = appdata.settings
+        .isDeviceSpecificSettingsEnabled();
+
     return SmoothCustomScrollView(
       slivers: [
         SliverAppbar(title: Text("Appearance".tl)),
+        // ⭐ 2026-10-10（用户要求 ✓）：**启用此设备特定设置** ✓ —— 与「阅读」页同款开关 ✓：
+        // 启用后，本页各项只在本设备生效并保存 ✓，其它设备同步过来的配置不会覆盖它 ✓。
+        SwitchListTile(
+          title: Text("Enable device specific settings".tl),
+          value: useDeviceSpecificSettings,
+          onChanged: (b) {
+            setState(() {
+              appdata.settings.setEnabledDeviceSpecificSettings(b);
+            });
+            appdata.saveData();
+          },
+        ).toSliver(),
         _SettingPartTitle(title: "Theme".tl, icon: Icons.palette),
         SelectSetting(
           title: "Theme Mode".tl,
           settingKey: "theme_mode",
+          useDeviceSettings: useDeviceSpecificSettings,
           optionTranslation: {
             "system": "System".tl,
             "light": "Light".tl,
@@ -164,11 +182,13 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
         SelectSetting(
           title: "Display mode of comic tile".tl,
           settingKey: "comicDisplayMode",
+          useDeviceSettings: useDeviceSpecificSettings,
           optionTranslation: {"detailed": "Detailed".tl, "brief": "Brief".tl},
         ).toSliver(),
         _SliderSetting(
           title: "Size of comic tile".tl,
           settingsIndex: "comicTileScale",
+          useDeviceSettings: useDeviceSpecificSettings,
           interval: 0.05,
           min: 0.5,
           max: 1.5,
@@ -176,6 +196,7 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
         SelectSetting(
           title: "Display mode of comic list".tl,
           settingKey: "comicListDisplayMode",
+          useDeviceSettings: useDeviceSpecificSettings,
           optionTranslation: {
             "paging": "Paging".tl,
             "continuous": "Continuous".tl,

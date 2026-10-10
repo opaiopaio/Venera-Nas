@@ -442,7 +442,12 @@ class Settings with ChangeNotifier {
   }
 
   operator [](String key) {
-    return _data[key];
+    // ⭐ 修复（2026-10-10 用户要求 ✓）：**读取改为"按设备优先"** ✗→✓ ——
+    // 原先恒返回 `_data[key]` ✗ ⇒ 即便启用了「设备特定设置」✗，全仓 323 处消费端（主题 / 亮度 / 背景 / 覆盖物等）
+    // 读到的仍是**同步来的全局值** ✗ ⇒ 开关只存不读、等于失效 ✓。
+    // 现改走 `getDeviceReaderSetting(key)` ✓：**未启用时直接回退 `_data[key]`** ✓ ⇒ 默认路径行为逐字不变 ✓（零回归 ✓）；
+    // 启用后本设备改过的值优先 ✓，而 `[]=`（同步写入）仍只写全局 ✓ ⇒ **同步更新全局、本设备保留自己的配置** ✓。
+    return getDeviceReaderSetting(key);
   }
 
   operator []=(String key, dynamic value) {

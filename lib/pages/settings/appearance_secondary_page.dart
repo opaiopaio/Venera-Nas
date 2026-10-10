@@ -13,6 +13,11 @@ class AppearanceSecondaryPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // 建立设置依赖 ✓：开关/设置变化后本页即时刷新 ✓（禁止 forceRebuild 整树遍历 ✗）
     AppSettingsScope.of(context);
+
+    // ⭐ 2026-10-10（用户要求 ✓）：**按设备独立保存本页设置** ✓ —— 与「阅读」页同一套机制 ✓：
+    // 启用后本设备改的值只写在本设备 ✓，同步来的配置不会覆盖它 ✓。
+    final useDeviceSpecificSettings = appdata.settings
+        .isDeviceSpecificSettingsEnabled();
     return PopUpWidgetScaffold(
       // ⭐ 批次 4a（2026-10-09 用户指示 ✓）：本页是**二级页面** ✓，补 `popupStyle: true` ⇒ 表面走切片+色调 ⇒ 跟随自定义 ✓。
       // ⚠️ 推送方式**暂不改** ✗：`showPopUpWidget` 走 `rootNavigator: true`（`pop_up_widget.dart:128-131` ✓），
@@ -26,6 +31,7 @@ class AppearanceSecondaryPage extends StatelessWidget {
             title: "Follow system theme".tl,
             subtitle: "On: use the default look; Off: customize below".tl,
             settingKey: "secondaryPageFollowTheme",
+            useDeviceSettings: useDeviceSpecificSettings,
             onChanged: () => App.forceRebuild(),
           ).toSliver(),
           // ⭐ E1-①：「突出二级菜单」✓ —— 语义属于**二级页面** ✓（原先误放在「窗口与控件」区块 ✗，
@@ -38,11 +44,13 @@ class AppearanceSecondaryPage extends StatelessWidget {
             _SwitchSetting(
               title: "Highlight secondary menu".tl,
               settingKey: "secondaryMenuDim",
+              useDeviceSettings: useDeviceSpecificSettings,
               onChanged: () => App.forceRebuild(),
             ).toSliver(),
             SelectSetting(
               title: "Secondary page style".tl,
               settingKey: "secondaryPageMode",
+              useDeviceSettings: useDeviceSpecificSettings,
               optionTranslation: {
                 "opaque": "Opaque (cover)".tl,
                 "transparent": "Translucent".tl,
@@ -53,6 +61,7 @@ class AppearanceSecondaryPage extends StatelessWidget {
             SelectSetting(
               title: "Secondary page background".tl,
               settingKey: "secondaryPageTint",
+              useDeviceSettings: useDeviceSpecificSettings,
               optionTranslation: {
                 "darken": "Darken".tl,
                 "lighten": "Lighten".tl,
@@ -63,6 +72,7 @@ class AppearanceSecondaryPage extends StatelessWidget {
             _SliderSetting(
               title: "Secondary page contrast".tl,
               settingsIndex: "secondaryPageTintStrength",
+              useDeviceSettings: useDeviceSpecificSettings,
               interval: 0.02,
               min: 0.0,
               max: 0.6,
@@ -79,6 +89,7 @@ class AppearanceSecondaryPage extends StatelessWidget {
             SelectSetting(
               title: "Menu style".tl,
               settingKey: "menuSurfaceMode",
+              useDeviceSettings: useDeviceSpecificSettings,
               optionTranslation: {
                 "opaque": "Opaque (cover)".tl,
                 "transparent": "Translucent".tl,
@@ -89,6 +100,7 @@ class AppearanceSecondaryPage extends StatelessWidget {
             SelectSetting(
               title: "Menu background".tl,
               settingKey: "menuSurfaceTint",
+              useDeviceSettings: useDeviceSpecificSettings,
               optionTranslation: {
                 "darken": "Darken".tl,
                 "lighten": "Lighten".tl,
@@ -99,6 +111,7 @@ class AppearanceSecondaryPage extends StatelessWidget {
             _SliderSetting(
               title: "Menu contrast".tl,
               settingsIndex: "menuSurfaceTintStrength",
+              useDeviceSettings: useDeviceSpecificSettings,
               interval: 0.02,
               min: 0.0,
               max: 0.6,
@@ -110,11 +123,13 @@ class AppearanceSecondaryPage extends StatelessWidget {
             _SwitchSetting(
               title: "Dim sidebar".tl,
               settingKey: "sideBarDim",
+              useDeviceSettings: useDeviceSpecificSettings,
               onChanged: () => App.forceRebuild(),
             ).toSliver(),
             SelectSetting(
               title: "Sidebar style".tl,
               settingKey: "sideBarSurfaceMode",
+              useDeviceSettings: useDeviceSpecificSettings,
               optionTranslation: {
                 "opaque": "Opaque (cover)".tl,
                 "transparent": "Translucent".tl,
@@ -125,6 +140,7 @@ class AppearanceSecondaryPage extends StatelessWidget {
             SelectSetting(
               title: "Sidebar background".tl,
               settingKey: "sideBarSurfaceTint",
+              useDeviceSettings: useDeviceSpecificSettings,
               optionTranslation: {
                 "darken": "Darken".tl,
                 "lighten": "Lighten".tl,
@@ -135,6 +151,7 @@ class AppearanceSecondaryPage extends StatelessWidget {
             _SliderSetting(
               title: "Sidebar contrast".tl,
               settingsIndex: "sideBarSurfaceTintStrength",
+              useDeviceSettings: useDeviceSpecificSettings,
               interval: 0.02,
               min: 0.0,
               max: 0.6,
