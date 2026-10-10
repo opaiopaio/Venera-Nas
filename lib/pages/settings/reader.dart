@@ -219,12 +219,35 @@ class _ReaderSettingsState extends State<ReaderSettings> {
           },
           onChanged: () {
             setState(() {});
-            var readerMode = appdata.settings['readerMode'];
+            // ⭐ 修复（2026-10-10 全量代码审查 ✓，3 处 ✗→✓）：
+            // ① 读值改为**当前作用域的有效值** ✗→✓（原先直读全局 ⇒ 漫画专属/设备专属下判断失效 ✗）；
+            // ② 写入改走 **`writeSettingValue`** ✗→✓（原先直写全局 ⇒ 落到了错误的存储层 ✗）；
+            // ③ 末尾补 **`saveData()`** ✗→✓（原先漏 ⇒ `setReaderSetting` 只 `notifyListeners`、可能不落盘 ✗）。
+            final readerMode = appdata.settings.readSettingValue(
+              key: 'readerMode',
+              comicId: isEnabledSpecificSettings ? widget.comicId : null,
+              comicSource: isEnabledSpecificSettings
+                  ? widget.comicSource
+                  : null,
+              useDeviceSettings: useDeviceSpecificSettings,
+            );
             if (readerMode?.toLowerCase().startsWith('continuous') ?? false) {
-              appdata.settings['readerScreenPicNumberForLandscape'] = 1;
-              widget.onChanged?.call('readerScreenPicNumberForLandscape');
-              appdata.settings['readerScreenPicNumberForPortrait'] = 1;
-              widget.onChanged?.call('readerScreenPicNumberForPortrait');
+              for (final k in const [
+                'readerScreenPicNumberForLandscape',
+                'readerScreenPicNumberForPortrait',
+              ]) {
+                appdata.settings.writeSettingValue(
+                  key: k,
+                  value: 1,
+                  comicId: isEnabledSpecificSettings ? widget.comicId : null,
+                  comicSource: isEnabledSpecificSettings
+                      ? widget.comicSource
+                      : null,
+                  useDeviceSettings: useDeviceSpecificSettings,
+                );
+                widget.onChanged?.call(k);
+              }
+              appdata.saveData();
             }
             widget.onChanged?.call("readerMode");
           },
@@ -342,8 +365,35 @@ class _ReaderSettingsState extends State<ReaderSettings> {
                       appdata.settings['readerMode'])
                   .toString()
                   .startsWith('gallery') &&
-              (appdata.settings['readerScreenPicNumberForLandscape'] > 1 ||
-                  appdata.settings['readerScreenPicNumberForPortrait'] > 1),
+              // ⭐ 修复（2026-10-10 全量代码审查 ✓）：这两项是**三级作用域键**（其设置页滑块均传 `comicId` ✓），
+              // 原先却直读**全局** ✗ ⇒ 漫画专属开启后会出现「开关亮了但行不出现 / 误出现」✗；
+              // 且 `null > 1` 在 release 下会直接抛错 ✗。现与同段 `readerMode` **完全同构** ✓，并补 `?? 1` 兜底 ✓。
+              (((appdata.settings.readSettingValue(
+                                key: 'readerScreenPicNumberForLandscape',
+                                comicId: isEnabledSpecificSettings
+                                    ? widget.comicId
+                                    : null,
+                                comicSource: isEnabledSpecificSettings
+                                    ? widget.comicSource
+                                    : null,
+                                useDeviceSettings: useDeviceSpecificSettings,
+                              ) ??
+                              1)
+                          as num) >
+                      1 ||
+                  ((appdata.settings.readSettingValue(
+                                key: 'readerScreenPicNumberForPortrait',
+                                comicId: isEnabledSpecificSettings
+                                    ? widget.comicId
+                                    : null,
+                                comicSource: isEnabledSpecificSettings
+                                    ? widget.comicSource
+                                    : null,
+                                useDeviceSettings: useDeviceSpecificSettings,
+                              ) ??
+                              1)
+                          as num) >
+                      1),
           child: _SwitchSetting(
             title: "Show single image on first page".tl,
             settingKey: "showSingleImageOnFirstPage",
