@@ -176,6 +176,41 @@ TextTheme applyTextThemeOverrides(
   );
 }
 
+/// ⭐ 把「全局文字样式」注入 `ThemeData` —— **只改颜色/字体/阴影，绝不改任何度量** ✓。
+///
+/// 从 `main.dart` 的 `getTheme()`（App State 的**实例方法** ⇒ 单测调不到 ✗）抽到本层 ✓，
+/// 让守护测试能**直接调它**并断言真实渲染尺寸 ✓（同 `applySystemContainerColorFor` 的先例 ✓）。
+///
+/// 落点 ✓：
+/// - `textTheme` / `primaryTextTheme`：走 [applyTextThemeOverrides]（度量中性 ✓）+ [decorateTextTheme]（阴影/发光 ✓）；
+/// - `listTileTheme`：**只注入 `textColor`** ✓ —— ⚠️ **不要**注入从 `theme.textTheme` 派生的
+///   `titleTextStyle`/`subtitleTextStyle` ✗：`ThemeData.textTheme` 的各样式在树外**不含度量**
+///   （`fontSize`/`height`/`letterSpacing` 为 `null` ✓，真实度量由 `MaterialApp` 侧补全 ✓）⇒
+///   塞进 `ListTileThemeData` 会**顶掉** `ListTile` 带度量的默认样式 ⇒ 设置页**选项行 16 → 14** ✗
+///   （大标题用显式 `ts.s18` ⇒ 不变 ✓ ⇒ 现象正是"只有选项文字变小" ✓）。
+ThemeData applyGlobalTextStyleToTheme(ThemeData theme) {
+  final style = globalTextStyle();
+  if (style == null) return theme;
+  final color = style.color;
+  return theme.copyWith(
+    textTheme: decorateTextTheme(
+      applyTextThemeOverrides(
+        theme.textTheme,
+        color: color,
+        fontFamily: style.fontFamily,
+      ),
+    ),
+    primaryTextTheme: decorateTextTheme(
+      applyTextThemeOverrides(
+        theme.primaryTextTheme,
+        color: color,
+        fontFamily: style.fontFamily,
+      ),
+    ),
+    listTileTheme: theme.listTileTheme.copyWith(textColor: color),
+  );
+}
+
 /// 把全局文字样式（颜色/字体/**阴影+发光**）合并进整套 [TextTheme]。
 ///
 /// 必要性：`DefaultTextStyle` 只能覆盖 `Text` 这类默认样式文本；
