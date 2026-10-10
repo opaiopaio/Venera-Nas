@@ -355,6 +355,19 @@ class ComicTile extends StatelessWidget {
                         ? comic.title.replaceAll("\n", "")
                         : "[${comic.maxPage}P]${comic.title.replaceAll("\n", "")}",
                     subtitle: comic.subtitle ?? '',
+                    // ⭐ 对比度（2026-10-11）：`hasWindowOverlay` 时卡片有一层**自绘底色** ✓
+                    //（见下方 `Container` ✓）⇒ 该分支下副标题必须用与填充成对的前景色 ✓，
+                    // 否则继承全局文字色 ⇒ 浅色卡片底上"白字融底"看不见 ✗；
+                    // 未启用遮罩时保持原 `onSurface` 语义 ✗ 不动。
+                    subtitleColor: appdata.settings.hasWindowOverlay
+                        ? onColorForFill(
+                            context,
+                            Color.alphaBlend(
+                              windowOverlayColor(),
+                              context.colorScheme.surface,
+                            ),
+                          )
+                        : null,
                     description: comic.description,
                     badge: badge ?? comic.language,
                     tags: comic.tags,
@@ -625,6 +638,7 @@ class _ComicDescription extends StatelessWidget {
     required this.subtitle,
     required this.description,
     required this.enableTranslate,
+    this.subtitleColor,
     this.badge,
     this.maxLines = 2,
     this.tags,
@@ -634,6 +648,10 @@ class _ComicDescription extends StatelessWidget {
   final String title;
   final String subtitle;
   final String description;
+
+  /// 副标题前景色 ✓；`null` = 沿用主题 `onSurface` ✗（未启用卡片底色时 ✓）。
+  final Color? subtitleColor;
+
   final String? badge;
   final List<String>? tags;
   final int maxLines;
@@ -665,7 +683,10 @@ class _ComicDescription extends StatelessWidget {
             subtitle,
             style: TextStyle(
               fontSize: 10.0,
-              color: context.colorScheme.onSurface.toOpacity(0.7),
+              // ⭐ 对比度（2026-10-11）：卡片有自绘底色时用与填充成对的前景色 ✓；
+              // 无底色时保持原 `onSurface` 语义 ✓（`subtitleColor == null` ✓）。
+              color:
+                  subtitleColor ?? context.colorScheme.onSurface.toOpacity(0.7),
             ),
             maxLines: 1,
             softWrap: true,

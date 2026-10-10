@@ -49,6 +49,20 @@ class _MenuRoute<T> extends PopupRoute<T> {
     if (top + height > size.height - 15) {
       top = size.height - height - 15;
     }
+    // ⭐ 对比度（2026-10-11）：菜单表面色 ✓ —— 下面既用于 Material 底色 ✓，
+    // 也用于给**整份菜单条目**注入对比前景色 ✓（复用同一变量 ⇒ 取值不会漂移 ✗）。
+    final surfaceFill = secondarySurfaceColorFor(
+      scheme: context.colorScheme,
+      // ⭐ AS1（用户实测 ✓，2026-10-09）：菜单**没有壁纸切片** ✗ → 传 false ✓ ——
+      // 否则"有背景图"时会沿用二级页面的早退逻辑（只给色调遮罩 ✓）→
+      // 「不透明」模式下菜单**根本不透明** ✗（用户实测："有背景时不生效"✓）。
+      hasWallpaperSlice: false,
+      mode: appdata.settings['menuSurfaceMode'] as String? ?? 'opaque',
+      tint: appdata.settings['menuSurfaceTint'] as String? ?? 'darken',
+      strength:
+          (appdata.settings['menuSurfaceTintStrength'] as num?)?.toDouble() ??
+          AppOpacity.tintStrengthDefault,
+    );
     return Stack(
       children: [
         Positioned(
@@ -81,23 +95,7 @@ class _MenuRoute<T> extends PopupRoute<T> {
                 //（与 `customSecondarySurfaceColor` 同一份合成逻辑 ✓，E1"逻辑集中一处"✓），
                 // 使用菜单自己的三项设置 ✓（样式/背景/色调强度 ✓，可在「外观 → 弹出式二级页面」调 ✓）。
                 // 圆角 / 边框 / 阴影**保持不变** ✗（本次只换**底色来源** ✓）。
-                color: secondarySurfaceColorFor(
-                  scheme: context.colorScheme,
-                  // ⭐ AS1（用户实测 ✓，2026-10-09）：菜单**没有壁纸切片** ✗ → 传 false ✓ ——
-                  // 否则"有背景图"时会沿用二级页面的早退逻辑（只给色调遮罩 ✓）→
-                  // 「不透明」模式下菜单**根本不透明** ✗（用户实测："有背景时不生效"✓）。
-                  hasWallpaperSlice: false,
-                  mode:
-                      appdata.settings['menuSurfaceMode'] as String? ??
-                      'opaque',
-                  tint:
-                      appdata.settings['menuSurfaceTint'] as String? ??
-                      'darken',
-                  strength:
-                      (appdata.settings['menuSurfaceTintStrength'] as num?)
-                          ?.toDouble() ??
-                      AppOpacity.tintStrengthDefault,
-                ),
+                color: surfaceFill,
                 borderRadius:
                     windowOverlayBorderRadius() ??
                     BorderRadius.circular(AppRadius.sm),
@@ -107,11 +105,16 @@ class _MenuRoute<T> extends PopupRoute<T> {
                     vertical: AppSpace.md,
                     horizontal: AppSpace.tiny,
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: entries
-                        .map((e) => buildEntry(e, context))
-                        .toList(),
+                  // ⭐ 对比度（2026-10-11）：菜单表面自绘底色 ⇒ 条目文字/图标取与填充成对的前景色 ✓
+                  //（原先 `entry.color` 为 null 时无颜色 ✗ ⇒ 继承全局文字色 ⇒ 浅色菜单面上"白字融底"看不见 ✗）
+                  child: FilledForeground(
+                    fill: surfaceFill,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: entries
+                          .map((e) => buildEntry(e, context))
+                          .toList(),
+                    ),
                   ),
                 ),
               ),

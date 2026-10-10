@@ -229,12 +229,15 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
 
   Widget buildTop() {
     final epName = context.reader.chapterTitle;
+    // ⭐ 对比度（2026-10-11）：顶栏是 92% 半透明的自绘底色 ✓ —— 先与主题表面合成 ✓
+    //（`onColorForFill` 只看 RGB ✗），再给标题/图标注入对比前景 ✓。
+    final fill = context.colorScheme.surface.toOpacity(0.92);
 
     return BlurEffect(
       child: Container(
         padding: EdgeInsets.only(top: context.padding.top),
         decoration: BoxDecoration(
-          color: context.colorScheme.surface.toOpacity(0.92),
+          color: fill,
           border: Border(
             bottom: BorderSide(color: Colors.grey.toOpacity(0.5), width: 0.5),
           ),
@@ -244,56 +247,59 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
             left: context.padding.left,
             right: context.padding.right,
           ),
-          child: Row(
-            children: [
-              const SizedBox(width: 8),
-              const BackButton(),
-              const SizedBox(width: 8),
-              Expanded(
-                child: epName == null
-                    ? Text(
-                        context.reader.widget.name,
-                        style: ts.s18,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            context.reader.widget.name,
-                            style: ts.s16,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            epName,
-                            style: ts.s12,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-              ),
-              const SizedBox(width: 8),
-              if (shouldShowChapterComments())
+          child: FilledForeground(
+            fill: fill,
+            child: Row(
+              children: [
+                const SizedBox(width: 8),
+                const BackButton(),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: epName == null
+                      ? Text(
+                          context.reader.widget.name,
+                          style: ts.s18,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              context.reader.widget.name,
+                              style: ts.s16,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              epName,
+                              style: ts.s12,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                ),
+                const SizedBox(width: 8),
+                if (shouldShowChapterComments())
+                  Tooltip(
+                    message: "Chapter Comments".tl,
+                    child: IconButton(
+                      icon: const Icon(Icons.comment),
+                      onPressed: openChapterComments,
+                    ),
+                  ),
                 Tooltip(
-                  message: "Chapter Comments".tl,
+                  message: "Settings".tl,
                   child: IconButton(
-                    icon: const Icon(Icons.comment),
-                    onPressed: openChapterComments,
+                    icon: const Icon(Icons.settings),
+                    onPressed: openSetting,
                   ),
                 ),
-              Tooltip(
-                message: "Settings".tl,
-                child: IconButton(
-                  icon: const Icon(Icons.settings),
-                  onPressed: openSetting,
-                ),
-              ),
-              const SizedBox(width: 8),
-            ],
+                const SizedBox(width: 8),
+              ],
+            ),
           ),
         ),
       ),
@@ -601,10 +607,13 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
       ),
     );
 
+    // ⭐ 对比度（2026-10-11）：底栏同样是 92% 半透明的自绘底色 ✓ ——
+    // 先与主题表面合成 ✓（`onColorForFill` 只看 RGB ✗），再给按钮/文字注入对比前景 ✓。
+    final fill = context.colorScheme.surface.toOpacity(0.92);
     return BlurEffect(
       child: Container(
         decoration: BoxDecoration(
-          color: context.colorScheme.surface.toOpacity(0.92),
+          color: fill,
           border: isOpen
               ? Border(
                   top: BorderSide(
@@ -620,7 +629,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
             left: context.padding.left,
             right: context.padding.right,
           ),
-          child: child,
+          child: FilledForeground(fill: fill, child: child),
         ),
       ),
     );

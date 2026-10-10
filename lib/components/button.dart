@@ -574,6 +574,22 @@ class _IconButtonState extends State<_IconButton> {
   @override
   Widget build(BuildContext context) {
     var iconSize = widget.size ?? 24;
+    // ⭐ 对比度（2026-10-11）：只有 `background: always` 会自绘**实心底色** ✓（`iconOverlayColor()` ✓）——
+    // 底色可被设成浅色 ✗ ⇒ 普通图标不能固定用主题色 ✗，须按填充亮度取黑/白 ✓；
+    // `active` / `danger` 是语义覆盖色 ✓、用户设了图标色也优先跟随 ✓（`appIconColor` 的既有约定 ✓）。
+    final Color? contrastOn = widget.background == IconButtonBackground.always
+        ? onColorForFill(
+            context,
+            Color.alphaBlend(
+              widget.backgroundColor ?? iconOverlayColor(),
+              context.colorScheme.surface,
+            ),
+          )
+        : null;
+    // `active` / `danger` 是语义覆盖色 ✓；普通态按是否有实心填充决定 ✓。
+    final Color? normalOn = contrastOn == null
+        ? context.colorScheme.primary
+        : appIconColor(context, contrastOn);
     Widget icon = IconTheme(
       data: IconThemeData(
         size: iconSize,
@@ -584,7 +600,7 @@ class _IconButtonState extends State<_IconButton> {
                 ? context.colorScheme.error
                 : widget.active
                 ? (widget.activeColor ?? context.colorScheme.primary)
-                : context.colorScheme.primary),
+                : normalOn),
       ),
       child: widget.icon,
     );

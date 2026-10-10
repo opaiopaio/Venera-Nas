@@ -87,11 +87,13 @@ class NetworkError extends StatelessWidget {
       ),
     );
     // ⭐ 卡片只包住**错误内容** ✓（Appbar 不进卡片，也不受 520 宽限制 ✓）
+    // ⭐ 对比度（2026-10-11）：卡片底色与 `Material` **同源** ✓ —— 供对比前景注入用 ✓。
+    final cardFill = appdata.settings.backgroundFeatureActive
+        ? windowOverlayColor()
+        : Theme.of(context).colorScheme.surface;
     body = Center(
       child: Material(
-        color: appdata.settings.backgroundFeatureActive
-            ? windowOverlayColor()
-            : Theme.of(context).colorScheme.surface,
+        color: cardFill,
         borderRadius:
             windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.md),
         clipBehavior: Clip.antiAlias,
@@ -102,7 +104,9 @@ class NetworkError extends StatelessWidget {
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 520),
-            child: body,
+            // ⭐ 对比度（2026-10-11）：卡片自绘底色 ⇒ 错误标题/正文/图标取与填充成对的前景色 ✓
+            //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色卡片上"白字融底"看不见 ✗）
+            child: FilledForeground(fill: cardFill, child: body),
           ),
         ),
       ),

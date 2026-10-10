@@ -319,16 +319,21 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
                         color: context.colorScheme.errorContainer,
                         borderRadius: BorderRadius.circular(AppRadius.xl),
                       ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.error_outline,
-                            color: Colors.red,
-                            size: AppIconSize.sm,
-                          ),
-                          const SizedBox(width: 4),
-                          Text('Error'.tl, style: ts.s12),
-                        ],
+                      // ⭐ 对比度（2026-10-11）：同步错误胶囊自绘底色 ⇒ 文字取与填充成对的前景色 ✓
+                      //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色胶囊底上"白字融底"看不见 ✗）
+                      child: FilledForeground(
+                        fill: context.colorScheme.errorContainer,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              color: Colors.red,
+                              size: AppIconSize.sm,
+                            ),
+                            const SizedBox(width: 4),
+                            Text('Error'.tl, style: ts.s12),
+                          ],
+                        ),
                       ),
                     ),
                   ).paddingRight(4),
@@ -920,7 +925,15 @@ class _ComicSourceWidgetState extends State<_ComicSourceWidget> {
                                 // **继承**周边前景色（全局文字色/图标色 ✓）→ 底色切换时才看得出整体变化 ✓
                                 //（原先 icon/text 都是 `colorScheme.primary` ✗ → 改底色后仍"看着像主题色" ✗，
                                 //  用户实测反馈"切换没反应、依旧跟随主题" ✓）。
-                                color: appIconColor(context),
+                                // ⭐ 对比度（2026-10-11）：胶囊自绘填充 ⇒ 图标也取与填充成对的前景色 ✓
+                                //（用户设了图标色 ⇒ `appIconColor` 优先跟随 ✓；否则按填充自动配黑/白 ✓）。
+                                color: appIconColor(
+                                  context,
+                                  onColorForFill(
+                                    context,
+                                    tagFillColor(context),
+                                  ),
+                                ),
                                 size: AppIconSize.md,
                               ),
                               const SizedBox(width: AppSpace.sm),

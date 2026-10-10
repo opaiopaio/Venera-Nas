@@ -206,21 +206,26 @@ class _ImageFavoritesGalleryPageState extends State<ImageFavoritesGalleryPage> {
                 Positioned(
                   top: 4,
                   right: 4,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surface.toOpacity(0.7),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      isSelected
-                          ? Icons.check_circle
-                          : Icons.radio_button_unchecked,
-                      color: isSelected
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
-                      size: 22,
+                  // ⭐ 对比度（2026-10-11）：圆形底是 70% 半透明的自绘填充 ✓ ⇒
+                  // 勾选图标取与**合成后实色**成对的前景色 ✓（`onColorForFill` 只看 RGB ✗）。
+                  child: FilledForeground(
+                    fill: Theme.of(context).colorScheme.surface.toOpacity(0.7),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surface.toOpacity(0.7),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isSelected
+                            ? Icons.check_circle
+                            : Icons.radio_button_unchecked,
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                        size: 22,
+                      ),
                     ),
                   ),
                 ),
@@ -228,24 +233,31 @@ class _ImageFavoritesGalleryPageState extends State<ImageFavoritesGalleryPage> {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(AppRadius.md),
-                      bottomRight: Radius.circular(AppRadius.md),
+                // ⭐ 对比度（2026-10-11）：页码条同样是 70% 半透明的自绘填充 ✓ ⇒
+                // 页码文字取与**合成后实色**成对的前景色 ✓（原先继承全局文字色 ✗）。
+                child: FilledForeground(
+                  fill: Theme.of(context).colorScheme.surface.toOpacity(0.7),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(AppRadius.md),
+                        bottomRight: Radius.circular(AppRadius.md),
+                      ),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surface.toOpacity(0.7),
                     ),
-                    color: Theme.of(context).colorScheme.surface.toOpacity(0.7),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpace.xs,
-                    vertical: AppSpace.xxs,
-                  ),
-                  child: Text(
-                    pageText,
-                    style: const TextStyle(fontSize: 10),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.xs,
+                      vertical: AppSpace.xxs,
+                    ),
+                    child: Text(
+                      pageText,
+                      style: const TextStyle(fontSize: 10),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
               ),

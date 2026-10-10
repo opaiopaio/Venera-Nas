@@ -75,6 +75,12 @@ class MaskChip extends StatelessWidget {
     final radius =
         windowOverlayBorderRadius() ?? BorderRadius.circular(AppRadius.md);
     final isSelected = selected ?? false;
+    // ⭐ 对比度（2026-10-11）：**未选中态**的填充是自绘的遮罩色 ✓（可被设成浅色 ✗）⇒
+    // 文字必须取与填充成对的前景色 ✓；**选中态保持原样** ✗（填充 `primaryContainer` 配
+    // `onPrimaryContainer` 已是成对色 ✓，见下）。
+    final unselectedFill = isSelected
+        ? null
+        : tagFillColor(context, selected: false);
     // ⭐ 2026-10-10（用户要求 ✓）：**选中 = 颜色变化** ✓ ——
     // 填充 `primaryContainer` ✓、文字 `onPrimaryContainer` ✓、描边 `primary` ✓（三者成对 ✓ 对比度有保证 ✓）；
     // 未选中保持原样 ✓（填充 `tagOverlayColor()`、描边 `outline` ✓、文字沿用主题 ✓）。
@@ -109,12 +115,17 @@ class MaskChip extends StatelessWidget {
               // 高度由"内边距 + 文字行高"决定（minHeight 32 仅在必要时兜底）。
               // ⚠️ 选中态必须显式给对比文字色 ✗（否则会"深底深字" ✗）；`Text.style` 会与
               // 环境 `DefaultTextStyle` **合并** ✓ ⇒ 字号/字重等仍沿用主题 ✓ 不丢 ✓。
-              child: Text(
-                text,
-                textAlign: TextAlign.center,
-                style: selectedOnColor == null
-                    ? null
-                    : TextStyle(color: selectedOnColor),
+              // ⭐ 对比度（2026-10-11）：**未选中态**填充也是自绘的遮罩色 ✓（可被设成浅色 ✗）⇒
+              // 紧贴文字包一层前景注入 ✓（放在 `Material`/`InkWell` 内部 ⇒ 不影响选中态 ✗）。
+              child: FilledForeground(
+                fill: unselectedFill,
+                child: Text(
+                  text,
+                  textAlign: TextAlign.center,
+                  style: selectedOnColor == null
+                      ? null
+                      : TextStyle(color: selectedOnColor),
+                ),
               ),
             ),
           ),

@@ -251,28 +251,33 @@ class _BodyState extends State<_Body> {
               title: Text("Add comic source".tl),
               leading: const Icon(Icons.dashboard_customize),
             ),
-            TextField(
-              decoration: InputDecoration(
-                hintText: "URL",
-                filled: true,
-                fillColor: windowOverlayColor(),
-                border: OutlineInputBorder(
-                  borderRadius:
-                      windowOverlayBorderRadius() ??
-                      BorderRadius.circular(AppRadius.md),
+            // ⭐ 对比度（2026-10-11）：输入框自绘填充（`fillColor`）⇒ 输入文字取与填充成对的前景色 ✓
+            //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色填充上"白字融底"看不见 ✗）
+            FilledForeground(
+              fill: windowOverlayColor(),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: "URL",
+                  filled: true,
+                  fillColor: windowOverlayColor(),
+                  border: OutlineInputBorder(
+                    borderRadius:
+                        windowOverlayBorderRadius() ??
+                        BorderRadius.circular(AppRadius.md),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.md,
+                  ),
+                  suffix: IconButton(
+                    onPressed: () => handleAddSource(url),
+                    icon: const Icon(Icons.check),
+                  ),
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSpace.md,
-                ),
-                suffix: IconButton(
-                  onPressed: () => handleAddSource(url),
-                  icon: const Icon(Icons.check),
-                ),
+                onChanged: (value) {
+                  url = value;
+                },
+                onSubmitted: handleAddSource,
               ),
-              onChanged: (value) {
-                url = value;
-              },
-              onSubmitted: handleAddSource,
             ).paddingHorizontal(16).paddingBottom(8),
             Wrap(
               spacing: 8,
@@ -478,24 +483,29 @@ class _ComicSourceListState extends State<_ComicSourceList> {
                   leading: Icon(Icons.source_outlined),
                   title: Text("Repo URL".tl),
                 ),
-                TextField(
-                  controller: controller,
-                  decoration: InputDecoration(
-                    hintText: "URL",
-                    filled: true,
-                    fillColor: windowOverlayColor(),
-                    border: OutlineInputBorder(
-                      borderRadius:
-                          windowOverlayBorderRadius() ??
-                          BorderRadius.circular(AppRadius.md),
+                // ⭐ 对比度（2026-10-11）：输入框自绘填充（`fillColor`）⇒ 输入文字取与填充成对的前景色 ✓
+                //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色填充上"白字融底"看不见 ✗）
+                FilledForeground(
+                  fill: windowOverlayColor(),
+                  child: TextField(
+                    controller: controller,
+                    decoration: InputDecoration(
+                      hintText: "URL",
+                      filled: true,
+                      fillColor: windowOverlayColor(),
+                      border: OutlineInputBorder(
+                        borderRadius:
+                            windowOverlayBorderRadius() ??
+                            BorderRadius.circular(AppRadius.md),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.md,
+                      ),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: AppSpace.md,
-                    ),
+                    onChanged: (value) {
+                      changed = true;
+                    },
                   ),
-                  onChanged: (value) {
-                    changed = true;
-                  },
                 ).paddingHorizontal(16).paddingBottom(8),
                 Text(
                   "The URL should point to a 'index.json' file".tl,
@@ -925,9 +935,14 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
                       color: context.colorScheme.surfaceContainer,
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
-                    child: Text(
-                      source.version,
-                      style: const TextStyle(fontSize: 13),
+                    // ⭐ 对比度（2026-10-11）：胶囊自绘底色 ⇒ 版本号取与填充成对的前景色 ✓
+                    //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色胶囊底上"白字融底"看不见 ✗）
+                    child: FilledForeground(
+                      fill: context.colorScheme.surfaceContainer,
+                      child: Text(
+                        source.version,
+                        style: const TextStyle(fontSize: 13),
+                      ),
                     ),
                   ),
                   if (hasUpdate)
@@ -942,9 +957,14 @@ class _SliverComicSourceState extends State<_SliverComicSource> {
                           color: context.colorScheme.primaryContainer,
                           borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
-                        child: Text(
-                          "New Version".tl,
-                          style: const TextStyle(fontSize: 13),
+                        // ⭐ 对比度（2026-10-11）：胶囊自绘底色 ⇒ 文字取与填充成对的前景色 ✓
+                        //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅色胶囊底上"白字融底"看不见 ✗）
+                        child: FilledForeground(
+                          fill: context.colorScheme.primaryContainer,
+                          child: Text(
+                            "New Version".tl,
+                            style: const TextStyle(fontSize: 13),
+                          ),
                         ),
                       ),
                     ).paddingLeft(4),
