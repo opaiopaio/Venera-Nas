@@ -223,6 +223,11 @@ class Appdata with Init {
       settings._data["deviceId"] = const Uuid().v4();
       await saveData(false);
     }
+    // ⭐ 修复（2026-10-10 用户三步实验 ✓）：`deviceId` 就位后回收**孤儿设备条目** ✗→✓ ——
+    // 否则 `deviceId` 一旦变化过，本设备全部专属设置（含背景 ✓）会**永久读不到** ✓ 见方法注释 ✓。
+    if (settings._adoptOrphanDeviceEntry()) {
+      await saveData(false);
+    }
     try {
       var implicitDataFile = File(FilePath.join(dataPath, 'implicitData.json'));
       if (await implicitDataFile.exists()) {
@@ -680,7 +685,39 @@ class Settings with ChangeNotifier {
       deviceId,
       () => <String, dynamic>{},
     )[key] = value;
+    // ⚠️ 这里**不能**顺手镜像进全局 ✗（曾试过 ✓ 被 `device_settings_gate_test.dart` 的
+    // T-DS2 / T-DS4 判红 ✗）：设计语义是「设备层 = 本设备覆盖 ✓、全局层 = 共享/同步基线 ✓」，
+    // 清除后必须能**回落到全局基线** ✓ ⇒ 设备层写入不得污染全局层 ✓。
+    // 用户"开开关设背景 ⇒ 重启后消失"的真因在**设备条目取不到**（见 `_adoptOrphanDeviceEntry` ✓）。
     notifyListeners();
+  }
+
+  /// ⭐ 修复（2026-10-10 用户三步对照实验 ✓）：**设备表孤儿条目回收** ✗→✓。
+  ///
+  /// 用户实验 ✓：开关**关**时设背景 ⇒ 重启**正常** ✓；开关**开**时设背景 ⇒ **重启后背景消失** ✗
+  ///（双端 ✓、`+80` 亦可复现 ⇒ 与冷启动改动无关 ✓）。
+  /// 机理 ✓：设备表按 `deviceId` 分键 ✓（`deviceSpecificSettings[deviceId][key]` ✓），
+  /// 而设备专属值**只存在这一处**（设计使然 ✓，全局层保持"共享基线" ✗ 不能被污染 ✓）——
+  /// 一旦 `deviceId` 变了（旧版本曾被 WebDAV 恢复整文件覆盖 `appdata.json` ✗ 而丢过 `deviceId` ✗、
+  /// 或生成后未及时落盘就被杀 ✓），原条目立刻成**孤儿** ✗ ⇒ 读取静默回落到**全局空值** ✗ ⇒
+  /// 该设备所有专属设置（含背景 ✓）**看起来永久消失** ✗，且开关也会跟着读成 false ✗（同源 ✓）。
+  /// 做法 ✓：启动加载、确保 `deviceId` 存在之后 ✓ —— 若当前 `deviceId` **没有**条目 ✗
+  /// 而表里**已有**条目 ✓（本表**只存本机**历史 id ✓：它从不随同步/恢复传输 ✓），
+  /// 就把**最后一条**（最近一次写入 ✓）重新挂到当前 `deviceId` 下 ✓ ⇒ 值立刻可读 ✓。
+  /// 多条目时只认领最后一条 ✓（本机历史 id 无法进一步区分 ✓；不猜其它设备 ✓，因为表里不可能有其它设备的条目 ✓）。
+  /// 返回是否真的认领了 ✓（调用方据此决定要不要立即落盘 ✓，避免每次启动都白写一遍 ✓）。
+  bool _adoptOrphanDeviceEntry() {
+    final deviceId = _data['deviceId'] as String;
+    if (deviceId.isEmpty) return false;
+    final table = _data['deviceSpecificSettings'] as Map<String, dynamic>;
+    if (table.containsKey(deviceId)) return false;
+    if (table.isEmpty) return false;
+    final lastKey = table.keys.last;
+    final orphan = table.remove(lastKey);
+    if (orphan is! Map) return false;
+    table[deviceId] = Map<String, dynamic>.from(orphan);
+    notifyListeners();
+    return true;
   }
 
   /// ⭐ 2026-10-10：清除**本设备**的全部「设备专属设置」✓（阅读 + 外观共用同一张表 ✓）。
