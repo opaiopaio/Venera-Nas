@@ -33,6 +33,36 @@ class BackgroundSlice extends StatefulWidget {
 ui.Image? _sliceCachedImage;
 String? _sliceCachedPath;
 
+/// ⭐ 本轮（用户实测反馈 ✓）：**冷启动首帧预加载全局背景图** —— 请在 `runApp` 之前调用 ✓。
+///
+/// 起因 ✓：背景图原先只在 `BackgroundSlice` 的 `didChangeDependencies` 里才 `FileImage.resolve` ✓
+/// ⇒ 冷启动时**首帧还没有图** ✗，那一帧只有底色（未设背景色时底色 = `scheme.surface`
+/// = 浅色主题**白** ✗）⇒ 用户实测"背景是白色然后闪出背景的" ✓（原话："首帧没有背景的预加载吗" ✓）。
+/// 做法 ✓：把图**提前解码**并写进**同一个模块级缓存** ✓（与 `_resolveImage` 命中缓存那条路完全一致 ✓）
+/// ⇒ 首个 `BackgroundSlice` 的**第一帧就有图** ✓，且**不再重复解码** ✓（见 `_resolveImage` 的提前返回 ✓）。
+///
+/// 返回解码结果 ✓（调用方可忽略 ✓；测试用它断言"确实预热成功" ✓）。
+Future<ui.Image?> preloadBackgroundImage() async {
+  if (!AppBackground.isActive) return null;
+  final file = currentBackgroundImageFile();
+  if (file == null) return null;
+  if (_sliceCachedPath == file.path && _sliceCachedImage != null) {
+    return _sliceCachedImage; // 同一次启动内重复调用零成本 ✓
+  }
+  try {
+    final bytes = await file.readAsBytes();
+    final codec = await ui.instantiateImageCodec(bytes);
+    final frame = await codec.getNextFrame();
+    codec.dispose();
+    _sliceCachedImage = frame.image;
+    _sliceCachedPath = file.path;
+    return frame.image;
+  } catch (_) {
+    // 解码失败 ⇒ 退回"无图"路径 ✓（首帧只有底色 ✓，与改动前一致 ✓，绝不影响启动 ✓）。
+    return null;
+  }
+}
+
 class _BackgroundSliceState extends State<BackgroundSlice> {
   /// 本组件左上角在窗口坐标里的位置。
   Offset? _offsetInWindow;
@@ -94,6 +124,11 @@ class _BackgroundSliceState extends State<BackgroundSlice> {
     // ⭐ 首帧同步命中缓存 ⇒ 本帧就能画出图（消除"先白一下再出图"）
     if (_sliceCachedPath == file.path && _sliceCachedImage != null) {
       _image = _sliceCachedImage;
+      // ⭐ 本轮（用户实测反馈 ✓）：预热已命中 ⇒ **不再走 `FileImage`** ✗ ——
+      // 否则启动时会把同一张图**再解码一次** ✗（预热的意义正是免掉这次解码 ✓）。
+      // 安全性 ✓：背景图文件名"每次选择都唯一"（见本文件顶部说明 ✓）⇒ 不会漏掉换图 ✓；
+      // 换图后路径不同 ⇒ 正常走下面的 `FileImage` 分支 ✓。
+      return;
     }
     final stream = FileImage(
       file,
