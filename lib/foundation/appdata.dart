@@ -94,9 +94,11 @@ class Appdata with Init {
     "disableSyncFields",
     "authorizationRequired",
     "smbDownloadPath",
-    // ⭐ 修复（2026-10-10 用户实测 ✓）：**设备专属设置表不得随同步/恢复覆盖** ✗→✓ ——
-    // 该表按 `deviceId` 分键保存各设备自己的配置 ✓；一旦被对端整表覆盖 ✗，本设备条目即丢失 ⇒
-    // 「启用设备特定设置」的读数全部失效（用户："同步 webdav 备份后依旧会覆盖外观设置" ✓）。
+    // ⭐ 重构（2026-10-10 用户方案 ✓）：**两个设备开关标志本身也不参与同步/恢复** ✓ ——
+    // 它们是**本设备**的选择（本机要不要跟着云端走 ✓），不该被对端改掉 ✓。
+    "deviceSpecificAppearanceEnabled",
+    "deviceSpecificReaderEnabled",
+    // ⭐ 迁移用：旧版第二层容器（值已搬进主表 ✓，容器不再被读取 ✓）也一并排除 ✓。
     "deviceSpecificSettings",
   ];
 
@@ -106,8 +108,13 @@ class Appdata with Init {
     if (data['settings'] is Map) {
       var settings = data['settings'] as Map<String, dynamic>;
       for (var key in settings.keys) {
-        if (!_disableRestore.contains(key) && settings[key] != null) {
-          // ⭐ 同步/恢复写入**全局**（绕过设备分流 ✓），否则会把对端值写进本机设备表 ✓。
+        // ⭐ 重构（2026-10-10 用户方案 ✓）：**开关 ON 的受保护键不参与本地备份恢复** ✓ ——
+        // 否则恢复一份备份会把本设备"特意留在本地"的外观/阅读值覆盖掉 ✗（= 开关形同虚设 ✗）。
+        if (_disableRestore.contains(key) ||
+            this.settings.isDeviceProtected(key)) {
+          continue;
+        }
+        if (settings[key] != null) {
           this.settings._data[key] = settings[key];
         }
       }
@@ -223,9 +230,9 @@ class Appdata with Init {
       settings._data["deviceId"] = const Uuid().v4();
       await saveData(false);
     }
-    // ⭐ 修复（2026-10-10 用户三步实验 ✓）：`deviceId` 就位后回收**孤儿设备条目** ✗→✓ ——
-    // 否则 `deviceId` 一旦变化过，本设备全部专属设置（含背景 ✓）会**永久读不到** ✓ 见方法注释 ✓。
-    if (settings._adoptOrphanDeviceEntry()) {
+    // ⭐ 迁移（2026-10-10 用户方案 ✓）：把旧版**第二层**的值搬进主表并清空 ✓（幂等 ✓）——
+    // 不搬的话老用户此前"只在设备层"的值（如背景 ✓）会在升级后消失 ✗。见 `_migrateDeviceSpecificSettings` ✓。
+    if (settings._migrateDeviceSpecificSettings()) {
       await saveData(false);
     }
     try {
@@ -315,6 +322,10 @@ class Settings with ChangeNotifier {
     'comicSpecificSettings': <String, Map<String, dynamic>>{},
     'deviceSpecificSettings': <String, Map<String, dynamic>>{},
     'deviceId': '',
+    // ⭐ 重构（2026-10-10 用户方案 ✓）：两个「启用设备特定设置」开关 —— **纯标志** ✓，
+    // 只表示"对应的键在本设备**不参与同步/备份/恢复**" ✓；默认关（= 与云端一致 ✓，零回归 ✓）。
+    'deviceSpecificAppearanceEnabled': false,
+    'deviceSpecificReaderEnabled': false,
     'ignoreBadCertificate': false,
     'readerScrollSpeed': 1.0, // 0.5 - 3.0
     'localFavoritesFirst': true,
@@ -464,21 +475,17 @@ class Settings with ChangeNotifier {
   }
 
   operator [](String key) {
-    // ⭐ 修复（2026-10-10 用户要求 ✓）：**读取改为"按设备优先"** ✗→✓ ——
-    // 原先恒返回 `_data[key]` ✗ ⇒ 即便启用了「设备特定设置」✗，全仓 323 处消费端（主题 / 亮度 / 背景 / 覆盖物等）
-    // 读到的仍是**同步来的全局值** ✗ ⇒ 开关只存不读、等于失效 ✓。
-    // 现改走 `getDeviceReaderSetting(key)` ✓：**未启用时直接回退 `_data[key]`** ✓ ⇒ 默认路径行为逐字不变 ✓（零回归 ✓）；
-    // 启用后本设备改过的值优先 ✓，而 `[]=`（同步写入）仍只写全局 ✓ ⇒ **同步更新全局、本设备保留自己的配置** ✓。
-    return getDeviceReaderSetting(key);
+    // ⭐⭐ 重构（2026-10-10 用户方案 ✓）：**只有一套值** —— 所有设置**始终**读写主表 `_data` ✓。
+    // 背景 ✓：此前「启用设备特定设置」开关会让受保护键改读写 `deviceSpecificSettings[deviceId]`
+    // 这个**第二层** ✗ ⇒ 两套值 ⇒ 一连串 bug（孤儿条目 ✓、空值遮住真值 ✓、关开关时读到空/被写空 ✓ …），
+    // 补丁治不完 ✓（用户原话："**我不理解这个开关为什么要做成这个形式的**…**不能做成就是保持现在的设置，
+    // 但是阻隔同步和备份吗**" ✓）。
+    // 现在 ✓：开关退化为**纯标志** ✓（只表示"这些键在本设备不参与同步/备份/恢复" ✓）⇒
+    // **切换开关不改变任何读写语义** ✓ ⇒ 背景等值**不可能**因为切开关而丢 ✓。
+    return _data[key];
   }
 
   operator []=(String key, dynamic value) {
-    // ⭐ 修复（2026-10-10 用户实测 ✓）：**写入同样按设备分流** ✗→✓ —— 外观页的颜色类行是**直连** settings 赋值 ✗；
-    // 只做读取分流不够 ✓，这些值仍写进全局 ⇒ 依旧被云端覆盖 ✓。现受保护的键一律写入**设备表** ✓。
-    if (isDeviceProtected(key)) {
-      setDeviceReaderSetting(key, value);
-      return;
-    }
     _data[key] = value;
     if (key != "dataVersion") {
       notifyListeners();
@@ -536,36 +543,27 @@ class Settings with ChangeNotifier {
     notifyListeners();
   }
 
+  /// 「阅读」开关 ✓（⭐ 重构后同为**纯标志** ✓ —— 只影响"是否参与同步/备份/恢复" ✓，不再搬值 ✓）。
   void setEnabledDeviceSpecificSettings(bool enabled) {
-    // 「阅读」开关（沿用旧字段 `enabled` ✓，兼容已有数据 ✓）。
-
-    setDeviceReaderSetting("enabled", enabled);
+    _data['deviceSpecificReaderEnabled'] = enabled;
+    notifyListeners();
   }
 
   /// ⭐ 2026-10-10（用户要求 ✓）：**「外观」独立开关** ✗→✓ —— 外观随设备形态（横竖屏/窗口大小）差异明显，
-
   /// 而阅读习惯往往跨设备统一 ⇒ 两者应各自决定"是否按设备独立保存" ✓。
-
+  ///
+  /// ⭐⭐ 重构（2026-10-10 用户方案 ✓）：本开关现在是**纯标志** ✓ —— 只表示
+  /// "外观类键在本设备**不参与同步 / 备份 / 恢复**" ✓，**不再**把值搬到第二层 ✗ ⇒ 翻转它不改任何值 ✓。
   void setEnabledAppearanceDeviceSettings(bool enabled) {
-    setDeviceReaderSetting("enabledAppearance", enabled);
+    _data['deviceSpecificAppearanceEnabled'] = enabled;
+    notifyListeners();
   }
 
-  bool isAppearanceDeviceSettingsEnabled() {
-    final deviceId = _data['deviceId'] as String;
+  bool isAppearanceDeviceSettingsEnabled() =>
+      _data['deviceSpecificAppearanceEnabled'] == true;
 
-    if (deviceId.isEmpty) return false;
-
-    return _data['deviceSpecificSettings'][deviceId]?["enabledAppearance"] ==
-        true;
-  }
-
-  bool isDeviceSpecificSettingsEnabled() {
-    var deviceId = _data['deviceId'] as String;
-    if (deviceId.isEmpty) {
-      return false;
-    }
-    return _data['deviceSpecificSettings'][deviceId]?["enabled"] == true;
-  }
+  bool isDeviceSpecificSettingsEnabled() =>
+      _data['deviceSpecificReaderEnabled'] == true;
 
   /// ⭐ 2026-10-10（用户要求 ✓）：**外观类设置键集合** —— 这些键由「外观」开关管，其余键由「阅读」开关管 ✓。
   static const _appearanceDeviceKeys = <String>{
@@ -667,87 +665,74 @@ class Settings with ChangeNotifier {
     return false;
   }
 
-  dynamic getDeviceReaderSetting(String key) {
-    // ⭐ 2026-10-10（用户要求 ✓）：**按键归属选择开关** ✗→✓ —— 外观类键看「外观」开关 ✓，其余（阅读等 ✓）看「阅读」开关 ✓；
-    // 两个开关各管一半 ⇒ 外观可随设备形态各异 ✓，阅读习惯仍可跨设备统一 ✓（用户："外观因为设备横竖使用问题肯定有不同设计，
-    // 但是阅读习惯可能是统一的" ✓）。
-    final enabled = isDeviceProtected(key);
-    if (!enabled) {
-      return _data[key];
-    }
-    final deviceId = _data['deviceId'] as String;
-    final deviceValue = _data['deviceSpecificSettings'][deviceId]?[key];
-    if (deviceValue == null) {
-      return _data[key];
-    }
-    // ⭐⭐ 修复（2026-10-10 用户实测 ✓）：**设备层的空值绝不允许遮住全局层的有值** ✗→✓。
-    //
-    // 用户四步实测 ✓（**无需重启** ✓）：① 关开关设背景 ⇒ 正常 ✓；② **一开开关，背景立刻变白** ✗；
-    // ③ 重启 ⇒ 背景恢复 ✓（开关仍是开 ✓）；④ 再关开关 ⇒ **又变白** ✗。
-    // 机理 ✓：开关只应改变"读取优先级" ✓，可一旦设备层里存在该键的**空值** ✗
-    //（`''` ✓，例如某次"清空/未就绪时读到的空值被写进设备层" ✓），
-    // `?? ` 只挡 null ✗ ⇒ 空串**直接生效** ✓ ⇒ 面板立刻变白 ✓ 且**永久遮挡**全局那个真值 ✗ ✓。
-    // 因此这里补一条"空值不覆盖有值"的兜底 ✓：设备层为空串、而全局层有非空值时 ⇒ 取全局 ✓。
-    if (deviceValue is String &&
-        deviceValue.isEmpty &&
-        _data[key] is String &&
-        (_data[key] as String).isNotEmpty) {
-      return _data[key];
-    }
-    return deviceValue;
-  }
+  /// ⭐⭐ 重构（2026-10-10 用户方案 ✓）：**只有一套值** ⇒ 本方法与 `[]` 完全等价 ✓
+  ///（保留方法名只为兼容既有调用点 ✓；"设备优先/回落全局"的双层语义**已删除** ✗）。
+  dynamic getDeviceReaderSetting(String key) => _data[key];
 
+  /// ⭐⭐ 重构（2026-10-10 用户方案 ✓）：写入**主表** ✓ —— 不再有第二层 ✗ ⇒
+  /// 开关翻转/条目增删都不可能再让值"消失"或"被空值遮住" ✓（整类 bug 从根上消失 ✓）。
   void setDeviceReaderSetting(String key, dynamic value) {
-    var deviceId = _getOrCreateDeviceId();
-    (_data['deviceSpecificSettings'] as Map<String, dynamic>).putIfAbsent(
-      deviceId,
-      () => <String, dynamic>{},
-    )[key] = value;
-    // ⚠️ 这里**绝不能**镜像进全局 ✗（试过两次都被既有守卫判红 ✓）：
-    // `device_settings_gate_test.dart` 的 T-DS2 / T-DS4 要求「设备层写入**不得**污染全局基线 ✓，
-    // 清除后必须能回落到全局那个**原本的**值 ✓」⇒ 设备层只做覆盖 ✓、全局层保持共享/同步基线 ✓。
-    // 用户"一开开关就变白"的问题**不在写入端** ✓，而在读取端"空值遮住了有值" ✗ —— 见 `getDeviceReaderSetting` ✓。
+    _data[key] = value;
     notifyListeners();
   }
 
-  /// ⭐ 修复（2026-10-10 用户三步对照实验 ✓）：**设备表孤儿条目回收** ✗→✓。
+  /// ⭐ 迁移（2026-10-10 用户方案 ✓）：把旧版**第二层**（`deviceSpecificSettings[deviceId]` ✓）
+  /// 里的值**搬进主表** ✓，然后清空该表 ✓。
   ///
-  /// 用户实验 ✓：开关**关**时设背景 ⇒ 重启**正常** ✓；开关**开**时设背景 ⇒ **重启后背景消失** ✗
-  ///（双端 ✓、`+80` 亦可复现 ⇒ 与冷启动改动无关 ✓）。
-  /// 机理 ✓：设备表按 `deviceId` 分键 ✓（`deviceSpecificSettings[deviceId][key]` ✓），
-  /// 而设备专属值**只存在这一处**（设计使然 ✓，全局层保持"共享基线" ✗ 不能被污染 ✓）——
-  /// 一旦 `deviceId` 变了（旧版本曾被 WebDAV 恢复整文件覆盖 `appdata.json` ✗ 而丢过 `deviceId` ✗、
-  /// 或生成后未及时落盘就被杀 ✓），原条目立刻成**孤儿** ✗ ⇒ 读取静默回落到**全局空值** ✗ ⇒
-  /// 该设备所有专属设置（含背景 ✓）**看起来永久消失** ✗，且开关也会跟着读成 false ✗（同源 ✓）。
-  /// 做法 ✓：启动加载、确保 `deviceId` 存在之后 ✓ —— 若当前 `deviceId` **没有**条目 ✗
-  /// 而表里**已有**条目 ✓（本表**只存本机**历史 id ✓：它从不随同步/恢复传输 ✓），
-  /// 就把**最后一条**（最近一次写入 ✓）重新挂到当前 `deviceId` 下 ✓ ⇒ 值立刻可读 ✓。
-  /// 多条目时只认领最后一条 ✓（本机历史 id 无法进一步区分 ✓；不猜其它设备 ✓，因为表里不可能有其它设备的条目 ✓）。
-  /// 返回是否真的认领了 ✓（调用方据此决定要不要立即落盘 ✓，避免每次启动都白写一遍 ✓）。
-  bool _adoptOrphanDeviceEntry() {
-    final deviceId = _data['deviceId'] as String;
-    if (deviceId.isEmpty) return false;
-    final table = _data['deviceSpecificSettings'] as Map<String, dynamic>;
-    if (table.containsKey(deviceId)) return false;
-    if (table.isEmpty) return false;
-    final lastKey = table.keys.last;
-    final orphan = table.remove(lastKey);
-    if (orphan is! Map) return false;
-    table[deviceId] = Map<String, dynamic>.from(orphan);
-    notifyListeners();
+  /// 规则 ✓（**不丢老用户配置** ✓、**幂等** ✓）：
+  /// ① **开关标志**：任一旧条目里 `enabledAppearance` / `enabled` 为 true ⇒ 置位新标志 ✓（保留用户此前的开关状态 ✓）；
+  /// ② **设置值**：按"旧开关是否开着"决定优先级 ✓ ——
+  ///    · 该旧条目开关**开着** ⇒ 设备层的非空值就是用户当时**实际看到**的值 ⇒ **覆盖主表** ✓；
+  ///    · 开关**关着** ⇒ 主表值才是用户看到的 ✓ ⇒ 仅在主表为空时用设备层非空值**补齐** ✓；
+  /// ③ **空值一律跳过** ✓（绝不用空值覆盖任何非空值 ✗）；
+  /// ④ 多条目（历史 id 孤儿 ✓）时按**后写覆盖先写**的次序处理 ✓ —— 最后一次写入的值胜出 ✓；
+  /// ⑤ 处理完把 `deviceSpecificSettings` **清空** ✓ 并返回 true（调用方据此落盘一次 ✓）；
+  ///    清空后再启动 ⇒ 该方法直接返回 false ✓ = **幂等** ✓。
+  bool _migrateDeviceSpecificSettings() {
+    final old = _data['deviceSpecificSettings'];
+    if (old is! Map || old.isEmpty) return false;
+    bool isOn(Map entry, String flag) => entry[flag] == true;
+    for (final entry in old.values) {
+      if (entry is! Map) continue;
+      final appearanceOn = isOn(entry, 'enabledAppearance');
+      final readerOn = isOn(entry, 'enabled');
+      if (appearanceOn) {
+        _data['deviceSpecificAppearanceEnabled'] = true;
+      }
+      if (readerOn) {
+        _data['deviceSpecificReaderEnabled'] = true;
+      }
+      for (final e in entry.entries) {
+        final key = e.key.toString();
+        if (key == 'enabled' || key == 'enabledAppearance') continue;
+        final value = e.value;
+        if (value == null || (value is String && value.isEmpty)) continue;
+        final current = _data[key];
+        final currentIsEmpty =
+            current == null || (current is String && current.isEmpty);
+        final keyIsAppearance = _isAppearanceDeviceKey(key);
+        final keyIsReader = _isReaderDeviceKey(key);
+        final deviceWins =
+            (keyIsAppearance && appearanceOn) || (keyIsReader && readerOn);
+        if (deviceWins || currentIsEmpty) {
+          _data[key] = value;
+        }
+      }
+    }
+    _data['deviceSpecificSettings'] = <String, dynamic>{};
     return true;
   }
 
-  /// ⭐ 2026-10-10：清除**本设备**的全部「设备专属设置」✓（阅读 + 外观共用同一张表 ✓）。
-
+  /// ⭐ 2026-10-10 用户方案 ✓：**本按钮不再清值** ✗→✓ ——
+  /// 新语义下"清除本设备的特殊设置" = **关闭两个开关** ✓（这些键重新参与同步/备份/恢复 ✓），
+  /// **值一概不动** ✓（用户此前看到"清除后开关自动关闭" ✓ ⇒ 新语义下**只有开关会关** ✓，值全部保留 ✓）。
   void resetDeviceSpecificSettings() => resetDeviceReaderSettings();
 
   void resetDeviceReaderSettings() {
-    var deviceId = _data['deviceId'] as String;
-    if (deviceId.isEmpty) {
-      return;
-    }
-    (_data['deviceSpecificSettings'] as Map).remove(deviceId);
+    _data['deviceSpecificAppearanceEnabled'] = false;
+    _data['deviceSpecificReaderEnabled'] = false;
+    // 旧版残留的第二层一并清掉 ✓（值已在启动时迁移进主表 ✓，此处只清空壳 ✓）。
+    _data['deviceSpecificSettings'] = <String, dynamic>{};
     notifyListeners();
   }
 
@@ -787,15 +772,9 @@ class Settings with ChangeNotifier {
     }
   }
 
-  String _getOrCreateDeviceId() {
-    var deviceId = _data['deviceId'] as String;
-    if (deviceId.isNotEmpty) {
-      return deviceId;
-    }
-    var id = const Uuid().v4();
-    _data['deviceId'] = id;
-    return id;
-  }
+  // ⭐ 重构（2026-10-10 用户方案 ✓）：`_getOrCreateDeviceId()` 已**删除** ✗ ——
+  // 新语义下不再有"按 deviceId 分键的第二层" ✓（`deviceId` 仍由 `doInit` 生成并保留，
+  // 供同步排除清单与历史数据识别 ✓），所以这里不再需要它 ✓。
 
   @override
   String toString() {
