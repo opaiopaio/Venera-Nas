@@ -41,6 +41,10 @@ void main() {
     // ⚠️ `App.dataPath` 是 `late` 字段 ✓（未初始化时读会抛 ✗）⇒ 直接赋值 ✓（与既有测试同做法 ✓）。
     App.dataPath = tempDir.path;
     await appdata.init();
+    // ⭐ 隔离（2026-10-10 尾巴 1 ✓）：**先把上一条用例尾部那次异步 `saveData()` 排干** ✗→✓ ——
+    // `syncData()` 尾部会 `saveData()`（不 await ✓）并触发 `uploadData()` ✓ ⇒ 它可能晚于本用例的快照读取 ✓
+    // ⇒ 读到**上一条用例的旧内容** ⇒ T-SY4 偶发红 ✗。`saveData` 自带 `_isSavingData` 互斥 ⇒ 这里 await 一次即可排干 ✓。
+    await appdata.saveData(false);
     appdata.settings.setEnabledAppearanceDeviceSettings(false);
     appdata.settings.setEnabledDeviceSpecificSettings(false);
     appdata.settings['backgroundImage'] = '';
@@ -59,7 +63,18 @@ void main() {
     // 现在 `saveData` **始终**产出过滤后的 `syncdata.json` ✓（P0-1 ✓）⇒ 保持**默认空串** ✓ = 真实默认路径 ✓。
   });
 
-  tearDown(() {
+  tearDown(() async {
+    // ⭐⭐ 根因修复（2026-10-10 尾巴 1 ✓，**实测抓到的真因** ✗→✓）：
+    // `syncData()` 尾部会**不 await** 地调 `saveData()` ✓ ⇒ 它可能在本用例 `tearDown`
+    // **删掉临时目录之后**才真正写盘 ✗ ⇒ 抛 `PathNotFoundException: ...\venera-sync-xxxx\appdata.json` ✓
+    // 这个**未处理的异步错误**会被测试框架算到**下一个**用例头上 ⇒ T-SY4 偶发红 ✗
+    //（本轮全量首跑就是这样红的 ✓，日志已取证 ✓）。
+    // 做法 ✓：**先排干在途写入（`saveData` 自带 `_isSavingData` 互斥 ✓），再删目录** ✓。
+    try {
+      await appdata.saveData(false);
+      // 再让出一轮事件循环 ✓：`uploadData()` 等尾巴也可能刚被排队 ✓。
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    } catch (_) {}
     appdata.settings.setEnabledAppearanceDeviceSettings(false);
     appdata.settings.setEnabledDeviceSpecificSettings(false);
     appdata.settings['backgroundImage'] = '';
@@ -69,12 +84,31 @@ void main() {
   });
 
   /// 出方向：跑一次真实 `saveData()` 并读回 `syncdata.json` 的 `settings` ✓。
+  ///
+  /// ⭐ 隔离（2026-10-10 尾巴 1 ✓）：**读到"内容已对应当前内存状态"为止** ✗→✓ ——
+  /// 只读一次会撞上"上一条用例尾部的异步写入" ✓（`syncData()` → `saveData()` 未 await ✓）
+  /// ⇒ 拿到旧内容 ⇒ T-SY4 偶发红 ✗。这里对若干**已知键**做短超时轮询 ✓（最多 ~2s，单次命中即返回 ✓）。
   Future<Map<String, dynamic>> uploadSnapshot() async {
     await appdata.saveData(false);
     final f = File('${tempDir.path}/syncdata.json');
-    expect(f.existsSync(), isTrue, reason: '出方向应产出同步快照 ✓');
-    final json = jsonDecode(f.readAsStringSync()) as Map;
-    return Map<String, dynamic>.from(json['settings'] as Map);
+    const keys = <String>['backgroundImage', 'color', 'readerMode'];
+    Map<String, dynamic>? last;
+    for (var i = 0; i < 80; i++) {
+      if (f.existsSync()) {
+        try {
+          final json = jsonDecode(f.readAsStringSync()) as Map;
+          final settings = Map<String, dynamic>.from(json['settings'] as Map);
+          last = settings;
+          final matches = keys.every((k) => settings[k] == appdata.settings[k]);
+          if (matches) return settings;
+        } catch (_) {
+          // 文件正在被重写（半截 JSON）⇒ 下一轮再读 ✓。
+        }
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 25));
+    }
+    expect(last, isNotNull, reason: '出方向应产出同步快照 ✓');
+    return last!;
   }
 
   test('T-SY1 出方向：开关 ON 时快照仍含所有设置值，但**不含**开关标志', () async {

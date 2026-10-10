@@ -86,19 +86,27 @@ void main() {
       ),
     );
     await tester.runAsync(() async {
-      for (var i = 0; i < 80; i++) {
+      for (var i = 0; i < 20; i++) {
         await Future<void>.delayed(const Duration(milliseconds: 25));
-        if (_sliceCacheFilled(provider)) break;
       }
     });
-    // 多泵两帧 ✓：让切片的监听器回调真正跑完并写入**模块级缓存** ✓（只等 ImageCache 会太早 ✓）。
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
-    await tester.pump();
+    // ⭐⭐ 正确等待判据（2026-10-10 尾巴 2 ✓）：**每轮"让真实 I/O 前进 + 泵一帧"**，直到 painter 有图 ✓。
+    // ⚠️ 不能用 `ImageCache.containsKey` 当等待判据 ✗ —— `containsKey` 对**仍在加载中（pending）**的条目
+    // 也返回 true ✗（`ImageCache.containsKey` = pending ∪ completed ✓）⇒ 会**过早**通过 ✓，
+    // 监听器还没回调 ⇒ 模块缓存其实没填 ⇒ 切片②进的是"无缓存"分支 ⇒ 假绿 ✗（这正是上一版的问题 ✓）。
+    for (var i = 0; i < 40; i++) {
+      if (_paintedImage(tester) != null) break;
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 25)),
+      );
+      await tester.pump();
+    }
+    // ⭐ 关键前置 ✓：painter 已有图 ⇒ 监听器**确实跑过**（`background_slice.dart:113-115` ✓ 同段代码）
+    // ⇒ 模块级缓存（路径 + 图）已填 ✓ ⇒ 切片②必然走"命中模块缓存"分支 ✓。
     expect(
-      _sliceCacheFilled(provider),
-      isTrue,
-      reason: '前置条件：第一个切片必须已把图解码进 ImageCache ✓（否则第二步进不了"命中模块缓存"分支 ✓）',
+      _paintedImage(tester),
+      isNotNull,
+      reason: '切片①必须真的画到图 ⇒ 才能证明模块级缓存已填 ✓（"命中缓存分支可达"的前提 ✓）',
     );
 
     // ② 清掉 ImageCache ✓（模块缓存保留 ✓）⇒ 换一个全新 State 的切片 ✓ ⇒ 真正命中缓存分支 ✓。
@@ -125,11 +133,19 @@ void main() {
   });
 }
 
-/// 模块级缓存是否已被填上（用于等真实解码完成 ✓，不直接读私有变量 ✓）。
-bool _sliceCacheFilled(FileImage provider) {
-  // 模块缓存写入时必定伴随 `ImageCache` 里有这张图 ✓（两者由同一个监听器一起写 ✓），
-  // 且我们只在**清缓存之前**用它做等待判据 ✓。
-  return PaintingBinding.instance.imageCache.containsKey(provider);
+/// 取切片 painter 当前持有的 `image`（`background_slice.dart:184` 的公开字段 ✓）——
+/// ⭐ 它非空 ⇔ 监听器已回调 ⇔ **模块级缓存已填** ✓（两者在 `:113-114` 同一段代码里一起写 ✓）。
+///
+/// ⚠️ 只是**只读观测** ✓：不改生产代码、不加 test-only 分支 ✓（不影响任何运行语义 ✓）。
+Object? _paintedImage(WidgetTester tester) {
+  final customPaints = tester.widgetList<CustomPaint>(find.byType(CustomPaint));
+  for (final paint in customPaints) {
+    final painter = paint.painter;
+    if (painter == null) continue;
+    final image = (painter as dynamic).image;
+    if (image != null) return image;
+  }
+  return null;
 }
 
 /// 去掉 `//` 行注释与 `/* */` 块注释（避免把注释里的字样当成代码 ✗）。
