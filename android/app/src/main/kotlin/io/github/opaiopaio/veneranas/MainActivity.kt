@@ -324,7 +324,13 @@ class MainActivity : FlutterFragmentActivity() {
     private var lastLaunchColor: Int? = null
     private var postResumeCount = 0
 
+    /// ⭐ 修复（2026-10-20 移动端闪退 ✓）：**释放过就不再重建** ✗ ——
+    /// 原先 `onPostResume` 每次恢复都会因 `launchBackground == null` 而**重新解码背景图** ✗
+    /// ⇒ 从文件选择器等外部 Activity 返回时，主线程再解一次大图（OOM 风险 ✓）且随后立刻 recycle ✗。
+    private var launchBackgroundReleased = false
+
     private fun applyLaunchBackground() {
+        if (launchBackgroundReleased) return
         if (launchBackground == null) {
             launchBackground = buildLaunchBackground()
         }
@@ -489,8 +495,17 @@ class MainActivity : FlutterFragmentActivity() {
     private fun releaseLaunchBackgroundIfDone() {
         val drawable = launchBackground ?: return
         try {
-            lastLaunchColor?.let { window.setBackgroundDrawable(ColorDrawable(it)) }
+            // ⭐ 修复（2026-10-20 移动端闪退 ✓）：**必须先换掉窗口底再回收位图** ✗→✓ ——
+            // 原先只有 `lastLaunchColor != null` 时才换 ✗ ⇒ 用户只设了背景图、`backgroundColor`
+            // 保持默认 `transparent` ⇒ `lastLaunchColor == null` ⇒ **窗口仍持有这张 `BitmapDrawable`** ✗，
+            // 紧接着 `recycle()` ✗ ⇒ 从外部 Activity（文件选择器等）返回、窗口重绘背景时
+            // **崩溃 `Canvas: trying to use a recycled bitmap`** ✓（用户报的"可能会闪退" ✓）。
+            // 现在**无条件**先落一个纯色（无兜底色就用透明 ✓ —— 首帧之后 Flutter 自己会铺满 ✓）。
+            window.setBackgroundDrawable(
+                ColorDrawable(lastLaunchColor ?: android.graphics.Color.TRANSPARENT)
+            )
             launchBackground = null
+            launchBackgroundReleased = true
             if (drawable is BitmapDrawable) {
                 drawable.bitmap?.takeIf { !it.isRecycled }?.recycle()
             }
@@ -543,10 +558,11 @@ class MainActivity : FlutterFragmentActivity() {
         Thread {
             try {
                 copyDirectory(contentResolver, uri, tmp)
-                result.success(tmp.absolutePath)
+                // ⭐ 同上（2026-10-20 ✓）：平台通道回调必须在主线程 ✓。
+                runOnUiThread { result.success(tmp.absolutePath) }
             }
             catch (e: Exception) {
-                result.error("copy error", e.message, null)
+                runOnUiThread { result.error("copy error", e.message, null) }
             }
         }.start()
 
@@ -708,10 +724,12 @@ class MainActivity : FlutterFragmentActivity() {
                             output.flush()
                         }
                     }
-                    result.success(tmp.absolutePath)
+                    // ⭐ 修复（2026-10-20 移动端闪退 ✓）：方法通道回调必须在**平台线程** ✗ ——
+                    // 原先在 `Thread{}` 里直接 `result.success` ✗ ⇒ 线程违规（`Must be called on the main thread` ✓）⇒ 崩溃 ✓。
+                    runOnUiThread { result.success(tmp.absolutePath) }
                 }
                 catch (e: Exception) {
-                    result.error("copy error", e.message, null)
+                    runOnUiThread { result.error("copy error", e.message, null) }
                 }
             }.start()
         }
