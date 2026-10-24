@@ -197,13 +197,20 @@ class _ComicImageState extends State<ComicImage> with WidgetsBindingObserver {
   void _onImageLoadError() {
     final provider = widget.image;
     if (provider is ReaderImageProvider) {
-      // ⭐ 2026-10-26：页列表键统一走 [comicPagesListCacheKey] ✓（格式逐字不变 ✓）。
-      var cacheKey = comicPagesListCacheKey(
-        provider.sourceKey,
-        provider.cid,
-        provider.eid,
-      );
-      CacheManager().delete(cacheKey);
+      // ⭐ 2026-10-26（P2 ✓）：**SMB 跳过页列表缓存删除** ✓ ——
+      // 页列表写入用的是 `loadComicPages@${type.sourceKey}@…`（SMB 为 `@smb@` ✓），
+      // 而这里拼的是 `loadComicPages@${provider.sourceKey}@…`，SMB 的 `sourceKey == null`
+      // ⇒ 得到 `@null@` ✗：现在只是**空转** ✓，将来一旦有人"修"了这段就可能**删错别的源的页列表** ✗。
+      // 与 `ReaderImageProvider.onLoadError()` 保持同一口径 ✓；其它源行为不变 ✓。
+      if (!provider.imageKey.startsWith('smb://')) {
+        // ⭐ 2026-10-26：页列表键统一走 [comicPagesListCacheKey] ✓（格式逐字不变 ✓）。
+        var cacheKey = comicPagesListCacheKey(
+          provider.sourceKey,
+          provider.cid,
+          provider.eid,
+        );
+        CacheManager().delete(cacheKey);
+      }
     }
   }
 

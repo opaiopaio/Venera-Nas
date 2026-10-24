@@ -72,7 +72,8 @@ Future<void> init() async {
   }
   // ⭐ 2026-10-25（用户要求 ✓，方案 A ✓）：**启动后预热阅读会话** ✓ ——
   // 用户会"启动就连、常驻、退出断开"✓；预热后**点漫画即用** ✓（否则第一次点要等 2~3 秒握手 ✗）。
-  // 延迟 1.2 秒再连 ✓：不抢启动关键路径 ✓；失败静默 ✓（真正点漫画时会重试并报错 ✓）。
+  // 延迟 1.2 秒再连 ✓：不抢启动关键路径 ✓；失败记 **warning** 并**按服务器退避 24h** ✓
+  //（真正点漫画时会立即重连并给出明确报错 ✓）。
   unawaited(_prewarmSmbReaderSessions());
   FlutterError.onError = (details) {
     Log.error("Unhandled Exception", "${details.exception}\n${details.stack}");
@@ -123,14 +124,56 @@ void _checkOldConfigs() {
   }
 }
 
+/// 预热失败的**按服务器退避**时长 ✓ —— 同一共享 24 小时内不再自动预热 ✓。
+///
+/// 为什么需要（P2 ✓）：密码错 / 服务器离线时，原实现**每次启动**都会静默重试一遍 ✗
+/// （启动后平白多一轮连接超时 ✓，NAS 上也会留下失败连接记录 ✓）。
+/// 注意退避**只作用于"预热"** ✓：用户真正点开漫画时照旧立即重连并给出明确报错 ✓。
+const Duration _smbPrewarmBackoff = Duration(hours: 24);
+
+/// `implicitData` 里记录"各服务器最近一次预热失败时间"的键 ✓（服务器键 → epoch 毫秒 ✓）。
+///
+/// 服务器键取 `SmbConfig.cacheKey`（`host|port|share` ✓，**不含凭据** ✓，可安全落盘 ✓）。
+/// 键名沿用 `implicitData` 既有的 camelCase 规范 ✓（与 `lastCheckUpdate` 同类 ✓）。
+/// ⚠️ 兼容处理 ✓：旧版 `implicitData.json` 没有该键 ⇒ 视为"无失败记录" ✓；
+/// 值类型不对（历史损坏 / 手工编辑 ✓）⇒ 逐项丢弃 ✓，绝不让预热因脏数据崩溃 ✗；
+/// 已从设置里删掉的服务器记录会被顺带清理 ✓（避免该键无限长大 ✗）。
+const String _smbPrewarmFailedAtKey = 'smbPrewarmFailedAt';
+
+/// 读出预热失败记录 ✓（容错规则见 [_smbPrewarmFailedAtKey] ✓）。
+Map<String, int> _readSmbPrewarmFailures() {
+  final raw = appdata.implicitData[_smbPrewarmFailedAtKey];
+  if (raw is! Map) return {};
+  final result = <String, int>{};
+  raw.forEach((key, value) {
+    if (key is String && value is int && value > 0) {
+      result[key] = value;
+    }
+  });
+  return result;
+}
+
+/// 写回预热失败记录 ✓；空表时**删掉该键** ✓（不留空字段 ✓）。
+Future<void> _writeSmbPrewarmFailures(Map<String, int> failures) async {
+  if (failures.isEmpty) {
+    appdata.implicitData.remove(_smbPrewarmFailedAtKey);
+  } else {
+    appdata.implicitData[_smbPrewarmFailedAtKey] = failures;
+  }
+  await appdata.writeImplicitData();
+}
+
 /// ⭐ 2026-10-25（用户要求 ✓，方案 A ✓）：**预热阅读专用 SMB 会话** ✓
 ///
 /// 用户要的语义 ✓：启动即连、常驻、退出断开 ✓。
 /// 启动 1.2 秒后为已保存的服务器各建一条**阅读会话** ✓
 /// ⇒ 点漫画时**直接可用** ✓（不必再等 2~3 秒握手 ✗）。
-/// 失败静默 ✓：真正打开漫画时会再连并给出明确报错 ✓。
+/// 失败记 **warning** ✓ 并按服务器退避 24h ✓（见 [_smbPrewarmBackoff] ✓）：
+/// 真正打开漫画时会再连并给出明确报错 ✓。
 Future<void> _prewarmSmbReaderSessions() async {
-  await Future.delayed(AppMotion.long * 3);
+  // ⭐ 2026-10-26：改用**启动预算令牌** ✓ —— 原先借用 `AppMotion.long * 3` 当网络延迟 ✗
+  //（改个转场时长就会顺带改预热时机 ✓，语义不成立 ✗）。理由见 `design_tokens.dart` ✓。
+  await Future.delayed(AppStartup.smbPrewarmDelay);
   final raw = appdata.settings['smbServers'];
   // ⭐ 2026-10-25：**打点（便于确认是否真的执行/读到几条服务器 ✓）** ✓
   Log.info(
@@ -138,19 +181,78 @@ Future<void> _prewarmSmbReaderSessions() async {
     'prewarm start: serverCount=${raw is List ? raw.length : -1}',
   );
   if (raw is! List) return;
+
+  final now = DateTime.now().millisecondsSinceEpoch;
+  final failures = _readSmbPrewarmFailures();
+  // 只有记录真的变了才写盘 ✓（避免每次启动都白写一次 `implicitData.json` ✗）。
+  var backoffChanged = false;
+  // 本轮仍配置着的服务器 ✓ —— 已删除的服务器记录一并清掉 ✓（见 [_smbPrewarmFailedAtKey] ✓）。
+  final alive = <String>{};
+
   for (final item in raw) {
     if (item is! Map) continue;
+    SmbConnection conn;
     try {
-      final conn = SmbConnection.fromJson(Map<String, dynamic>.from(item));
-      final cfg = conn.config;
-      if (cfg.host.isEmpty || cfg.share.isEmpty) continue;
+      conn = SmbConnection.fromJson(Map<String, dynamic>.from(item));
+    } catch (e) {
+      Log.warning('SMB Connect', 'prewarm skipped invalid server config: $e');
+      continue;
+    }
+    final cfg = conn.config;
+    if (cfg.host.isEmpty || cfg.share.isEmpty) continue;
+    // ⚠️ `cacheKey` **不含凭据** ✓（可安全写进日志 / implicitData ✓）。
+    final key = cfg.cacheKey;
+    alive.add(key);
+
+    final failedAt = failures[key];
+    if (failedAt != null) {
+      final age = now - failedAt;
+      // 仍在退避窗口内 ⇒ 跳过本次预热 ✓。
+      // ⚠️ `age < 0`（时钟回拨 / 时间戳在未来 ✓）不当作退避 ✓ —— 否则该服务器会被**永久跳过** ✗。
+      if (age >= 0 && age < _smbPrewarmBackoff.inMilliseconds) {
+        final leftHours = ((_smbPrewarmBackoff.inMilliseconds - age) / 3600000)
+            .ceil();
+        Log.info(
+          'SMB Connect',
+          'prewarm skipped (backoff ${leftHours}h): ${cfg.host}/${cfg.share}',
+        );
+        continue;
+      }
+      // 退避已过期 ⇒ 清掉记录，给这次预热一个机会 ✓。
+      failures.remove(key);
+      backoffChanged = true;
+    }
+
+    try {
       await SmbClient.readerShared(cfg).connect(high: false);
       Log.info(
         'SMB Connect',
         'prewarmed reader session: ${cfg.host}/${cfg.share}',
       );
+      if (failures.remove(key) != null) backoffChanged = true;
     } catch (e) {
-      Log.info('SMB Connect', 'prewarm failed: $e');
+      // ⚠️ 失败改 **warning** ✓（原为 info ✓）：密码错 / 服务器离线是**需要用户处理**的问题 ✗，
+      // 不该沉在 info 里 ✓；同时按服务器记下时间 ✓ ⇒ 24h 内不再反复打扰 ✓。
+      failures[key] = DateTime.now().millisecondsSinceEpoch;
+      backoffChanged = true;
+      Log.warning(
+        'SMB Connect',
+        'prewarm failed (retry after ${_smbPrewarmBackoff.inHours}h): '
+            '${cfg.host}/${cfg.share}: $e',
+      );
+    }
+  }
+
+  final beforePrune = failures.length;
+  failures.removeWhere((key, _) => !alive.contains(key));
+  if (failures.length != beforePrune) backoffChanged = true;
+
+  if (backoffChanged) {
+    try {
+      await _writeSmbPrewarmFailures(failures);
+    } catch (e) {
+      // 退避记录写失败不能反噬启动 ✓（下次仍会正常预热 ✓）。
+      Log.warning('SMB Connect', 'prewarm backoff save failed: $e');
     }
   }
 }

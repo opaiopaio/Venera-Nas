@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui' as ui;
 import 'package:desktop_webview_window/desktop_webview_window.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flex_seed_scheme/flex_seed_scheme.dart';
@@ -20,8 +19,6 @@ import 'package:venera_nas/utils/app_links.dart';
 import 'package:venera_nas/utils/background_download.dart';
 import 'package:venera_nas/utils/io.dart';
 import 'package:venera_nas/utils/translations.dart';
-import 'package:venera_nas/network/smb/smb_client.dart';
-import 'package:venera_nas/network/smb/smb_serial.dart';
 import 'package:window_manager/window_manager.dart';
 import 'components/components.dart';
 import 'components/window_frame.dart';
@@ -52,15 +49,20 @@ void main(List<String> args) {
         // "UI+白底 → 背景闪出来" ✗。现在 **Android + Windows 都预热** ✓（内部仍有令牌超时 + 静默回退 ✓）。
         if (App.isAndroid || App.isWindows) {
           await preloadBackgroundImageIntoCache();
-          // ⭐ 2026-10-25：**把当前背景图预解码并交给 BackgroundSlice 首帧缓存** ✓
+          // ⭐ 2026-10-25：**把当前背景图交给 BackgroundSlice 首帧缓存** ✓
           //（只预热 ImageCache 不够 ✗：切片第一帧仍要等异步解析回调 ⇒ 露白 ✓）
+          // ⭐ 2026-10-26（P1 ✓）：**优先复用预热进 ImageCache 的那张** ✓ ——
+          // 旧实现这里又 `readAsBytes + instantiateImageCodec` **全量解码一次** ✗
+          //（无 targetWidth / 无预算 ⇒ 首帧被无上限推迟 ✗、Android 内存翻倍 ✗）。
+          // 现在复用 `ImageInfo.image.clone()` ✓；拿不到才在预算内按屏幕宽解码 ✓
+          //（helper 内 `try/finally` 释放 codec ✓）。
           try {
             final bgFile = currentBackgroundImageFile();
             if (bgFile != null) {
-              final bgBytes = await bgFile.readAsBytes();
-              final bgCodec = await ui.instantiateImageCodec(bgBytes);
-              final bgFrame = await bgCodec.getNextFrame();
-              seedBackgroundSliceFirstFrame(bgFrame.image, bgFile.path);
+              final bgImage = await resolveBackgroundFirstFrameImage(bgFile);
+              if (bgImage != null) {
+                seedBackgroundSliceFirstFrame(bgImage, bgFile.path);
+              }
             }
           } catch (_) {
             // 静默回退 ✓：图不存在/损坏 ⇒ 首帧退回原行为 ✓。
@@ -151,9 +153,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     // 若关闭时不断开 ✗，路由器会把旧会话保留到 `deadtime`（15s）✓，
     // 下次启动**新旧会话叠加** ✗ ⇒ 表现为"重启后经常断连" ✓。
     if (state == AppLifecycleState.detached) {
-      unawaited(SmbClient.closeAllShared());
-      unawaited(ReaderImageProvider.closeSharedSmbClient(force: true));
-      SmbSerial.forceReset();
+      // ⭐ 2026-10-26：统一入口 ✓ —— 一次断开「共享池 + 阅读器专用池 + 阅读器复用连接」✓
+      //（旧实现漏了 `closeReaderShared()` ✗ ⇒ 阅读器专用池会话永远不断开 ✓）。
+      // 仍保留 detached 兜底 ✓；Windows 自绘标题栏的关闭按钮另在 `window_frame.dart`
+      // **await** 同一入口后再 `exit(0)` ✓（`detached` 钩子来不及 ✓）。
+      unawaited(ReaderImageProvider.closeAllSmbSessions());
     }
 
     if (state == AppLifecycleState.resumed && App.isMobile) {
@@ -674,7 +678,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                   },
                   child: MouseBackDetector(
                     onTapDown: App.pop,
-                    child: WindowFrame(widget),
+                    // ⭐ 2026-10-26：关闭窗口前先断开全部 SMB 会话 ✓。
+                    // 这里注入而不让 window_frame 直接 import（会与 reader.dart 形成循环依赖 ✓）。
+                    child: WindowFrame(
+                      widget,
+                      beforeExit: () =>
+                          ReaderImageProvider.closeAllSmbSessions(),
+                    ),
                   ),
                 );
               }

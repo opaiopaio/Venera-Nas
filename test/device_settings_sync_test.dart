@@ -43,7 +43,7 @@ void main() {
     await appdata.init();
     // ⭐ 隔离（2026-10-10 尾巴 1 ✓）：**先把上一条用例尾部那次异步 `saveData()` 排干** ✗→✓ ——
     // `syncData()` 尾部会 `saveData()`（不 await ✓）并触发 `uploadData()` ✓ ⇒ 它可能晚于本用例的快照读取 ✓
-    // ⇒ 读到**上一条用例的旧内容** ⇒ T-SY4 偶发红 ✗。`saveData` 自带 `_isSavingData` 互斥 ⇒ 这里 await 一次即可排干 ✓。
+    // ⇒ 读到**上一条用例的旧内容** ⇒ T-SY4 偶发红 ✗。`saveData` 走串行 Future 链 ⇒ 这里 await 一次即可排干 ✓。
     await appdata.saveData(false);
     appdata.settings.setEnabledAppearanceDeviceSettings(false);
     appdata.settings.setEnabledDeviceSpecificSettings(false);
@@ -69,7 +69,7 @@ void main() {
     // **删掉临时目录之后**才真正写盘 ✗ ⇒ 抛 `PathNotFoundException: ...\venera-sync-xxxx\appdata.json` ✓
     // 这个**未处理的异步错误**会被测试框架算到**下一个**用例头上 ⇒ T-SY4 偶发红 ✗
     //（本轮全量首跑就是这样红的 ✓，日志已取证 ✓）。
-    // 做法 ✓：**先排干在途写入（`saveData` 自带 `_isSavingData` 互斥 ✓），再删目录** ✓。
+    // 做法 ✓：**先排干在途写入（`saveData` 走串行 Future 链 ✓），再删目录** ✓。
     try {
       await appdata.saveData(false);
       // 再让出一轮事件循环 ✓：`uploadData()` 等尾巴也可能刚被排队 ✓。

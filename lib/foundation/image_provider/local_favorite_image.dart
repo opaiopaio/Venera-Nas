@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/image_cache_keys.dart';
 import 'package:venera_nas/network/images.dart';
 import 'package:venera_nas/utils/io.dart';
 import 'base_image_provider.dart';
@@ -90,7 +91,10 @@ class LocalFavoriteImageProvider
   String get key => '$id@$intKey';
 
   /// 修复（2026-10-09）：load() 走的是 `ImageDownloader.loadThumbnail(url, sourceKey)`，
-  /// 其磁盘缓存键为 `"$url@$sourceKey"`（见 network/images.dart），与本类 `key` 不同 ⇒ 原清理命不中。
+  /// 其磁盘缓存键由 `thumbnailCacheKey` 统一拼装（见 network/images.dart），
+  /// 与本类 `key` 不同 ⇒ 原清理命不中。
+  /// ⭐ 2026-10-26：改走 [thumbnailCacheKey] ✓（三处共用同一格式 ✓，逐字不变 ✓）。
   @override
-  String get cacheKey => "$url@${ComicSource.fromIntKey(intKey)?.key}";
+  String get cacheKey =>
+      thumbnailCacheKey(url, ComicSource.fromIntKey(intKey)?.key);
 }

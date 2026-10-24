@@ -67,7 +67,8 @@ abstract class ImageDownloader {
     String? sourceKey, [
     String? cid,
   ]) async* {
-    final cacheKey = "$url@$sourceKey${cid != null ? '@$cid' : ''}";
+    // ⭐ 2026-10-26：缩略图键改走统一函数 ✓（格式逐字不变 ✓）。
+    final cacheKey = thumbnailCacheKey(url, sourceKey, cid);
     final cache = await CacheManager().findCache(cacheKey);
 
     if (cache != null) {
@@ -221,13 +222,15 @@ abstract class ImageDownloader {
 
     var configs = <String, dynamic>{};
     if (sourceKey != null) {
-      var comicSource = ComicSource.find(sourceKey);
+      // ⭐ 2026-10-26：**空安全** ✓ —— 原先 `ComicSource.find(sourceKey)!` 在
+      // SMB（`sourceKey == 'smb'`，没有同名网络源 ✓）等场景会直接空指针崩溃 ✗。
+      // 现在抛出明确文案，交由图片加载的失败路径处理（显示错误 / 按需重试）✓。
+      final comicSource = ComicSource.find(sourceKey);
+      if (comicSource == null) {
+        throw "Error: Comic source not found ($sourceKey).";
+      }
       configs =
-          (await comicSource!.getImageLoadingConfig?.call(
-            imageKey,
-            cid,
-            eid,
-          )) ??
+          (await comicSource.getImageLoadingConfig?.call(imageKey, cid, eid)) ??
           {};
     }
     var retryLimit = 5;

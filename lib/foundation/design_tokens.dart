@@ -34,7 +34,7 @@ abstract final class AppOpacity {
 ///
 /// 取自上游 `v1.16.0` 的 `AppMotion` 约定，用于统一动画手感。
 abstract final class AppMotion {
-  /// 小元件（chip / button / 标签）：200ms。  /// 小元件（chip / button / 标签）：200ms。
+  /// 小元件（chip / button / 标签）：200ms。
   static const Duration short = Duration(milliseconds: 200);
 
   /// 中等元件（侧栏项 / 卡片 / 弹层）：300ms。
@@ -59,6 +59,20 @@ abstract final class AppStartup {
   /// 只为"让首帧命中 `ImageCache`" ✓；超时即放弃等待 ✓（图仍在后台继续解码 ✓），
   /// **绝不允许**拖慢冷启动 ✗（用户实测要求"启动瞬间就是背景" ✓，但更不接受启动变慢 ✗）。
   static const Duration backgroundPreloadTimeout = Duration(milliseconds: 600);
+
+  /// ⭐ 2026-10-26：启动时**预热 SMB 阅读会话**的延迟 ✓（`init.dart` 用 ✓）。
+  ///
+  /// 为什么单列令牌 ✓：原先借用 `AppMotion.long * 3`（= 1.2s ✓）当**网络延迟** ✗ ——
+  /// 动效令牌是**外观体系**的东西 ✓，改一次转场时长就会莫名其妙改变 SMB 预热时机 ✗
+  /// （两者没有任何语义关系 ✓）。这里独立成一个启动预算 ✓，理由写死在这里 ✓：
+  /// 等启动期的主线程/初始化任务先跑完，再让后台去握手 ✓；失败静默 ✓。
+  static const Duration smbPrewarmDelay = Duration(milliseconds: 1200);
+
+  /// ⭐ 2026-10-26：退出 / 关闭窗口前等待 SMB 会话断开的上限 ✓（1~2s ✓）。
+  ///
+  /// 关闭流程**不能无限等** ✗：断开要给每个在途原生操作留收尾时间 ✓，
+  /// 但超过 2s 也必须继续退出 ✓（否则用户点了关闭窗口却卡住 ✓）。
+  static const Duration smbShutdownTimeout = Duration(seconds: 2);
 }
 
 /// 全局字号缩放范围（设置页滑块与 TextScaler 上限都取自这里）。
@@ -92,7 +106,7 @@ abstract final class AppTopBar {
   /// 页面内容顶部让位高度（= height + extra）。
   static const double boundary = height + extra;
 
-  /// 供 `MediaQuery.padding.top` 之外的地方直接取用。  /// 供 `MediaQuery.padding.top` 之外的地方直接取用。
+  /// 供 `MediaQuery.padding.top` 之外的地方直接取用。
   static EdgeInsets get boundaryPadding => const EdgeInsets.only(top: boundary);
 }
 

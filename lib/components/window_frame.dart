@@ -48,9 +48,17 @@ class WindowFrameController extends InheritedWidget {
 }
 
 class WindowFrame extends StatefulWidget {
-  const WindowFrame(this.child, {super.key});
+  const WindowFrame(this.child, {super.key, this.beforeExit});
 
   final Widget child;
+
+  /// ⭐ 2026-10-26：关闭窗口前要执行的收尾（如断开全部 SMB 会话 ✓）。
+  ///
+  /// ⚠️ 用**回调注入**而不是在本文件 import `ReaderImageProvider` ✗ ——
+  /// `pages/reader/reader.dart` 会 import 本文件 ✓，而 `ReaderImageProvider` 又
+  /// 经 `local.dart → reader.dart` 绕回来 ⇒ 直接 import 会形成**循环依赖** ✗。
+  /// 由 `main.dart` 在组装时注入就避开了这条环 ✓（入口仍是 `closeAllSmbSessions()` ✓）。
+  final Future<void> Function()? beforeExit;
 
   @override
   State<WindowFrame> createState() => _WindowFrameState();
@@ -95,10 +103,23 @@ class _WindowFrameState extends State<WindowFrame> {
     closeListeners.remove(listener);
   }
 
-  void _onClose() {
+  /// ⭐ 2026-10-26（P1 ✓）：关闭按钮要在 `exit(0)` 前**等 SMB 会话断开** ✓ ——
+  /// 旧实现直接 `exit(0)` ✗ ⇒ `didChangeAppLifecycleState(detached)` 的兜底来不及跑 ✗
+  /// ⇒ NAS 上残留会话（下次启动新旧会话叠加 ⇒ 表现为"重启后经常断连" ✗）。
+  /// 等待有上限（[AppStartup.smbShutdownTimeout] ✓，1~2s）：超时也必须继续退出 ✓，
+  /// 否则用户点了关闭却卡住 ✗。
+  Future<void> _onClose() async {
     for (var listener in closeListeners) {
       if (!listener()) {
         return;
+      }
+    }
+    final beforeExit = widget.beforeExit;
+    if (beforeExit != null) {
+      try {
+        await beforeExit().timeout(AppStartup.smbShutdownTimeout);
+      } catch (_) {
+        // 超时 / 单条断开失败都不阻止退出 ✓（会话残留由下次启动的 detached 兜底 ✓）。
       }
     }
     exit(0);

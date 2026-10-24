@@ -19,11 +19,25 @@ class Appdata with Init {
 
   var searchHistory = <String>[];
 
-  bool _isSavingData = false;
+  /// 是否正在写 `implicitData.json` ✓。
+  ///
+  /// ⚠️ 2026-10-25 起它**只服务于 implicit 写入自身**的串行 ✓ ——
+  /// `appdata.json` / `syncdata.json` 由下面的 [_saveChain] 串行 ✓，且与 implicit 写的是
+  /// **不同文件** ✓ ⇒ 两套写入**不需要互斥** ✗（此前误把它当成"所有保存的互斥锁" ✓，
+  /// 才逼出 `saveData` 里 20ms 自旋等待 ✗）。
+  bool _isWritingImplicitData = false;
 
-  // 2026-10-25 P2：用 Future 链串行化保存（替代原先 20ms 自旋等待 ✗）。
+  /// `appdata.json` / `syncdata.json` 的**串行保存链** ✓（FIFO ✓，后一次不会读到前一次的半成品 ✓）。
+  ///
+  /// ⚠️ 链上 `catchError` **吞掉错误**只为"一次写盘失败不能卡死后续保存" ✓；
+  /// 失败原因由 [_saveDataOnce] 内的 `Log.error` 留证 ✓ —— 不是静默失败 ✗。
   Future<void> _saveChain = Future.value();
 
+  /// 保存设置到磁盘 ✓（[sync] = 是否顺带触发 WebDAV 上传 ✓）。
+  ///
+  /// 返回的是**原始** Future ✓ —— `await` 的调用方仍能感知写盘失败 ✓；
+  /// fire-and-forget 调用方（全仓约 90 处 ✓）不会产生 Unhandled Exception ✓，
+  /// 因为 [_saveChain] 上的 `catchError` 已为它注册了错误处理 ✓。
   Future<void> saveData([bool sync = true]) {
     final previous = _saveChain;
     final next = previous.then((_) => _saveDataOnce(sync));
@@ -31,6 +45,10 @@ class Appdata with Init {
     return next;
   }
 
+  /// 真正执行一次保存 ✓（由 [_saveChain] 串行调用 ✓）。
+  ///
+  /// 失败必须**记日志后再抛** ✓：抛给 `saveData` 链（链上吞掉以继续后续保存 ✓），
+  /// 日志保证"保存失败"不再像以前那样**完全静默** ✗（磁盘满 / 无权限时无从排查 ✓）。
   Future<void> _saveDataOnce(bool sync) async {
     try {
       var futures = <Future>[];
@@ -73,10 +91,13 @@ class Appdata with Init {
       futures.add(file4sync.writeAsString(data4sync));
 
       await Future.wait(futures);
-    } finally {
-      // 串行化由 _saveChain 保证
+    } catch (e, s) {
+      Log.error("Appdata", "Failed to save app data: $e", s);
+      rethrow;
     }
     if (sync) {
+      // ⚠️ 不 await ✓：上传是后台行为 ✓；`uploadData()` 内部已 try/catch 并转成 `Res.error` ✓
+      //（不会变成未处理异常 ✓）。
       DataSync().uploadData();
     }
   }
@@ -244,16 +265,20 @@ class Appdata with Init {
 
   var implicitData = <String, dynamic>{};
 
+  /// 把 [implicitData] 落盘 ✓（启动打点 / 上次 UA / 排序偏好等"不值得进设置表"的小状态 ✓）。
+  ///
+  /// ⚠️ 只与 [_isWritingImplicitData]（即"另一个 implicit 写"✓）互斥 ✓；
+  /// 与 `saveData` **无锁关系** ✓ —— 两者写不同文件 ✓（见 [_isWritingImplicitData] 的说明 ✓）。
   Future<void> writeImplicitData() async {
-    while (_isSavingData) {
+    while (_isWritingImplicitData) {
       await Future.delayed(const Duration(milliseconds: 20));
     }
-    _isSavingData = true;
+    _isWritingImplicitData = true;
     try {
       var file = File(FilePath.join(App.dataPath, 'implicitData.json'));
       await file.writeAsString(jsonEncode(implicitData));
     } finally {
-      _isSavingData = false;
+      _isWritingImplicitData = false;
     }
   }
 

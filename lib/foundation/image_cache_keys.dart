@@ -31,3 +31,14 @@ String readerPageCacheKey(
 /// 本函数只负责拼接，**不替调用方决定传哪个** ✓（两者都是既有协议的一部分 ✓）。
 String comicPagesListCacheKey(String? sourceKey, String cid, String eid) =>
     "loadComicPages@$sourceKey@$cid@$eid";
+
+/// **缩略图**（封面 / 收藏封面）的磁盘缓存键 ✓。
+///
+/// 格式：`$url@$sourceKey`；给了 [cid] 时追加 `@$cid` ✓（否则不追加 ✓）。
+/// ⚠️ 三处消费方必须逐字一致 ✓ —— `network/images.dart` 的 `loadThumbnail`
+/// 负责读写，`CachedImageProvider.cacheKey` 与 `LocalFavoriteImageProvider.cacheKey`
+/// 负责解码失败时删除 ✓（删错键 ⇒ 坏封面永久残留 ✗）。
+///
+/// ⚠️ 格式同样是磁盘缓存协议 ✓ —— `null` 会插值成字符串 `null` ✓，不要改动 ✗。
+String thumbnailCacheKey(String url, String? sourceKey, [String? cid]) =>
+    "$url@$sourceKey${cid != null ? '@$cid' : ''}";

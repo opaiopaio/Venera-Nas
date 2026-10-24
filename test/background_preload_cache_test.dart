@@ -119,5 +119,36 @@ void main() {
       isTrue,
       reason: '预热入口应在 foundation/window_overlay.dart ✓',
     );
+    expect(
+      overlay.contains('resolveBackgroundFirstFrameImage('),
+      isTrue,
+      reason: '首帧图解析入口必须在 window_overlay.dart ✓（先复用 ImageCache 图，拿不到才在预算内解码 ✓）',
+    );
+
+    // ⭐ 2026-10-26：启动路径（main.dart）**不得**再自己全量解码一次 ✗ ——
+    // 旧实现 `readAsBytes + instantiateImageCodec` 无 targetWidth / 无预算 ⇒ 首帧被推迟 ✓。
+    // 允许两种实现 ✓：复用 ImageCache 里的图 ✓（`resolve FileImage` + `clone()` ✓）；
+    // 或走上面的 helper（解码与 codec 释放都收在 window_overlay.dart ✓）。
+    final mainSrc = codeOf('lib/main.dart');
+    expect(
+      mainSrc.contains('instantiateImageCodec'),
+      isFalse,
+      reason: '启动路径不得在 main.dart 里直接解码 ✗（会绕过预热缓存、无预算地推迟首帧 ✓）',
+    );
+    expect(
+      mainSrc.contains('resolveBackgroundFirstFrameImage('),
+      isTrue,
+      reason: 'main.dart 必须通过统一 helper 复用预热图 / 有预算地解码 ✓',
+    );
+    expect(
+      mainSrc.contains('seedBackgroundSliceFirstFrame('),
+      isTrue,
+      reason: 'main.dart 仍须把首帧图交给 BackgroundSlice ✓（否则首帧露白 ✗）',
+    );
+    expect(
+      slice.contains('AppBackground.isActive'),
+      isTrue,
+      reason: 'seedBackgroundSliceFirstFrame 必须先校验背景体系是否启用 ✓',
+    );
   });
 }

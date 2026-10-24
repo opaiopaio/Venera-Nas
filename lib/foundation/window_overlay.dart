@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:venera_nas/foundation/app.dart';
@@ -48,6 +49,106 @@ Future<void> preloadBackgroundImageIntoCache() async {
   } catch (_) {
     // 静默回退 ✓：不影响启动 ✓、不改变任何渲染语义 ✓（widget 自己会照常解析 ✓）。
   }
+}
+
+/// ⭐ 2026-10-26：取**首帧背景图** ✓ —— 优先复用 [preloadBackgroundImageIntoCache]
+/// 已经放进 `ImageCache` 的那张 ✓；拿不到才按屏幕宽解码 ✓（带回预算 ✓）。
+///
+/// 为什么不再自己 `readAsBytes + instantiateImageCodec` 无条件全量解码 ✗：
+/// ① 那是**第二次**全量解码（预热已经解过一次 ✓）⇒ 首帧被无上限推迟 ✗；
+/// ② 原图 4K 在 Android 上内存翻倍 ✗（壁纸只需要屏幕宽 ✓）。
+///
+/// 约定 ✓：
+/// - 背景体系未开启 ⇒ 直接 `null` ✓（不解码 ✓）；
+/// - 复用路径用 `resolve(FileImage)` 拿 `ImageInfo.image` 后 **`clone()`** ✓ ——
+///   `ImageCache` 随时可能淘汰/释放自己的句柄 ✗，首帧缓存必须自己持有一份 ✓；
+/// - 解码路径有 [budget]（复用 [AppStartup.backgroundPreloadTimeout] ✓），
+///   超时返回 `null` 并**异步释放**迟到的图 ✓（不拖住 `runApp` ✓）；
+/// - codec 在 `finally` 里 dispose ✓（旧代码漏了 ⇒ 原生解码资源泄漏 ✗）。
+Future<ui.Image?> resolveBackgroundFirstFrameImage(
+  File file, {
+  Duration budget = AppStartup.backgroundPreloadTimeout,
+}) async {
+  if (!appdata.settings.backgroundFeatureActive) return null;
+  final start = DateTime.now();
+  final cached = await _cachedBackgroundImage(file, budget);
+  if (cached != null) return cached;
+  // 复用预热结果失败（未进缓存 / 预热超时）⇒ 才走解码 ✓，且只花剩余预算 ✓。
+  final remaining = budget - DateTime.now().difference(start);
+  if (remaining <= Duration.zero) return null;
+  return _decodeBackgroundFirstFrame(file, remaining);
+}
+
+/// 从 `ImageCache` 取已预热背景图的一份**拥有权**（clone ✓）；不可用返回 `null`。
+Future<ui.Image?> _cachedBackgroundImage(File file, Duration budget) async {
+  final provider = FileImage(file);
+  if (!PaintingBinding.instance.imageCache.containsKey(provider)) return null;
+  final completer = Completer<ImageInfo?>();
+  final listener = ImageStreamListener(
+    (info, _) {
+      if (!completer.isCompleted) completer.complete(info);
+    },
+    onError: (_, _) {
+      if (!completer.isCompleted) completer.complete(null);
+    },
+  );
+  final stream = provider.resolve(ImageConfiguration.empty);
+  stream.addListener(listener);
+  try {
+    final info = await completer.future.timeout(budget);
+    final image = info?.image;
+    if (image == null) return null;
+    // ⚠️ 必须 clone ✓：`ImageCache` 的句柄被淘汰/释放后原 `ui.Image` 会失效 ✗，
+    // 而首帧缓存要在整个进程里被切片绘制 ✓。
+    return image.clone();
+  } catch (_) {
+    return null;
+  } finally {
+    stream.removeListener(listener);
+  }
+}
+
+/// 在 [budget] 内解码一张按屏幕宽缩放的背景图 ✓；超时返回 `null` 并释放迟到的结果 ✓。
+Future<ui.Image?> _decodeBackgroundFirstFrame(
+  File file,
+  Duration budget,
+) async {
+  final future = _decodeBackgroundImage(file);
+  try {
+    return await future.timeout(budget);
+  } on TimeoutException {
+    // `.timeout` 不会取消底层解码 ✓ ⇒ 迟到的图必须自己 dispose ✓，否则泄漏句柄 ✗。
+    unawaited(future.then<void>((image) => image.dispose(), onError: (_) {}));
+    return null;
+  } catch (_) {
+    return null;
+  }
+}
+
+/// 真正解码 ✓：按屏幕**物理像素宽**缩放（上限 2560 ✓），`finally` 释放 codec ✓。
+Future<ui.Image> _decodeBackgroundImage(File file) async {
+  ui.Codec? codec;
+  try {
+    final bytes = await file.readAsBytes();
+    codec = await ui.instantiateImageCodec(
+      bytes,
+      targetWidth: _backgroundDecodeTargetWidth(),
+    );
+    final frame = await codec.getNextFrame();
+    return frame.image;
+  } finally {
+    codec?.dispose();
+  }
+}
+
+/// 背景图解码宽度 ✓：= 屏幕物理像素宽（壁纸按 cover 铺满整窗 ✓），
+/// 上限 2560 ✓ —— 再高肉眼无收益，却会让 Android 位图内存成倍上涨 ✗。
+int? _backgroundDecodeTargetWidth() {
+  final views = WidgetsBinding.instance.platformDispatcher.views;
+  if (views.isEmpty) return null;
+  final width = views.first.physicalSize.width;
+  if (width <= 0) return null;
+  return width.round().clamp(1, 2560).toInt();
 }
 
 /// 「窗口/按钮/选项背景」与全局背景相关的**通用 helper**。

@@ -177,10 +177,26 @@ class HistoryImageProvider
   @override
   String get key => "history${history.id}${history.type.value}";
 
-  /// 修复（2026-10-09）：SMB 封面磁盘缓存键为 `smb_cover:<localComic.id>`（见 _loadSmbCover），
-  /// 而该 localComic 是用 `LocalManager().find(history.id, …)` 查到的 ⇒ 键中的 id 即 `history.id`。
+  /// 修复（2026-10-09）：SMB 封面磁盘缓存键为 `SmbCoverLoader.cacheKey(id, baseDir:)`（见 _loadSmbCover），
+  /// 而该 localComic 是用 `LocalManager().find(history.id, …)` 查到的 ⇒ 重写后必须**用同一个 baseDir 拼键** ✓。
   /// 网络缩略图路径（cover 含 '/'）保持原行为不变，避免误删无关缓存。
+  ///
+  /// ⭐ 2026-10-26（P2 ✓）：原先固定用旧键 `smb_cover:<id>` ✗ —— loader 已改为带 baseDir 的新键
+  ///（`smb_cover:<baseDir>|<id>` ✓，避免 id 重复的漫画共用封面 ✗）⇒ 解码失败删的是**别名键** ✗，
+  /// 坏封面会永久残留 ✓。现在 getter 与 loader 走同一套查询 + 同一份键 ✓。
   @override
-  String get cacheKey =>
-      history.cover.contains('/') ? key : SmbCoverLoader.cacheKey(history.id);
+  String get cacheKey {
+    if (history.cover.contains('/')) return key;
+    // 必须与 load() 完全相同的查找顺序（先 history.type，再退回 SMB ✓）。
+    final localComic =
+        LocalManager().find(history.id, history.type) ??
+        LocalManager().find(history.id, ComicType.smb);
+    // 非 SMB 的本地封面不经过磁盘缓存 ⇒ 不做任何删除（保持原语义 ✓）。
+    if (localComic == null ||
+        (localComic.comicType != ComicType.smb &&
+            !localComic.baseDir.startsWith('smb://'))) {
+      return key;
+    }
+    return SmbCoverLoader.cacheKey(localComic.id, baseDir: localComic.baseDir);
+  }
 }

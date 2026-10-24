@@ -9,7 +9,8 @@ import 'package:venera_nas/network/smb/smb_gate.dart';
 /// 3. **凭证所有权**：迟到/重复的 release 不能误解锁后来者 ✓
 /// 4. **reset**：放掉所有等待者（返回 null ✓），旧凭证立即失效 ✓
 /// 5. **等待超时**：超时返回 null ✓，且不泄漏名额 ✓
-/// 6. **统计**：当前占用数与最早占用时间 ✓（看门狗判断依赖它 ✓）
+/// 6. **统计**：活跃占用数 / 已复位待归还数（zombie ✓）/ 最早占用时间 ✓
+///    （看门狗判断依赖它 ✓；reset 后不能把 zombie 当空闲 ✗）
 ///
 /// 每个用例都自建独立 [SmbGate] 实例 ✓ —— 不依赖全局状态 ✓（避免全量跑时互相污染 ✗）。
 void main() {
@@ -81,7 +82,7 @@ void main() {
     expect(gate.locked, isFalse);
   });
 
-  test('reset 放掉等待者，且旧凭证失效', () async {
+  test('reset 把持有者降级为 zombie：释放前不放行新 acquire', () async {
     final gate = SmbGate();
     final holder = await gate.acquire(high: false);
     expect(holder, isNotNull);
@@ -97,14 +98,42 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     expect(gate.waiting, 2);
 
+    // 让"占用时间"与 reset 之间至少跨 1ms ✓：后面对 `hasBeenLockedFor(Duration.zero)` 的断言
+    // 依赖它 ✓（同一毫秒内差值为 0，断言会假红 ✗）。
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    final acquiredAt = gate.earliestAcquiredAt;
     gate.reset();
     expect(await highWaiter, isNull, reason: 'reset 后等待者按失败返回');
     expect(await lowWaiter, isNull);
-    expect(gate.locked, isFalse);
     expect(gate.inUse, 0);
+    expect(gate.locked, isTrue, reason: '被剥离的持有者仍是 zombie：原生操作可能还在跑，不能当成空闲');
+    // ⭐ 统计必须区分"活跃"与"已复位待归还" ✓（reset 后 inUse=0 但不等于空闲 ✓）。
+    expect(gate.resetPendingCount, 1);
+    expect(
+      gate.earliestAcquiredAt,
+      acquiredAt,
+      reason: 'zombie 的占用时间必须保留，否则看门狗误判空闲',
+    );
+    expect(
+      gate.hasBeenLockedFor(Duration.zero),
+      isTrue,
+      reason: '复位后看门狗仍需看见 zombie 的占用',
+    );
 
-    // 旧凭证不能再释放（否则会误解锁 reset 后新拿到的名额 ✓）。
+    // ⭐ P0 关键断言：zombie 的 release 到达前，**新请求一律不能拿到名额** ✗
+    final blocked = await gate.acquire(
+      high: true,
+      timeout: const Duration(milliseconds: 20),
+    );
+    expect(blocked, isNull, reason: 'zombie 未释放前不得放行第二个原生操作');
+
+    // release(zombie) 只清理 zombie（返回 false = 没释放任何"当前持有者"的名额），
+    // 之后才允许新请求 ✓。
     expect(gate.release(holder!), isFalse);
+    expect(gate.resetPendingCount, 0);
+    expect(gate.earliestAcquiredAt, isNull);
+    expect(gate.hasBeenLockedFor(Duration.zero), isFalse);
+    expect(gate.locked, isFalse);
 
     final next = await gate.acquire(high: true);
     expect(next, isNotNull);
@@ -112,6 +141,36 @@ void main() {
     expect(gate.locked, isTrue);
     expect(gate.release(next!), isTrue);
     expect(gate.locked, isFalse);
+  });
+
+  test('复位期间不出现两个持有者同时存在（容量 1）', () async {
+    final gate = SmbGate();
+    final holder = await gate.acquire(high: false);
+    expect(holder, isNotNull);
+
+    // 先把一个请求排进队列，再 reset：它按 null 失败 ✓。
+    final beforeReset = gate.acquire(
+      high: true,
+      timeout: const Duration(seconds: 1),
+    );
+    await Future<void>.delayed(Duration.zero);
+    gate.reset();
+    expect(await beforeReset, isNull);
+
+    // reset 之后的新请求必须继续等 zombie ✓（不能出现第二个持有者）。
+    final afterReset = gate.acquire(
+      high: true,
+      timeout: const Duration(milliseconds: 30),
+    );
+    final second = await afterReset;
+    expect(second, isNull);
+    expect(gate.inUse, 0, reason: '复位期间绝不能同时有两个持有者');
+
+    expect(gate.release(holder!), isFalse); // 清 zombie
+    final next = await gate.acquire(high: true);
+    expect(next, isNotNull);
+    expect(gate.inUse, 1);
+    expect(gate.release(next!), isTrue);
   });
 
   test('等待超时返回 null，不抛异常且不泄漏名额', () async {

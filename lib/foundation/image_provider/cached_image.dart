@@ -2,6 +2,7 @@ import 'dart:async' show Future;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/image_cache_keys.dart';
 import 'package:venera_nas/foundation/local.dart';
 import 'package:venera_nas/network/images.dart';
 import 'package:venera_nas/utils/io.dart';
@@ -99,8 +100,9 @@ class CachedImageProvider
   String get key => url + (sourceKey ?? "") + (cid ?? "");
 
   /// 修复（2026-10-09）：本类 `key` 用**无分隔符拼接**，而缩略图的磁盘写入键
-  /// （`network/images.dart` 的 `loadThumbnail`）是 `"$url@$sourceKey@$cid"` 形式 ——
+  /// （`network/images.dart` 的 `loadThumbnail`）是 `thumbnailCacheKey` 的格式 ——
   /// 两者不同 ⇒ 原 `delete(key)` 命不中真实缓存文件。覆写后即可正确清理。
+  /// ⭐ 2026-10-26：改走 [thumbnailCacheKey] ✓（三处共用同一格式 ✓，逐字不变 ✓）。
   @override
-  String get cacheKey => "$url@$sourceKey${cid != null ? '@$cid' : ''}";
+  String get cacheKey => thumbnailCacheKey(url, sourceKey, cid);
 }

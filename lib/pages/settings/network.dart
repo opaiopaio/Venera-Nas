@@ -611,6 +611,14 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
 
   bool _isTesting = false;
 
+  /// ⭐ 2026-10-26（批2 P1#4）：保存时的协议探测**可取消** ✓ ——
+  /// 离线 / 服务器不响应时别让用户在"不可取消"的模态里干等 ✓。
+  bool _cancelProbe = false;
+
+  /// ⭐ 2026-10-26（批2 P1#4）：**保存单飞** ✓ —— 探测可取消后，取消会先关掉 loading
+  /// 弹层 ✓；若不加这一层，用户可在探测未返回时再点「保存」✗ ⇒ 两条保存流程并发 ✗。
+  bool _isSaving = false;
+
   // ⭐ 2026-10-24：SMB 协议选项 UI state ✓（服务器"强制签名/加密"或需指定方言时用 ✓）。
   late bool _signing;
   late bool _seal;
@@ -680,7 +688,7 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
   }
 
   Future<void> _test() async {
-    if (_isTesting) return;
+    if (_isTesting || _isSaving) return;
     final protocolError = _validateProtocolOptions();
     if (protocolError != null) {
       showDialogMessage(context, "Test Connection".tl, protocolError);
@@ -722,35 +730,51 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
       showDialogMessage(context, "Error".tl, protocolError);
       return;
     }
+    // ⭐ 2026-10-26（批2 P1#4）：保存单飞 ✓（取消探测后弹层先关，但探测可能仍在收尾 ✓）。
+    if (_isSaving || !mounted) return;
+    setState(() => _isSaving = true);
 
     // ⭐⭐ 2026-10-25（用户要求 ✓）：**选「自动」保存时，只探测一次并落成固定配置** ✓
     // 之后每次访问都用这套固定配置直连 ✓（不再每次自动试探 ✗）。
+    // ⭐ 2026-10-26（批2 P1#4）：探测**有总预算 + 可取消** ✓，且**失败不阻塞保存** ✓ ——
+    // 旧实现是不可取消的模态、最坏 ≈100s ✗，失败还直接 return ✗（离线时连改名字都存不了 ✗）。
     var connection = connection0;
+    var probeFailed = false;
     if (connection.config.version == Smb2Version.any) {
       if (!mounted) return;
+      _cancelProbe = false;
       final loading = showLoadingDialog(
         App.rootContext,
         barrierDismissible: false,
-        allowCancel: false,
+        // ⭐ 给用户出口 ✓：取消后按当前填写保存 ✓（不丢已输入的内容 ✓）。
+        allowCancel: true,
+        cancelButtonText: '取消探测',
+        message: '正在探测可用的 SMB 协议（最多 30 秒）',
+        onCancel: () => _cancelProbe = true,
       );
-      final found = await SmbConnection(
-        name: connection.name,
-        config: connection.config,
-      ).findWorkingConfig();
-      if (mounted) loading.close();
+      final found =
+          await SmbConnection(
+            name: connection.name,
+            config: connection.config,
+          ).findWorkingConfig(
+            isCancelled: () => _cancelProbe,
+            onProgress: (tried, total) {
+              if (_cancelProbe) return;
+              loading.setMessage('正在探测可用的 SMB 协议（$tried/$total，最多 30 秒）'.tl);
+            },
+          );
+      loading.close();
       if (!mounted) return;
-      if (found == null) {
-        showDialogMessage(
-          context,
-          "Test Connection".tl,
-          "协议自动探测失败 ✓：请检查地址 / 共享名 / 账号，"
-                  "或手动选择一个协商版本后再保存 ✓。"
-              .tl,
-        );
-        return;
+      if (found != null) {
+        connection = SmbConnection(name: connection.name, config: found);
+      } else {
+        // ⭐ 探测失败/被取消 ⇒ **先保存用户填写的配置** ✓，稍后再重探 ✓
+        //（离线时也能保存改名/改地址等改动 ✓，不再"探测不通就什么都不存" ✗）。
+        probeFailed = true;
       }
-      connection = SmbConnection(name: connection.name, config: found);
     }
+    // 探测结束（含取消后的收尾）✓ ⇒ 恢复按钮 ✓（后面是同步写入，没有并发窗口 ✓）。
+    if (mounted) setState(() => _isSaving = false);
 
     // Read existing servers, replace or append
     final raw = appdata.settings['smbServers'];
@@ -781,6 +805,15 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
     appdata.settings['smbServers'] = servers.map((e) => e.toJson()).toList();
     appdata.saveData();
     Navigator.of(context, rootNavigator: true).pop(true);
+    // ⭐ 2026-10-26（批2 P1#4）：**保存已生效** ✓，只是"协议探测"没完成 ——
+    // 用根上下文提示"稍后重探" ✓（对话框已关闭，不能再拿它的 context ✓）。
+    if (probeFailed && App.rootContext.mounted) {
+      App.rootContext.showMessage(
+        message: _cancelProbe
+            ? '已取消协议探测，已按当前填写保存 ✓（可稍后点「测试连接」重试）'.tl
+            : '协议自动探测未完成，已按当前填写保存 ✓；可稍后点「测试连接」重新探测'.tl,
+      );
+    }
   }
 
   @override
@@ -920,7 +953,8 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
                 Expanded(
                   child: Button.outlined(
                     isLoading: _isTesting,
-                    onPressed: _test,
+                    // ⭐ 探测/保存进行中禁止再开一条测试 ✓（取消弹层后探测仍在收尾 ✓）。
+                    onPressed: _isSaving ? null : _test,
                     child: Text("Test Connection".tl),
                   ),
                 ),
@@ -931,8 +965,10 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
               children: [
                 Expanded(
                   child: Button.filled(
-                    isLoading: _isTesting,
-                    onPressed: _save,
+                    // ⭐ 2026-10-26（批2 P1#4）：探测期间保存按钮显示进度并禁用 ✓
+                    //（取消可关闭弹层，但探测收尾最多 10s ✓，不能重复触发保存 ✗）。
+                    isLoading: _isSaving,
+                    onPressed: _isSaving ? null : _save,
                     child: Text("Save".tl),
                   ),
                 ),

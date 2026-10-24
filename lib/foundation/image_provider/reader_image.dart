@@ -204,7 +204,9 @@ class ReaderImageProvider
 
   /// ⭐ 闸门看门狗时长 ✓（复查修复 2026-10-24）：锁被异常卡死超过此时长 ⇒ **强制复位** ✓，
   /// 避免"每页转圈 ~59s 后报错、只能重启 App" ✗。
-  static const _smbGateWatchdog = Duration(seconds: 90);
+  /// ⭐ 2026-10-26：**直接复用 [SmbSerial.watchdog] 的同一个阈值** ✓ ——
+  /// 阅读器闸门与全局串行闸门是同一类"原生操作卡死" ✓，两个数各写一份只会改一处漏一处 ✗。
+  static const _smbGateWatchdog = SmbSerial.watchdog;
 
   /// 同一页**在途读取去重** ✓：`load` 与预取可能同时触发同一页 ✗ ⇒ 共用一个 Future ✓。
   static final Map<String, Future<Uint8List>> _inflightReads = {};
@@ -319,6 +321,27 @@ class ReaderImageProvider
     _clientsPendingClose.add(client);
   }
 
+  /// ⭐ 2026-10-26：**统一关闭全部 SMB 会话** ✓ —— 退出 / 关闭窗口 / 重置连接的唯一入口 ✓。
+  ///
+  /// 为什么需要（P1 ✓）：旧实现的三处关闭各管一段 ✗ ——
+  /// - `SmbClient.closeAllShared()`（封面/历史/导入共享池 ✓）
+  /// - `SmbClient.closeReaderShared()`（预热 + 切章列目录的阅读器专用池 ✓，**旧实现零调用** ✗）
+  /// - [closeSharedSmbClient]（阅读器整章复用的连接 ✓）
+  /// ⇒ 只要漏掉任意一个，NAS 上就会残留会话 ✓（下次启动新旧会话叠加 ⇒ "重启后经常断连" ✗）。
+  ///
+  /// [force] = true ⇒ 立即断开阅读器复用连接 ✓（**退出**路径用：进程马上结束 ✓）；
+  /// 重置路径请传 `false`（或仅在 `_activeReads == 0` 时传 true ✓）——
+  /// 在同步 FFI 读仍跑时强断就是 `0xc0000005` 的成因 ✗（见 [closeSharedSmbClient] ✓）。
+  ///
+  /// ⚠️ 放在这里而不是 `smb_client.dart` ✓：本类依赖 `SmbClient` ✓，
+  /// 反过来 import 会形成**循环依赖** ✗（`smb_client.dart` 不能 import 本文件 ✓）。
+  static Future<void> closeAllSmbSessions({bool force = true}) async {
+    await SmbClient.closeAllShared();
+    await SmbClient.closeReaderShared();
+    await closeSharedSmbClient(force: force);
+    SmbSerial.forceReset();
+  }
+
   /// ⭐ 2026-10-25：**重置 SMB 运行时** ✓ —— 供设置页「重置 SMB 连接」按钮用 ✓。
   ///
   /// ⭐ P0 相关：**不清 [_activeReads]、不 force 断在途读** ✗ ——
@@ -330,12 +353,10 @@ class ReaderImageProvider
     // ⭐ 必须一起复位阅读器自己的闸门 ✓：否则 SmbSerial 放掉了、_smbGate 还锁着，
     // 新的读仍然会排队到超时 ✗。
     _smbGate.reset();
-    // 安全时立即断，否则排队 ✓（不修改 _activeReads ✓）。
-    await closeSharedSmbClient(force: _activeReads == 0);
-    // ⭐ 2026-10-25：把封面/历史/导入用的**共享客户端**也一起断开 ✓ ——
-    // 否则"重置"后它们仍持有旧连接（可能已失效 ✓），用户会以为重置没生效 ✗。
-    // （[SmbClient.closeAllShared] 会清空池 + 取消空闲巡检定时器 ✓）
-    await SmbClient.closeAllShared();
+    // ⭐ 2026-10-26：与退出走**同一入口** ✓ —— 同时清共享池 + 阅读器专用池 + 阅读器复用连接 ✓
+    //（旧实现漏了 `closeReaderShared()` ✗）。`force` 仍按"有没有在途读"决定 ✓ ——
+    // 重置是运行中操作，不能在 FFI 读中途强断 ✗。
+    await closeAllSmbSessions(force: _activeReads == 0);
     // ⭐ 2026-10-25：重置意味着"服务器配置/网络环境可能已经变了" ✓ ⇒ 一并清掉
     // ①URL ⇒ SmbConfig 解析缓存 ✓（否则还按旧凭据/端口建连 ✗）；
     // ②封面"已知缺失"记录 ✓（否则服务器修好后封面仍会一直 404 ✗）。

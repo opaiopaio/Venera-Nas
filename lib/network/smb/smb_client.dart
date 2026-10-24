@@ -37,8 +37,23 @@ class SmbClient {
   /// 此时直接新建连接 ✓（旧连接引用已丢弃 ✓，不 disconnect ✓，见 [_guard] ✓）。
   bool _dead = false;
 
-  /// ⭐ 2026-10-25：上次"连接失败"的时间 ✓ —— 用于**失败冷却** ✓（见 [connect] ✓）。
-  DateTime? _lastConnectFailureAt;
+  /// ⭐ 2026-10-26（批2 P1#3）：**失败冷却改为按"会话键"全局共享** ✓
+  ///
+  /// 原先冷却只是单个客户端实例的字段 ✗ ⇒ 保存时的协议探测（另建 `SmbConnection` /
+  /// `Smb2Pool`）完全看不到刚发生的失败，会立刻重连 ✗。现在按 [cacheKey] 记录 ✓：
+  /// 探测与正式连接**复用同一份冷却** ✓（3s 很短，不影响正常恢复 ✓）。
+  static final Map<String, DateTime> _connectFailureAt = {};
+
+  /// 连接失败冷却时长 ✓（[SmbConnection] 的保存探测也共用 ✓）。
+  static const connectCooldown = Duration(seconds: 3);
+
+  /// ⭐ 2026-10-26（批2 P1#2）：**断开代数** ✓ —— 每次 [disconnect] 自增。
+  ///
+  /// 建连完成时若代数变了，说明这条连接在建立期间已被作废 ✓ ⇒ 必须主动关闭它 ✓
+  ///（否则 `_pool` 会赋给**已移出池的孤儿实例** ✗，再无入口关闭 ✓）。
+  /// ⚠️ 不用 `_dead` 判断：`_invalidate()`（操作超时）也会置 `_dead` ✓ ——
+  /// 那之后重新 connect 是正常路径 ✓，不能因此把新池误判为"作废" ✗。
+  int _connectEpoch = 0;
 
   /// ⭐ 2026-10-25：**连接单飞** ✓ —— 并发首连只允许一个 `Smb2Pool.connect` ✓。
   ///
@@ -47,7 +62,32 @@ class SmbClient {
   /// NAT/路由器侧也会多占一批 SMB 会话 ✓。现在所有调用者共享同一个 Future ✓。
   Future<void>? _connecting;
 
-  static const _connectCooldown = Duration(seconds: 3);
+  /// 该配置是否处于"刚失败过"的冷却期 ✓（保存时的协议探测也用它 ✓）。
+  static bool inConnectCooldown(SmbConfig config) {
+    final key = cacheKey(config);
+    final at = _connectFailureAt[key];
+    if (at == null) return false;
+    if (DateTime.now().difference(at) >= connectCooldown) {
+      _connectFailureAt.remove(key);
+      return false;
+    }
+    return true;
+  }
+
+  /// 记录一次"连接失败" ✓（供 [inConnectCooldown] 判定 ✓）。
+  static void noteConnectFailure(SmbConfig config) {
+    final now = DateTime.now();
+    // 顺手清掉过期条目 ✓（服务器不多，但也别只增不减 ✗）。
+    _connectFailureAt.removeWhere(
+      (_, at) => now.difference(at) >= connectCooldown,
+    );
+    _connectFailureAt[cacheKey(config)] = now;
+  }
+
+  /// 连接成功后清掉冷却 ✓（协议探测成功也调用这里 ✓）。
+  static void clearConnectFailure(SmbConfig config) {
+    _connectFailureAt.remove(cacheKey(config));
+  }
 
   /// ⭐ 2026-10-25：**连接单独用 40s 预算** ✓ ——
   /// 原先生效的是 [_opTimeout]（25s）✗，比底层 `Smb2Pool.connect(timeoutSeconds: 30)`
@@ -80,8 +120,8 @@ class SmbClient {
   /// 现在：按 主机+共享 缓存一个客户端 ✓ ⇒ 封面 / 历史 / 导入 / 切章列表**共用**连接 ✓，
   /// 只保留一条会话 ✓（阅读器另有自己的复用逻辑 ✓）。
   ///
-  /// ⭐ 2026-10-25：池**有进有出** ✓ —— 60s 空闲回收 ✓ + 数量上限 8 ✓（见 [_sweepIdleShared]
-  /// / [_enforceSharedLimit] ✓），避免长时间运行后把 NAS 会话占满 ✓。
+  /// ⭐ 2026-10-25：池**有进有出** ✓ —— 60s 空闲回收 ✓ + 数量上限 8 ✓（见 [_sweepIdlePool]
+  /// / [_enforcePoolLimit] ✓），避免长时间运行后把 NAS 会话占满 ✓。
   static final Map<String, SmbClient> _sharedClients = {};
 
   /// ⭐ 2026-10-25：**统一会话键** ✓ —— 客户端池与阅读器（`ReaderImageProvider`）共用这一份 ✓。
@@ -94,18 +134,22 @@ class SmbClient {
       '${config.cacheKey}|${config.username}|${config.password.hashCode}|'
       '${config.domain}|${config.signing}|${config.seal}|${config.version.name}';
 
-  /// 共享客户端的**最后使用时间** ✓（成功操作 / 重新取用都会刷新 ✓）。
+  /// 客户端池的**最后使用时间** ✓（共享池与阅读器池共用这一字段 ✓）。
   ///
   /// ⭐ 2026-10-25：用于**空闲回收** ✓ —— 旧实现只增不减 ✗ ⇒ 给每个 `host+share`
   /// 都留一条长期空闲会话 ✓，NAS / 路由器侧会话与句柄会被慢慢吃光 ✗。
-  DateTime? _lastSharedUse;
+  DateTime? _lastPoolUse;
 
-  /// 空闲回收阈值 ✓：60s 无操作即断开 ✓（再用时 [shared] 会按需重建 ✓）。
-  static const _sharedIdleTimeout = Duration(seconds: 60);
+  /// 空闲回收阈值 ✓：60s 无操作即断开 ✓（再用时 [shared] / [readerShared] 会按需重建 ✓）。
+  static const _idleTimeout = Duration(seconds: 60);
 
   /// 共享客户端数量上限 ✓：每条连接池内部已有 worker ✓，8 条已足够覆盖
-  /// 阅读器 + 封面 + 历史 + 导入 ✓（再多只会把 NAS 连接数打满 ✓）。
+  /// 封面 + 历史 + 导入 + 切章列目录 ✓（再多只会把 NAS 连接数打满 ✓）。
   static const _maxSharedClients = 8;
+
+  /// ⭐ 2026-10-26：阅读器专用池也**有进有出** ✓ —— 与共享池同样的 60s 空闲回收 ✓
+  /// 和 8 条上限 ✓（旧实现只增不减 ✗ ⇒ 每台 NAS/共享都常驻一条会话 ✓）。
+  static const _maxReaderClients = 8;
 
   /// 空闲巡检周期 ✓（比回收阈值短 ⇒ 最迟约 80s 内断开 ✓）。
   static const _idleSweepInterval = Duration(seconds: 20);
@@ -116,18 +160,18 @@ class SmbClient {
   /// 取得（必要时创建）**共享**客户端 ✓ —— ⚠️ 调用方**不要** `disconnect()` ✗
   ///（共享连接被断开会影响其它调用方 ✓；需要断开时用 [closeAllShared] ✓）。
   ///
-  /// ⭐ 2026-10-25：取用前**先回收空闲连接并守住数量上限** ✓（见 [_sweepIdleShared] /
-  /// [_enforceSharedLimit] ✓）—— 共享池不能"只进不出"✗。
+  /// ⭐ 2026-10-25：取用前**先回收空闲连接并守住数量上限** ✓（见 [_sweepIdlePool] /
+  /// [_enforcePoolLimit] ✓）—— 共享池不能"只进不出"✗。
   static SmbClient shared(SmbConfig config) {
     final key = cacheKey(config);
-    _sweepIdleShared(exceptKey: key);
+    _sweepIdlePool(_sharedClients, exceptKey: key);
     final client = _sharedClients.putIfAbsent(
       key,
       () => SmbClient(config: config),
     );
-    client._lastSharedUse = DateTime.now();
+    client._lastPoolUse = DateTime.now();
     _ensureIdleReaper();
-    _enforceSharedLimit(exceptKey: key);
+    _enforcePoolLimit(_sharedClients, _maxSharedClients, exceptKey: key);
     return client;
   }
 
@@ -141,38 +185,35 @@ class SmbClient {
   /// 我们只需守住唯一不变量：**不要在读到一半时断开** ✓（已由 drain 保证 ✓）。
   static final Map<String, SmbClient> _readerClients = {};
 
+  /// 取得（必要时创建）阅读器专用客户端 ✓。
+  ///
+  /// ⭐ 2026-10-26：**与共享池同样有进有出** ✓ —— 取用前先回收空闲连接（60s ✓）
+  /// 并守住 8 条上限 ✓（旧实现只进不出 ✗ ⇒ 阅读器会话在 NAS 上越积越多 ✓）。
+  /// 行为不变 ✓：`init.dart` 预热、`local.dart` 章节列表继续直接用这里 ✓。
   static SmbClient readerShared(SmbConfig config) {
-    return _readerClients.putIfAbsent(
-      cacheKey(config),
+    final key = cacheKey(config);
+    _sweepIdlePool(_readerClients, exceptKey: key);
+    final client = _readerClients.putIfAbsent(
+      key,
       () => SmbClient(config: config),
     );
+    client._lastPoolUse = DateTime.now();
+    _ensureIdleReaper();
+    _enforcePoolLimit(_readerClients, _maxReaderClients, exceptKey: key);
+    return client;
   }
 
+  /// 当前阅读器专用客户端数量 ✓（自检 / 排查连接数异常时用 ✓）。
+  static int get readerClientCount => _readerClients.length;
+
   /// 断开阅读器专用客户端 ✓（重置 / 退出时用 ✓）。
+  ///
+  /// ⚠️ 旧实现**没有任何调用点** ✗ ⇒ 池里的会话永远不断开 ✓；
+  /// 现由统一入口 `ReaderImageProvider.closeAllSmbSessions()` 调用 ✓。
   static Future<void> closeReaderShared() async {
     final list = _readerClients.values.toList();
     _readerClients.clear();
-    for (final client in list) {
-      try {
-        await client.disconnect();
-      } catch (_) {}
-    }
-  }
-
-  /// 断开并清空所有共享客户端 ✓（阅读器"重置 SMB 连接" / 退出时用 ✓）。
-  ///
-  /// ⭐ 2026-10-25：**并行 drain 再断** ✓ —— 每个 [disconnect] 内部都会先等在途
-  /// 原生操作（最多 [_disconnectDrainTimeout] ✓）；这里并行等待，避免 N 个客户端
-  /// 串行各等 4s ⇒ 重置按钮最多卡十几秒 ✗。
-  ///
-  /// ⭐ 2026-10-25：**重置必须真正清空** ✓ —— 除了断开连接，还要
-  /// ① 取消空闲巡检定时器 ✓（否则池空后还挂着一个周期任务 ✗）；
-  /// ② 清掉 [_sharedClients]（先清再断 ✓，断的过程中新请求不会拿到待断连接 ✓）。
-  static Future<void> closeAllShared() async {
-    _idleReaper?.cancel();
-    _idleReaper = null;
-    final list = _sharedClients.values.toList();
-    _sharedClients.clear();
+    _stopIdleReaperIfIdle();
     await Future.wait(
       list.map((client) async {
         try {
@@ -184,40 +225,70 @@ class SmbClient {
     );
   }
 
-  /// 回收**空闲**共享连接 ✓：超过 [_sharedIdleTimeout] 无操作 ⇒ 移除并异步断开 ✓。
+  /// 断开并清空所有共享客户端 ✓（阅读器"重置 SMB 连接" / 退出时用 ✓）。
+  ///
+  /// ⭐ 2026-10-25：**并行 drain 再断** ✓ —— 每个 [disconnect] 内部都会先等在途
+  /// 原生操作（最多 [_disconnectDrainTimeout] ✓）；这里并行等待，避免 N 个客户端
+  /// 串行各等 4s ⇒ 重置按钮最多卡十几秒 ✗。
+  /// ⭐ 2026-10-26（批2 P1#1）：`pool.disconnect()` 已改为**后台在 lifecycle 闸门内收尾** ✓
+  /// ⇒ 这里只等 drain ✓，"worker 收尾的 5s×N"不再阻塞重置/退出 ✓。
+  ///
+  /// ⭐ 2026-10-25：**重置必须真正清空** ✓ —— 除了断开连接，还要
+  /// ① 取消空闲巡检定时器 ✓（否则池空后还挂着一个周期任务 ✗）；
+  /// ② 清掉 [_sharedClients]（先清再断 ✓，断的过程中新请求不会拿到待断连接 ✓）。
+  static Future<void> closeAllShared() async {
+    final list = _sharedClients.values.toList();
+    _sharedClients.clear();
+    _stopIdleReaperIfIdle();
+    await Future.wait(
+      list.map((client) async {
+        try {
+          await client.disconnect();
+        } catch (_) {
+          // 单条失败不影响其它 ✓。
+        }
+      }),
+    );
+  }
+
+  /// 回收**空闲**连接池中的条目 ✓：超过 [_idleTimeout] 无操作 ⇒ 移除并异步断开 ✓。
   ///
   /// ⚠️ **只回收不忙的** ✓ —— 正在读 / 正在建连 / 有排队等待者的连接绝不能断 ✗
   ///（libsmb2 读到一半被 disconnect 会 `0xc0000005` 崩溃 ✓，已有事件日志实证 ✓）。
   /// [exceptKey] = 本次要取用的键 ✓（刚被取用的那条不走回收 ✓）。
-  static void _sweepIdleShared({String? exceptKey}) {
-    if (_sharedClients.isEmpty) return;
+  static void _sweepIdlePool(Map<String, SmbClient> pool, {String? exceptKey}) {
+    if (pool.isEmpty) return;
     final now = DateTime.now();
     final stale = <String>[];
-    _sharedClients.forEach((key, client) {
+    pool.forEach((key, client) {
       if (key == exceptKey) return;
-      final last = client._lastSharedUse;
+      final last = client._lastPoolUse;
       if (last == null) return;
-      if (now.difference(last) < _sharedIdleTimeout) return;
+      if (now.difference(last) < _idleTimeout) return;
       if (client._isBusy) return;
       stale.add(key);
     });
     for (final key in stale) {
-      final client = _sharedClients.remove(key);
+      final client = pool.remove(key);
       if (client != null) unawaited(client._closeQuietly());
     }
   }
 
-  /// 守住共享池数量上限 ✓：超限时淘汰**最久未用**且**不忙**的客户端 ✓。
+  /// 守住连接池数量上限 ✓：超限时淘汰**最久未用**且**不忙**的客户端 ✓。
   ///
   /// ⚠️ 若所有客户端都在忙 ⇒ **暂不淘汰** ✓（宁可短时超限，也不硬断在途连接 ✗）。
-  static void _enforceSharedLimit({String? exceptKey}) {
-    while (_sharedClients.length > _maxSharedClients) {
+  static void _enforcePoolLimit(
+    Map<String, SmbClient> pool,
+    int max, {
+    String? exceptKey,
+  }) {
+    while (pool.length > max) {
       String? oldestKey;
       DateTime? oldestAt;
-      _sharedClients.forEach((key, client) {
+      pool.forEach((key, client) {
         if (key == exceptKey) return;
         if (client._isBusy) return;
-        final at = client._lastSharedUse;
+        final at = client._lastPoolUse;
         if (at == null) return;
         if (oldestAt == null || at.isBefore(oldestAt!)) {
           oldestAt = at;
@@ -225,21 +296,28 @@ class SmbClient {
         }
       });
       if (oldestKey == null) return;
-      final client = _sharedClients.remove(oldestKey);
+      final client = pool.remove(oldestKey);
       if (client != null) unawaited(client._closeQuietly());
     }
   }
 
-  /// 起一个空闲巡检定时器 ✓（池空了就自己取消 ✓，避免空转 ✗）。
+  /// 起一个空闲巡检定时器 ✓（两个池都空了就自己取消 ✓，避免空转 ✗）。
+  ///
+  /// ⭐ 2026-10-26：巡检**同时覆盖共享池与阅读器池** ✓ —— 阅读器池不再"只进不出" ✓。
   static void _ensureIdleReaper() {
     if (_idleReaper != null) return;
     _idleReaper = Timer.periodic(_idleSweepInterval, (_) {
-      _sweepIdleShared();
-      if (_sharedClients.isEmpty) {
-        _idleReaper?.cancel();
-        _idleReaper = null;
-      }
+      _sweepIdlePool(_sharedClients);
+      _sweepIdlePool(_readerClients);
+      _stopIdleReaperIfIdle();
     });
+  }
+
+  /// 两个池都空时停掉巡检定时器 ✓（有任一池非空就保留 ✓）。
+  static void _stopIdleReaperIfIdle() {
+    if (_sharedClients.isNotEmpty || _readerClients.isNotEmpty) return;
+    _idleReaper?.cancel();
+    _idleReaper = null;
   }
 
   /// 是否还有在途 / 排队的操作 ✓（连接池不是"空闲"就返回 true ✓）。
@@ -295,30 +373,32 @@ class SmbClient {
     // ⭐ 2026-10-25：**连接失败冷却** ✓ —— 实测日志里 `Smb2Pool.connect` 本身会**卡住不返回** ✗
     //（服务器侧会话耗尽 / 网络半断 ✓）⇒ 若不加限制，封面等并发任务会**不停重连** ✗，
     // 每个都要等很久 ⇒ 界面全卡 ✓。冷却期内**直接快速失败** ✓，让界面给出"稍后重试"✓。
-    final lastFailure = _lastConnectFailureAt;
-    if (lastFailure != null &&
-        DateTime.now().difference(lastFailure) < _connectCooldown) {
+    // ⭐ 2026-10-26（批2 P1#3）：先看"已连接"再看冷却 ✓ —— 否则别的客户端刚失败，
+    // 会把这条**本来可复用**的连接也判成冷却 ✗。
+    if (_pool != null) {
+      // 已连着也算一次成功 ✓：清掉冷却与 dead 标记 ✓，避免复用连接却继续快速失败 ✗。
+      clearConnectFailure(config);
+      _dead = false;
+      return;
+    }
+    if (inConnectCooldown(config)) {
       throw const SmbException(
         "SMB 连接失败（刚失败过，请稍后重试；或点「设置 → 网络 → SMB 服务器 → 重置 SMB 连接」）。",
       );
     }
-    if (_pool != null) {
-      // 已连着也算一次成功 ✓：清掉冷却与 dead 标记 ✓，避免复用连接却继续快速失败 ✗。
-      _lastConnectFailureAt = null;
-      _dead = false;
-      return;
-    }
+    final epoch = _connectEpoch;
+    Smb2Pool? abandoned;
     try {
-      await _guard(
+      abandoned = await _guard<Smb2Pool?>(
         () async {
           // ⭐ 已连接就直接复用 ✓（共享客户端会被频繁 `connect()` ✓）。
-          if (_pool != null) return;
+          if (_pool != null) return null;
           // ⭐⭐ 2026-10-25（实测日志 ✓）：**建连必须全局串行** ✗ ——
           // `Failed to parse fixed part of command payload` 是 libsmb2 在**多 isolate 同时
           // `smb2_init_context`** 时的典型症状 ✓（其全局 `active_contexts` 列表无锁 ✗）。
           // 数据读可以并发 ✓（每池独立 worker ✓），但**建连/断连**必须排队 ✓ ——
           // 用 `SmbSerial.run` 作"上下文生命周期锁" ✓，这也是 v1 审计第 2 条的修法 ✓。
-          _pool = await SmbSerial.run(
+          final pool = await SmbSerial.run(
             () => Smb2Pool.connect(
               host: config.host,
               share: config.share,
@@ -340,24 +420,37 @@ class SmbClient {
             ),
             high: high,
           );
+          // ⭐ 2026-10-26（批2 P1#2）：**建连期间被 disconnect()** ⇒ 这条池已无归属 ✓。
+          // 不能赋给 `_pool` ✗（实例可能已移出池 ⇒ 再没人关这条连接 ✗）；
+          // 交给调用方在闸门外统一关闭 ✓（见下方 `_disposePool` ✓）。
+          if (_connectEpoch != epoch) {
+            return pool;
+          }
+          _pool = pool;
           _dead = false;
+          return null;
         },
         high: high,
         timeout: _connectTimeout,
-      );
-      _lastConnectFailureAt = null;
-      _dead = false;
-      Log.info(
-        'SMB Connect',
-        'connected in ${DateTime.now().difference(connectStart).inMilliseconds}ms',
       );
     } catch (e) {
       // ⭐ 2026-10-25（用户要求 ✓）：**不在每次访问时自动试协议** ✗ ——
       // 协议组合应在「保存服务器」时**探测一次并写进配置** ✓（见 `findWorkingConfig` ✓），
       // 之后每次连接**直接用保存好的配置** ✓（这里只做失败冷却 + 报错 ✓）。
-      _lastConnectFailureAt = DateTime.now();
+      noteConnectFailure(config);
       rethrow;
     }
+    if (abandoned != null) {
+      // 连接本身建立成功、但实例已作废 ✓ ⇒ 主动关闭这条池 ✓（不写冷却：不是网络失败 ✗）。
+      unawaited(_disposePool(abandoned));
+      throw const SmbException("SMB 连接已取消（建立连接期间客户端已被断开），请重试。");
+    }
+    clearConnectFailure(config);
+    _dead = false;
+    Log.info(
+      'SMB Connect',
+      'connected in ${DateTime.now().difference(connectStart).inMilliseconds}ms',
+    );
   }
 
   /// Disconnect from the SMB share and release resources.
@@ -365,21 +458,45 @@ class SmbClient {
   /// ⭐ 2026-10-25（P0 ✓）：**先等在途原生操作跑完，再 disconnect** ✓ ——
   /// `dart_smb2` 的 worker 在 `close` 5s 后直接 `Isolate.kill` ✓；而读文件是同步 FFI ✓，
   /// 读到一半被 kill 就是 `0xc0000005` ✓。所以先 [_ops.drain]（最多 4s ✓）再断 ✓。
+  ///
+  /// ⭐ 2026-10-26（批2 P1#1）：**销毁 context 也纳入 lifecycle 闸门** ✓ ——
+  /// 旧实现"断开不占闸门"✗ ⇒ `pool.disconnect()`（销毁原生 context ✓）可与另一个客户端的
+  /// `Smb2Pool.connect`（`init_context` ✓）**并行** ✗ ⇒ 正是 libsmb2 全局 `active_contexts`
+  /// 无锁的崩溃路径 ✓。现在关闭动作放在 [SmbSerial] 里 ✓；但它要逐个 worker 等 5s ✓
+  ///（可达十几秒 ✓），所以**异步收尾** ✓：调用方立即返回、不阻塞 UI ✓。
   Future<void> disconnect() async {
+    // ⭐ 2026-10-26（批2 P1#2）：**先置 `_dead` 并自增代数** ✓ —— 若此刻有在途
+    // `_connecting`，它完成时会发现代数变了并主动关闭新建的池 ✓
+    //（旧实现直接 return ✗ ⇒ 迟到 connect 把 `_pool` 赋给孤儿实例 ⇒ 永不关闭 ✗）。
+    _dead = true;
+    _connectEpoch++;
     final pool = _pool;
-    if (pool == null) return;
     // 先摘引用 ✓：排队中的操作醒来会因 `_p` 为空快速失败 ✓，不会在断开后又发原生调用 ✗。
     _pool = null;
+    if (pool == null) return;
+    // 保留 drain 语义 ✓：等原生操作**真正结束**（不是 Dart 层 timeout ✓）再断 ✓。
     await _ops.drain(timeout: _disconnectDrainTimeout);
-    // ⭐ 2026-10-25（实测日志 ✓：重启后点漫画要等 ~18s 才列目录 ✗）：**断开不再占建连闸门** ✓
-    // 原因 ✓：`pool.disconnect()` 要给每个 worker 各自 5s 收尾 ✓ ⇒ 可达十几秒 ✓；
-    // 它占着 `SmbSerial` 时新连接只能排队 ✗ ⇒ 用户看到"页面加载转 10 多秒"✓。
-    // 现在 ✓：闸门只保"建连（创建原生 context ✓）"✓；断开在 drain 后直接断 ✓，
-    // 不再阻塞别的客户端建连 ✓（引用已摘除 ✓，排队操作会快速失败 ✓ 不会误用旧池 ✓）。
+    // ⭐ 异步收尾 ✓：不 await 原生断开 ✓（否则重置按钮/退出会被 worker 收尾拖住 ✗），
+    // 但关闭动作**自己**在 lifecycle 闸门里排队 ✓，不会与别的 init_context 并行 ✓。
+    unawaited(_disposePool(pool));
+  }
+
+  /// 在 lifecycle 闸门内销毁原生 context ✓（后台收尾 ✓，失败只影响资源回收 ✓）。
+  ///
+  /// ⚠️ 用长等待（2 分钟）✓：前面可能排着一个最长 40s 的 connect ✓，等不到就丢池
+  /// 只会泄漏一条会话 ✓；而**不等闸门直接断**会与原生操作并发 ✗（崩溃 ✓）。
+  static Future<void> _disposePool(Smb2Pool pool) async {
     try {
-      await pool.disconnect();
+      await SmbSerial.run(() async {
+        try {
+          await pool.disconnect();
+        } catch (_) {
+          // 断开失败不影响后续 ✓：引用已摘除 ⇒ 下次会重建 ✓。
+        }
+      }, waitTimeout: const Duration(minutes: 2));
     } catch (_) {
-      // 断开失败不影响后续 ✓：引用已摘除 ⇒ 下次会重建 ✓。
+      // 闸门卡死（等待超时）⇒ 放弃关闭 ✓：此时任何新连接同样无法建 ✓，
+      // 硬断反而会与仍在跑的原生操作并发 ✗。
     }
   }
 
@@ -448,7 +565,7 @@ class SmbClient {
       // ⭐ 2026-10-25：每次原生操作结束都刷新"最后使用时间" ✓ ——
       // 空闲回收据此判断"60s 无操作" ✓（否则只按 `shared()` 取用时间算 ✗，
       // 一次长时间连续阅读会被误判为空闲而断开 ✓）。
-      _lastSharedUse = DateTime.now();
+      _lastPoolUse = DateTime.now();
     }
   }
 

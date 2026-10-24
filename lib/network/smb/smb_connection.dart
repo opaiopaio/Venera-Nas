@@ -1,10 +1,14 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:dart_smb2/dart_smb2.dart';
 // ⭐ 2026-10-25：`@visibleForTesting`（把 `hintFor` 暴露给单测 ✓）。
 import 'package:flutter/foundation.dart' show visibleForTesting;
 
+import 'smb_client.dart';
 import 'smb_config.dart';
+import 'smb_exception.dart';
+import 'smb_serial.dart';
 
 /// A saved SMB connection profile that can be serialized to/from JSON.
 ///
@@ -37,18 +41,25 @@ class SmbConnection {
 
   /// ⭐ 2026-10-25（用户要求 ✓）：**一次性探路** ✓ —— 返回**第一套能连通的配置**（含原配置 ✓），
   /// 全失败返回 null ✓。**只应在"保存时"调用一次** ✓，不要放在每次访问的连接路径上 ✗。
-  Future<SmbConfig?> findWorkingConfig() async {
-    if (await _testWith(config) == null) return config;
-    final candidates = <SmbConfig>[];
+  ///
+  /// ⭐ 2026-10-26（批2 P1#4 / P2#5）：
+  /// - **总预算** [budget]（默认复用 [_diagnosisBudget] ✓）⇒ 最坏不再拖到 ≈100s ✓；
+  /// - [isCancelled] 在每次探测**之前/之后**检查 ✓（单次探测本身不可中断 ✓，
+  ///   但最多只等一个 `_probeTimeout` ✓）；
+  /// - 候选去重**用原配置指纹播种** ✓ —— 原实现先单独试原配置、候选表却没有它 ✗
+  ///   ⇒ 若降级组合与原配置等价，会**白跑一轮**（≈10s ✓）；
+  /// - 每次探测的超时按**剩余预算**分配 ✓（见 [_testWith] ✓）。
+  Future<SmbConfig?> findWorkingConfig({
+    Duration budget = _diagnosisBudget,
+    bool Function()? isCancelled,
+    void Function(int tried, int total)? onProgress,
+  }) async {
+    final deadline = DateTime.now().add(budget);
+    // ⭐ 原配置先播种 ✓（它本身就是第一个候选 ✓）。
+    final seen = <String>{_configKey(config)};
+    final candidates = <SmbConfig>[config];
     void add(SmbConfig c) {
-      for (final e in candidates) {
-        if (e.signing == c.signing &&
-            e.seal == c.seal &&
-            e.version == c.version) {
-          return;
-        }
-      }
-      candidates.add(c);
+      if (seen.add(_configKey(c))) candidates.add(c);
     }
 
     add(config.copyWith(signing: false, seal: false));
@@ -59,8 +70,20 @@ class SmbConnection {
     add(
       config.copyWith(signing: false, seal: false, version: Smb2Version.v210),
     );
-    for (final c in candidates) {
-      if (await _testWith(c) == null) return c;
+
+    onProgress?.call(0, candidates.length);
+    for (var i = 0; i < candidates.length; i++) {
+      if (isCancelled?.call() ?? false) return null;
+      final remaining = deadline.difference(DateTime.now());
+      if (remaining <= Duration.zero) return null;
+      final error = await _testWith(
+        candidates[i],
+        timeout: remaining < _probeTimeout ? remaining : _probeTimeout,
+        isCancelled: isCancelled,
+      );
+      if (isCancelled?.call() ?? false) return null;
+      if (error == null) return candidates[i];
+      onProgress?.call(i + 1, candidates.length);
     }
     return null;
   }
@@ -222,38 +245,94 @@ class SmbConnection {
 
   static String _hintFor(String message) => hintFor(message);
 
+  /// ⭐ 2026-10-26（批2 P2#5）：单次探测预算中 **connect 占比** ✓ ——
+  /// 其余留给 `listDirectory` ✓（旧实现两者各用完整超时 ✗ ⇒ 最坏翻倍 ✗）。
+  static const double _connectBudgetShare = 0.7;
+
+  /// 剩余预算 ✓（`Duration.zero` ⇒ 闸门若被占则立即放弃 ✓，不会无限等待 ✓）。
+  static Duration _remainingWithin(DateTime deadline) {
+    final remaining = deadline.difference(DateTime.now());
+    return remaining > Duration.zero ? remaining : Duration.zero;
+  }
+
   Future<String?> _testWith(
     SmbConfig target, {
     Duration timeout = _probeTimeout,
+    bool Function()? isCancelled,
   }) async {
     // ⚠️ 2026-10-24：底层库无端口参数 ⇒ 非 445 端口无法测试，直接给出明确原因 ✓（不再静默失败 ✗）。
     if (target.port != 445) {
       return '端口 ${target.port} 暂不支持：底层库仅支持 445 端口。';
     }
-    // 原生 connect 超时只接受秒 ✓；严格限制在 1~10s ✓（预算更短时按预算走 ✓）。
-    final seconds = timeout.inSeconds < 1
-        ? 1
-        : (timeout.inSeconds > 10 ? 10 : timeout.inSeconds);
+    // ⭐ 2026-10-26（批2 P1#3）：**复用失败冷却** ✓ —— 与正式连接共用同一份 ✓，
+    // 避免"刚失败过又立刻探测"（离线时每次保存都白等 ✓）。
+    if (SmbClient.inConnectCooldown(target)) {
+      return 'Connection failed: 刚刚连接失败过，请稍后重试。';
+    }
+    final deadline = DateTime.now().add(timeout);
+    var connected = false;
     Smb2Pool? pool;
     try {
-      pool = await Smb2Pool.connect(
-        host: target.host,
-        share: target.share,
-        user: target.username,
-        password: target.password,
-        domain: target.domain,
-        timeoutSeconds: seconds,
-        workers: 1,
-        // ⭐ 2026-10-24：协议选项透传 ✓（与正式连接保持一致 ✓，避免"测试通过但实际连不上" ✗）。
-        signing: target.signing,
-        seal: target.seal,
-        version: target.version,
+      // ⭐ 2026-10-26（批2 P1#3）：**探测也走同一个 lifecycle 闸门** ✓（high = 用户在等 ✓）——
+      // 旧实现直接 `Smb2Pool.connect` ✗ ⇒ 可能与封面/阅读的 `init_context` 并发 ✗
+      //（libsmb2 全局 `active_contexts` 无锁 ✓）。
+      final connectedPool = await SmbSerial.run(
+        () {
+          // ⭐ 批2 P2#5：connect 的超时**按拿到闸门后的剩余预算**重新计算 ✓ ——
+          // 旧实现 connect / listDirectory 同时用完整 deadline ✗ ⇒ 单次探测最坏翻倍 ✗；
+          // 现在只把剩余的 [_connectBudgetShare] 给 connect ✓，余下留给列目录 ✓。
+          final left = deadline.difference(DateTime.now());
+          final connectBudget = left > Duration.zero
+              ? Duration(
+                  milliseconds: (left.inMilliseconds * _connectBudgetShare)
+                      .round(),
+                )
+              : Duration.zero;
+          // 原生 connect 超时只接受秒 ✓；严格限制在 1~10s ✓（预算更短时按预算走 ✓）。
+          final seconds = connectBudget.inSeconds < 1
+              ? 1
+              : (connectBudget.inSeconds > 10 ? 10 : connectBudget.inSeconds);
+          return Smb2Pool.connect(
+            host: target.host,
+            share: target.share,
+            user: target.username,
+            password: target.password,
+            domain: target.domain,
+            timeoutSeconds: seconds,
+            workers: 1,
+            // ⭐ 2026-10-24：协议选项透传 ✓（与正式连接保持一致 ✓，避免"测试通过但实际连不上" ✗）。
+            signing: target.signing,
+            seal: target.seal,
+            version: target.version,
+          );
+        },
+        high: true,
+        // ⚠️ 等闸门的时间也计入本次预算 ✓（否则排队会把总耗时拖长 ✗）。
+        waitTimeout: _remainingWithin(deadline),
       );
-      // 列表操作也要受本次探测预算约束 ✓（服务器可能接受连接却不回目录 ✓）。
-      await pool.listDirectory('').timeout(timeout);
+      pool = connectedPool;
+      connected = true;
+      // 连得上就清掉冷却 ✓（探测成功同样算"服务器可用" ✓）。
+      SmbClient.clearConnectFailure(target);
+      // 用户已取消 ⇒ 不再列目录 ✓（连接已建立，finally 会关闭 ✓）。
+      if (isCancelled?.call() ?? false) {
+        return 'cancelled';
+      }
+      // 列表操作**只用剩余预算** ✓（服务器可能接受连接却不回目录 ✓）。
+      final remaining = deadline.difference(DateTime.now());
+      if (remaining > Duration.zero) {
+        await connectedPool.listDirectory('').timeout(remaining);
+      }
       return null;
+    } on SmbException catch (e) {
+      // ⭐ 闸门等待超时等 SMB 层错误 ✓：原样展示 ✓ ——
+      // 不要把"排队超时"记成连接失败 ✗（否则会把正式连接的冷却一起打掉 ✓）。
+      return e.message;
     } on Smb2Exception catch (e) {
       final type = e.type;
+      if (type == Smb2ErrorType.connection || type == Smb2ErrorType.timeout) {
+        SmbClient.noteConnectFailure(target);
+      }
       if (type == Smb2ErrorType.auth) {
         return 'Authentication failed: ${e.message}';
       } else if (type == Smb2ErrorType.connection ||
@@ -269,17 +348,36 @@ class SmbConnection {
     } on Exception catch (e) {
       // ⭐ 只兜 Exception ✓：Error（断言/类型错误等）应继续上抛 ✓，
       // 否则会把程序缺陷伪装成"连接失败" ✗。
+      // ⭐ 只有"还没连上"才记冷却 ✓（列目录阶段的普通错误不代表网络不可用 ✓）。
+      if (!connected) {
+        SmbClient.noteConnectFailure(target);
+      }
       return e.toString();
     } finally {
       if (pool != null) {
+        // ⭐ 2026-10-26（批2 P2#5）：**断开移出关键路径** ✓ —— 旧实现 `await pool.disconnect()` ✗
+        // ⇒ worker 收尾的 5s 也计入用户等待 ✓；现在同样走 lifecycle 闸门 ✓（不丢销毁 ✓），
+        // 但不阻塞本次探测结论 ✓（失败只影响资源回收 ✓，不会覆盖连接结论 ✓）。
+        unawaited(_disposeProbePool(pool));
+      }
+    }
+  }
+
+  /// 在 lifecycle 闸门内销毁探测用的原生 context ✓（后台收尾 ✓）。
+  ///
+  /// 等待上限给 2 分钟 ✓：前面可能排着一个最长 40s 的 connect ✓；宁可极端情况下漏关一条
+  /// 探测连接 ✓，也不能绕过闸门直接断 ✗（会与其它 `init_context` 并发 ⇒ 崩溃 ✓）。
+  static Future<void> _disposeProbePool(Smb2Pool pool) async {
+    try {
+      await SmbSerial.run(() async {
         try {
-          // ⚠️ disconnect 失败不能覆盖上面的连接结论 ✗ ——
-          // 原先 finally 里直接 await，断开异常会盖掉 "连接成功/具体失败原因" ✗。
           await pool.disconnect();
         } catch (_) {
           // 探测已经结束，断开失败只影响资源回收 ✓。
         }
-      }
+      }, waitTimeout: const Duration(minutes: 2));
+    } catch (_) {
+      // 闸门卡死（等不到名额）⇒ 放弃关闭 ✓（此时任何新连接同样被卡住 ✓）。
     }
   }
 }

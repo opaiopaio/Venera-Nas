@@ -39,9 +39,20 @@ String? _sliceCachedPath;
 /// ⚠️ 解码**不放在本文件** ✗（守卫 `background_preload_cache_test` 的 T-BP2 明确禁止
 /// `instantiateImageCodec` 出现在切片里 ✓ —— 历史事故教训 ✓）；解码在 `main.dart` 启动时做 ✓。
 ///
+/// ⭐ 2026-10-26：**入口校验** ✓ ——
+/// - 背景体系已关闭（`AppBackground.isActive == false`）⇒ 不写、并释放传入的图 ✓
+///   （否则会留下一个永远用不上的 `ui.Image` 句柄 ✗）；
+/// - 已有首帧缓存 ⇒ **不覆盖** ✓，只释放传入的新图 ✓ —— `_sliceCachedImage` 可能正被
+///   已挂载的切片绘制 ✓，**绝不能** dispose 它 ✗（会触发 "Image has been disposed" ✓）；
+///   换图/换路径时切片自己的 `FileImage` 解析会更新缓存 ✓，不依赖本入口 ✓。
+///
 /// 安全 ✓：只写模块缓存 ✓，仍由 `FileImage` 流照常解析/覆盖 ✓（不提前 return ✓）；
 /// **按路径**存储 ✓ ⇒ 换背景图后路径不同 ⇒ 下次启动会重新预置 ✓（换图也不会闪 ✓）。
 void seedBackgroundSliceFirstFrame(ui.Image image, String path) {
+  if (!AppBackground.isActive || _sliceCachedImage != null) {
+    image.dispose();
+    return;
+  }
   _sliceCachedImage = image;
   _sliceCachedPath = path;
 }

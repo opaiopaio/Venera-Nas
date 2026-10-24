@@ -184,6 +184,16 @@ String smbPathFromUrl(String url) {
   return segments.sublist(1).join('/');
 }
 
+/// 已解析出的 SMB 下载目标 ✓（连接配置 + 共享内目录 ✓）。
+class SmbDownloadTarget {
+  const SmbDownloadTarget(this.config, this.remoteDir);
+
+  final SmbConfig config;
+
+  /// 共享内目录（如 `图包` 或 `图包/子目录` ✓），空串表示共享根 ✓。
+  final String remoteDir;
+}
+
 /// ⭐ 2026-10-25（用户实测 ✓）：**下载根路径的有效目标** ✓ —— 修正"**漏写共享名**"的情况 ✗。
 ///
 /// 实例 ✓：用户填 `smb://192.168.8.1/图包` ✓，而真实共享是 `NAS` ✓（`图包` 只是共享里的目录 ✗）
@@ -194,15 +204,6 @@ String smbPathFromUrl(String url) {
 /// 2. 否则按 **host** 找已保存服务器 ✓ ⇒ 用它的**共享名 + 凭据 + 协议选项** ✓，
 ///    URL 的**第一段视作共享内目录** ✓；
 /// 3. 都没有 ⇒ 返回 null（调用方给出明确错误 ✓，不再静默连错共享 ✗）。
-class SmbDownloadTarget {
-  const SmbDownloadTarget(this.config, this.remoteDir);
-
-  final SmbConfig config;
-
-  /// 共享内目录（如 `图包` 或 `图包/子目录` ✓），空串表示共享根 ✓。
-  final String remoteDir;
-}
-
 SmbDownloadTarget? resolveSmbDownloadTarget(String url) {
   if (!isSmbPath(url)) return null;
   final uri = Uri.parse(url);

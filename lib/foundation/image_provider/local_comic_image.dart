@@ -209,15 +209,6 @@ class LocalComicImageProvider
         }
         final compressed = await compressCoverImage(data);
         await CacheManager().writeCache(cacheKey, compressed);
-        // ⭐ 2026-10-25（用户要求 ✓：**有缓存就直接读 ✓**）：**双写兼容键** ✓
-        // 历史页读封面时用的仍是旧键 smb_cover:<id> ✗ ⇒ 永远读不中 ⇒ 每次重启都重下 ✗。
-        // 这里额外写一份旧键 ✓ ⇒ 读写一致 ✓（新键优先 ✓）。
-        if (cacheKey != SmbCoverLoader.cacheKey(comic.id)) {
-          await CacheManager().writeCache(
-            SmbCoverLoader.cacheKey(comic.id),
-            compressed,
-          );
-        }
         return Uint8List.fromList(compressed);
       } on Smb2Exception catch (e) {
         if (e.type != Smb2ErrorType.fileNotFound) rethrow;
@@ -261,15 +252,6 @@ class LocalComicImageProvider
         final data = await client.readFile(found.path);
         final compressed = await compressCoverImage(data);
         await CacheManager().writeCache(cacheKey, compressed);
-        // ⭐ 2026-10-25（用户要求 ✓：**有缓存就直接读 ✓**）：**双写兼容键** ✓
-        // 历史页读封面时用的仍是旧键 smb_cover:<id> ✗ ⇒ 永远读不中 ⇒ 每次重启都重下 ✗。
-        // 这里额外写一份旧键 ✓ ⇒ 读写一致 ✓（新键优先 ✓）。
-        if (cacheKey != SmbCoverLoader.cacheKey(comic.id)) {
-          await CacheManager().writeCache(
-            SmbCoverLoader.cacheKey(comic.id),
-            compressed,
-          );
-        }
         return Uint8List.fromList(compressed);
       }
     } finally {
@@ -320,9 +302,15 @@ class LocalComicImageProvider
   @override
   String get key => "local${comic.id}${comic.comicType.value}";
 
-  /// 修复（2026-10-09）：本 provider 的 SMB 封面**磁盘缓存**键是 `smb_cover:<comic.id>`（见 _loadSmbCover），
-  /// 与本类 `key` 不同 ⇒ 原 `delete(key)` 清不掉坏封面缓存（会永久残留、导致坏封面一直加载失败）。
-  /// 覆写后解码失败的清理即可命中该缓存文件。
+  /// 修复（2026-10-09）：本 provider 的 SMB 封面**磁盘缓存**键不是本类 `key` ✓ ⇒
+  /// 原 `delete(key)` 清不掉坏封面缓存（会永久残留、导致坏封面一直加载失败）✗。
+  /// 覆写后解码失败的清理即可命中该缓存文件 ✓。
+  ///
+  /// ⭐ 2026-10-26（P2 ✓）：只保留**带 baseDir 的新键** ✓ —— 原先还会双写一份旧键
+  /// `smb_cover:<id>` 以兼容历史页 ✗；历史页的 `cacheKey` 已改为同一个新键 ✓，
+  /// 别名写再多一份只是浪费磁盘，且写失败会连带把封面加载**整条拖垮** ✗。
+  /// 旧键文件不再写入、也不再读取 ✓（交给 `CacheManager` 的过期/LRU 清理 ✓；
+  /// 不做"旧键迁移"✗：旧键按 id 共享，迁移会把**别的漫画的封面**搬到新键上 ✗）。
   @override
   String get cacheKey =>
       SmbCoverLoader.cacheKey(comic.id, baseDir: comic.baseDir);
