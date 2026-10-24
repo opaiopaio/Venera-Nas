@@ -461,6 +461,13 @@ class _SmbServerManagerState extends State<_SmbServerManager> {
     setState(() {});
   }
 
+  /// ⭐ 2026-10-25：**重置 SMB 连接** ✓（卡住时的恢复手段 ✓）。
+  Future<void> _resetSmbConnection() async {
+    await ReaderImageProvider.resetSmbRuntime();
+    if (!mounted) return;
+    context.showMessage(message: "已重置 SMB 连接，请重新尝试".tl);
+  }
+
   Future<void> _testServer(int index) async {
     final connection = servers[index];
     setState(() {}); // trigger rebuild for loading indicator if needed
@@ -540,12 +547,27 @@ class _SmbServerManagerState extends State<_SmbServerManager> {
             ),
           Padding(
             padding: const EdgeInsets.all(AppSpace.md),
-            child: SizedBox(
-              width: double.infinity,
-              child: Button.filled(
-                onPressed: _addServer,
-                child: Text("Add Server".tl),
-              ),
+            child: Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: Button.filled(
+                    onPressed: _addServer,
+                    child: Text("Add Server".tl),
+                  ),
+                ),
+                const SizedBox(height: AppSpace.sm),
+                // ⭐ 2026-10-25：**SMB 卡住时的恢复入口** ✓ ——
+                // 若某个 SMB 操作卡死（服务器无响应 ✓），列表/扫描/读图会一直等待 ✗；
+                // 点这里可**断开复用连接 + 释放全局闸门** ✓，无需重启 App ✓。
+                SizedBox(
+                  width: double.infinity,
+                  child: Button.outlined(
+                    onPressed: _resetSmbConnection,
+                    child: Text("重置 SMB 连接（卡住时用）".tl),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

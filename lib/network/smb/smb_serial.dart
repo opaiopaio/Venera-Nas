@@ -103,14 +103,28 @@ class SmbSerial {
   /// 在闸门内执行一个原生操作 ✓（最简单的用法 ✓）。
   ///
   /// [high] = true 表示"用户在等" ✓；后台任务传 false ✓。
-  static Future<T> run<T>(Future<T> Function() op, {bool high = false}) async {
-    // 先按普通优先级排队（带看门狗复位 ✓ —— 真卡死时自动恢复，不必重启 App ✓）。
+  ///
+  /// ⭐ 2026-10-25（用户实测 ✓）：**排队也要有上限** ✗ ——
+  /// 之前若某个原生操作**卡死**（服务器不响应 ✓），后来的列目录 / 读图会**无限排队** ✗，
+  /// 表现为"扫描一直转圈 / 打开漫画一直转圈"✗。现在：[waitTimeout] 内拿不到锁 ⇒
+  /// 直接抛可重试错误 ✓（界面能提示 ✓，用户也能用「重置 SMB 连接」恢复 ✓，不必重启 App ✓）。
+  static Future<T> run<T>(
+    Future<T> Function() op, {
+    bool high = false,
+    Duration waitTimeout = const Duration(seconds: 20),
+  }) async {
+    final deadline = DateTime.now().add(waitTimeout);
     while (true) {
+      // 看门狗：锁被异常占用太久 ⇒ 强制复位 ✓（避免永久卡死 ✗）。
       if (_hasBeenLockedTooLong()) {
         reset();
       }
       final granted = await acquire(high: high, timeout: _pollInterval);
       if (granted) break;
+      if (DateTime.now().isAfter(deadline)) {
+        throw "SMB 操作等待超时（服务器可能无响应）。"
+            "可到「设置 → 网络 → SMB 服务器」点「重置 SMB 连接」后重试。";
+      }
     }
     try {
       return await op();
@@ -118,4 +132,8 @@ class SmbSerial {
       release();
     }
   }
+
+  /// ⭐ 2026-10-25：**强制重置闸门** ✓ —— 供"重置 SMB 连接"按钮用 ✓
+  ///（把卡住的锁放掉、所有等待者按失败返回 ✓）；调用方还应同时断开复用的连接 ✓。
+  static void forceReset() => reset();
 }

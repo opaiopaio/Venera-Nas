@@ -37,6 +37,8 @@ import 'package:yaml/yaml.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:venera_nas/foundation/design_tokens.dart';
 import 'package:venera_nas/foundation/app_theme.dart';
+// ⭐ 2026-10-25：SMB「重置连接」需要 `ReaderImageProvider.resetSmbRuntime()` ✓。
+import 'package:venera_nas/foundation/image_provider/reader_image.dart';
 
 part 'reader.dart';
 part 'explore_settings.dart';

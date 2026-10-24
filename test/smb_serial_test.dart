@@ -86,4 +86,19 @@ void main() {
     expect(again, isTrue);
     SmbSerial.release();
   });
+
+  test('排队等待超时 ⇒ 抛可重试错误，不无限等（卡住恢复 ✓）', () async {
+    await SmbSerial.acquire(high: false); // 模拟"一个卡死的操作占着锁"
+    await expectLater(
+      SmbSerial.run<void>(
+        () async {},
+        waitTimeout: const Duration(milliseconds: 150),
+      ),
+      throwsA(isA<String>()),
+    );
+    SmbSerial.release();
+    // 释放后应恢复正常 ✓
+    await SmbSerial.run<void>(() async {});
+    expect(SmbSerial.locked, isFalse);
+  });
 }

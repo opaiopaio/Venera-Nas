@@ -10,6 +10,7 @@ import 'package:venera_nas/foundation/log.dart';
 import 'package:venera_nas/network/images.dart';
 import 'package:venera_nas/network/smb/smb_client.dart';
 import 'package:venera_nas/network/smb/smb_config.dart';
+import 'package:venera_nas/network/smb/smb_serial.dart';
 import 'package:venera_nas/network/smb/smb_utils.dart';
 import 'package:venera_nas/utils/io.dart';
 import 'base_image_provider.dart';
@@ -321,6 +322,15 @@ class ReaderImageProvider
     _sharedClientKey = key;
     _sharedClientLastUsed = DateTime.now();
     return client;
+  }
+
+  /// ⭐ 2026-10-25：**重置 SMB 运行时** ✓ —— 供设置页「重置 SMB 连接」按钮用 ✓。
+  /// 断开复用的连接 ✓ + 强制释放全局闸门 ✓（SMB 操作卡住时的恢复手段 ✓，不必重启 App ✓）。
+  static Future<void> resetSmbRuntime() async {
+    SmbSerial.forceReset();
+    _activeReads = 0;
+    _closeSharedRequested = false;
+    await closeSharedSmbClient(force: true);
   }
 
   /// ⭐ 断开复用的 SMB 连接 ✓（阅读器退出 / 切换章节 / 前台读失败重连时调用 ✓）。
