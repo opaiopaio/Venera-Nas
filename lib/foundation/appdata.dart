@@ -21,11 +21,17 @@ class Appdata with Init {
 
   bool _isSavingData = false;
 
-  Future<void> saveData([bool sync = true]) async {
-    while (_isSavingData) {
-      await Future.delayed(const Duration(milliseconds: 20));
-    }
-    _isSavingData = true;
+  // 2026-10-25 P2：用 Future 链串行化保存（替代原先 20ms 自旋等待 ✗）。
+  Future<void> _saveChain = Future.value();
+
+  Future<void> saveData([bool sync = true]) {
+    final previous = _saveChain;
+    final next = previous.then((_) => _saveDataOnce(sync));
+    _saveChain = next.catchError((_) {});
+    return next;
+  }
+
+  Future<void> _saveDataOnce(bool sync) async {
     try {
       var futures = <Future>[];
       var json = toJson();
@@ -68,7 +74,7 @@ class Appdata with Init {
 
       await Future.wait(futures);
     } finally {
-      _isSavingData = false;
+      // 串行化由 _saveChain 保证
     }
     if (sync) {
       DataSync().uploadData();
