@@ -42,12 +42,11 @@ class SmbConnection {
 
   /// ⭐ 2026-10-25：**测试连接 + 自动诊断** ✓
   ///
-  /// 用户实测的两类真实问题（都是服务端限制，不是账号密码 ✓）：
-  /// 1. ⚠️ **加密（seal）不被支持** ✗ —— 路由器用 **ksmbd**（内核态 SMB3 服务端 ✓，
-  ///    很多版本对 SMB3 加密支持不全 ✓）⇒ 协商阶段返回 `STATUS_NOT_SUPPORTED (0xc00000bb)` ✗
-  /// 2. ⚠️ **签名（signing）不兼容** ✗ —— 客户端发出的签名与服务端不一致 ⇒
-  ///    `Wrong signature in received PDU` ✗（ksmbd 上实测 ✓）
-  /// ⇒ ⭐ 对这类设备，**签名和加密都必须关闭** ✓（关掉后即可正常连接 ✓）
+  /// 用户实测的两类真实问题（都是服务端限制，与账号密码无关 ✓）：
+  /// 1. ⚠️ **加密（seal）可能不被服务器接受** ✗ ⇒ 协商阶段返回 `STATUS_NOT_SUPPORTED (0xc00000bb)` ✗
+  /// 2. ⚠️ **签名（signing）可能不匹配** ✗ ⇒ `Wrong signature in received PDU` ✗
+  /// ⚠️ 具体哪些服务器/固件会这样，取决于其实际版本与配置 ✓ —— 所以文案只说"可尝试关闭" ✓，
+  /// 不点名、不下绝对结论 ✗。
   ///
   /// 本方法：先按**当前配置**试 ✓；失败就**逐项降级**再试 ✓（不改用户已保存的配置 ✗），
   /// 并把"哪一套参数能连"直接告诉用户 ✓ ⇒ 用户照提示改即可 ✓。
@@ -100,17 +99,20 @@ class SmbConnection {
       if (err == null) {
         return '$originalError$hint\n\n'
             '✅ 诊断：用「${entry.key}」可以连接 ✓\n'
-            '请按这套设置修改后保存 ✓（尤其是 KSMBd / 老路由器，签名与加密通常都要关 ✗）';
+            '可考虑按这套设置保存 ✓（若服务器不要求签名/加密，关闭这两项通常更稳 ✓）';
       }
     }
 
     return '$originalError$hint\n\n'
         '❌ 自动降级（关签名 / 关加密 / 自动版本 / 3.0.2 / 2.1）也连不上 ✗\n'
-        '请检查：① 路由器/NAS 是否**只开了 SMB1**（本应用不支持 SMB1 ✗）\n'
-        '② 共享名与账号密码 ✓ ③ 端口必须是 445 ✓';
+        '请检查：① 服务器是否**只启用了 SMB1**（本应用不支持 SMB1 ✗）\n'
+        '② 共享名与账号密码 ✓ ③ 端口是否为 445 ✓';
   }
 
   /// 常见 SMB 错误码/错误文本 → 中文提示 ✓（只做提示 ✓，不改变连接行为 ✓）。
+  ///
+  /// ⚠️ 文案原则（2026-10-25 ✓）：**不点名具体实现、不下绝对结论** ✗ ——
+  /// 只说"可能是…，可尝试…" ✓（具体原因需按服务器实际版本判断 ✓）。
   @visibleForTesting
   static String hintFor(String message) {
     bool has(String s) => message.contains(s);
@@ -118,11 +120,12 @@ class SmbConnection {
     if (lower.contains('wrong signature') ||
         has('STATUS_INVALID_SIGNATURE') ||
         lower.contains('signature')) {
-      return '\n（服务器与客户端的 **SMB 签名实现不兼容** ✓ —— '
-          '请关闭「要求消息签名」✓，KSMBd 等设备常见 ✓）';
+      return '\n（签名校验未通过：可能是服务器与客户端的签名算法不匹配 ✓ '
+          '—— 可尝试关闭「要求消息签名」✓）';
     }
     if (has('0xc00000bb') || has('STATUS_NOT_SUPPORTED')) {
-      return '\n（该错误码通常表示：**服务器不支持**所选的 SMB 版本或加密 ✓）';
+      return '\n（该错误码通常表示：**服务器不接受**所选的 SMB 版本或加密 ✓ —— '
+          '可尝试把协商版本改成「自动」，或关闭「SMB3 加密」✓）';
     }
     if (has('0xc000006d') || has('LOGON_FAILURE')) {
       return '\n（该错误码通常表示：**账号或密码不对** ✓）';
