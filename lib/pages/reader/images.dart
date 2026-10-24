@@ -210,9 +210,13 @@ class _GalleryModeState extends State<_GalleryMode>
     implements _ImageViewController {
   late PageController controller;
 
-  /// ⭐ 2026-10-24：预取**防抖计时器** ✓ —— 快速滚动/滚轮翻页时**一律不预取** ✓，
-  /// 停下（`AppMotion.medium` = 300ms ✓，令牌值，不写裸时长 ✗）后才开始 ✓
-  /// （把全部 SMB 带宽让给当前页 ✓；机械硬盘 + SMB 的顺序带宽才 200MB/s 左右 ✓，并行随机读反而更慢 ✗）。
+  /// ⭐ 2026-10-24：**两级预取防抖** ✓
+  /// - [  _neighborDebounce ] 相邻页（`AppMotion.short` = 200ms ✓）：**落盘 + 解码** ✓
+  ///   ⇒ 翻下一页**不再闪** ✓（用户实测：只落盘不解码时"当前页很快，但翻下一页闪" ✗）
+  /// - [  _prefetchDebounce ] 远一点的页（`AppMotion.medium` = 300ms ✓）：**只落盘、不解码** ✓
+  /// 两者都会在"连续翻页"时不断重置 ✓ ⇒ **狂翻期间一次预取都不发** ✓（全部带宽给当前页 ✓）。
+  Timer? _neighborDebounce;
+
   Timer? _prefetchDebounce;
 
   int get preCacheCount =>
@@ -286,6 +290,8 @@ class _GalleryModeState extends State<_GalleryMode>
   //（那之后同帧仍会使用该 controller ✓ → 会 use-after-dispose ✓）。
   @override
   void dispose() {
+    _neighborDebounce?.cancel();
+    _neighborDebounce = null;
     _prefetchDebounce?.cancel();
     _prefetchDebounce = null;
     controller.dispose();
@@ -342,11 +348,39 @@ class _GalleryModeState extends State<_GalleryMode>
   /// 现在：**每次调用都把预取推迟一个令牌时长** ✓ —— 连续翻页会不断重置计时器 ✓
   /// ⇒ 只有"停下来"才真正预取 ✓。
   void cache(int startPage) {
+    // ① 相邻页：短防抖 ⇒ **落盘 + 给"下一页"解码** ✓（这是"翻页不闪"的关键 ✓）。
+    _neighborDebounce?.cancel();
+    _neighborDebounce = Timer(AppMotion.short, () {
+      if (!mounted) return;
+      _cacheNeighborsNow(startPage);
+    });
+    // ② 其余页：长防抖 ⇒ **只落盘** ✓（解码仍只发生在真正显示时 ✓）。
     _prefetchDebounce?.cancel();
     _prefetchDebounce = Timer(AppMotion.medium, () {
       if (!mounted) return;
       _cacheNow(startPage);
     });
+  }
+
+  /// ⭐ 相邻页预取 ✓：上一页 / 下一页**先落盘** ✓，其中**只有"下一页"预解码** ✓。
+  ///
+  /// 为什么只解码下一页（2026-10-24 用户实测 ✓）：
+  /// - 全部只落盘 ⇒ 翻页仍要现解码 ⇒ **闪** ✗
+  /// - 全部解码（含 N 页远的预取）⇒ 解码图把当前页**挤出 ImageCache** ⇒ 又转圈 ✗
+  /// ⇒ 折中 = **只预解码 1 页** ✓（用户最可能的下一动作 ✓，也不会污染缓存 ✓）。
+  void _cacheNeighborsNow(int startPage) {
+    for (final page in [startPage + 1, startPage - 1]) {
+      if (page <= 0 || page > totalPages || isChapterCommentsPage(page)) {
+        continue;
+      }
+      var (startIndex, endIndex) = getPageImagesRange(page);
+      for (int i = startIndex; i < endIndex; i++) {
+        _preDownloadImage(i + 1, context);
+        if (page == startPage + 1) {
+          _precacheImage(i + 1, context);
+        }
+      }
+    }
   }
 
   void _cacheNow(int startPage) {
