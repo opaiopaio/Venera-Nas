@@ -575,6 +575,11 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
 
   bool _isTesting = false;
 
+  // ⭐ 2026-10-24：SMB 协议选项 UI state ✓（服务器"强制签名/加密"或需指定方言时用 ✓）。
+  late bool _signing;
+  late bool _seal;
+  late Smb2Version _version;
+
   bool get _isEditing => widget.connection != null;
 
   @override
@@ -590,6 +595,9 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
     _usernameController = TextEditingController(text: c?.config.username ?? '');
     _passwordController = TextEditingController(text: c?.config.password ?? '');
     _domainController = TextEditingController(text: c?.config.domain ?? '');
+    _signing = c?.config.signing ?? false;
+    _seal = c?.config.seal ?? false;
+    _version = c?.config.version ?? Smb2Version.any;
   }
 
   @override
@@ -605,7 +613,6 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
   }
 
   SmbConnection _buildConnection() {
-    final old = widget.connection?.config;
     final port = int.tryParse(_portController.text.trim()) ?? 445;
     return SmbConnection(
       name: _nameController.text.trim(),
@@ -616,18 +623,33 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
         username: _usernameController.text.trim(),
         password: _passwordController.text,
         domain: _domainController.text.trim(),
-        // ⭐ 2026-10-24：编辑时**保留**已有的协议选项 ✓ ——
-        // 否则用户每编辑一次，签名/加密/方言都会被悄悄重置为默认 ✗。
-        //（这些选项的 UI 在下一轮补 ✓；当前改动不改变既有行为 ✓。）
-        signing: old?.signing ?? false,
-        seal: old?.seal ?? false,
-        version: old?.version ?? Smb2Version.any,
+        signing: _signing,
+        seal: _seal,
+        version: _version,
       ),
     );
   }
 
+  /// 加密（seal）要求 SMB3 ✓ —— 选项不匹配时直接拦下 ✓，避免用户只看到"连不上" ✗。
+  String? _validateProtocolOptions() {
+    if (!_seal) return null;
+    const smb3Versions = {
+      Smb2Version.any3,
+      Smb2Version.v300,
+      Smb2Version.v302,
+      Smb2Version.v311,
+    };
+    if (smb3Versions.contains(_version)) return null;
+    return "加密（seal）需要 SMB3：请把协商版本改为「SMB3」或更高。";
+  }
+
   Future<void> _test() async {
     if (_isTesting) return;
+    final protocolError = _validateProtocolOptions();
+    if (protocolError != null) {
+      showDialogMessage(context, "Test Connection".tl, protocolError);
+      return;
+    }
     setState(() => _isTesting = true);
     final error = await _buildConnection().testConnection();
     if (!mounted) return;
@@ -655,6 +677,11 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
     }
     if (connection.config.share.isEmpty) {
       showDialogMessage(context, "Error".tl, "Share is required".tl);
+      return;
+    }
+    final protocolError = _validateProtocolOptions();
+    if (protocolError != null) {
+      showDialogMessage(context, "Error".tl, protocolError);
       return;
     }
 
@@ -720,6 +747,8 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
               decoration: InputDecoration(
                 labelText: "Port".tl,
                 hintText: "445",
+                // ⭐ 2026-10-24：底层库无端口参数 ⇒ 明确告知用户只有 445可用 ✓（不再静默连错 ✗）。
+                helperText: '当前底层库仅支持 445 端口',
                 border: const OutlineInputBorder(),
               ),
               controller: _portController,
@@ -759,6 +788,63 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
                 border: const OutlineInputBorder(),
               ),
               controller: _domainController,
+            ),
+            // ⭐ 2026-10-24：**SMB 协议选项** ✓ —— 服务器"强制签名/加密"或需要指定方言时用 ✓
+            //（libsmb2 支持 SMB2/3 ✓；这些选项直接透传给 `Smb2Pool.connect` ✓）。
+            const SizedBox(height: AppSpace.lg),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _signing,
+              onChanged: (v) => setState(() => _signing = v),
+              title: const Text("要求消息签名（signing）"),
+              subtitle: const Text("服务器强制签名时开启；默认开启自动协商"),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _seal,
+              onChanged: (v) => setState(() => _seal = v),
+              title: const Text("SMB3 加密（seal）"),
+              subtitle: const Text("服务器要求加密时开启；需要 SMB3"),
+            ),
+            const SizedBox(height: AppSpace.sm),
+            DropdownButtonFormField<Smb2Version>(
+              initialValue: _version,
+              decoration: const InputDecoration(
+                labelText: "协商版本（dialect）",
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: Smb2Version.any, child: Text("自动（推荐）")),
+                DropdownMenuItem(
+                  value: Smb2Version.any2,
+                  child: Text("任意 SMB2"),
+                ),
+                DropdownMenuItem(
+                  value: Smb2Version.any3,
+                  child: Text("任意 SMB3"),
+                ),
+                DropdownMenuItem(
+                  value: Smb2Version.v202,
+                  child: Text("SMB 2.0.2"),
+                ),
+                DropdownMenuItem(
+                  value: Smb2Version.v210,
+                  child: Text("SMB 2.1"),
+                ),
+                DropdownMenuItem(
+                  value: Smb2Version.v300,
+                  child: Text("SMB 3.0"),
+                ),
+                DropdownMenuItem(
+                  value: Smb2Version.v302,
+                  child: Text("SMB 3.0.2"),
+                ),
+                DropdownMenuItem(
+                  value: Smb2Version.v311,
+                  child: Text("SMB 3.1.1"),
+                ),
+              ],
+              onChanged: (v) => setState(() => _version = v ?? Smb2Version.any),
             ),
             const SizedBox(height: 16),
             Row(
