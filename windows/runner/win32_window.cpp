@@ -97,7 +97,10 @@ const wchar_t* WindowClassRegistrar::GetWindowClass() {
     window_class.hInstance = GetModuleHandle(nullptr);
     window_class.hIcon =
         LoadIcon(window_class.hInstance, MAKEINTRESOURCE(IDI_APP_ICON));
-    window_class.hbrBackground = 0;
+    // Dark window brush so the pre-first-frame paint is not stark white.
+    // Overwritten by the first Flutter frame.
+    // Overwritten by the first Flutter frame.
+    window_class.hbrBackground = static_cast<HBRUSH>(CreateSolidBrush(RGB(26, 26, 28)));
     window_class.lpszMenuName = nullptr;
     window_class.lpfnWndProc = Win32Window::WndProc;
     RegisterClass(&window_class);
