@@ -34,6 +34,9 @@ class _ReaderImagesState extends State<_ReaderImages> {
   void dispose() {
     super.dispose();
     ImageDownloader.cancelAllLoadingImages();
+    // ⭐ 2026-10-24：退出阅读器 / 切换章节时**断开复用的 SMB 连接** ✓
+    //（SMB 读图现在整章共用一条连接 ✓；不主动断开会在 NAS 上留下空闲会话 ✓）。
+    ReaderImageProvider.closeSharedSmbClient();
   }
 
   void _onPagesCacheInvalid() {
