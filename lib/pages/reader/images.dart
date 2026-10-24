@@ -219,13 +219,24 @@ class _GalleryModeState extends State<_GalleryMode>
 
   Timer? _prefetchDebounce;
 
-  int get preCacheCount =>
-      appdata.settings.getReaderSetting(
-        reader.cid,
-        reader.type.sourceKey,
-        'preloadImageCount',
-      ) ??
-      0;
+  int get preCacheCount {
+    final configured =
+        appdata.settings.getReaderSetting(
+          reader.cid,
+          reader.type.sourceKey,
+          'preloadImageCount',
+        ) ??
+        0;
+    // ⭐ 2026-10-25（用户反馈 ✓）：**SMB / NAS 的预加载按设置值的「一半」** ✓ ——
+    // 云端读图每页都要走网络 ✓，比本地文件慢得多 ✓；不同设备（电脑 / 平板 / 路由器性能 ✓）
+    // 差异也大 ✓ ⇒ 照搬设置值会把带宽与队列占满 ✗ ⇒ 快速翻两页仍然闪 ✗。
+    // 减半后：相邻页仍解码（翻页不闪 ✓），排队压力明显下降 ✓。
+    if (reader.type == ComicType.smb) {
+      if (configured <= 1) return configured;
+      return (configured / 2).ceil();
+    }
+    return configured;
+  }
 
   var photoViewControllers = <int, PhotoViewController>{};
 
@@ -869,13 +880,24 @@ class _ContinuousModeState extends State<_ContinuousMode>
 
   late List<bool> cached;
 
-  int get preCacheCount =>
-      appdata.settings.getReaderSetting(
-        reader.cid,
-        reader.type.sourceKey,
-        'preloadImageCount',
-      ) ??
-      0;
+  int get preCacheCount {
+    final configured =
+        appdata.settings.getReaderSetting(
+          reader.cid,
+          reader.type.sourceKey,
+          'preloadImageCount',
+        ) ??
+        0;
+    // ⭐ 2026-10-25（用户反馈 ✓）：**SMB / NAS 的预加载按设置值的「一半」** ✓ ——
+    // 云端读图每页都要走网络 ✓，比本地文件慢得多 ✓；不同设备（电脑 / 平板 / 路由器性能 ✓）
+    // 差异也大 ✓ ⇒ 照搬设置值会把带宽与队列占满 ✗ ⇒ 快速翻两页仍然闪 ✗。
+    // 减半后：相邻页仍解码（翻页不闪 ✓），排队压力明显下降 ✓。
+    if (reader.type == ComicType.smb) {
+      if (configured <= 1) return configured;
+      return (configured / 2).ceil();
+    }
+    return configured;
+  }
 
   /// Whether the user was scrolling the page.
   /// The gesture detector has a delay to detect tap event.
