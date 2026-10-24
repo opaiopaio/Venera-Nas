@@ -162,20 +162,28 @@ class SmbClient {
         () async {
           // ⭐ 已连接就直接复用 ✓（共享客户端会被频繁 `connect()` ✓）。
           if (_pool != null) return;
-          _pool = await Smb2Pool.connect(
-            host: config.host,
-            share: config.share,
-            user: config.username,
-            password: config.password,
-            domain: config.domain,
-            // 原生 30s 先返回 ✓，Dart 层 [_connectTimeout] 40s 兜底 ✓ ——
-            // 原先 Dart 层只有 25s，反而比原生 30s 先超时 ✗（连接还在跑就丢引用 ✓）。
-            timeoutSeconds: 30,
-            workers: 4,
-            // ⭐ 2026-10-24：协议选项透传 ✓（服务器"强制签名/加密"或需指定方言时用得上 ✓）。
-            signing: config.signing,
-            seal: config.seal,
-            version: config.version,
+          // ⭐⭐ 2026-10-25（实测日志 ✓）：**建连必须全局串行** ✗ ——
+          // `Failed to parse fixed part of command payload` 是 libsmb2 在**多 isolate 同时
+          // `smb2_init_context`** 时的典型症状 ✓（其全局 `active_contexts` 列表无锁 ✗）。
+          // 数据读可以并发 ✓（每池独立 worker ✓），但**建连/断连**必须排队 ✓ ——
+          // 用 `SmbSerial.run` 作"上下文生命周期锁" ✓，这也是 v1 审计第 2 条的修法 ✓。
+          _pool = await SmbSerial.run(
+            () => Smb2Pool.connect(
+              host: config.host,
+              share: config.share,
+              user: config.username,
+              password: config.password,
+              domain: config.domain,
+              // 原生 30s 先返回 ✓，Dart 层 [_connectTimeout] 40s 兜底 ✓ ——
+              // 原先 Dart 层只有 25s，反而比原生 30s 先超时 ✗（连接还在跑就丢引用 ✓）。
+              timeoutSeconds: 30,
+              workers: 4,
+              // ⭐ 2026-10-24：协议选项透传 ✓（服务器"强制签名/加密"或需指定方言时用得上 ✓）。
+              signing: config.signing,
+              seal: config.seal,
+              version: config.version,
+            ),
+            high: high,
           );
           _dead = false;
         },

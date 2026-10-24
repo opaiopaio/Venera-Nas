@@ -349,14 +349,11 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
           final coverRemotePath = '$path/$coverName';
           final config = parseSmbConfigFromUrl(coverRemotePath);
           final remoteDir = smbPathFromUrl(path!);
-          final client = SmbClient(config: config);
-          try {
-            await client.connect();
-            await client.mkdirs(remoteDir);
-            await client.writeFile('$remoteDir/$coverName', data);
-          } finally {
-            await client.disconnect();
-          }
+          final client = SmbClient.shared(config);
+          // ⭐ 2026-10-25：**复用共享连接** ✓（原来每次封面写 = 新建 4 条会话 + 断开 ✗）。
+          await client.connect();
+          await client.mkdirs(remoteDir);
+          await client.writeFile('$remoteDir/$coverName', data);
           return coverRemotePath;
         }
         var file = File(FilePath.join(path!, "cover${fileType.ext}"));
@@ -721,16 +718,17 @@ class _ImageDownloadWrapper {
   }
 
   Future<void> _writeToSmb(Uint8List data, String fileName) async {
-    final client = SmbClient(config: _smbConfig!);
-    try {
-      await client.connect();
-      // Ensure parent directories exist before writing.
-      await client.mkdirs(_smbDir!);
-      final remotePath = '$_smbDir/$fileName';
-      await client.writeFile(remotePath, data);
-    } finally {
-      await client.disconnect();
-    }
+    // ⭐⭐ 2026-10-25（实测修复 ✓）：**复用共享连接** ✓ ——
+    // 原来**每张图**都 `new SmbClient` + `connect()` + `disconnect()` ✗
+    //（每张 = 建立 4 条会话 + 一次断开 ✗）⇒ 100 页章节 ≈ 400 次会话 ✗，
+    // 实测触发 `Failed to parse fixed part of command payload` ✗
+    //（libsmb2 并发 init/destroy context 的已知竞态 ✓）。
+    final client = SmbClient.shared(_smbConfig!);
+    await client.connect();
+    // 确保父目录存在后再写 ✓。
+    await client.mkdirs(_smbDir!);
+    final remotePath = '$_smbDir/$fileName';
+    await client.writeFile(remotePath, data);
   }
 
   Future<_ImageDownloadWrapper> wait() {
