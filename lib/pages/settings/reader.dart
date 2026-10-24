@@ -131,22 +131,23 @@ class _ReaderSettingsState extends State<ReaderSettings> {
               SliverToBoxAdapter(child: Divider()),
             ],
           ),
-        // ⭐ 2026-10-25（用户要求 ✓）：**阅读器图片区底色** 开关 ✓
-        // - 走 `readSettingValue/writeSettingValue` ✓ ⇒ **开"漫画特定设置"后只影响这本** ✓
-        // - 颜色在「外观 → 背景」里配 ✓；这里只放"显示/隐藏"开关 ✓ 并注明联动 ✓
-        // - 关闭后图片区透明 ✓，但**加载图标与错误报告仍有遮罩** ✓（用户要求 ✓）
-        _SwitchSetting(
-          title: "阅读器底色（与外观页联动）".tl,
-          settingKey: "readerBackgroundEnabled",
-          subtitle: "关闭后图片区透明、直接露出背景图；加载与报错仍保留遮罩".tl,
-          comicId: isEnabledSpecificSettings ? widget.comicId : null,
-          comicSource: isEnabledSpecificSettings ? widget.comicSource : null,
-          useDeviceSettings: useDeviceSpecificSettings,
-          onChanged: () {
-            setState(() {});
-            widget.onChanged?.call("readerBackgroundEnabled");
-          },
-        ).toSliver(),
+        // ⭐ 2026-10-25（用户要求 ✓）：**阅读器侧滑窗口的「阅读中」**才放这个开关 ✓
+        //（`comicId != null` = 从阅读器侧滑打开 ✓；设置页的全局「阅读中」不放 ✗）
+        // - 走 `readSettingValue/writeSettingValue` ✓ ⇒ 受「漫画特定设置」控制 ✓
+        // - 颜色在「外观 → 背景」里配 ✓；这里只放显示/隐藏开关 ✓
+        if (comicId != null)
+          _SwitchSetting(
+            title: "阅读器底色（与外观页联动）".tl,
+            settingKey: "readerBackgroundEnabled",
+            subtitle: "关闭后图片区透明、直接露出背景图；加载与报错仍保留遮罩".tl,
+            comicId: isEnabledSpecificSettings ? widget.comicId : null,
+            comicSource: isEnabledSpecificSettings ? widget.comicSource : null,
+            useDeviceSettings: useDeviceSpecificSettings,
+            onChanged: () {
+              setState(() {});
+              widget.onChanged?.call("readerBackgroundEnabled");
+            },
+          ).toSliver(),
         if (comicId == null)
           SliverMainAxisGroup(
             slivers: [

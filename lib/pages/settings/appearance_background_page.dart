@@ -30,6 +30,34 @@ class AppearanceBackgroundPage extends StatelessWidget {
       body: CustomScrollView(
         slivers: [
           const _BackgroundImageTile().toSliver(),
+          // ⭐ 2026-10-25（用户要求 ✓）：**阅读器图片区底色** ✓ 放在「外观 → 背景」这里 ✓
+          // - 默认「跟随系统」= 现状 ✓ 浅色白 / 深色黑 ✓
+          // - 关闭 ⇒ 阅读器图片区透明 ✓，直接露出这里的背景图 ✓
+          //（阅读器侧滑「阅读中」里也有同名开关 ✓，受「漫画特定设置」控制 ✓）
+          SwitchListTile(
+            title: Text("阅读器底色".tl),
+            subtitle: Text("关闭后阅读器图片区透明、直接露出背景图；加载与报错仍保留遮罩".tl),
+            value:
+                (appdata.settings['readerBackgroundEnabled'] ?? true) == true,
+            onChanged: (v) async {
+              appdata.settings['readerBackgroundEnabled'] = v;
+              await appdata.saveData();
+              App.forceRebuild();
+            },
+          ).toSliver(),
+          ColorSettingTile(
+            title: "阅读器底色颜色".tl,
+            settingValue:
+                (appdata.settings['readerBackgroundColor'] ?? 'system')
+                    .toString(),
+            allowSystem: true,
+            allowTransparent: true,
+            onPicked: (value) async {
+              appdata.settings['readerBackgroundColor'] = value;
+              await appdata.saveData();
+              App.forceRebuild();
+            },
+          ).toSliver(),
           ColorSettingTile(
             title: "Background color".tl,
             settingValue: (appdata.settings['backgroundColor'] ?? 'transparent')
