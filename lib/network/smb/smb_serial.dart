@@ -44,13 +44,13 @@ class SmbSerial {
 
   static final List<Completer<SmbSerialTicket?>> _low = [];
 
-  /// 看门狗阈值 ✓：持锁超过此时长 ⇒ 强制复位 ✓
-  ///（异常情况下锁卡死会让所有 SMB 操作永久挂起 ✗ —— 用户只能重启 App ✗）。
+  /// 看门狗阈值 ✓（保留给"外部主动检查"用 ✓；自愈已改为 run 内的 3s 复位 ✓）。
   static const Duration watchdog = Duration(seconds: 90);
 
   static bool get locked => _owner != null;
 
-  static bool _hasBeenLockedTooLong() {
+  /// 持锁是否已超过 [watchdog] ✓（自愈逻辑之外，还允许调用方主动判断 ✓）。
+  static bool hasBeenLockedTooLong() {
     final at = _lockedAt;
     return _owner != null &&
         at != null &&
@@ -152,11 +152,15 @@ class SmbSerial {
     bool high = false,
     Duration waitTimeout = const Duration(seconds: 20),
   }) async {
-    // 看门狗：锁被异常占用太久 ⇒ 先强制复位 ✓（避免永久卡死 ✗）。
-    if (_hasBeenLockedTooLong()) {
+    // ⭐ 2026-10-25（用户实测 ✓："点重置连接立刻就能进漫画"✓）：
+    // **自动自愈** ✓ —— 闸门被卡住时，与其让用户等 20 秒再报错 ✗，
+    // 不如**自己等 3 秒就强制复位一次** ✓（等价于用户点「重置 SMB 连接」✓），
+    // 复位后重新排队 ✓；复位两次还拿不到才报错 ✓。
+    var ticket = await acquire(high: high, timeout: _selfHealWait);
+    for (var attempt = 0; ticket == null && attempt < 2; attempt++) {
       reset();
+      ticket = await acquire(high: high, timeout: _selfHealWait);
     }
-    final ticket = await acquire(high: high, timeout: waitTimeout);
     if (ticket == null) {
       throw "SMB 操作等待超时（服务器可能无响应）。"
           "可到「设置 → 网络 → SMB 服务器」点「重置 SMB 连接」后重试。";
@@ -167,6 +171,9 @@ class SmbSerial {
       release(ticket);
     }
   }
+
+  /// 自动自愈的单次等待上限 ✓（3 秒足够区分"排一会儿队"与"被卡死"✓）。
+  static const _selfHealWait = Duration(milliseconds: 3000);
 
   /// ⭐ 2026-10-25：**强制重置闸门** ✓ —— 供"重置 SMB 连接"按钮用 ✓
   ///（把卡住的锁放掉、所有等待者按失败返回 ✓）；调用方还应同时断开复用的连接 ✓。

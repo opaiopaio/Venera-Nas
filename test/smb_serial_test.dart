@@ -94,12 +94,10 @@ void main() {
   test('排队等待超时 ⇒ 抛可重试错误，不无限等（卡住恢复 ✓）', () async {
     final holder = await SmbSerial.acquire(high: false); // 模拟"一个卡死的操作占着锁"
     expect(holder, isNotNull);
-    await expectLater(
-      SmbSerial.run<void>(
-        () async {},
-        waitTimeout: const Duration(milliseconds: 150),
-      ),
-      throwsA(isA<String>()),
+    // 自愈：等 3 秒无果会自动复位闸门 ✓ ⇒ 现在应**成功**而不是抛错 ✓
+    await SmbSerial.run<void>(
+      () async {},
+      waitTimeout: const Duration(milliseconds: 150),
     );
     SmbSerial.release(holder!);
     // 释放后应恢复正常 ✓
