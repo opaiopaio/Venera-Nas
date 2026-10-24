@@ -6,7 +6,6 @@ import 'package:dart_smb2/dart_smb2.dart';
 
 import 'smb_config.dart';
 import 'smb_serial.dart';
-import 'smb_utils.dart';
 
 /// High-level client for interacting with an SMB share.
 ///
@@ -367,10 +366,6 @@ class SmbClient {
           fallback._pool = null;
           _lastConnectFailureAt = null;
           _dead = false;
-          // ⭐ 2026-10-25（用户要求 ✓）：**试成功就记住** ✓ ——
-          // 把可用的协议组合写回服务器配置 ✓，下次直接用它连接 ✓
-          //（不再每次启动都按顺序试一遍 ✗）。
-          unawaited(persistSmbProtocolOptions(candidate));
           return;
         } catch (_) {
           // 这一套不行 ⇒ 试下一套 ✓。
