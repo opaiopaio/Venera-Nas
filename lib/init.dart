@@ -132,6 +132,11 @@ void _checkOldConfigs() {
 Future<void> _prewarmSmbReaderSessions() async {
   await Future.delayed(AppMotion.long * 3);
   final raw = appdata.settings['smbServers'];
+  // ⭐ 2026-10-25：**打点（便于确认是否真的执行/读到几条服务器 ✓）** ✓
+  Log.info(
+    'SMB Connect',
+    'prewarm start: serverCount=${raw is List ? raw.length : -1}',
+  );
   if (raw is! List) return;
   for (final item in raw) {
     if (item is! Map) continue;
