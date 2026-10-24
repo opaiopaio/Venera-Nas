@@ -556,7 +556,7 @@ class LocalManager with ChangeNotifier {
       }
       Log.info('SMB', 'listDirectory remoteDir: $remoteDir');
 
-      final entries = await client.listDirectory(remoteDir);
+      final entries = await client.listDirectory(remoteDir, high: true);
       Log.info('SMB', 'listDirectory returned ${entries.length} entries');
 
       // Log first few entry names for debugging
