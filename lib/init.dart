@@ -8,9 +8,12 @@ import 'package:rhttp/rhttp.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/cache_manager.dart';
 import 'package:venera_nas/foundation/comic_source/comic_source.dart';
+import 'package:venera_nas/foundation/design_tokens.dart';
 import 'package:venera_nas/foundation/js_engine.dart';
 import 'package:venera_nas/foundation/log.dart';
 import 'package:venera_nas/network/cookie_jar.dart';
+import 'package:venera_nas/network/smb/smb_client.dart';
+import 'package:venera_nas/network/smb/smb_connection.dart';
 import 'package:venera_nas/pages/comic_source_page.dart';
 import 'package:venera_nas/pages/follow_updates_page.dart';
 import 'package:venera_nas/pages/settings/settings_page.dart';
@@ -67,6 +70,10 @@ Future<void> init() async {
   if (App.isMobile) {
     handleLinks();
   }
+  // ⭐ 2026-10-25（用户要求 ✓，方案 A ✓）：**启动后预热阅读会话** ✓ ——
+  // 用户会"启动就连、常驻、退出断开"✓；预热后**点漫画即用** ✓（否则第一次点要等 2~3 秒握手 ✗）。
+  // 延迟 1.2 秒再连 ✓：不抢启动关键路径 ✓；失败静默 ✓（真正点漫画时会重试并报错 ✓）。
+  unawaited(_prewarmSmbReaderSessions());
   FlutterError.onError = (details) {
     Log.error("Unhandled Exception", "${details.exception}\n${details.stack}");
   };
@@ -113,6 +120,33 @@ void _checkOldConfigs() {
     }
     appdata.implicitData['sourceListMigratedToOpaiopaioRepo'] = true;
     appdata.writeImplicitData();
+  }
+}
+
+/// ⭐ 2026-10-25（用户要求 ✓，方案 A ✓）：**预热阅读专用 SMB 会话** ✓
+///
+/// 用户要的语义 ✓：启动即连、常驻、退出断开 ✓。
+/// 启动 1.2 秒后为已保存的服务器各建一条**阅读会话** ✓
+/// ⇒ 点漫画时**直接可用** ✓（不必再等 2~3 秒握手 ✗）。
+/// 失败静默 ✓：真正打开漫画时会再连并给出明确报错 ✓。
+Future<void> _prewarmSmbReaderSessions() async {
+  await Future.delayed(AppMotion.long * 3);
+  final raw = appdata.settings['smbServers'];
+  if (raw is! List) return;
+  for (final item in raw) {
+    if (item is! Map) continue;
+    try {
+      final conn = SmbConnection.fromJson(Map<String, dynamic>.from(item));
+      final cfg = conn.config;
+      if (cfg.host.isEmpty || cfg.share.isEmpty) continue;
+      await SmbClient.readerShared(cfg).connect(high: false);
+      Log.info(
+        'SMB Connect',
+        'prewarmed reader session: ${cfg.host}/${cfg.share}',
+      );
+    } catch (e) {
+      Log.info('SMB Connect', 'prewarm failed: $e');
+    }
   }
 }
 
