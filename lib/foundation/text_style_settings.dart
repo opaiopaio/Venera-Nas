@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/appdata.dart';
 import 'package:venera_nas/foundation/design_tokens.dart';
+import 'package:venera_nas/foundation/window_overlay.dart';
 
 /// 全局文字样式（颜色 / 字体 / 阴影 / 发光 / 字号缩放）。
 ///
@@ -183,31 +184,50 @@ TextTheme applyTextThemeOverrides(
 ///
 /// 落点 ✓：
 /// - `textTheme` / `primaryTextTheme`：走 [applyTextThemeOverrides]（度量中性 ✓）+ [decorateTextTheme]（阴影/发光 ✓）；
-/// - `listTileTheme`：**只注入 `textColor`** ✓ —— ⚠️ **不要**注入从 `theme.textTheme` 派生的
+/// - `listTileTheme`：**只注入颜色** ✓（`textColor` + `iconColor`）—— ⚠️ **不要**注入从 `theme.textTheme` 派生的
 ///   `titleTextStyle`/`subtitleTextStyle` ✗：`ThemeData.textTheme` 的各样式在树外**不含度量**
 ///   （`fontSize`/`height`/`letterSpacing` 为 `null` ✓，真实度量由 `MaterialApp` 侧补全 ✓）⇒
 ///   塞进 `ListTileThemeData` 会**顶掉** `ListTile` 带度量的默认样式 ⇒ 设置页**选项行 16 → 14** ✗
 ///   （大标题用显式 `ts.s18` ⇒ 不变 ✓ ⇒ 现象正是"只有选项文字变小" ✓）。
+/// - 遮罩体系启用时额外注入**对比前景** ✓（见 [windowOverlayListTileForeground] ✓）——
+///   `ListTile` 不吃 `FilledForeground` ✗，只认 `listTileTheme` ✓；不这样接，
+///   "浅窗口色 + 深色模式"就会整页浅底浅字 ✗。`iconColor` 是**颜色字段** ✓，同样不改度量 ✓。
 ThemeData applyGlobalTextStyleToTheme(ThemeData theme) {
   final style = globalTextStyle();
-  if (style == null) return theme;
-  final color = style.color;
+  final color = style?.color;
+  // ⭐ P1：遮罩未启用 / 遮罩全透明 ⇒ `null` ✓ ⇒ 不注入 ✓（保持现状 ✓）。
+  final overlayForeground = windowOverlayListTileForeground(theme.colorScheme);
+  // 无文字样式、也无遮罩对比色 ⇒ **原样返回** ✓（默认「跟随主题」状态零改动 / 零分配 ✓）。
+  if (style == null && overlayForeground == null) return theme;
   return theme.copyWith(
-    textTheme: decorateTextTheme(
-      applyTextThemeOverrides(
-        theme.textTheme,
-        color: color,
-        fontFamily: style.fontFamily,
-      ),
-    ),
-    primaryTextTheme: decorateTextTheme(
-      applyTextThemeOverrides(
-        theme.primaryTextTheme,
-        color: color,
-        fontFamily: style.fontFamily,
-      ),
-    ),
-    listTileTheme: theme.listTileTheme.copyWith(textColor: color),
+    textTheme: style == null
+        ? null
+        : decorateTextTheme(
+            applyTextThemeOverrides(
+              theme.textTheme,
+              color: color,
+              fontFamily: style.fontFamily,
+            ),
+          ),
+    primaryTextTheme: style == null
+        ? null
+        : decorateTextTheme(
+            applyTextThemeOverrides(
+              theme.primaryTextTheme,
+              color: color,
+              fontFamily: style.fontFamily,
+            ),
+          ),
+    listTileTheme: color == null && overlayForeground == null
+        ? null
+        : theme.listTileTheme.copyWith(
+            // 用户手动设了「全局文字颜色」⇒ **优先跟随用户** ✓（与 `FilledForeground`
+            // 的 `userColorWins` 默认语义一致 ✓）；没设时才用遮罩对比色 ✓。
+            textColor: color ?? overlayForeground,
+            // 图标是**独立前景通道** ✓（不跟随文字色 ✓）；用户显式设了「图标颜色」时，
+            // 由 `main.dart` 在本函数之后覆盖本字段 ✓（用户颜色优先 ✓）。
+            iconColor: overlayForeground,
+          ),
   );
 }
 

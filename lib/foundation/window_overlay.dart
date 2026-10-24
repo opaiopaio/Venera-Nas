@@ -173,6 +173,33 @@ double? _cachedOpacity;
 Color? _cachedSystemColor;
 Color? _cachedResult;
 
+/// ⭐ P1（设置行前景对比度 ✓）：**遮罩上的 `ListTile` 前景**（文字 / 图标）—— 供 `getTheme()`
+/// 注入 `listTileTheme` 使用 ✓。
+///
+/// 为什么必须单独接这一条 ✗：设置行用 [windowOverlayColor] **自绘底色** ✓，但 `ListTile` 的
+/// 文字/图标**不吃** `FilledForeground` 的注入（SDK 行为 ✓，见 `components/button.dart` 的类文档 ✓）——
+/// 它只认 `listTileTheme.textColor` / `iconColor` ✓。于是用户把窗口色设**浅** + 深色模式
+///（主题浅字）时，整页变成「浅底浅字」看不见 ✗。
+///
+/// 规则 ✓（与本项目 §4.1 完全一致，**不新增任何色值** ✗）：
+/// - 遮罩**没有真的画填充**（`hasWindowOverlay == false` ✓ / 不透明度 0 ⇒ 全透明 ✓）⇒ 返回 `null` ✓
+///   ⇒ 调用方**不注入** ✓，保持主题原有前景（零回归 ✓）；
+/// - 半透明遮罩**先与主题表面色合成**再判亮度 ✓（`estimateBrightnessForColor` 忽略 alpha ✗）；
+/// - 结果只在**绝对黑 / 白**之间取 ✓（与 `onColorForFill` 同一语义 ✓ —— ⚠️ 不能用
+///   `onSurface` / `onInverseSurface` ✗，深色主题下它们可能都是浅色 ✗）。
+///
+/// ⚠️ 局限（已知 ✓，不为此扩大改动面 ✗）：底色是**背景图**时无法预知合成结果，此时按主题
+/// 表面色估算 ✓ —— 与其它手写点用 `colorScheme.surface` 合成的既有约定一致 ✓。
+Color? windowOverlayListTileForeground(ColorScheme scheme) {
+  if (!appdata.settings.hasWindowOverlay) return null;
+  final fill = windowOverlayColor();
+  if (fill.a == 0) return null;
+  final effective = fill.a >= 1 ? fill : Color.alphaBlend(fill, scheme.surface);
+  return ThemeData.estimateBrightnessForColor(effective) == Brightness.dark
+      ? Colors.white
+      : Colors.black;
+}
+
 /// ⭐ B1（审计 AP1-B1 ✓）：把"**按当前生效亮度**写入系统容器色缓存"这一步抽成**可单测**的函数 ✓。
 ///
 /// 背景 ✓：B1 的 bug 是"`getTheme()` 对 light / dark **各写一次**同一个全局缓存 ✗ →

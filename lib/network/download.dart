@@ -114,31 +114,69 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
     _isRunning = false;
     LocalManager().removeTask(this);
     var local = LocalManager().find(id, comicType);
-    if (path != null && !path!.startsWith('smb://')) {
-      if (local == null) {
-        Future.sync(() async {
-          var tasks = this.tasks.values.toList();
-          for (var i = 0; i < tasks.length; i++) {
-            if (!tasks[i].isComplete) {
-              tasks[i].cancel();
-              await tasks[i].wait();
-            }
-          }
-          try {
-            await Directory(path!).delete(recursive: true);
-          } catch (e) {
-            Log.error("Download", "Failed to delete directory: $e");
-          }
-        });
-      } else if (chapters != null) {
+    final dirPath = path;
+    // SMB 目录与"尚未确定保存路径"的情况没有本地目录可删 ✓（与原逻辑一致 ✓）。
+    if (dirPath == null || dirPath.startsWith('smb://')) {
+      return;
+    }
+    // ⭐ 2026-10-26（P1 修复 ✓）：**取消必须真正停掉在途图片下载** ✗→✓ ——
+    // 原来只置 `_isRunning = false` 就**异步删目录** ✗：`_ImageDownloadWrapper` 仍在跑
+    //（只有 `pause()` 会逐个 cancel ✓）⇒ 目录删完又被写回残留文件、流量继续走 ✗。
+    // 现在按顺序收口 ✓：① 逐个 `cancel()` ✓ ② 等下载循环**真正退出** ✓
+    //（`wait()` 只是释放主循环 ✓，停写盘要看 `finished` ✓）③ 等 `resume()` 协程退出 ✓
+    //（否则封面 / 图片列表阶段会在删目录后继续写 ✓）④ 最后才删目录 ✓。
+    Future.sync(() async {
+      final running = _resumeFuture;
+      // ⭐ `pause()` 会把在途包装器从 [tasks] 移走 ✓，但它们可能仍在写盘 ✓ ⇒ 一并等 ✓。
+      final pending = <_ImageDownloadWrapper>{
+        ...tasks.values,
+        ..._stopping,
+      }.toList();
+      for (var t in pending) {
+        if (!t.isComplete) {
+          t.cancel();
+          await t.wait();
+        }
+        await t.finished;
+      }
+      _stopping.removeAll(pending);
+      if (running != null) {
+        try {
+          await running;
+        } catch (e, s) {
+          Log.error("Download", e.toString(), s);
+        }
+      }
+      // ⭐ 等待期间用户可能又点了「开始」✓ ⇒ 放弃删除，否则会删掉新一轮正在写的目录 ✗。
+      if (_isRunning) {
+        return;
+      }
+      // ⭐ 等待期间任务可能刚好下载完成并入库 ✓ ⇒ 此时不能整目录删除（会毁掉已下载内容 ✗）。
+      final isLocal =
+          local != null || LocalManager().find(id, comicType) != null;
+      if (!isLocal) {
+        try {
+          await Directory(dirPath).delete(recursive: true);
+        } catch (e) {
+          Log.error("Download", "Failed to delete directory: $e");
+        }
+      } else if (local != null && chapters != null) {
+        // 已有本地条目 = 只删本次勾选章节的目录 ✓（原有语义 ✓，但改为等下载停止后再删 ✓）。
         for (var c in chapters!) {
-          var dir = Directory(FilePath.join(path!, c));
-          if (dir.existsSync()) {
-            dir.deleteSync(recursive: true);
+          try {
+            var dir = Directory(FilePath.join(dirPath, c));
+            if (dir.existsSync()) {
+              dir.deleteSync(recursive: true);
+            }
+          } catch (e) {
+            Log.error("Download", "Failed to delete chapter directory: $e");
           }
         }
       }
-    }
+    }).catchError((Object e, StackTrace s) {
+      // 清理是后台动作 ✓：失败只记日志，不能变成未捕获的异步异常 ✗。
+      Log.error("Download", e.toString(), s);
+    });
   }
 
   @override
@@ -159,6 +197,7 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
     for (var entry in tasks.entries) {
       if (!entry.value.isComplete) {
         entry.value.cancel();
+        _trackStopping(entry.value);
         shouldMove.add(entry.key);
       }
     }
@@ -197,10 +236,31 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
 
   var tasks = <int, _ImageDownloadWrapper>{};
 
+  /// ⭐ 2026-10-26（P1 修复 ✓）：**已取消但可能还没退出**的图片下载 ✓ ——
+  /// `pause()` 会把它们从 [tasks] 移走 ✓（否则恢复时会被当成"在下载"而卡住 ✓）；
+  /// 之后本任务被 `cancel()` 时仍要等它们**真正停止写盘**再删目录 ✓，故单独留一份引用 ✓。
+  final Set<_ImageDownloadWrapper> _stopping = {};
+
+  /// 记录一个已取消、可能仍在退出的包装器 ✓；下载循环真正结束后自动移除 ✓。
+  void _trackStopping(_ImageDownloadWrapper task) {
+    _stopping.add(task);
+    unawaited(
+      task.finished.then((_) {
+        _stopping.remove(task);
+      }),
+    );
+  }
+
   int get _maxConcurrentTasks =>
       (appdata.settings["downloadThreads"] as num).toInt();
 
   void _scheduleTasks() {
+    // ⭐ 2026-10-26（P1 修复 ✓）：**取消后不得再排新任务** ✗ ——
+    // 完成回调 `task.wait().then(...)` 可能晚于 `cancel()` 执行 ✓；
+    // 若此时仍调 `_scheduleTasks()`，会在"已取消"之后新建下载 ⇒ 又产生流量与残留文件 ✗。
+    if (!_isRunning) {
+      return;
+    }
     var images = _images![_images!.keys.elementAt(_chapter)]!;
     var downloading = 0;
     for (var i = _index; i < images.length; i++) {
@@ -274,14 +334,35 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
   }
 
   @override
-  void resume() async {
+  void resume() {
     if (_isRunning) return;
     _isError = false;
     _message = "Resuming...";
     _isRunning = true;
     notifyListeners();
     runRecorder();
+    final future = _resume();
+    _resumeFuture = future;
+    // ⭐ 2026-10-26（P1 修复 ✓）：保持"不阻塞调用方"的原语义 ✓（原为 `void ... async` ✓），
+    // 但把协程 Future 存下来 ✓ —— `cancel()` 删目录前要等它退出 ✓，
+    // 否则封面 / 图片列表阶段仍可能在删完之后继续写盘 ✗。异常照旧记日志、不向上抛 ✓。
+    unawaited(
+      future
+          .catchError((Object e, StackTrace s) {
+            Log.error("Download", e.toString(), s);
+          })
+          .whenComplete(() {
+            if (identical(_resumeFuture, future)) {
+              _resumeFuture = null;
+            }
+          }),
+    );
+  }
 
+  /// 当前 `resume()` 协程 ✓（取消时用它等"彻底不再写盘" ✓）。
+  Future<void>? _resumeFuture;
+
+  Future<void> _resume() async {
     if (comic == null) {
       _message = "Fetching comic info...";
       notifyListeners();
@@ -371,6 +452,12 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
       await LocalManager().saveCurrentDownloadingTasks();
     }
 
+    // ⭐ 2026-10-26：取消可能发生在封面下载 / 写盘期间 ✓ ⇒ 先退出，
+    // 不要再进入图片列表阶段继续发请求 / 写盘 ✓（`cancel()` 会等本协程结束再删目录 ✓）。
+    if (!_isRunning) {
+      return;
+    }
+
     if (_images == null) {
       if (comic!.chapters == null) {
         _message = "Fetching image list...";
@@ -434,6 +521,11 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
       _message = "$_downloadedCount/$_totalCount";
       notifyListeners();
       await LocalManager().saveCurrentDownloadingTasks();
+    }
+
+    // ⭐ 2026-10-26：拉取图片列表的 await 之后可能已被取消 ✓ ⇒ 不得再进入下载循环 ✗。
+    if (!_isRunning) {
+      return;
     }
 
     while (_chapter < _images!.length) {
@@ -646,6 +738,15 @@ class _ImageDownloadWrapper {
 
   bool isCancelled = false;
 
+  /// ⭐ 2026-10-26（P1 修复 ✓）：**下载循环真正结束**的信号 ✓ ——
+  /// [cancel] 只置 [isCancelled]，循环要等下一个数据块 / 当前写盘结束才 return ✓；
+  /// 因此调用方仅 `await wait()`（它被**立即**释放 ✓）不能保证"已停止写盘" ✗。
+  /// 删除目录前必须再 `await finished` ✓，否则会边删边写、留下残留文件 / 流量继续走 ✗。
+  final Completer<void> _finished = Completer<void>();
+
+  /// 下载循环退出（成功 / 失败 / 取消）后完成 ✓。
+  Future<void> get finished => _finished.future;
+
   void cancel() {
     isCancelled = true;
     // ⭐ 修复（2026-10-09）：**取消后必须释放 wait() 的等待者** —— 原先只置 isCancelled，
@@ -656,12 +757,8 @@ class _ImageDownloadWrapper {
     // 修法：在此把等待者**全部释放**（与 :690-694 同风格，先判 isCompleted）。
     // 影响：**只影响「暂停」这一条路径** —— 由「协程卡死」变为「本轮正常结束」；
     // 正常下载与失败重试逻辑一字未动。
-    for (var c in completers) {
-      if (!c.isCompleted) {
-        c.complete(this);
-      }
-    }
-    completers.clear();
+    // ⭐ 2026-10-26：释放等待者**不等于**写盘已停 ✓ —— 取消路径另需 await [finished] ✓。
+    _releaseWaiters();
   }
 
   var completers = <Completer<_ImageDownloadWrapper>>[];
@@ -669,52 +766,84 @@ class _ImageDownloadWrapper {
   var retry = 3;
 
   void start() async {
-    int lastBytes = 0;
     try {
-      await for (var p in ImageDownloader.loadComicImageUnwrapped(
-        image,
-        task.source.key,
-        task.comicId,
-        chapter,
-      )) {
+      await _download();
+    } finally {
+      // 成功 / 失败 / 取消三条路都在这里收口 ✓（只在第一次完成 ✓）。
+      if (!_finished.isCompleted) {
+        _finished.complete();
+      }
+    }
+  }
+
+  /// 原 [start] 的下载体 ✓（重试改为循环，保证 [start] 只有一次调用栈 ✓，
+  /// 这样 finally 里的 `_finished` 不会被递归重试的中间态提前完成 ✗）。
+  Future<void> _download() async {
+    int lastBytes = 0;
+    while (true) {
+      try {
+        await for (var p in ImageDownloader.loadComicImageUnwrapped(
+          image,
+          task.source.key,
+          task.comicId,
+          chapter,
+        )) {
+          if (isCancelled) {
+            return;
+          }
+          task.onData(p.currentBytes - lastBytes);
+          lastBytes = p.currentBytes;
+          if (p.imageBytes != null) {
+            var fileType = detectFileType(p.imageBytes!);
+            final fileName = "$index${fileType.ext}";
+            if (_isSmbPath) {
+              await _writeToSmb(p.imageBytes!, fileName);
+            } else {
+              var file = saveTo.joinFile(fileName);
+              await file.writeAsBytes(p.imageBytes!);
+            }
+            // ⭐ 2026-10-26：**写盘期间可能已被取消** ✓ ⇒ 这里必须再查一次，
+            // 否则会把文件标记为完成并让主循环继续推进 ✗；
+            // 取消时由父任务等本循环退出后再删目录 ✓（残留文件随目录一起删 ✓）。
+            if (isCancelled) {
+              return;
+            }
+            isComplete = true;
+            _releaseWaiters();
+            return;
+          }
+        }
+        // ⭐ 2026-10-26：**流正常结束却没拿到图片字节** ⇒ 必须按失败收口 ✗，
+        // 否则主循环会把这张图当成"下载成功"继续推进 ✓；
+        // 同时释放等待者 ✓（否则主循环 `await task.wait()` 会永久挂起 ✓）。
+        error = "Failed to download image: $image";
+        _releaseWaiters();
+        return;
+      } catch (e, s) {
         if (isCancelled) {
           return;
         }
-        task.onData(p.currentBytes - lastBytes);
-        lastBytes = p.currentBytes;
-        if (p.imageBytes != null) {
-          var fileType = detectFileType(p.imageBytes!);
-          final fileName = "$index${fileType.ext}";
-          if (_isSmbPath) {
-            await _writeToSmb(p.imageBytes!, fileName);
-          } else {
-            var file = saveTo.joinFile(fileName);
-            await file.writeAsBytes(p.imageBytes!);
-          }
-          isComplete = true;
-          for (var c in completers) {
-            c.complete(this);
-          }
-          completers.clear();
+        Log.error("Download", e.toString(), s);
+        retry--;
+        if (retry > 0) {
+          continue;
         }
-      }
-    } catch (e, s) {
-      if (isCancelled) {
+        error = e.toString();
+        // 必须先写 error 再释放 ✓，主循环据此判定失败 ✓。
+        _releaseWaiters();
         return;
-      }
-      Log.error("Download", e.toString(), s);
-      retry--;
-      if (retry > 0) {
-        start();
-        return;
-      }
-      error = e.toString();
-      for (var c in completers) {
-        if (!c.isCompleted) {
-          c.complete(this);
-        }
       }
     }
+  }
+
+  /// 释放所有 `wait()` 的等待者 ✓（取消 / 失败 / 流结束都走这里 ✓）。
+  void _releaseWaiters() {
+    for (var c in completers) {
+      if (!c.isCompleted) {
+        c.complete(this);
+      }
+    }
+    completers.clear();
   }
 
   Future<void> _writeToSmb(Uint8List data, String fileName) async {

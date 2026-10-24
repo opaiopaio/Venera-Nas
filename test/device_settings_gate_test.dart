@@ -159,4 +159,47 @@ void main() {
       reason: '该 API **不得**清值（用户方案：不丢数据 ✓；旧版会清成默认 ✗）',
     );
   });
+
+  test('T-DS5：阅读器图片区底色两键各自归位（漏登记回归）', () {
+    // ⭐ 2026-10-26（P1 修复 ✓）：这两个键是后加的设置 ✓，原先**没登记**进设备键表 ✗
+    // ⇒ 「设备特定设置」开着也会被同步 / 备份恢复覆盖 ✗。
+    // 本用例锁定归属：`readerBackgroundEnabled` 归「阅读」✓、`readerBackgroundColor` 归「外观」✓。
+    appdata.settings.setEnabledAppearanceDeviceSettings(false);
+    appdata.settings.setEnabledDeviceSpecificSettings(false);
+    expect(
+      appdata.settings.isDeviceProtected('readerBackgroundEnabled'),
+      isFalse,
+      reason: '两个开关都关 ⇒ 不受保护（与云端一致 ✓）',
+    );
+    expect(
+      appdata.settings.isDeviceProtected('readerBackgroundColor'),
+      isFalse,
+      reason: '两个开关都关 ⇒ 不受保护（与云端一致 ✓）',
+    );
+
+    appdata.settings.setEnabledDeviceSpecificSettings(true);
+    expect(
+      appdata.settings.isDeviceProtected('readerBackgroundEnabled'),
+      isTrue,
+      reason: '阅读器图片区开关必须受「阅读」设备开关保护 ✓',
+    );
+    expect(
+      appdata.settings.isDeviceProtected('readerBackgroundColor'),
+      isFalse,
+      reason: '底色属于外观键，不该被「阅读」开关管',
+    );
+
+    appdata.settings.setEnabledDeviceSpecificSettings(false);
+    appdata.settings.setEnabledAppearanceDeviceSettings(true);
+    expect(
+      appdata.settings.isDeviceProtected('readerBackgroundColor'),
+      isTrue,
+      reason: '阅读器图片区底色必须受「外观」设备开关保护 ✓',
+    );
+    expect(
+      appdata.settings.isDeviceProtected('readerBackgroundEnabled'),
+      isFalse,
+      reason: '开关属于阅读键，不该被「外观」开关管',
+    );
+  });
 }

@@ -140,7 +140,18 @@ class AppDio with DioMixin {
     }
   }
 
-  static final Map<String, bool> _requests = {};
+  /// `prevent-parallel` 锁 ✓：key = path，value = **持有者 token** ✓。
+  ///
+  /// ⭐ 修复（2026-10-24）：原实现是 `Map<String, bool>` ✗ ——
+  /// ① `finally` 里只判断 `containsKey` 就 remove ⇒ **没加锁的请求也会删掉别人的锁** ✗；
+  /// ② 两个等待者会同时看到"锁没了"并同时拿到锁 ✗。
+  /// 现在用 token 标识持有者，只有持有者自己才释放 ✓。
+  static final Map<String, Object> _requests = {};
+
+  /// 等锁上限 ✓：原实现 20ms 轮询**没有超时** ⇒ 持锁请求卡住时等待方永久挂起 ✗。
+  static const Duration _lockTimeout = Duration(microseconds: 30000000);
+
+  static const Duration _lockPollInterval = Duration(microseconds: 20000);
 
   @override
   Future<Response<T>> request<T>(
@@ -152,15 +163,39 @@ class AppDio with DioMixin {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
+    Object? lockToken;
     if (options?.headers?['prevent-parallel'] == 'true') {
-      while (_requests.containsKey(path)) {
-        await Future.delayed(const Duration(milliseconds: 20));
-      }
-      _requests[path] = true;
+      // 这个头只给本方法用 ✓：绝不能带到服务端 ✓。
       options!.headers!.remove('prevent-parallel');
+      final token = Object();
+      final deadline = DateTime.now().add(_lockTimeout);
+      while (true) {
+        // 等锁期间也要能被取消 ✓：否则调用方已经 cancel 了，这里还在一遍遍轮询 ✗。
+        final cancelError = cancelToken?.cancelError;
+        if (cancelError != null) {
+          throw cancelError;
+        }
+        if (!_requests.containsKey(path)) {
+          _requests[path] = token;
+          lockToken = token;
+          break;
+        }
+        if (DateTime.now().isAfter(deadline)) {
+          throw DioException(
+            requestOptions: RequestOptions(path: path),
+            type: DioExceptionType.unknown,
+            message:
+                "Waiting for the previous request to $path timed out "
+                "after ${_lockTimeout.inSeconds}s",
+          );
+        }
+        await Future.delayed(_lockPollInterval);
+      }
     }
     try {
-      return super.request<T>(
+      // ⚠️ 必须 `await` ✓：`return super.request(...)` 会让 finally 在请求真正完成
+      // **之前**就释放锁 ✗（async 函数 return 一个 Future 时 finally 立即执行 ✓）。
+      return await super.request<T>(
         path,
         data: data,
         queryParameters: queryParameters,
@@ -170,7 +205,8 @@ class AppDio with DioMixin {
         onReceiveProgress: onReceiveProgress,
       );
     } finally {
-      if (_requests.containsKey(path)) {
+      // 只有持有者能释放 ✓：等待中抛错（取消 / 超时）时 lockToken 仍为 null ⇒ 不会误删 ✓。
+      if (lockToken != null && identical(_requests[path], lockToken)) {
         _requests.remove(path);
       }
     }

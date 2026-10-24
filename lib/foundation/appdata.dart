@@ -688,6 +688,9 @@ class Settings with ChangeNotifier {
     'comicTileScale',
     'comicListDisplayMode',
     'backgroundColor',
+    // ⭐ 2026-10-26（P1 补漏 ✓）：**阅读器图片区底色**属于外观类颜色 ✓（与 `backgroundColor` 同类 ✓）——
+    // 原先漏登记 ⇒ 即便开了「外观 · 设备特定设置」也会被同步/备份覆盖 ✗。
+    'readerBackgroundColor',
     'backgroundImageOpacity',
     'backgroundImageFit',
     'secondaryPageFollowTheme',
@@ -742,6 +745,9 @@ class Settings with ChangeNotifier {
     'preloadImageCount',
     'quickCollectImage',
     'readerMode',
+    // ⭐ 2026-10-26（P1 补漏 ✓）：**阅读器图片区底色的总开关**属于阅读类设置 ✓ ——
+    // 原先漏登记 ⇒ 即便开了「阅读 · 设备特定设置」也会被同步/备份覆盖 ✗。
+    'readerBackgroundEnabled',
     'readerScreenPicNumberForLandscape',
     'readerScreenPicNumberForPortrait',
     'readerScrollSpeed',
