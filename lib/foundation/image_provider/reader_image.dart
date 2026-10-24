@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:venera_nas/foundation/appdata.dart';
 import 'package:venera_nas/foundation/cache_manager.dart';
+import 'package:venera_nas/foundation/design_tokens.dart';
 import 'package:venera_nas/foundation/js_engine.dart';
 import 'package:venera_nas/foundation/log.dart';
 import 'package:venera_nas/network/images.dart';
@@ -291,32 +292,44 @@ class ReaderImageProvider
   static bool get _foregroundIdle =>
       !_foregroundBusy && _foregroundWaiter == null;
 
-  /// 前台抢名额 ✓：只有 1 个 ✓，**最新请求顶掉旧等待者** ✓。
-  static Future<void> _acquireForeground() async {
+  /// 前台抢名额 ✓：只有 1 个 ✓，**最新请求顶掉旧等待者** ✓，且**被顶掉时安静重试** ✓。
+  ///
+  /// ⚠️ 为什么不能"抛错丢弃"（2026-10-24 用户实测 ✓）：抛错会让 provider 走失败重试 →
+  /// `onLoadError` →（原先）"页面列表失效" → **整页弹大圈重载** ✗。
+  /// 现在：一直被顶掉就重试 ✓；该页真的被取消（用户翻走 ✓）时 `checkStop` 会抛"停止" ✓ ⇒ 干净退出 ✓。
+  static Future<void> _acquireForeground(void Function()? checkStop) async {
     if (!_foregroundBusy) {
       _foregroundBusy = true;
       return;
     }
-    final old = _foregroundWaiter;
-    if (old != null && !old.isCompleted) {
-      // 旧等待者作废 ✓：它对应的页已经不是用户要看的那页 ✓。
-      old.complete(false);
-    }
-    final c = Completer<bool>();
-    _foregroundWaiter = c;
-    var granted = false;
-    try {
-      granted = await c.future.timeout(
-        _smbForegroundWaitTimeout,
-        onTimeout: () => false,
-      );
-    } finally {
-      if (identical(_foregroundWaiter, c)) {
-        _foregroundWaiter = null;
+    final deadline = DateTime.now().add(_smbForegroundWaitTimeout);
+    while (true) {
+      final old = _foregroundWaiter;
+      if (old != null && !old.isCompleted) {
+        // 旧等待者作废 ✓：它对应的页已经不是用户要看的那页 ✓。
+        old.complete(false);
       }
-    }
-    if (!granted) {
-      throw "Error: SMB read superseded.";
+      final c = Completer<bool>();
+      _foregroundWaiter = c;
+      var granted = false;
+      try {
+        granted = await c.future.timeout(
+          AppMotion.short,
+          onTimeout: () => false,
+        );
+      } finally {
+        if (identical(_foregroundWaiter, c)) {
+          _foregroundWaiter = null;
+        }
+      }
+      if (granted) {
+        return;
+      }
+      // 该页若已被取消 ⇒ 这里会抛"停止"异常 ⇒ 上游按取消处理 ✓（不写失败日志、不重载 ✓）。
+      checkStop?.call();
+      if (DateTime.now().isAfter(deadline)) {
+        throw "Error: SMB read busy.";
+      }
     }
   }
 
@@ -384,7 +397,7 @@ class ReaderImageProvider
     final remotePath = smbPathFromUrl(imageKey);
 
     if (foreground) {
-      await _acquireForeground();
+      await _acquireForeground(checkStop);
     } else {
       // ⭐ 预取只在"前台完全空闲"时进行 ✓ —— 用户还在翻页就**立刻放弃** ✓，绝不抢前台 ✓。
       if (!_foregroundIdle) {

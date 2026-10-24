@@ -362,21 +362,21 @@ class _GalleryModeState extends State<_GalleryMode>
     });
   }
 
-  /// ⭐ 相邻页预取 ✓：上一页 / 下一页**先落盘** ✓，其中**只有"下一页"预解码** ✓。
+  /// ⭐ 相邻页预取 ✓：上一页 / 下一页**先落盘** ✓，其中**"下一页 + 下下页"预解码** ✓。
   ///
-  /// 为什么只解码下一页（2026-10-24 用户实测 ✓）：
-  /// - 全部只落盘 ⇒ 翻页仍要现解码 ⇒ **闪** ✗
-  /// - 全部解码（含 N 页远的预取）⇒ 解码图把当前页**挤出 ImageCache** ⇒ 又转圈 ✗
-  /// ⇒ 折中 = **只预解码 1 页** ✓（用户最可能的下一动作 ✓，也不会污染缓存 ✓）。
+  /// 为什么预解码 2 页（2026-10-24 用户实测 ✓）：
+  /// - 只解码 1 页 ⇒ "预加载开到 10 也只有下一页不闪，连翻两页就闪" ✗
+  /// - 解码全部预取页 ⇒ 解码图把当前页挤出 ImageCache ⇒ 转圈 ✗
+  /// ⇒ 折中 = **预解码 2 页** ✓（覆盖"连翻两页"✓，缓存占用仍很小 ✓）。
   void _cacheNeighborsNow(int startPage) {
-    for (final page in [startPage + 1, startPage - 1]) {
+    for (final page in [startPage + 1, startPage + 2, startPage - 1]) {
       if (page <= 0 || page > totalPages || isChapterCommentsPage(page)) {
         continue;
       }
       var (startIndex, endIndex) = getPageImagesRange(page);
       for (int i = startIndex; i < endIndex; i++) {
         _preDownloadImage(i + 1, context);
-        if (page == startPage + 1) {
+        if (page == startPage + 1 || page == startPage + 2) {
           _precacheImage(i + 1, context);
         }
       }
@@ -1466,7 +1466,14 @@ ImageProvider _createImageProviderFromKey(
     // 原因：几百页长章节里每页都按原分辨率解码，是 OOM 闪退的主因之一；
     // 降采样只在像素数超过上限（且宽高比正常）的图上生效，不影响小图清晰度。
     enableResize: reader.mode.isContinuous || imageKey.startsWith('smb://'),
-    onLoadFailed: imagesState?._onPagesCacheInvalid,
+    // ⭐ 2026-10-24：**SMB 页不接"页面列表失效"回调** ✗ ——
+    // 该回调会把 `reader.isLoading` 置 true ⇒ **整个阅读器弹大圈重载页面列表** ✗
+    // （用户实测症状：待一会后 / 连翻两页时"闪一下大圈转半秒再回到画面" ✓）。
+    // SMB 单页读取失败多是瞬时问题（NAS 忙、请求被更新的页顶掉 ✓）⇒ 交给该页自己的
+    // 错误+重试界面即可 ✓，不该连累整章 ✓。
+    onLoadFailed: imageKey.startsWith('smb://')
+        ? null
+        : imagesState?._onPagesCacheInvalid,
   );
 }
 
@@ -1483,7 +1490,14 @@ void _precacheImage(int page, BuildContext context) {
   if (page <= 0 || page > context.reader.images!.length) {
     return;
   }
-  precacheImage(_createImageProvider(page, context), context);
+  // ⭐ 2026-10-24：预取失败**必须静默** ✓（它只是优化 ✓）——
+  // 不传 onError 时，失败会冒泡到全局错误处理 ✓；更重要的是会让 provider 走 `onLoadError` ✓
+  // ⇒ 触发"页面列表失效" ⇒ 整页重载 ✗（见 `_createImageProviderFromKey` 的注释 ✓）。
+  precacheImage(
+    _createImageProvider(page, context),
+    context,
+    onError: (_, _) {},
+  );
 }
 
 /// [_preDownloadImage] is used to download the image for the given page.
