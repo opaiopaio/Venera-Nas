@@ -283,7 +283,12 @@ class ReaderImageProvider
   static DateTime? _sharedClientLastUsed;
 
   /// 取得（必要时建立）复用的 SMB 连接 ✓。
-  static Future<SmbClient> _obtainClient(SmbConfig config) async {
+  ///
+  /// [high] = true 表示"用户在等"（当前页 ✓）—— 会优先于后台任务拿到全局 SMB 闸门 ✓。
+  static Future<SmbClient> _obtainClient(
+    SmbConfig config, {
+    bool high = false,
+  }) async {
     final key =
         '${config.host}|${config.port}|${config.share}|'
         '${config.username}|${config.password.hashCode}|${config.domain}';
@@ -304,7 +309,8 @@ class ReaderImageProvider
     final client = SmbClient(config: config);
     try {
       // ⭐ 不加 Dart 层 timeout ✓（见 `readFile` 处的说明 ✓）：原生超时由 `timeoutSeconds: 30` 负责 ✓。
-      await client.connect();
+      // ⭐ 2026-10-24：连接也走全局闸门 ✓（`SmbClient` 内部串行 ✓）⇒ 与封面/下载/切章列目录**互斥** ✓。
+      await client.connect(high: high);
     } catch (e) {
       try {
         await client.disconnect().timeout(const Duration(seconds: 5));
@@ -464,7 +470,7 @@ class ReaderImageProvider
       late final Uint8List data;
       var readStarted = false;
       try {
-        final client = await _obtainClient(config);
+        final client = await _obtainClient(config, high: foreground);
         _activeReads++;
         readStarted = true;
         // ⭐ 复查修复（2026-10-24）：**不要给原生读加 Dart 层 timeout** ✗ ——
@@ -472,7 +478,8 @@ class ReaderImageProvider
         // 就会在 FFI 仍在运行时强杀 isolate ⇒ **0xc0000005 访问冲突** ✓（事件日志实证 ✓）。
         // 原生层自己的超时来自 `SmbClient.connect(timeoutSeconds: 30)` ✓；
         // 真卡死时靠 [_smbGate] 的**看门狗复位**兜底 ✓（见下面前台等待循环 ✓）。
-        data = await client.readFile(remotePath);
+        // ⭐ 2026-10-24：`high: foreground` ⇒ 前台读图优先，后台读（预取）让路 ✓。
+        data = await client.readFile(remotePath, high: foreground);
         if (data.isEmpty) {
           throw "Error: Empty response body.";
         }
