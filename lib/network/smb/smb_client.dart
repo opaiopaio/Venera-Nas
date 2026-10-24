@@ -31,6 +31,43 @@ class SmbClient {
 
   SmbClient({required this.config});
 
+  /// ⭐ 2026-10-25：**共享客户端池** ✓ —— 供"短操作"复用连接 ✓。
+  ///
+  /// 为什么需要（实测日志 ✓）：历史页封面是 `ImageProvider` ✓，**每个封面**都 `new SmbClient()` ✗
+  /// ⇒ 每次 `Smb2Pool.connect(workers: 4)` = **4 条连接** ✗；25 个封面 + 图片层失败重试
+  /// ⇒ **连接被刷爆** ✗ ⇒ 路由器 SMB 侧资源/带宽占满 ✓ ⇒ 扫描/读图全部排队超时 ✗
+  ///（日志现象：`Socket connect failed with 10060` ✓）
+  ///
+  /// 现在：按 主机+共享 缓存一个客户端 ✓ ⇒ 封面 / 历史 / 导入 / 切章列表**共用**连接 ✓，
+  /// 只保留一条会话 ✓（阅读器另有自己的复用逻辑 ✓）。
+  static final Map<String, SmbClient> _sharedClients = {};
+
+  static String _keyOf(SmbConfig config) =>
+      '${config.host}|${config.port}|${config.share}|'
+      '${config.username}|${config.password.hashCode}|${config.domain}';
+
+  /// 取得（必要时创建）**共享**客户端 ✓ —— ⚠️ 调用方**不要** `disconnect()` ✗
+  ///（共享连接被断开会影响其它调用方 ✓；需要断开时用 [closeAllShared] ✓）。
+  static SmbClient shared(SmbConfig config) {
+    return _sharedClients.putIfAbsent(
+      _keyOf(config),
+      () => SmbClient(config: config),
+    );
+  }
+
+  /// 断开并清空所有共享客户端 ✓（阅读器"重置 SMB 连接" / 退出时用 ✓）。
+  static Future<void> closeAllShared() async {
+    final list = _sharedClients.values.toList();
+    _sharedClients.clear();
+    for (final client in list) {
+      try {
+        await client.disconnect();
+      } catch (_) {
+        // 单条失败不影响其它 ✓。
+      }
+    }
+  }
+
   /// Whether the client is currently connected.
   ///
   /// ⚠️ 只表示"池对象非空" ✓（复查记录 ✓）—— 连接可能已被服务器断开 ✓；
@@ -48,10 +85,9 @@ class SmbClient {
           "请在 NAS/路由器上使用标准 SMB 端口（445）。";
     }
     await SmbSerial.run(() async {
-      if (_pool != null) {
-        await _pool!.disconnect();
-        _pool = null;
-      }
+      // ⭐ 2026-10-25：**已连接就直接复用** ✓ —— 共享客户端会被频繁 `connect()`
+      //（每个封面/每次列目录 ✓）；若每次都重连 ✗ ⇒ 又会刷连接 ✗（正是要修的问题 ✓）。
+      if (_pool != null) return;
       _pool = await Smb2Pool.connect(
         host: config.host,
         share: config.share,

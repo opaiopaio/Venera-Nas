@@ -524,7 +524,7 @@ class LocalManager with ChangeNotifier {
       'SMB',
       'SmbConfig host=${config.host} share=${config.share} username=${config.username}',
     );
-    final client = SmbClient(config: config);
+    final client = SmbClient.shared(config);
     try {
       await client.connect();
 
@@ -590,7 +590,7 @@ class LocalManager with ChangeNotifier {
       }
       return urls;
     } finally {
-      await client.disconnect();
+      // ⭐ 共享客户端：**不在此断开** ✓（统一由 SmbClient.closeAllShared / 重置入口管理 ✓）。
     }
   }
 

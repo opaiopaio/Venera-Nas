@@ -319,7 +319,7 @@ class ImportComic {
     void Function(int current, int total)? onProgress,
     bool Function()? isCancelled,
   }) async {
-    final client = SmbClient(config: config);
+    final client = SmbClient.shared(config);
     try {
       await client.connect();
 
@@ -381,7 +381,7 @@ class ImportComic {
       // 现在向上抛 ✓，由调用方（导入对话框 ✓）显示具体错误 ✓。
       rethrow;
     } finally {
-      await client.disconnect();
+      // ⭐ 共享客户端：**不在此断开** ✓（统一由 SmbClient.closeAllShared / 重置入口管理 ✓）。
     }
   }
 

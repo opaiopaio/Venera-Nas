@@ -331,6 +331,9 @@ class ReaderImageProvider
     _activeReads = 0;
     _closeSharedRequested = false;
     await closeSharedSmbClient(force: true);
+    // ⭐ 2026-10-25：把封面/历史/导入用的**共享客户端**也一起断开 ✓ ——
+    // 否则"重置"后它们仍持有旧连接（可能已失效 ✓），用户会以为重置没生效 ✗。
+    await SmbClient.closeAllShared();
   }
 
   /// ⭐ 断开复用的 SMB 连接 ✓（阅读器退出 / 切换章节 / 前台读失败重连时调用 ✓）。
