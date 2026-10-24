@@ -542,7 +542,10 @@ class LocalManager with ChangeNotifier {
       'SMB',
       'SmbConfig host=${config.host} share=${config.share} username=${config.username}',
     );
-    final client = SmbClient.shared(config);
+    // ⭐ 2026-10-25（用户要求 ✓）：**章节页表走阅读器专用会话** ✓ ——
+    // 不再和封面/后台共用同一条会话（原来会被它们的 3 个名额挤住 ⇒ 点漫画要等 2~3 秒 ✗）。
+    // 两条会话是**独立并行**的 ✓（SMB 多会话 + 每个 worker 独立 context ✓）。
+    final client = SmbClient.readerShared(config);
     try {
       await client.connect(high: true);
 
