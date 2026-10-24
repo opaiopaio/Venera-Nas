@@ -194,6 +194,10 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
   int _total = 0;
   String? _scanResult;
 
+  /// ⭐ 2026-10-24：**取消标记** ✓ —— 取消时置 true ✓，扫描循环逐个目录检查 ✓；
+  /// 取消后**不写入任何记录** ✓（原来 Cancel 是空函数 ✗，点了没反应 ✓）。
+  bool _cancelRequested = false;
+
   static List<SmbConnection> _loadServers() {
     final raw = appdata.settings['smbServers'];
     if (raw is! List) return [];
@@ -232,6 +236,7 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
       _current = 0;
       _total = 0;
       _scanResult = null;
+      _cancelRequested = false;
     });
 
     try {
@@ -240,9 +245,27 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
         config: _selectedServer!.config,
         rootPath: rootPath,
         favoriteFolder: _selectedServer!.name,
+        // ⭐ 2026-10-24：**进度** ✓（有大目录时按"已检查目录数/总目录数"显示 ✓）。
+        onProgress: (current, total) {
+          if (!mounted || _cancelRequested) return;
+          setState(() {
+            _current = current;
+            _total = total;
+          });
+        },
+        // ⭐ 2026-10-24：**取消** ✓ —— 取消后由下方统一收尾 ✓（不写任何记录 ✓）。
+        isCancelled: () => _cancelRequested,
       );
 
       if (!mounted) return;
+      if (_cancelRequested) {
+        setState(() {
+          _isScanning = false;
+          _cancelRequested = false;
+        });
+        context.showMessage(message: "已取消扫描".tl);
+        return;
+      }
       LocalManager().notifyChanges();
       setState(() {
         _isScanning = false;
@@ -255,6 +278,7 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
       if (!mounted) return;
       setState(() {
         _isScanning = false;
+        _cancelRequested = false;
         _scanResult = "${"导入失败".tl}: $e";
       });
       Log.error("SMB Import", e.toString());
@@ -351,7 +375,7 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
       children: [
         LinearProgressIndicator(value: _total > 0 ? _current / _total : null),
         const SizedBox(height: 16),
-        Text("正在扫描...".tl),
+        Text(_cancelRequested ? "正在取消…".tl : "正在扫描...".tl),
         if (_total > 0) Text("$_current / $_total"),
       ],
     ).paddingHorizontal(16);
@@ -368,6 +392,16 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
   }
 
   List<Widget> _buildProgressActions() {
-    return [Button.normal(onPressed: () {}, child: Text("Cancel".tl))];
+    return [
+      // ⭐ 2026-10-24：**Cancel 现在真的有效** ✓（原来 `onPressed: () {}` 是空函数 ✗）。
+      // 点击后置标记 ✓ ⇒ 扫描循环在下一个目录前停下 ✓ ⇒ 不写入任何记录 ✓。
+      Button.normal(
+        onPressed: () {
+          if (_cancelRequested) return;
+          setState(() => _cancelRequested = true);
+        },
+        child: Text("Cancel".tl),
+      ),
+    ];
   }
 }

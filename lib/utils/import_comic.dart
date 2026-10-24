@@ -279,6 +279,10 @@ class ImportComic {
     List<String>? tags,
     String? subtitle,
     String? favoriteFolder,
+    // ⭐ 2026-10-24：**进度回调 + 取消** ✓ —— NAS 大目录扫描可能很久 ✓，
+    // 原先既没有进度、Cancel 按钮还是空函数 ✗（用户只能干等 ✓ 或杀进程 ✗）。
+    void Function(int current, int total)? onProgress,
+    bool Function()? isCancelled,
   }) async {
     final client = SmbClient(config: config);
     try {
@@ -286,9 +290,18 @@ class ImportComic {
 
       final entries = await client.listDirectory(rootPath);
       final subDirs = entries.where((e) => e.isDirectory).toList();
+      final total = subDirs.length;
+      onProgress?.call(0, total);
 
       final comics = <LocalComic>[];
+      var index = 0;
       for (final subDir in subDirs) {
+        index++;
+        // ⭐ 取消要**逐个目录**检查 ✓（单个目录内部不做细粒度中断 ✓，避免半成品记录 ✓）。
+        if (isCancelled?.call() ?? false) {
+          Log.info("Import Comic (SMB)", "cancelled by user at $index/$total");
+          return [];
+        }
         final comic = await _checkSingleSmbComic(
           client,
           subDir.path,
@@ -299,6 +312,12 @@ class ImportComic {
         if (comic != null) {
           comics.add(comic);
         }
+        onProgress?.call(index, total);
+      }
+
+      // ⭐ 落库前再判一次 ✓：取消时**不写入**任何记录 ✓（避免"取消了一半"✗）。
+      if (isCancelled?.call() ?? false) {
+        return [];
       }
 
       // Register with LocalManager
@@ -327,7 +346,10 @@ class ImportComic {
       return comics;
     } catch (e) {
       Log.error("Import Comic (SMB)", e.toString());
-      return [];
+      // ⭐ 2026-10-24：**不再把异常吞成空列表** ✗ ——
+      // 原先返回 [] ⇒ 界面上表现为"导入了 0 部"✗，用户以为是"没有漫画"✓ 而非出错 ✓。
+      // 现在向上抛 ✓，由调用方（导入对话框 ✓）显示具体错误 ✓。
+      rethrow;
     } finally {
       await client.disconnect();
     }
