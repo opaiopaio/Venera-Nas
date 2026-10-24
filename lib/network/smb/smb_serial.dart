@@ -1,21 +1,16 @@
 import 'package:venera_nas/foundation/log.dart';
 import 'dart:async';
 
+import 'smb_exception.dart';
+import 'smb_gate.dart';
+
 /// SMB 闸门的**持有凭证** ✓。
 ///
+/// 实现已收敛到 [SmbGateTicket] ✓；本别名保留原公开类型名 ✓，调用方无需改动 ✓。
 /// 只有拿到凭证的调用方才允许 [SmbSerial.release] ✓；凭证被释放、被
 /// [SmbSerial.forceReset] 清掉、或已换给下一个持有者之后都会失效 ✓ ——
 /// 这样"迟到的 `release()`"不会误解锁别人正持有的名额 ✗。
-class SmbSerialTicket {
-  SmbSerialTicket._(this._owner);
-
-  /// 所有权标记（每次授予都是新对象 ✓，用 identity 比较 ✓）。
-  final Object _owner;
-
-  bool _released = false;
-
-  bool get isReleased => _released;
-}
+typedef SmbSerialTicket = SmbGateTicket;
 
 /// ⭐ 2026-10-24：**SMB 原生操作的全局串行闸门** ✓
 ///
@@ -32,48 +27,28 @@ class SmbSerialTicket {
 /// ## 优先级
 /// - `high: true` = 用户在等（当前页读图 ✓、界面刚打开的列目录 ✓）
 /// - `high: false` = 后台任务（预取、封面、下载 ✓）—— 等不到就让路 ✓，绝不堵前台 ✗
+///
+/// ⭐ 排队/优先级/凭证/超时/复位的实现已抽到 [SmbGate] ✓（阅读器读图共用同一份 ✓）；
+/// 本类只是 `SmbGate(capacity: 1)` 的**薄封装** ✓，公开 API 与语义保持不变 ✓。
 class SmbSerial {
   SmbSerial._();
 
-  /// 当前持有者的所有权标记 ✓；`null` = 空闲。
-  static Object? _owner;
-
-  /// 当前持锁开始时间 ✓ —— 看门狗用 ✓。
-  static DateTime? _lockedAt;
-
-  static final List<Completer<SmbSerialTicket?>> _high = [];
-
-  static final List<Completer<SmbSerialTicket?>> _low = [];
+  /// 唯一的全局闸门 ✓：容量 1 = 同一时刻只有一个原生操作 ✓。
+  static final SmbGate _gate = SmbGate(capacity: 1);
 
   /// 看门狗阈值 ✓（保留给"外部主动检查"用 ✓；自愈已改为 run 内的 3s 复位 ✓）。
   static const Duration watchdog = Duration(seconds: 90);
 
-  static bool get locked => _owner != null;
+  static bool get locked => _gate.locked;
 
   /// 持锁是否已超过 [watchdog] ✓（自愈逻辑之外，还允许调用方主动判断 ✓）。
-  static bool hasBeenLockedTooLong() {
-    final at = _lockedAt;
-    return _owner != null &&
-        at != null &&
-        DateTime.now().difference(at) > watchdog;
-  }
+  static bool hasBeenLockedTooLong() => _gate.hasBeenLockedFor(watchdog);
 
   /// ⚠️ 强制复位 ✓：放掉锁与所有等待者（等待者按失败返回 ✓ ⇒ 调用方走可重试错误 ✓）。
   ///
   /// 同时清空当前 owner ✓ ⇒ 旧 ticket 立即失效 ✓，迟到的 `release(ticket)`
   /// 不会误解锁复位后新拿到的名额 ✓。
-  static void reset() {
-    _owner = null;
-    _lockedAt = null;
-    final waiters = [..._high, ..._low];
-    _high.clear();
-    _low.clear();
-    for (final w in waiters) {
-      if (!w.isCompleted) {
-        w.complete(null);
-      }
-    }
-  }
+  static void reset() => _gate.reset();
 
   /// 抢名额 ✓。返回 ticket = 拿到（**必须** `release(ticket)` ✓）；`null` = 超时放弃 ✓。
   ///
@@ -83,62 +58,13 @@ class SmbSerial {
   static Future<SmbSerialTicket?> acquire({
     required bool high,
     Duration? timeout,
-  }) async {
-    if (_owner == null) {
-      final ticket = SmbSerialTicket._(Object());
-      _owner = ticket._owner;
-      _lockedAt = DateTime.now();
-      return ticket;
-    }
-    final c = Completer<SmbSerialTicket?>();
-    final queue = high ? _high : _low;
-    queue.add(c);
-    Timer? timer;
-    if (timeout != null) {
-      timer = Timer(timeout, () {
-        if (!c.isCompleted) {
-          queue.remove(c);
-          c.complete(null);
-        }
-      });
-    }
-    final ticket = await c.future;
-    timer?.cancel();
-    return ticket;
-  }
+  }) => _gate.acquire(high: high, timeout: timeout);
 
   /// 释放 ticket 对应的名额 ✓。返回 `false` = ticket 已失效（不是当前持有者）✓。
   ///
   /// 用所有权校验替代裸 `release()` ✓：迟到的释放（超时/被 forceReset/重复 release）
   /// 不能把**后来者**的锁放掉 ✗。
-  static bool release(SmbSerialTicket ticket) {
-    if (ticket._released || !identical(ticket._owner, _owner)) {
-      return false;
-    }
-    ticket._released = true;
-    _owner = null;
-    _lockedAt = null;
-    _grantNext();
-    return true;
-  }
-
-  /// 把名额移交给下一个等待者 ✓（高优先级队列优先 ✓）。
-  static void _grantNext() {
-    final queue = _high.isNotEmpty ? _high : _low;
-    if (queue.isEmpty) {
-      return;
-    }
-    final next = queue.removeAt(0);
-    if (next.isCompleted) {
-      // 理论上不会发生（超时会先从队列移除 ✓）；防御性递归保持队列推进 ✓。
-      _grantNext();
-      return;
-    }
-    final ticket = SmbSerialTicket._(Object());
-    _owner = ticket._owner;
-    _lockedAt = DateTime.now();
-    next.complete(ticket);
-  }
+  static bool release(SmbSerialTicket ticket) => _gate.release(ticket);
 
   /// 在闸门内执行一个原生操作 ✓（最简单的用法 ✓）。
   ///
@@ -160,9 +86,10 @@ class SmbSerial {
     final gateWaitStart = DateTime.now();
     var ticket = await acquire(high: high, timeout: _selfHealWait);
     for (var attempt = 0; ticket == null && attempt < 2; attempt++) {
-      final holderAge = _lockedAt == null
+      final acquiredAt = _gate.earliestAcquiredAt;
+      final holderAge = acquiredAt == null
           ? -1
-          : DateTime.now().difference(_lockedAt!).inMilliseconds;
+          : DateTime.now().difference(acquiredAt).inMilliseconds;
       Log.error(
         'SMB Gate',
         "contended: reset #${attempt + 1}, holderAge=${holderAge}ms, waited=${DateTime.now().difference(gateWaitStart).inMilliseconds}ms",
@@ -171,8 +98,12 @@ class SmbSerial {
       ticket = await acquire(high: high, timeout: _selfHealWait);
     }
     if (ticket == null) {
-      throw "SMB 操作等待超时（服务器可能无响应）。"
-          "可到「设置 → 网络 → SMB 服务器」点「重置 SMB 连接」后重试。";
+      // ⭐ 2026-10-26：SMB 层异常改为类型化 ✓ —— 文案保持逐字不变 ✓
+      //（上层直接 `toString()` 展示，用户可见内容不变 ✓）。
+      throw const SmbException(
+        "SMB 操作等待超时（服务器可能无响应）。"
+        "可到「设置 → 网络 → SMB 服务器」点「重置 SMB 连接」后重试。",
+      );
     }
     try {
       final waited = DateTime.now().difference(gateWaitStart);

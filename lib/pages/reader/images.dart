@@ -43,15 +43,21 @@ Color readerImageBackgroundColor(
 
 /// ⭐ 修复（2026-10-25，P1）：**阅读器单页图片的磁盘缓存键** ✓
 ///
-/// 必须与 `ReaderImageProvider.cacheKey`（`foundation/image_provider/reader_image.dart`）**逐字一致**：
-/// `$imageKey@$sourceKey@$cid@$eid`，其中 `sourceKey` 取 `type.comicSource?.key` ✓。
+/// 必须与 `ReaderImageProvider.cacheKey`（`foundation/image_provider/reader_image.dart`）
+/// **逐字一致**；具体格式由 [readerPageCacheKey] 统一维护 ✓（本函数只转发 ✓）。
+/// `sourceKey` 取 `type.comicSource?.key` ✓。
 ///
 /// ⚠️ **不能用 `reader.type.sourceKey`** ✗ —— 它对 SMB 返回 `'smb'` ✓
 ///（`foundation/comic_type.dart` 的 getter ✓），而 provider 侧 SMB 的 `comicSource == null`
-/// ⇒ 真实落盘键是 `@null@` ✓；用 `'smb'` 拼键会得到 `@smb@` ✗ ⇒
+/// ⇒ 真实落盘键里 `sourceKey` 部分是字符串 `null` ✓；用 `'smb'` 拼键会得到 `smb` ✗ ⇒
 /// ① 窗口淘汰删不到任何文件（空转 ✓）② 收藏 / 保存图片查不到缓存 ⇒ 报 cache missing ✓。
 String _smbPageCacheKey(_ReaderState reader, String imageKey) =>
-    "$imageKey@${reader.type.comicSource?.key}@${reader.cid}@${reader.eid}";
+    readerPageCacheKey(
+      imageKey,
+      reader.type.comicSource?.key,
+      reader.cid,
+      reader.eid,
+    );
 
 class _ReaderImages extends StatefulWidget {
   const _ReaderImages({super.key});
@@ -146,8 +152,12 @@ class _ReaderImagesState extends State<_ReaderImages> {
       }
     } else {
       var cp = reader.widget.chapters?.ids.elementAtOrNull(reader.chapter - 1);
-      var cacheKey =
-          "loadComicPages@${reader.type.sourceKey}@${reader.cid}@${reader.eid}";
+      // ⭐ 2026-10-26：页列表键也走统一拼装 ✓（前缀与前缀后的字段顺序逐字不变 ✓）。
+      var cacheKey = comicPagesListCacheKey(
+        reader.type.sourceKey,
+        reader.cid,
+        reader.eid,
+      );
 
       // Try cache first
       var cacheFile = await CacheManager().findCache(cacheKey);

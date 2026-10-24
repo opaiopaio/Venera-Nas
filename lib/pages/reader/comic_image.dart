@@ -197,8 +197,12 @@ class _ComicImageState extends State<ComicImage> with WidgetsBindingObserver {
   void _onImageLoadError() {
     final provider = widget.image;
     if (provider is ReaderImageProvider) {
-      var cacheKey =
-          "loadComicPages@${provider.sourceKey}@${provider.cid}@${provider.eid}";
+      // ⭐ 2026-10-26：页列表键统一走 [comicPagesListCacheKey] ✓（格式逐字不变 ✓）。
+      var cacheKey = comicPagesListCacheKey(
+        provider.sourceKey,
+        provider.cid,
+        provider.eid,
+      );
       CacheManager().delete(cacheKey);
     }
   }

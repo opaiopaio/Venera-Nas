@@ -6,6 +6,7 @@ import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:venera_nas/foundation/cache_manager.dart';
 import 'package:venera_nas/foundation/comic_source/comic_source.dart';
 import 'package:venera_nas/foundation/consts.dart';
+import 'package:venera_nas/foundation/image_cache_keys.dart';
 import 'package:venera_nas/utils/image.dart';
 
 import 'app_dio.dart';
@@ -166,7 +167,9 @@ abstract class ImageDownloader {
     String cid,
     String eid,
   ) {
-    final cacheKey = "$imageKey@$sourceKey@$cid@$eid";
+    // ⭐ 2026-10-26：键统一走 [readerPageCacheKey] ✓（格式逐字不变 ✓）——
+    // 这里是磁盘读写键的唯一产生处之一，必须与阅读器 / 收藏页共用同一实现 ✓。
+    final cacheKey = readerPageCacheKey(imageKey, sourceKey, cid, eid);
     if (_loadingImages.containsKey(cacheKey)) {
       return _loadingImages[cacheKey]!.stream;
     }
@@ -200,7 +203,8 @@ abstract class ImageDownloader {
     _ImageLoadControl? control,
   }) async* {
     if (control?.isCancelled ?? false) return;
-    final cacheKey = "$imageKey@$sourceKey@$cid@$eid";
+    // ⭐ 2026-10-26：与 [loadComicImage] / 阅读器共用同一拼装函数 ✓（逐字不变 ✓）。
+    final cacheKey = readerPageCacheKey(imageKey, sourceKey, cid, eid);
     final cache = await CacheManager().findCache(cacheKey);
 
     if (cache != null) {

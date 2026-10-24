@@ -14,6 +14,7 @@ import 'package:venera_nas/foundation/res.dart';
 import 'package:venera_nas/network/images.dart';
 import 'package:venera_nas/network/smb/smb_client.dart';
 import 'package:venera_nas/network/smb/smb_config.dart';
+import 'package:venera_nas/network/smb/smb_exception.dart';
 import 'package:venera_nas/network/smb/smb_utils.dart';
 import 'package:venera_nas/utils/ext.dart';
 import 'package:venera_nas/utils/file_type.dart';
@@ -303,8 +304,11 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
         // 兼容用户把共享名漏写的情况 ✓（如 `smb://host/图包` ⇒ 共享其实是 `NAS` ✓）。
         final target = resolveSmbDownloadTarget(path!);
         if (target == null) {
-          throw "SMB 下载路径无效 ✗：应为 「smb://主机/共享名/目录」"
-              "（当前：$path ✗）。请在 设置 → 应用 → NAS 下载路径 中修正 ✓。";
+          // ⭐ 2026-10-26：SMB 路径错误类型化 ✓（文案逐字不变 ✓）。
+          throw SmbException(
+            "SMB 下载路径无效 ✗：应为 「smb://主机/共享名/目录」"
+            "（当前：$path ✗）。请在 设置 → 应用 → NAS 下载路径 中修正 ✓。",
+          );
         }
         smbCfg = target.config;
         smbD = target.remoteDir;

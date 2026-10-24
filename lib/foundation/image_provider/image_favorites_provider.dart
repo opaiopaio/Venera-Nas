@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:venera_nas/foundation/app.dart';
 import 'package:venera_nas/foundation/comic_source/comic_source.dart';
 import 'package:venera_nas/foundation/comic_type.dart';
+import 'package:venera_nas/foundation/image_cache_keys.dart';
 import 'package:venera_nas/foundation/local.dart';
 import 'package:venera_nas/network/images.dart';
 import 'package:venera_nas/utils/io.dart';
@@ -162,7 +163,11 @@ class ImageFavoritesProvider
       "ImageFavorites ${imageFavorite.imageKey}@${imageFavorite.sourceKey}@${imageFavorite.id}@${imageFavorite.eid}";
 
   /// 修复（2026-10-09）：加载走 `ImageDownloader.loadComicImage(imageKey, sourceKey, cid, eid)`，
-  /// 其磁盘缓存键为 `"$imageKey@$sourceKey@$cid@$eid"`（见 network/images.dart），与本类 `key`（内存键）不同。
+  /// 其磁盘缓存键由 [readerPageCacheKey] 统一拼装（与本类 `key`（内存键）不同 ✓）。
+  ///
+  /// ⭐ 2026-10-26：改为调用统一函数 ✓ —— 原先行内拼接的格式与页缓存键**完全一致** ✓
+  ///（`imageKey@sourceKey@cid@eid`），因此可安全替换、行为不变 ✓。
   @override
-  String get cacheKey => "${imageFavorite.imageKey}@$sourceKey@$cid@$eid";
+  String get cacheKey =>
+      readerPageCacheKey(imageFavorite.imageKey, sourceKey, cid, eid);
 }

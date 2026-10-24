@@ -7,6 +7,7 @@ import 'package:dart_smb2/dart_smb2.dart';
 import 'package:venera_nas/foundation/log.dart';
 
 import 'smb_config.dart';
+import 'smb_exception.dart';
 import 'smb_serial.dart';
 
 /// High-level client for interacting with an SMB share.
@@ -285,8 +286,11 @@ class SmbClient {
     // ⚠️ 2026-10-24：底层库（`dart_smb2` → libsmb2）**没有端口参数** ✗ ⇒ 非 445 端口
     // 原来会**静默连到 445** ✗（用户只看到"连不上"、查不出原因 ✓）⇒ 这里改为**明确报错** ✓。
     if (config.port != 445) {
-      throw "SMB 端口 ${config.port} 暂不支持：当前底层库仅支持 445 端口，"
-          "请在 NAS/路由器上使用标准 SMB 端口（445）。";
+      // ⭐ 2026-10-26：SMB 层异常类型化 ✓（文案不变 ✓；见 `smb_exception.dart` ✓）。
+      throw SmbException(
+        "SMB 端口 ${config.port} 暂不支持：当前底层库仅支持 445 端口，"
+        "请在 NAS/路由器上使用标准 SMB 端口（445）。",
+      );
     }
     // ⭐ 2026-10-25：**连接失败冷却** ✓ —— 实测日志里 `Smb2Pool.connect` 本身会**卡住不返回** ✗
     //（服务器侧会话耗尽 / 网络半断 ✓）⇒ 若不加限制，封面等并发任务会**不停重连** ✗，
@@ -294,7 +298,9 @@ class SmbClient {
     final lastFailure = _lastConnectFailureAt;
     if (lastFailure != null &&
         DateTime.now().difference(lastFailure) < _connectCooldown) {
-      throw "SMB 连接失败（刚失败过，请稍后重试；或点「设置 → 网络 → SMB 服务器 → 重置 SMB 连接」）。";
+      throw const SmbException(
+        "SMB 连接失败（刚失败过，请稍后重试；或点「设置 → 网络 → SMB 服务器 → 重置 SMB 连接」）。",
+      );
     }
     if (_pool != null) {
       // 已连着也算一次成功 ✓：清掉冷却与 dead 标记 ✓，避免复用连接却继续快速失败 ✗。
@@ -424,8 +430,11 @@ class SmbClient {
       return await operation.timeout(timeout);
     } on TimeoutException {
       _invalidate();
-      throw "SMB 操作超时（服务器无响应）。可在「设置 → 网络 → SMB 服务器」"
-          "点「重置 SMB 连接」后重试。";
+      // ⭐ 2026-10-26：SMB 层异常类型化 ✓（文案逐字不变 ✓）。
+      throw const SmbException(
+        "SMB 操作超时（服务器无响应）。可在「设置 → 网络 → SMB 服务器」"
+        "点「重置 SMB 连接」后重试。",
+      );
     } on Smb2Exception catch (e) {
       if (e.type == Smb2ErrorType.connection ||
           e.type == Smb2ErrorType.timeout) {
