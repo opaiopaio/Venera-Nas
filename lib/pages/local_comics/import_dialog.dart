@@ -333,18 +333,23 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        DropdownButtonFormField<SmbConnection>(
-          initialValue: _selectedServer,
-          decoration: InputDecoration(
-            labelText: "服务器".tl,
-            border: const OutlineInputBorder(),
+        // ⭐ 2026-10-25（用户反馈 ✓）：服务器选择改用**统一 Select 构件** ✓ ——
+        // 原来用 `DropdownButtonFormField` ✗ ⇒ 弹出的菜单样式与 App 其它菜单不一致 ✗
+        //（灰底矩形、无外观体系 ✓）。`Select` 走 `showMenu` + 外观体系 ✓，点击展开样式统一 ✓。
+        Text(
+          "服务器".tl,
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
-          items: servers.map((s) {
-            return DropdownMenuItem(value: s, child: Text(s.name));
-          }).toList(),
-          onChanged: (v) {
-            if (v != null) {
-              setState(() => _selectedServer = v);
+        ).paddingHorizontal(16),
+        const SizedBox(height: AppSpace.xs),
+        Select(
+          current: _selectedServer?.name,
+          values: servers.map((s) => s.name).toList(),
+          onTap: (index) {
+            if (index >= 0 && index < servers.length) {
+              setState(() => _selectedServer = servers[index]);
             }
           },
         ).paddingHorizontal(16),
@@ -387,6 +392,9 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
         onPressed: () => Navigator.of(context).pop(),
         child: Text("Cancel".tl),
       ),
+      // ⭐ 2026-10-25（用户反馈 ✓）：两个按钮**挨在一起** ✗ ⇒ 补标准间距 ✓
+      //（外观规范 §4.2.2：相邻按钮必须留 `AppSpace.sm` ✓）。
+      const SizedBox(width: AppSpace.sm),
       Button.normal(onPressed: _startScan, child: Text("开始扫描".tl)),
     ];
   }
@@ -401,6 +409,18 @@ class _SmbImportDialogState extends State<SmbImportDialog> {
           setState(() => _cancelRequested = true);
         },
         child: Text("Cancel".tl),
+      ),
+      const SizedBox(width: AppSpace.sm),
+      Button.normal(
+        onPressed: () {
+          // ⭐ 2026-10-25（用户反馈 ✓）：扫描中也要能**关闭弹窗** ✓
+          //（否则卡住时弹窗关不掉 ✗）；关闭后扫描仍会按取消标记收尾 ✓。
+          if (!_cancelRequested) {
+            setState(() => _cancelRequested = true);
+          }
+          Navigator.of(context).pop();
+        },
+        child: Text("关闭".tl),
       ),
     ];
   }

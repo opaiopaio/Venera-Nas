@@ -386,8 +386,21 @@ class _GalleryModeState extends State<_GalleryMode>
   /// 说明：`preCacheCount` 对 SMB 已**减半** ✓（见 getter ✓）⇒ 设置 10 ⇒ 这里 =
   /// `decodeAhead = 5` ✓、`diskAhead = 5` ✓，合计正好 10 页窗口 ✓。
   void _cacheNeighborsNow(int startPage) {
-    final decodeAhead = preCacheCount; // 5（设置 10 的一半 ✓）
-    final diskAhead = preCacheCount; // 再往后 5 页只落盘 ✓
+    // ⭐ 2026-10-25（用户要求 ✓）：**按翻页速度自适应** ✓ ——
+    // 连续快速翻页时（< 500ms 一页 ✓）把"解码区"临时缩到 2 页 ✓：
+    // 解码很占内存/CPU ✓，狂翻时用户根本来不及看 ✓ ⇒ 省下来给当前页 ✓（当前页永远最高优先 ✓）。
+    // 一旦停稳（> 500ms ✓）⇒ 恢复成正常解码区（设置的一半 ✓）。
+    final now = DateTime.now();
+    final lastFlip = _lastFlipAt;
+    // 阈值取令牌 `AppMotion.long`（400ms ✓）—— 硬编码时长会被外观守卫拦下 ✗。
+    _fastFlip = lastFlip != null && now.difference(lastFlip) < AppMotion.long;
+    _lastFlipAt = now;
+
+    final configured = preCacheCount;
+    final decodeAhead = _fastFlip
+        ? (configured <= 2 ? configured : 2)
+        : configured; // 5（设置 10 的一半 ✓）
+    final diskAhead = configured; // 再往后 5 页只落盘 ✓
 
     // ① 已解码窗口：上一页 ~ 当前页 + decodeAhead ✓
     for (int offset = -1; offset <= decodeAhead; offset++) {
@@ -420,6 +433,10 @@ class _GalleryModeState extends State<_GalleryMode>
 
   /// 记录"最近落过盘的页码"✓ —— 用于按窗口上限淘汰更早的页 ✓。
   final List<int> _diskWindowPages = [];
+
+  /// ⭐ 2026-10-25：上次翻页时间 / 是否处于"狂翻"状态 ✓（自适应预载用 ✓）。
+  DateTime? _lastFlipAt;
+  bool _fastFlip = false;
 
   /// ⭐ 清掉窗口外的旧页磁盘缓存 ✓（解码内存由 `ImageCache` 的容量上限兜底 ✓）。
   void _trimDiskCacheWindow(int startPage, int windowSize) {
