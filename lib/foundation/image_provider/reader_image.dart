@@ -298,9 +298,9 @@ class ReaderImageProvider
   /// 同一页**在途读取去重** ✓：`load` 与预取可能同时触发同一页 ✗ ⇒ 共用一个 Future ✓。
   static final Map<String, Future<Uint8List>> _inflightReads = {};
 
-  /// SMB 页磁盘缓存有效期 ✓ —— ⭐ 2026-10-25 从 7 天**降到 1 天** ✓：
-  /// 用户要的是流式阅读 ✓，缓存只是"回头翻一小会儿"的加速 ✓，不该长期占几 GB ✗。
-  static const _smbPageCacheDuration = 24 * 60 * 60 * 1000;
+  /// SMB 页磁盘缓存有效期 ✓ —— ⭐ 2026-10-25 用户确认：**3~7 天可接受** ✓ ⇒ 取 **7 天** ✓。
+  /// （缓存上限与 LRU 现在都能正常工作 ✓，不会再像之前那样无限涨到 5 GB ✗）
+  static const _smbPageCacheDuration = 7 * 24 * 60 * 60 * 1000;
 
   /// ⭐ 复用的 SMB 连接 ✓（整段阅读共用一条 ✓；退出阅读器时由 [closeSharedSmbClient] 断开 ✓）。
   static SmbClient? _sharedClient;
