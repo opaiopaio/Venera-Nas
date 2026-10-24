@@ -9,6 +9,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:venera_nas/foundation/app_settings_scope.dart';
 import 'package:venera_nas/foundation/comic_source/comic_source.dart';
 import 'package:venera_nas/foundation/design_tokens.dart';
+import 'package:venera_nas/foundation/image_provider/reader_image.dart';
 import 'package:venera_nas/foundation/log.dart';
 import 'package:venera_nas/foundation/text_style_settings.dart';
 import 'package:venera_nas/pages/auth_page.dart';
@@ -18,6 +19,8 @@ import 'package:venera_nas/utils/app_links.dart';
 import 'package:venera_nas/utils/background_download.dart';
 import 'package:venera_nas/utils/io.dart';
 import 'package:venera_nas/utils/translations.dart';
+import 'package:venera_nas/network/smb/smb_client.dart';
+import 'package:venera_nas/network/smb/smb_serial.dart';
 import 'package:window_manager/window_manager.dart';
 import 'components/components.dart';
 import 'components/window_frame.dart';
@@ -127,6 +130,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    // ⭐ 2026-10-25（用户要求 ✓）：**退出 / 关闭 App 时主动断开全部 SMB 连接** ✓
+    // 背景 ✓：用户要的是「启动即连、常驻、**关闭时自动断开**」✓；
+    // 若关闭时不断开 ✗，路由器会把旧会话保留到 `deadtime`（15s）✓，
+    // 下次启动**新旧会话叠加** ✗ ⇒ 表现为"重启后经常断连" ✓。
+    if (state == AppLifecycleState.detached) {
+      unawaited(SmbClient.closeAllShared());
+      unawaited(ReaderImageProvider.closeSharedSmbClient(force: true));
+      SmbSerial.forceReset();
+    }
+
     if (state == AppLifecycleState.resumed && App.isMobile) {
       _checkClipboardForVeneraLink();
       // 重新同步后台下载前台服务：OS 可能在后台期间杀掉了它。
