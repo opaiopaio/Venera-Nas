@@ -287,8 +287,9 @@ class ReaderImageProvider
   /// 同一页**在途读取去重** ✓：`load` 与预取可能同时触发同一页 ✗ ⇒ 共用一个 Future ✓。
   static final Map<String, Future<Uint8List>> _inflightReads = {};
 
-  /// SMB 页磁盘缓存有效期：7 天（漫画页不会变，长有效期才能让"回头翻"命中）。
-  static const _smbPageCacheDuration = 7 * 24 * 60 * 60 * 1000;
+  /// SMB 页磁盘缓存有效期 ✓ —— ⭐ 2026-10-25 从 7 天**降到 1 天** ✓：
+  /// 用户要的是流式阅读 ✓，缓存只是"回头翻一小会儿"的加速 ✓，不该长期占几 GB ✗。
+  static const _smbPageCacheDuration = 24 * 60 * 60 * 1000;
 
   /// ⭐ 复用的 SMB 连接 ✓（整段阅读共用一条 ✓；退出阅读器时由 [closeSharedSmbClient] 断开 ✓）。
   static SmbClient? _sharedClient;
@@ -521,9 +522,12 @@ class ReaderImageProvider
           _activeReads--;
         }
       }
-      // ⭐ 先落盘再判停：即便本页已被判停，字节也进了缓存，
-      // 下次进入该页直接命中 ⇒ 正是本次修复要的"不再闪烁"。
-      await CacheManager().writeCache(cacheKey, data, _smbPageCacheDuration);
+      // ⭐ 2026-10-25（用户反馈 ✓）：**只把"前台真正显示过的页"写盘** ✓ ——
+      // 原先连预取（后台 ✓）也写盘 ✗ ⇒ 一本 1000+ 页的漫画能吃掉 **5 GB** 磁盘 ✗；
+      // 用户要的是**云端流式阅读** ✓，不是把整本缓存到本地 ✗。
+      if (foreground) {
+        await CacheManager().writeCache(cacheKey, data, _smbPageCacheDuration);
+      }
       _sharedClientLastUsed = DateTime.now();
       if (foreground) {
         checkStop?.call();

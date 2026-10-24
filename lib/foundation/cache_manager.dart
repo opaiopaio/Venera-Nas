@@ -202,77 +202,96 @@ class CacheManager {
       return;
     }
     _isChecking = true;
-    var res = _db.select(
-      '''
-      SELECT * FROM cache
-      WHERE expires < ?
-    ''',
-      [DateTime.now().millisecondsSinceEpoch],
-    );
-    for (var row in res) {
-      var dir = row['dir'] as String;
-      var name = row['name'] as String;
-      var file = File('$cachePath/$dir/$name');
-      if (await file.exists()) {
-        var size = await file.length();
-        _currentSize = _currentSize! - size;
-        await file.delete();
-      }
-    }
-    if (res.isNotEmpty) {
-      _db.execute(
+    // ⚠️ 2026-10-25：**必须 try/finally 复位 `_isChecking`** ✗ ——
+    // 原先任何一次异常（如删文件时被占用 ✓ / 递归删目录失败 ✓）都会让 `_isChecking`
+    // **永久 true** ✗ ⇒ 之后再也不做清理 ✗ ⇒ 实测缓存涨到 **5.39 GB**（上限 2 GB 形同虚设 ✗）。
+    try {
+      var res = _db.select(
         '''
-      DELETE FROM cache
-      WHERE expires < ?
-    ''',
+        SELECT * FROM cache
+        WHERE expires < ?
+        ''',
         [DateTime.now().millisecondsSinceEpoch],
       );
-    }
-
-    while (_currentSize != null && _currentSize! > _limitSize) {
-      var res = _db.select('''
-        SELECT * FROM cache
-        ORDER BY expires ASC
-        limit 10
-      ''');
-      if (res.isEmpty) {
-        // There are many files unmanaged by the cache manager.
-        // Clear all cache.
-        await Directory(cachePath).delete(recursive: true);
-        Directory(cachePath).createSync(recursive: true);
-        break;
-      }
       for (var row in res) {
-        var key = row['key'] as String;
         var dir = row['dir'] as String;
         var name = row['name'] as String;
         var file = File('$cachePath/$dir/$name');
         if (await file.exists()) {
-          var size = await file.length();
-          await file.delete();
-          _db.execute(
-            '''
-            DELETE FROM cache
-            WHERE key = ?
-          ''',
-            [key],
-          );
-          _currentSize = _currentSize! - size;
-          if (_currentSize! <= _limitSize) {
-            break;
+          try {
+            var size = await file.length();
+            _currentSize = (_currentSize ?? 0) - size;
+            await file.delete();
+          } catch (_) {
+            // 单文件删不掉不影响整体清理 ✓。
           }
-        } else {
-          _db.execute(
-            '''
-            DELETE FROM cache
-            WHERE key = ?
-          ''',
-            [key],
-          );
         }
       }
+      if (res.isNotEmpty) {
+        _db.execute(
+          '''
+        DELETE FROM cache
+        WHERE expires < ?
+      ''',
+          [DateTime.now().millisecondsSinceEpoch],
+        );
+      }
+
+      while (_currentSize != null && _currentSize! > _limitSize) {
+        var res = _db.select('''
+        SELECT * FROM cache
+        ORDER BY expires ASC
+        limit 10
+      ''');
+        if (res.isEmpty) {
+          // There are many files unmanaged by the cache manager.
+          // Clear all cache.
+          try {
+            await Directory(cachePath).delete(recursive: true);
+            Directory(cachePath).createSync(recursive: true);
+          } catch (_) {
+            // ⚠️ 删目录失败（文件被占用 ✓）不能让 `_isChecking` 卡住 ✗（见方法开头注释 ✓）。
+          }
+          _currentSize = 0;
+          break;
+        }
+        for (var row in res) {
+          var key = row['key'] as String;
+          var dir = row['dir'] as String;
+          var name = row['name'] as String;
+          var file = File('$cachePath/$dir/$name');
+          if (await file.exists()) {
+            try {
+              var size = await file.length();
+              await file.delete();
+              _currentSize = (_currentSize ?? 0) - size;
+            } catch (_) {
+              // 删不掉就跳过 ✓（下次再清 ✓）。
+            }
+            _db.execute(
+              '''
+            DELETE FROM cache
+            WHERE key = ?
+          ''',
+              [key],
+            );
+            if (_currentSize != null && _currentSize! <= _limitSize) {
+              break;
+            }
+          } else {
+            _db.execute(
+              '''
+            DELETE FROM cache
+            WHERE key = ?
+          ''',
+              [key],
+            );
+          }
+        }
+      }
+    } finally {
+      _isChecking = false;
     }
-    _isChecking = false;
   }
 
   /// Delete cache by key.
