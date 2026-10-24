@@ -39,6 +39,11 @@ class SmbClient {
 
   static const _connectCooldown = Duration(seconds: 15);
 
+  /// ⭐ 2026-10-25：**单客户端内并发上限** ✓（连接池 4 个 worker ✓，留 1 个余量 ✓）。
+  /// 只限制"同一客户端"✓ —— 阅读器与封面各用不同客户端 ✓ ⇒ 互不阻塞 ✓（流式阅读的关键 ✓）。
+  static const _maxConcurrentOps = 3;
+  final _ops = _OpLimiter(_maxConcurrentOps);
+
   SmbClient({required this.config});
 
   /// ⭐ 2026-10-25：**共享客户端池** ✓ —— 供"短操作"复用连接 ✓。
@@ -157,25 +162,33 @@ class SmbClient {
   ///
   /// ⚠️ 超时/连接类错误后**故意不 disconnect** ✗ —— 原生调用可能仍在跑 ✓，
   /// 此时断开会造成 `0xc0000005` 访问冲突 ✓（事件日志实证 ✓）。
-  /// 做法是**丢弃引用** ✓：旧连接自生自灭（泄漏一条 ✓），后续操作**新建连接** ✓，
-  /// 闸门也能立刻释放 ✓ ⇒ 用户看到"超时，请重试"✓，而不是永远转圈 ✗。
-  Future<T> _guard<T>(Future<T> Function() op, {bool high = false}) {
-    return SmbSerial.run(() async {
-      try {
-        return await op().timeout(_opTimeout);
-      } on TimeoutException {
+  /// 做法是**丢弃引用** ✓：旧连接自生自灭（泄漏一条 ✓），后续操作**新建连接** ✓
+  /// ⇒ 用户看到"超时，请重试"✓，而不是永远转圈 ✗。
+  ///
+  /// ⭐ 2026-10-25（第二轮，用户反馈 ✓）：**数据操作改为"单客户端内并发 ≤3"** ✓ ——
+  /// 之前走**全局串行闸门** ✗ ⇒ 所有读图/封面/扫描排成一条队 ✗ ⇒ 表现为
+  /// "像顺序加载、最后一页要等前面全部加载完" ✗，完全不是**云端流式阅读**想要的体验 ✓。
+  /// `dart_smb2` 的连接池本身有 4 个 worker ✓（就是为并发准备的 ✓），
+  /// 只要**不在读的过程中断开连接** ✓ 就是安全的 ✓（崩溃真因是断开 ✓，已规避 ✓）。
+  /// 全局闸门现在只保留给 **connect / disconnect** 这类状态切换 ✓。
+  Future<T> _guard<T>(Future<T> Function() op, {bool high = false}) async {
+    await _ops.acquire();
+    try {
+      return await op().timeout(_opTimeout);
+    } on TimeoutException {
+      _invalidate();
+      throw "SMB 操作超时（服务器无响应）。可在「设置 → 网络 → SMB 服务器」"
+          "点「重置 SMB 连接」后重试。";
+    } on Smb2Exception catch (e) {
+      if (e.type == Smb2ErrorType.connection ||
+          e.type == Smb2ErrorType.timeout ||
+          e.type == Smb2ErrorType.unknown) {
         _invalidate();
-        throw "SMB 操作超时（服务器无响应）。可在「设置 → 网络 → SMB 服务器」"
-            "点「重置 SMB 连接」后重试。";
-      } on Smb2Exception catch (e) {
-        if (e.type == Smb2ErrorType.connection ||
-            e.type == Smb2ErrorType.timeout ||
-            e.type == Smb2ErrorType.unknown) {
-          _invalidate();
-        }
-        rethrow;
       }
-    }, high: high);
+      rethrow;
+    } finally {
+      _ops.release();
+    }
   }
 
   /// 丢弃当前连接引用（**不 disconnect** ✓，见 [_guard] 注释 ✓）。
@@ -329,5 +342,37 @@ class SmbClient {
   Future<void> reconnect({bool high = false}) async {
     await disconnect();
     await connect(high: high);
+  }
+}
+
+/// ⭐ 2026-10-25：**简单的并发限制器** ✓（单客户端内限制同时进行的原生操作数 ✓）。
+///
+/// 为什么不用全局闸门（用户反馈 ✓）：全局串行 ⇒ 所有读图/封面/扫描排一条队 ✗ ⇒
+/// 表现为"像顺序加载、最后一页要等前面全加载完" ✗ —— 完全不是流式阅读 ✓。
+/// `dart_smb2` 的连接池有 4 个 worker ✓（本就支持并发 ✓），崩溃真因是"读中途断开"✗，
+/// 已规避 ✓ ⇒ 这里只在**单个客户端内**限并发 ✓，不同客户端（阅读器 / 封面）互不阻塞 ✓。
+class _OpLimiter {
+  _OpLimiter(this.max);
+
+  final int max;
+  int _current = 0;
+  final List<Completer<void>> _waiters = [];
+
+  Future<void> acquire() {
+    if (_current < max) {
+      _current++;
+      return Future.value();
+    }
+    final c = Completer<void>();
+    _waiters.add(c);
+    return c.future;
+  }
+
+  void release() {
+    if (_waiters.isNotEmpty) {
+      _waiters.removeAt(0).complete();
+    } else if (_current > 0) {
+      _current--;
+    }
   }
 }

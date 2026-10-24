@@ -22,7 +22,15 @@ import 'reader_image.dart' as image_provider;
 /// 原生库不能被"同一连接并发使用"或"读到一半被 disconnect" ✗。
 /// 所以所有 SMB 操作必须**一次只做一件** ✓；本闸门让**前台请求优先** ✓、预取等不到就丢 ✓。
 class _SmbGate {
-  bool _locked = false;
+  _SmbGate({this.max = 1});
+
+  /// ⭐ 2026-10-25：**并发名额**（1 = 串行 ✓；>1 = 流式并发 ✓）。
+  /// 用户反馈"最后一页要等前面全加载完"✗ ⇒ 阅读器读图改为**并发 2** ✓：
+  /// 当前页与相邻页可以**同时读** ✓（真正"云端流式"体验 ✓），
+  /// 同时不至于把 NAS/路由器打满 ✓（配合 [ImageCache] 与预取节流 ✓）。
+  final int max;
+
+  int _current = 0;
 
   /// 当前持锁方的开始时间 ✓ —— 用于**看门狗**：异常情况下锁被卡死时强制复位 ✓（否则用户只能重启 App ✗）。
   DateTime? _lockedAt;
@@ -31,19 +39,19 @@ class _SmbGate {
 
   final List<Completer<bool>> _low = [];
 
-  bool get locked => _locked;
+  bool get locked => _current > 0;
 
   /// 持锁超过 [limit] ⇒ 判定卡死 ✓（由调用方决定是否 [reset] ✓）。
   bool hasBeenLockedFor(Duration limit) {
     final at = _lockedAt;
-    return _locked && at != null && DateTime.now().difference(at) > limit;
+    return _current > 0 && at != null && DateTime.now().difference(at) > limit;
   }
 
   /// ⚠️ 强制复位 ✓：把锁与所有等待者都放掉 ✓（等待者按"失败"返回 ⇒ 走可重试错误 ✓）。
   ///
   /// 只在看门狗判定卡死时调用 ✓ —— 这是"不重启 App 也能恢复"的唯一兜底 ✓。
   void reset() {
-    _locked = false;
+    _current = 0;
     _lockedAt = null;
     final waiters = [..._high, ..._low];
     _high.clear();
@@ -62,9 +70,9 @@ class _SmbGate {
   /// 现在：超时由 Timer 在 `isCompleted == false` 时**先移出队列再 complete(false)** ✓，
   /// 与 `release()` 在**同一事件循环**里互斥 ✓ ⇒ 名额不会丢 ✓。
   Future<bool> acquire({required bool high, Duration? timeout}) async {
-    if (!_locked) {
-      _locked = true;
-      _lockedAt = DateTime.now();
+    if (_current < max) {
+      _current++;
+      _lockedAt ??= DateTime.now();
       return true;
     }
     final c = Completer<bool>();
@@ -95,8 +103,12 @@ class _SmbGate {
       _lockedAt = DateTime.now();
       return;
     }
-    _locked = false;
-    _lockedAt = null;
+    if (_current > 0) {
+      _current--;
+    }
+    if (_current == 0) {
+      _lockedAt = null;
+    }
   }
 }
 
@@ -246,7 +258,9 @@ class ReaderImageProvider
   /// 原生库在**并发使用同一连接** / **读到一半被 disconnect** 时会崩 ✓。
   /// 对策 = ⭐ 所有 connect / readFile / disconnect **串行** ✓（[_smbGate] ✓），
   /// 且**只有 `_activeReads == 0` 时才真正断开** ✓（否则标记稍后断开 ✓）。
-  static final _smbGate = _SmbGate();
+  /// ⭐ 2026-10-25：**并发 2** ✓ —— 当前页 + 相邻页可同时读 ✓（流式体验 ✓）；
+  /// 预取仍需排队 ✓（不会把 NAS 打满 ✗）。
+  static final _smbGate = _SmbGate(max: 2);
 
   /// 在途的 SMB **原生读**计数 ✓ —— 只有为 0 才允许 disconnect ✓（防 use-after-free ✓）。
   static int _activeReads = 0;
