@@ -6,6 +6,35 @@ import 'package:venera_nas/network/smb/smb_connection.dart';
 /// Returns `true` if [path] is an SMB (smb://) URL.
 bool isSmbPath(String path) => path.startsWith('smb://');
 
+/// ⭐ 2026-10-24：**剥离 SMB 路径里的账号密码** ✓
+///
+/// 背景（安全 ✓）：`smbDownloadPath` 是"下载到 NAS"的根路径 ✓，用户可能把
+/// `smb://user:pass@nas/share/dir` 整段粘进来 ✓ ⇒ 凭据会**明文留在设置里** ✗
+///（虽然同步/备份/导出已剔除该键 ✓，但仍不该存 ✓）。
+/// 凭据应放在「SMB / NAS 服务器」配置里 ✓（读取时按 host+share 回退 ✓）。
+///
+/// 例：`smb://user:pass@nas/share/dir` ⇒ `smb://nas/share/dir` ✓
+/// 非 SMB 路径、或本来就没有凭据的路径 ⇒ **原样返回** ✓。
+String sanitizeSmbPathCredentials(String path) {
+  if (!isSmbPath(path)) return path;
+  final uri = Uri.parse(path);
+  if (uri.userInfo.isEmpty) return path;
+  final stripped = uri.replace(userInfo: '');
+  if (stripped.userInfo.isEmpty) {
+    return stripped.toString();
+  }
+  // 兜底：极端情况下 `replace` 未清掉 userinfo ⇒ 手工拼接 ✓。
+  final buffer = StringBuffer('smb://');
+  buffer.write(uri.host);
+  if (uri.hasPort) {
+    buffer.write(':${uri.port}');
+  }
+  for (final segment in uri.pathSegments) {
+    buffer.write('/$segment');
+  }
+  return buffer.toString();
+}
+
 /// ⭐ 2026-10-24：按 `host + share` 找**已保存的服务器配置** ✓。
 ///
 /// 为什么需要 ✓：导入 SMB 漫画时落库的目录是 `smb://host/share/path` ✓，

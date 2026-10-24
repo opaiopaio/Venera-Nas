@@ -179,4 +179,40 @@ void main() {
       expect(smbPathFromUrl('smb://host/share'), isEmpty);
     });
   });
+
+  group('sanitizeSmbPathCredentials（下载路径凭据剥离 ✓）', () {
+    test('剥离账号密码，保留 host/share/子目录', () {
+      expect(
+        sanitizeSmbPathCredentials('smb://user:pass@nas.local/share/dir'),
+        'smb://nas.local/share/dir',
+      );
+    });
+
+    test('保留端口', () {
+      expect(
+        sanitizeSmbPathCredentials('smb://u:p@nas.local:1445/share'),
+        'smb://nas.local:1445/share',
+      );
+    });
+
+    test('本来没有凭据 ⇒ 原样返回', () {
+      const path = 'smb://nas.local/share/dir';
+      expect(sanitizeSmbPathCredentials(path), path);
+    });
+
+    test('非 SMB 路径 ⇒ 原样返回（不误伤本地路径）', () {
+      expect(
+        sanitizeSmbPathCredentials('/home/user/comics'),
+        '/home/user/comics',
+      );
+      expect(sanitizeSmbPathCredentials('file:///tmp/x'), 'file:///tmp/x');
+    });
+
+    test('只有用户名没有密码也能剥离', () {
+      expect(
+        sanitizeSmbPathCredentials('smb://user@nas.local/share'),
+        'smb://nas.local/share',
+      );
+    });
+  });
 }

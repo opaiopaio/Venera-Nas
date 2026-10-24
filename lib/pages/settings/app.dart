@@ -1084,9 +1084,17 @@ class _NasPathDialogState extends State<_NasPathDialog> {
       allowCancel: false,
     );
 
-    appdata.settings['smbDownloadPath'] = nasUrl;
+    // ⭐ 2026-10-24（安全 ✓）：**保存前剥离地址里的账号密码** ✓ ——
+    // 用户常把 `smb://user:pass@nas/share` 整段粘进来 ✓ ⇒ 凭据会明文留在设置里 ✗。
+    // 正确做法：凭据配置在「SMB / NAS 服务器」里 ✓，下载路径只留 `smb://host/share/path` ✓。
+    final sanitized = sanitizeSmbPathCredentials(nasUrl);
+    if (sanitized != nasUrl) {
+      context.showMessage(message: "已移除地址中的账号密码，请在 SMB / NAS 服务器中配置登录信息".tl);
+    }
+
+    appdata.settings['smbDownloadPath'] = sanitized;
     await appdata.saveData();
-    LocalManager().smbPath = nasUrl;
+    LocalManager().smbPath = sanitized;
 
     if (!App.rootContext.mounted) return;
     loadingDialog.close();

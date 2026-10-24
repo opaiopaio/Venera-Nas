@@ -323,7 +323,19 @@ class LocalManager with ChangeNotifier {
     _checkPathValidation();
     _checkNoMedia();
     // SMB download path: from settings or default
-    smbPath = (appdata.settings['smbDownloadPath'] ?? '').toString().trim();
+    // ⭐ 2026-10-24（安全 ✓）：读入时**剥离路径里的账号密码** ✓ ——
+    // 老版本可能把 `smb://user:pass@nas/...` 存进了设置 ✓ ⇒ 升级后自动清掉并写回 ✓。
+    final rawSmbPath = (appdata.settings['smbDownloadPath'] ?? '')
+        .toString()
+        .trim();
+    final cleanSmbPath = sanitizeSmbPathCredentials(rawSmbPath);
+    smbPath = cleanSmbPath;
+    if (cleanSmbPath != rawSmbPath) {
+      appdata.settings['smbDownloadPath'] = cleanSmbPath;
+      // 不 await：初始化阶段不应因写设置而阻塞 ✓（写失败也不影响本次使用 ✓）。
+      appdata.saveData();
+      Log.info("SMB", "stripped credentials from smbDownloadPath");
+    }
 
     await ComicSourceManager().ensureInit();
     restoreDownloadingTasks();
