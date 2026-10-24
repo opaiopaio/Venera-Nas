@@ -34,6 +34,11 @@ class SmbClient {
   /// 此时直接新建连接 ✓（旧连接引用已丢弃 ✓，不 disconnect ✓，见 [_guard] ✓）。
   bool _dead = false;
 
+  /// ⭐ 2026-10-25：上次"连接失败"的时间 ✓ —— 用于**失败冷却** ✓（见 [connect] ✓）。
+  DateTime? _lastConnectFailureAt;
+
+  static const _connectCooldown = Duration(seconds: 15);
+
   SmbClient({required this.config});
 
   /// ⭐ 2026-10-25：**共享客户端池** ✓ —— 供"短操作"复用连接 ✓。
@@ -89,25 +94,38 @@ class SmbClient {
       throw "SMB 端口 ${config.port} 暂不支持：当前底层库仅支持 445 端口，"
           "请在 NAS/路由器上使用标准 SMB 端口（445）。";
     }
-    await SmbSerial.run(() async {
-      // ⭐ 2026-10-25：**已连接就直接复用** ✓ —— 共享客户端会被频繁 `connect()`
-      //（每个封面/每次列目录 ✓）；若每次都重连 ✗ ⇒ 又会刷连接 ✗（正是要修的问题 ✓）。
-      if (_pool != null) return;
-      _pool = await Smb2Pool.connect(
-        host: config.host,
-        share: config.share,
-        user: config.username,
-        password: config.password,
-        domain: config.domain,
-        timeoutSeconds: 30,
-        workers: 4,
-        // ⭐ 2026-10-24：协议选项透传 ✓（服务器"强制签名/加密"或需指定方言时用得上 ✓）。
-        signing: config.signing,
-        seal: config.seal,
-        version: config.version,
-      );
-      _dead = false;
-    }, high: high);
+    // ⭐ 2026-10-25：**连接失败冷却** ✓ —— 实测日志里 `Smb2Pool.connect` 本身会**卡住不返回** ✗
+    //（服务器侧会话耗尽 / 网络半断 ✓）⇒ 若不加限制，封面等并发任务会**不停重连** ✗，
+    // 每个都要等很久 ⇒ 界面全卡 ✓。冷却期内**直接快速失败** ✓，让界面给出"稍后重试"✓。
+    final lastFailure = _lastConnectFailureAt;
+    if (lastFailure != null &&
+        DateTime.now().difference(lastFailure) < _connectCooldown) {
+      throw "SMB 连接失败（刚失败过，请稍后重试；或点「设置 → 网络 → SMB 服务器 → 重置 SMB 连接」）。";
+    }
+    if (_pool != null) return;
+    try {
+      await _guard(() async {
+        // ⭐ 已连接就直接复用 ✓（共享客户端会被频繁 `connect()` ✓）。
+        if (_pool != null) return;
+        _pool = await Smb2Pool.connect(
+          host: config.host,
+          share: config.share,
+          user: config.username,
+          password: config.password,
+          domain: config.domain,
+          timeoutSeconds: 30,
+          workers: 4,
+          // ⭐ 2026-10-24：协议选项透传 ✓（服务器"强制签名/加密"或需指定方言时用得上 ✓）。
+          signing: config.signing,
+          seal: config.seal,
+          version: config.version,
+        );
+        _dead = false;
+      }, high: high);
+    } catch (e) {
+      _lastConnectFailureAt = DateTime.now();
+      rethrow;
+    }
   }
 
   /// Disconnect from the SMB share and release resources.

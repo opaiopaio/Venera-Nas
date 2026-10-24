@@ -39,6 +39,11 @@ class HistoryImageProvider
         }
         return localComic.coverFile.readAsBytes();
       }
+      // ⭐ 2026-10-25：SMB 历史条目在本地库里找不到（坏盘/已删除 ✓）⇒ **快速失败不重试** ✓
+      //（原来会走到下面的 `comicSource` 分支抛 "Comic source not found" ✗ ⇒ 图片层反复重试 ✗）。
+      if (history.type == ComicType.smb) {
+        throw "Invalid Status Code: 404 (SMB history comic missing)";
+      }
       var comicSource =
           history.type.comicSource ?? (throw "Comic source not found.");
       var comic = await comicSource.loadComicInfo!(history.id);
