@@ -70,7 +70,13 @@ class SmbCoverLoader {
   /// **配置变更** ✓ ⇒ 清空失败记录，允许重新尝试 ✓。
   static Object? _serversSignature;
 
-  static String cacheKey(String comicId) => 'smb_cover:$comicId';
+  /// ⭐ 2026-10-25（用户实测 ✓）：**封面缓存键必须带路径** ✗ ——
+  /// 原来只有 comic.id ✓，而扫描出来的 SMB 漫画 **id 可能重复** ✗
+  /// ⇒ 两本漫画共用同一个封面缓存 ⇒ 显示成同一张封面 ✗。
+  static String cacheKey(String comicId, {String? baseDir}) =>
+      (baseDir == null || baseDir.isEmpty)
+      ? 'smb_cover:$comicId'
+      : 'smb_cover:$baseDir|$comicId';
 
   static bool isFailed(String cacheKey) {
     _syncConfigChange();
@@ -166,7 +172,7 @@ class LocalComicImageProvider
 
   Future<Uint8List> _loadSmbCover() async {
     // Check disk cache first
-    final cacheKey = SmbCoverLoader.cacheKey(comic.id);
+    final cacheKey = SmbCoverLoader.cacheKey(comic.id, baseDir: comic.baseDir);
     if (SmbCoverLoader.isFailed(cacheKey)) {
       throw "Invalid Status Code: 404 (SMB cover missing, cached failure)";
     }
@@ -300,5 +306,6 @@ class LocalComicImageProvider
   /// 与本类 `key` 不同 ⇒ 原 `delete(key)` 清不掉坏封面缓存（会永久残留、导致坏封面一直加载失败）。
   /// 覆写后解码失败的清理即可命中该缓存文件。
   @override
-  String get cacheKey => SmbCoverLoader.cacheKey(comic.id);
+  String get cacheKey =>
+      SmbCoverLoader.cacheKey(comic.id, baseDir: comic.baseDir);
 }

@@ -76,7 +76,7 @@ class HistoryImageProvider
 
   Future<Uint8List> _loadSmbCover(LocalComic comic) async {
     // Check disk cache first (reuse same cache key strategy as LocalComicImageProvider)
-    final cacheKey = SmbCoverLoader.cacheKey(comic.id);
+    final cacheKey = SmbCoverLoader.cacheKey(comic.id, baseDir: comic.baseDir);
     if (SmbCoverLoader.isFailed(cacheKey)) {
       throw "Invalid Status Code: 404 (SMB cover missing, cached failure)";
     }
