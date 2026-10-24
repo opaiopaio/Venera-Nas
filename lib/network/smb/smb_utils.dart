@@ -13,8 +13,14 @@ bool isSmbPath(String path) => path.startsWith('smb://');
 /// ⇒ 需要认证的共享会**静默走匿名连接** ✗（此前后者能用只是因为共享开了 guest ✓）。
 /// 现在：URL 里没有凭据时回退到设置里保存的同 host+share 配置 ✓ ——
 /// ⭐ **凭据永远不进 URL / 不进备份** ✓（只在本机内存里取用 ✓）。
-SmbConnection? _findSavedConnection(String host, String share) {
-  final raw = appdata.settings['smbServers'];
+///
+/// [saved] 仅供**单元测试注入** ✓（生产调用传 null ⇒ 读 `appdata.settings['smbServers']` ✓）。
+SmbConnection? _findSavedConnection(
+  String host,
+  String share, [
+  List<dynamic>? saved,
+]) {
+  final raw = saved ?? appdata.settings['smbServers'];
   if (raw is! List) return null;
   for (final item in raw) {
     if (item is! Map) continue;
@@ -39,7 +45,7 @@ SmbConnection? _findSavedConnection(String host, String share) {
 ///
 /// ⭐ 2026-10-24：URL 不带凭据时**回退到已保存的服务器配置** ✓，
 /// 并把 domain / 签名 / 加密 / 方言一起带上 ✓（这些无法编码进 URL ✓）。
-SmbConfig parseSmbConfigFromUrl(String url) {
+SmbConfig parseSmbConfigFromUrl(String url, {List<dynamic>? savedServers}) {
   final uri = Uri.parse(url);
   final parts = uri.pathSegments;
   final share = parts.isNotEmpty ? parts.first : '';
@@ -52,7 +58,7 @@ SmbConfig parseSmbConfigFromUrl(String url) {
   var signing = false;
   var seal = false;
   var version = Smb2Version.any;
-  final saved = _findSavedConnection(uri.host, share);
+  final saved = _findSavedConnection(uri.host, share, savedServers);
   if (saved != null) {
     if (username.isEmpty) username = saved.config.username;
     if (password.isEmpty) password = saved.config.password;
