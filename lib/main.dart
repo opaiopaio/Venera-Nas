@@ -63,29 +63,6 @@ void main(List<String> args) {
             if (App.isLinux) {
               await windowManager.setBackgroundColor(Colors.transparent);
             }
-            // ⭐ 2026-10-25（用户实测 ✓）：**Windows 启动首帧白屏** ✗ ——
-            // Flutter 窗口在首帧渲染前显示引擎默认白底 ✓；等背景图异步加载完才变 ✓ ⇒ 白一闪 ✓。
-            // 这里在 show 之前把窗口底色设成"最终画面的底色" ✓：
-            // 有自定义背景色用它 ✓，否则跟随系统亮度（深色黑 / 浅色白 ✓）。
-            if (App.isWindows) {
-              final raw = (appdata.settings['backgroundColor'] ?? '')
-                  .toString();
-              Color startupBg =
-                  WidgetsBinding
-                          .instance
-                          .platformDispatcher
-                          .platformBrightness ==
-                      Brightness.dark
-                  ? Colors.black
-                  : Colors.white;
-              if (raw.startsWith('#') && raw.length == 7) {
-                final value = int.tryParse(raw.substring(1), radix: 16);
-                if (value != null) {
-                  startupBg = Color(0xFF000000 | value);
-                }
-              }
-              await windowManager.setBackgroundColor(startupBg);
-            }
             await windowManager.setMinimumSize(const Size(500, 600));
             var placement = await WindowPlacement.loadFromFile();
             if (App.isLinux) {
