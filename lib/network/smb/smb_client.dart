@@ -133,6 +133,31 @@ class SmbClient {
   /// 当前共享客户端数量 ✓（自检 / 排查连接数异常时用 ✓）。
   static int get sharedClientCount => _sharedClients.length;
 
+  /// ⭐ 2026-10-25（用户要求 ✓）：**阅读器专用客户端** ✓ ——
+  /// 与"封面/后台"的共享池**完全分开** ✗ 不抢名额 ✓。
+  /// 为什么可以分开 ✓：libsmb2 的每个 worker isolate 都有**独立的 context** ✓，
+  /// 多个池之间是**真正的并行** ✓（SMB 协议本身也支持多会话 ✓）；
+  /// 我们只需守住唯一不变量：**不要在读到一半时断开** ✓（已由 drain 保证 ✓）。
+  static final Map<String, SmbClient> _readerClients = {};
+
+  static SmbClient readerShared(SmbConfig config) {
+    return _readerClients.putIfAbsent(
+      cacheKey(config),
+      () => SmbClient(config: config),
+    );
+  }
+
+  /// 断开阅读器专用客户端 ✓（重置 / 退出时用 ✓）。
+  static Future<void> closeReaderShared() async {
+    final list = _readerClients.values.toList();
+    _readerClients.clear();
+    for (final client in list) {
+      try {
+        await client.disconnect();
+      } catch (_) {}
+    }
+  }
+
   /// 断开并清空所有共享客户端 ✓（阅读器"重置 SMB 连接" / 退出时用 ✓）。
   ///
   /// ⭐ 2026-10-25：**并行 drain 再断** ✓ —— 每个 [disconnect] 内部都会先等在途
