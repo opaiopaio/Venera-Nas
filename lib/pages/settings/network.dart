@@ -799,14 +799,16 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
               value: _signing,
               onChanged: (v) => setState(() => _signing = v),
               title: const Text("要求消息签名（signing）"),
-              subtitle: const Text("服务器强制签名时开启；默认开启自动协商"),
+              // ⭐ 2026-10-25：KSMBd（很多路由器/软路由用）签名实现与本客户端不兼容 ⇒ 连不上时请关闭 ✓。
+              subtitle: const Text("服务器强制签名时开启；KSMBd 等设备可能不兼容，连不上请关闭"),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               value: _seal,
               onChanged: (v) => setState(() => _seal = v),
               title: const Text("SMB3 加密（seal）"),
-              subtitle: const Text("服务器要求加密时开启；需要 SMB3"),
+              // ⭐ 2026-10-25：KSMBd 多数版本不支持 SMB3 加密 ⇒ 开启会直接协商失败 ✓。
+              subtitle: const Text("服务器要求加密时开启；需要 SMB3；KSMBd 等设备通常不支持"),
             ),
             const SizedBox(height: AppSpace.sm),
             DropdownButtonFormField<Smb2Version>(
