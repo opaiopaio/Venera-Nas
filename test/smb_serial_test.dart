@@ -10,6 +10,7 @@ import 'package:venera_nas/network/smb/smb_serial.dart';
 /// 2. `run()` 抛异常时**必须释放锁** ✓ —— 否则后续所有 SMB 操作永久卡死 ✗
 /// 3. 超时**不能泄漏名额** ✓ —— 曾因 `future.timeout` 竞态导致锁永久 locked ✗
 /// 4. **前台优先** ✓ —— 当前页读图不能被后台预取/封面堵住 ✗
+/// 5. **释放必须带 ticket** ✓ —— 迟到的 release 不能误解锁新的持有者 ✗
 void main() {
   setUp(SmbSerial.reset);
   tearDown(SmbSerial.reset);
@@ -44,51 +45,55 @@ void main() {
 
   test('高优先级先于低优先级拿到名额', () async {
     // 手动占锁，模拟"一个原生操作正在跑"。
-    await SmbSerial.acquire(high: false);
+    final holder = await SmbSerial.acquire(high: false);
+    expect(holder, isNotNull);
 
     final order = <String>[];
     final low = SmbSerial.run(() async => order.add('low'), high: false);
     final high = SmbSerial.run(() async => order.add('high'), high: true);
     // 等两者都进入等待队列。
     await Future<void>.delayed(const Duration(milliseconds: 50));
-    SmbSerial.release();
+    SmbSerial.release(holder!);
     await Future.wait([low, high]);
 
     expect(order, ['high', 'low'], reason: '用户在等的请求必须排在后台任务前面');
   });
 
-  test('超时获取返回 false，且不会泄漏名额', () async {
-    await SmbSerial.acquire(high: false);
-    final granted = await SmbSerial.acquire(
+  test('超时获取返回 null，且不会泄漏名额', () async {
+    final holder = await SmbSerial.acquire(high: false);
+    expect(holder, isNotNull);
+    final timedOut = await SmbSerial.acquire(
       high: true,
       timeout: const Duration(milliseconds: 40),
     );
-    expect(granted, isFalse);
+    expect(timedOut, isNull);
 
-    SmbSerial.release();
+    SmbSerial.release(holder!);
     expect(SmbSerial.locked, isFalse, reason: '超时后名额不能被吞掉');
 
     final again = await SmbSerial.acquire(high: false);
-    expect(again, isTrue);
-    SmbSerial.release();
+    expect(again, isNotNull);
+    SmbSerial.release(again!);
   });
 
   test('reset 能强制解锁并放掉等待者', () async {
-    await SmbSerial.acquire(high: false);
+    final holder = await SmbSerial.acquire(high: false);
+    expect(holder, isNotNull);
     final waiter = SmbSerial.acquire(
       high: true,
       timeout: const Duration(seconds: 5),
     );
     SmbSerial.reset();
-    expect(await waiter, isFalse);
+    expect(await waiter, isNull);
     expect(SmbSerial.locked, isFalse);
     final again = await SmbSerial.acquire(high: false);
-    expect(again, isTrue);
-    SmbSerial.release();
+    expect(again, isNotNull);
+    SmbSerial.release(again!);
   });
 
   test('排队等待超时 ⇒ 抛可重试错误，不无限等（卡住恢复 ✓）', () async {
-    await SmbSerial.acquire(high: false); // 模拟"一个卡死的操作占着锁"
+    final holder = await SmbSerial.acquire(high: false); // 模拟"一个卡死的操作占着锁"
+    expect(holder, isNotNull);
     await expectLater(
       SmbSerial.run<void>(
         () async {},
@@ -96,9 +101,45 @@ void main() {
       ),
       throwsA(isA<String>()),
     );
-    SmbSerial.release();
+    SmbSerial.release(holder!);
     // 释放后应恢复正常 ✓
     await SmbSerial.run<void>(() async {});
     expect(SmbSerial.locked, isFalse);
+  });
+
+  test('release 只接受当前持有者的 ticket（迟到释放不解锁新人）', () async {
+    final first = await SmbSerial.acquire(high: false);
+    expect(first, isNotNull);
+    expect(SmbSerial.release(first!), isTrue);
+
+    final second = await SmbSerial.acquire(high: false);
+    expect(second, isNotNull);
+    // 用已经释放的旧 ticket 不能把 second 的锁放掉 ✓。
+    expect(SmbSerial.release(first), isFalse);
+    expect(SmbSerial.locked, isTrue);
+    expect(SmbSerial.release(second!), isTrue);
+    expect(SmbSerial.locked, isFalse);
+  });
+
+  test('重复 release 同一个 ticket 第二次返回 false', () async {
+    final ticket = await SmbSerial.acquire(high: false);
+    expect(ticket, isNotNull);
+    expect(SmbSerial.release(ticket!), isTrue);
+    expect(SmbSerial.release(ticket), isFalse);
+    expect(SmbSerial.locked, isFalse);
+  });
+
+  test('forceReset 清 owner，旧 ticket 失效', () async {
+    final ticket = await SmbSerial.acquire(high: false);
+    expect(ticket, isNotNull);
+    SmbSerial.forceReset();
+    expect(SmbSerial.locked, isFalse);
+    expect(SmbSerial.release(ticket!), isFalse);
+
+    final next = await SmbSerial.acquire(high: false);
+    expect(next, isNotNull);
+    expect(SmbSerial.release(ticket), isFalse);
+    expect(SmbSerial.locked, isTrue);
+    expect(SmbSerial.release(next!), isTrue);
   });
 }

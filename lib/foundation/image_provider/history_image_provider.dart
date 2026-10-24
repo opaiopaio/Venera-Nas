@@ -71,18 +71,13 @@ class HistoryImageProvider
     throw "Error: Empty response body.";
   }
 
-  /// ⭐ 2026-10-25：**已知缺失封面**缓存 ✓ —— 坏盘/被删的漫画会反复加载失败 ✓，
-  /// 每次重试都占用 SMB 连接与全局闸门 ✗ ⇒ 扫描/读图排队超时 ✓（实测日志 ✓）。
-  static final Set<String> _failedSmbCovers = {};
-
-  /// ⭐ 2026-10-25：封面加载**限并发 2** ✓ —— 历史有几十条时别一拥而上抢 SMB 闸门 ✗
-  ///（阅读器读图是高优先级 ✓，封面是次要的 ✓）。
-  static final _smbSemaphore = Semaphore(2);
+  /// ⭐ 2026-10-25：**已知缺失封面**缓存与并发闸门已上移到 [SmbCoverLoader] ✓ ——
+  /// 与本地漫画封面**共用同一套** ✓（原先各持一套 ⇒ 失败不共享、并发上限翻倍 ✗）。
 
   Future<Uint8List> _loadSmbCover(LocalComic comic) async {
     // Check disk cache first (reuse same cache key strategy as LocalComicImageProvider)
-    final cacheKey = 'smb_cover:${comic.id}';
-    if (_failedSmbCovers.contains(cacheKey)) {
+    final cacheKey = SmbCoverLoader.cacheKey(comic.id);
+    if (SmbCoverLoader.isFailed(cacheKey)) {
       throw "Invalid Status Code: 404 (SMB cover missing, cached failure)";
     }
     final cached = await CacheManager().findCache(cacheKey);
@@ -105,7 +100,7 @@ class HistoryImageProvider
     final remoteCoverPath = smbPathFromUrl(coverUrl);
 
     final client = SmbClient.shared(config);
-    await _smbSemaphore.acquire();
+    await SmbCoverLoader.semaphore.acquire();
     try {
       await client.connect();
       try {
@@ -164,13 +159,13 @@ class HistoryImageProvider
       }
     } finally {
       // ⭐ 共享客户端：**不在此断开** ✓（统一由 SmbClient.closeAllShared / 重置入口管理 ✓）。
-      _smbSemaphore.release();
+      SmbCoverLoader.semaphore.release();
     }
   }
 
   /// ⭐ 2026-10-25：封面**确定缺失** ⇒ 记住并抛"404" ✓（上层不再重试 ✓）。
   static Never _failSmbCover(String cacheKey) {
-    _failedSmbCovers.add(cacheKey);
+    SmbCoverLoader.markFailed(cacheKey);
     throw "Invalid Status Code: 404 (SMB cover missing)";
   }
 
@@ -187,5 +182,5 @@ class HistoryImageProvider
   /// 网络缩略图路径（cover 含 '/'）保持原行为不变，避免误删无关缓存。
   @override
   String get cacheKey =>
-      history.cover.contains('/') ? key : 'smb_cover:${history.id}';
+      history.cover.contains('/') ? key : SmbCoverLoader.cacheKey(history.id);
 }

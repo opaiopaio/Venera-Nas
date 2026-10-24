@@ -258,18 +258,57 @@ class Appdata with Init {
     if (!await file.exists()) {
       return;
     }
+    Map<String, dynamic>? json;
     try {
-      var json = jsonDecode(await file.readAsString());
-      for (var key in (json['settings'] as Map<String, dynamic>).keys) {
-        if (json['settings'][key] != null) {
-          settings[key] = json['settings'][key];
-        }
+      final decoded = jsonDecode(await file.readAsString());
+      // 根节点必须是对象 ✓ —— 否则整份文件不可信 ✓
+      if (decoded is! Map) {
+        throw const FormatException("appdata.json root is not an object");
       }
-      searchHistory = List.from(json['searchHistory']);
-    } catch (e) {
-      Log.error("Appdata", "Failed to load appdata", e);
-      Log.info("Appdata", "Resetting appdata");
-      file.deleteIgnoreError();
+      json = Map<String, dynamic>.from(decoded);
+    } catch (e, s) {
+      Log.error("Appdata", "Failed to load appdata: $e", s);
+      // ⭐ 修复（2026-10-24）：解析失败**不再直接删除** ✗ ——
+      // 先重命名保留现场（`.bad-<ts>` ✓）便于人工抢救 ✓，再重建默认设置 ✓。
+      await _quarantineBrokenAppData(file);
+      await saveData(false);
+    }
+    if (json != null) {
+      // ⭐ 修复（2026-10-24）：`settings` 与 `searchHistory` **分开容错** ✓ ——
+      // 原实现任一段异常就整份丢失并删掉文件 ✗（例如 searchHistory 混进非字符串 ⇒ settings 也一起没了 ✓）。
+      final rawSettings = json['settings'];
+      if (rawSettings is Map) {
+        try {
+          for (final entry in rawSettings.entries) {
+            final key = entry.key;
+            // 键必须是 String ✓；null 值保持原行为「不覆盖默认」✓
+            if (key is! String || entry.value == null) continue;
+            settings[key] = entry.value;
+          }
+        } catch (e, s) {
+          // 单项异常 ⇒ 只放弃 settings 段 ✓，文件与 searchHistory 保留 ✓
+          Log.error("Appdata", "Failed to load settings section: $e", s);
+        }
+      } else if (rawSettings != null) {
+        Log.error(
+          "Appdata",
+          "Invalid settings section: ${rawSettings.runtimeType}",
+        );
+      }
+      final rawSearchHistory = json['searchHistory'];
+      if (rawSearchHistory is List) {
+        // 逐项过滤而不是整段丢弃 ✓：个别脏项不应清空整份搜索历史 ✓
+        final list = rawSearchHistory.whereType<String>().toList();
+        if (list.length != rawSearchHistory.length) {
+          Log.warning("Appdata", "Dropped invalid search history entries");
+        }
+        searchHistory = list;
+      } else if (rawSearchHistory != null) {
+        Log.error(
+          "Appdata",
+          "Invalid search history section: ${rawSearchHistory.runtimeType}",
+        );
+      }
     }
     if ((settings["deviceId"] as String).isEmpty) {
       settings._data["deviceId"] = const Uuid().v4();
@@ -290,6 +329,19 @@ class Appdata with Init {
       Log.info("Appdata", "Resetting implicit data");
       var implicitDataFile = File(FilePath.join(dataPath, 'implicitData.json'));
       implicitDataFile.deleteIgnoreError();
+    }
+  }
+
+  /// 把无法解析的 `appdata.json` 改名保留（`.bad-<时间戳>`）✓，失败才兜底删除 ✓。
+  Future<void> _quarantineBrokenAppData(File file) async {
+    final badPath = '${file.path}.bad-${DateTime.now().millisecondsSinceEpoch}';
+    try {
+      await file.rename(badPath);
+      Log.info("Appdata", "Broken appdata moved to $badPath");
+    } catch (e, s) {
+      // 改名失败（文件占用 / 权限不足）⇒ 兜底删除 ✓，避免下次启动继续读到坏文件 ✗
+      Log.error("Appdata", "Failed to quarantine broken appdata: $e", s);
+      file.deleteIgnoreError();
     }
   }
 }

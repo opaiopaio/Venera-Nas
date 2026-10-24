@@ -312,7 +312,7 @@ class HistoryManager with ChangeNotifier {
     } else {
       _cachedHistoryIds!.add('${newItem.id}_${newItem.type.value}');
     }
-    cachedHistories[newItem.id] = newItem;
+    cachedHistories['${newItem.id}_${newItem.type.value}'] = newItem;
     if (cachedHistories.length > 10) {
       cachedHistories.remove(cachedHistories.keys.first);
     }
@@ -341,7 +341,7 @@ class HistoryManager with ChangeNotifier {
     } else {
       _cachedHistoryIds!.add('${newItem.id}_${newItem.type.value}');
     }
-    cachedHistories[newItem.id] = newItem;
+    cachedHistories['${newItem.id}_${newItem.type.value}'] = newItem;
     if (cachedHistories.length > 10) {
       cachedHistories.remove(cachedHistories.keys.first);
     }
@@ -373,6 +373,16 @@ class HistoryManager with ChangeNotifier {
   }
 
   void clearUnfavoritedHistory() {
+    // ⭐ 修复（2026-10-24）：本地收藏的 `_hashedIds` 由 isolate **异步**填充 ✓ ——
+    // 未就绪时任何一次 `isExist` 判断都不可靠（旧的实现此处会恒 false ✗）⇒
+    // 这里**直接跳过**本轮清理 ✓（下次启动就绪后再清 ✓），绝不拿不可靠结果做批量删除 ✗。
+    if (!LocalFavoritesManager().isHashedIdsReady) {
+      Log.warning(
+        "History",
+        "Skip clearing unfavorited history: local favorites cache is not ready",
+      );
+      return;
+    }
     _db.execute('BEGIN TRANSACTION;');
     try {
       final idAndTypes = _db.select("""
@@ -423,9 +433,9 @@ class HistoryManager with ChangeNotifier {
       );
     }
     for (var key in cachedHistories.keys.toList()) {
-      // cachedHistories is keyed by id only; check if any type variant exists
-      var hasMatch = _cachedHistoryIds!.any((e) => e.startsWith('${key}_'));
-      if (!hasMatch) {
+      // ⭐ 缓存键已改为 `id_type` ✓ ⇒ 直接比对，不再用 `startsWith` 前缀匹配 ✗
+      //（前缀匹配会把 `1_2` 误判为命中 `1_23` 的变体 ✓）。
+      if (!_cachedHistoryIds!.contains(key)) {
         cachedHistories.remove(key);
       }
     }
@@ -435,11 +445,19 @@ class HistoryManager with ChangeNotifier {
     if (_cachedHistoryIds == null) {
       updateCache();
     }
-    if (!_cachedHistoryIds!.contains('${id}_${type.value}')) {
+    final cacheKey = '${id}_${type.value}';
+    if (!_cachedHistoryIds!.contains(cacheKey)) {
+      cachedHistories.remove(cacheKey);
       return null;
     }
-    if (cachedHistories.containsKey(id)) {
-      return cachedHistories[id];
+    final cached = cachedHistories[cacheKey];
+    // ⭐ 修复（2026-10-24）：返回前**校验 type** ✓ —— 同一 id 在不同漫画源下是不同条目，
+    // 只按 id 命中缓存会串味 ✗；类型不符时丢弃缓存并回退 DB ✓。
+    if (cached != null) {
+      if (cached.type == type) {
+        return cached;
+      }
+      cachedHistories.remove(cacheKey);
     }
 
     var res = _db.select(

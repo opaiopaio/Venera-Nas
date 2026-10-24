@@ -991,9 +991,22 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
       data = await File(imageKey.substring(7)).readAsBytes();
       if (!mounted) return null;
     } else {
-      data = await (await CacheManager().findCache(
-        "$imageKey@${context.reader.type.sourceKey}@${context.reader.cid}@${context.reader.eid}",
-      ))!.readAsBytes();
+      // ⭐ 修复（2026-10-25，P1）：**`findCache` 可能返回 null** ✗→✓ ——
+      // 缓存被清理 / 过期 / 落盘失败时原先的 `(await findCache(...))!` 强解包会直接
+      // 空指针崩溃 ✗（"保存当前页 / 分享"即触发 ✓）。现在提示后返回 null ✓
+      //（两个调用方 `saveCurrentImage` / `share` 都已判空 ✓）。
+      // 键统一走 `_smbPageCacheKey` ✓ —— 原先用 `type.sourceKey` 拼键 ✓，
+      // 对 SMB 得到 `@smb@` ✗ 而真实键是 `@null@` ✓ ⇒ 必然 cache missing ✓。
+      final cached = await CacheManager().findCache(
+        _smbPageCacheKey(context.reader, imageKey),
+      );
+      if (cached == null) {
+        if (!mounted) return null;
+        context.showMessage(message: "Image cache missing");
+        return null;
+      }
+      data = await cached.readAsBytes();
+      if (!mounted) return null;
     }
     return (i, data);
   }

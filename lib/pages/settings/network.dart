@@ -415,6 +415,10 @@ class _SmbServerManager extends StatefulWidget {
 }
 
 class _SmbServerManagerState extends State<_SmbServerManager> {
+  /// ⭐ 2026-10-25：重置按钮的**进行中态** ✓ —— 重置会先等在途读/断开连接
+  /// （最多数秒 ✓），期间重复点击会叠加关闭流程 ✗，按钮必须禁用并给出反馈 ✓。
+  bool _isResettingSmb = false;
+
   List<SmbConnection> get servers {
     final raw = appdata.settings['smbServers'];
     if (raw is! List) return [];
@@ -463,9 +467,18 @@ class _SmbServerManagerState extends State<_SmbServerManager> {
 
   /// ⭐ 2026-10-25：**重置 SMB 连接** ✓（卡住时的恢复手段 ✓）。
   Future<void> _resetSmbConnection() async {
-    await ReaderImageProvider.resetSmbRuntime();
-    if (!mounted) return;
-    context.showMessage(message: "已重置 SMB 连接，请重新尝试".tl);
+    if (_isResettingSmb) return;
+    setState(() => _isResettingSmb = true);
+    try {
+      await ReaderImageProvider.resetSmbRuntime();
+      if (!mounted) return;
+      context.showMessage(message: "已重置 SMB 连接，请重新尝试".tl);
+    } finally {
+      // 无论成功/失败都恢复按钮 ✓（避免异常后永远转圈 ✗）。
+      if (mounted) {
+        setState(() => _isResettingSmb = false);
+      }
+    }
   }
 
   Future<void> _testServer(int index) async {
@@ -563,7 +576,8 @@ class _SmbServerManagerState extends State<_SmbServerManager> {
                 SizedBox(
                   width: double.infinity,
                   child: Button.outlined(
-                    onPressed: _resetSmbConnection,
+                    isLoading: _isResettingSmb,
+                    onPressed: _isResettingSmb ? null : _resetSmbConnection,
                     child: Text("重置 SMB 连接（卡住时用）".tl),
                   ),
                 ),

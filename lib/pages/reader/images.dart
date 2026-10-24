@@ -41,6 +41,18 @@ Color readerImageBackgroundColor(
   return Theme.of(context).colorScheme.surface;
 }
 
+/// ⭐ 修复（2026-10-25，P1）：**阅读器单页图片的磁盘缓存键** ✓
+///
+/// 必须与 `ReaderImageProvider.cacheKey`（`foundation/image_provider/reader_image.dart`）**逐字一致**：
+/// `$imageKey@$sourceKey@$cid@$eid`，其中 `sourceKey` 取 `type.comicSource?.key` ✓。
+///
+/// ⚠️ **不能用 `reader.type.sourceKey`** ✗ —— 它对 SMB 返回 `'smb'` ✓
+///（`foundation/comic_type.dart` 的 getter ✓），而 provider 侧 SMB 的 `comicSource == null`
+/// ⇒ 真实落盘键是 `@null@` ✓；用 `'smb'` 拼键会得到 `@smb@` ✗ ⇒
+/// ① 窗口淘汰删不到任何文件（空转 ✓）② 收藏 / 保存图片查不到缓存 ⇒ 报 cache missing ✓。
+String _smbPageCacheKey(_ReaderState reader, String imageKey) =>
+    "$imageKey@${reader.type.comicSource?.key}@${reader.cid}@${reader.eid}";
+
 class _ReaderImages extends StatefulWidget {
   const _ReaderImages({super.key});
 
@@ -279,9 +291,31 @@ class _GalleryModeState extends State<_GalleryMode>
     return configured;
   }
 
+  /// ⭐ 2026-10-25：**解码窗口大小** ✓ —— 狂翻时临时缩到 2 页 ✓。
+  ///
+  /// 两个预取通道（相邻 / 远页）**必须共用同一口径** ✓，否则窗口边界算不一致 ⇒
+  /// 两通道覆盖范围重叠 ✗（同一批页被请求两次 ✓，白占 SMB 带宽 ✓）。
+  int get _decodeAhead {
+    final configured = preCacheCount;
+    if (_fastFlip && configured > 2) return 2;
+    return configured;
+  }
+
   var photoViewControllers = <int, PhotoViewController>{};
 
+  /// ⭐ 2026-10-25：**已从 [photoViewControllers] 摘下、但还不能立刻释放的 controller** ✓。
+  /// `onPageChanged` 里同帧 `PhotoViewGallery` 仍可能持有它们 ✗ ⇒ 立刻 `dispose()` 会
+  /// use-after-dispose ✓（`reset()` / `updateMultiple()` 会往已关闭的 StreamController 写 ✓）。
+  /// 故先 `reset()` 收掉缩放/位置状态并暂存 ✓，到本 State 的 `dispose` 再统一释放 ✓。
+  final List<PhotoViewController> _retiredControllers = [];
+
   late _ReaderState reader;
+
+  /// ⭐ 修复（2026-10-25，P2）：**显式持有上级 `_ReaderImagesState`** ✓ ——
+  /// 原先 `_createImageProviderFromKey` 用 `visitAncestorElements` 反查（**恒失效** ✗），
+  /// 于是 `onLoadFailed` 恒为 null ⇒ 图片加载失败不再触发"页面列表失效 ⇒ 重载" ✓。
+  /// 现在 initState 里取一次 ✓，创建 provider 时显式传下去 ✓（不再依赖 element 树反查 ✓）。
+  _ReaderImagesState? imagesState;
 
   bool get showChapterCommentsAtEnd {
     if (appdata.settings['showComments'] != true) return false;
@@ -327,6 +361,7 @@ class _GalleryModeState extends State<_GalleryMode>
   @override
   void initState() {
     reader = context.reader;
+    imagesState = context.findAncestorStateOfType<_ReaderImagesState>();
     controller = PageController(initialPage: reader.page);
     reader._imageViewController = this;
     Future.microtask(() {
@@ -351,6 +386,19 @@ class _GalleryModeState extends State<_GalleryMode>
       c.dispose();
     }
     photoViewControllers.clear();
+    // ⭐ 2026-10-25：`onPageChanged` 摘下、延迟释放的 controller 在这里统一收尾 ✓。
+    for (final c in _retiredControllers) {
+      c.dispose();
+    }
+    _retiredControllers.clear();
+    // ⭐ 修复（2026-10-25，P1）：**把自己从 reader 上摘掉** ✗→✓ ——
+    // 原先 `reader._imageViewController` 只被赋值、从不置空 ✗ ⇒ 切章时旧模式的 State
+    // 已 dispose ✓ 但全局引用仍指向它 ✗ ⇒ 切章期的手势 / 键盘 / 保存图片会操作**已释放的
+    // controller** ✓（`reset()`、已关闭的 StreamController ⇒ 抛异常 ✓）。
+    // 只清"自己挂上的那个" ✓（identical ✓）—— 新模式可能已在 initState 里先挂上 ✓。
+    if (identical(reader._imageViewController, this)) {
+      reader._imageViewController = null;
+    }
     super.dispose();
   }
 
@@ -438,10 +486,8 @@ class _GalleryModeState extends State<_GalleryMode>
     _lastFlipAt = now;
 
     final configured = preCacheCount;
-    final decodeAhead = _fastFlip
-        ? (configured <= 2 ? configured : 2)
-        : configured; // 5（设置 10 的一半 ✓）
-    final diskAhead = configured; // 再往后 5 页只落盘 ✓
+    final decodeAhead = _decodeAhead;
+    final diskAhead = configured; // 再往后 configured 页只落盘 ✓
 
     // ① 已解码窗口：上一页 ~ 当前页 + decodeAhead ✓
     for (int offset = -1; offset <= decodeAhead; offset++) {
@@ -472,21 +518,32 @@ class _GalleryModeState extends State<_GalleryMode>
     _trimDiskCacheWindow(startPage, decodeAhead + diskAhead);
   }
 
-  /// 记录"最近落过盘的页码"✓ —— 用于按窗口上限淘汰更早的页 ✓。
-  final List<int> _diskWindowPages = [];
+  /// 记录"已落过盘的页码" ✓ —— 用于按窗口上限淘汰窗口外的旧页 ✓。
+  ///
+  /// ⭐ 2026-10-25：**改用 `Set<int>`** ✗→✓ —— 原先用 `List<int>` ✓ 且在
+  /// `_cachePage` 的**按图循环**里 `add(page)` ✗ ⇒ 一页多图时同一页会被重复记账 ✓
+  /// ⇒ ① 窗口长度虚高、淘汰过早 ✗ ② 同一页被 `_deletePageDiskCache` 重复调用 ✓。
+  /// `Set` 天然按页去重 ✓，语义就是"这个页落过盘" ✓。
+  final Set<int> _diskWindowPages = {};
 
   /// ⭐ 2026-10-25：上次翻页时间 / 是否处于"狂翻"状态 ✓（自适应预载用 ✓）。
   DateTime? _lastFlipAt;
   bool _fastFlip = false;
 
   /// ⭐ 清掉窗口外的旧页磁盘缓存 ✓（解码内存由 `ImageCache` 的容量上限兜底 ✓）。
+  ///
+  /// ⭐ 2026-10-25：**改为按页范围淘汰** ✗→✓ —— 原先按"入队顺序 + 长度截断" ✗：
+  /// 往回翻 / 跳页后顺序与页号脱钩 ⇒ 会淘汰**当前窗口内**的页、反而留下远处的页 ✓。
+  /// 现在只保留 `[startPage-2, startPage+windowSize+2]` ✓，范围外一律清掉 ✓。
   void _trimDiskCacheWindow(int startPage, int windowSize) {
     final keepFrom = startPage - 2; // 往回留 2 页余量 ✓（来回翻不重读 ✓）
-    _diskWindowPages.removeWhere((p) => p < keepFrom);
-    final maxPages = windowSize + 4;
-    while (_diskWindowPages.length > maxPages) {
-      final oldPage = _diskWindowPages.removeAt(0);
-      _deletePageDiskCache(oldPage);
+    final keepTo = startPage + windowSize + 2;
+    final stale = _diskWindowPages
+        .where((p) => p < keepFrom || p > keepTo)
+        .toList();
+    for (final page in stale) {
+      _diskWindowPages.remove(page);
+      _deletePageDiskCache(page);
     }
   }
 
@@ -497,27 +554,37 @@ class _GalleryModeState extends State<_GalleryMode>
     for (int i = startIndex; i < endIndex; i++) {
       final key = reader.images!.elementAtOrNull(i);
       if (key == null || !key.startsWith('smb://')) continue;
-      final cacheKey =
-          '$key@${reader.type.sourceKey}@${reader.cid}@${reader.eid}';
-      CacheManager().delete(cacheKey);
+      // ⭐ 键必须与 provider 侧一致 ✓（见 `_smbPageCacheKey` 注释 ✓）；
+      // 原先用 `reader.type.sourceKey` 拼出 `@smb@` ✗ ⇒ 永远删不到真实缓存 ✓。
+      CacheManager().delete(_smbPageCacheKey(reader, key));
     }
   }
 
   void _cacheNow(int startPage) {
-    for (int i = startPage - 1; i <= startPage + preCacheCount; i++) {
-      if (i == startPage ||
-          i <= 0 ||
-          i > totalPages ||
-          isChapterCommentsPage(i)) {
+    // ⭐ 修复（2026-10-25，P2）：**两个预取通道不得重叠** ✗→✓ ——
+    // 相邻通道（`_cacheNeighborsNow`）已覆盖 `startPage-1 … startPage+decodeAhead` ✓；
+    // 本通道（长防抖、只落盘）原先从 `startPage-1` 起算 ✗ ⇒ 同一批页被请求两次 ✓
+    //（重复落盘 / 重复解码，白占 SMB 带宽 ✓）。现在**从 `decodeAhead+1` 起算** ✓，
+    // 只补"更远、仅落盘"的那一截 ✓，上界与相邻通道的 ② 保持一致 ✓。
+    final decodeAhead = _decodeAhead;
+    final diskAhead = preCacheCount;
+    for (
+      int offset = decodeAhead + 1;
+      offset <= decodeAhead + diskAhead;
+      offset++
+    ) {
+      final page = startPage + offset;
+      if (page <= 0 || page > totalPages || isChapterCommentsPage(page)) {
         continue;
       }
-      _cachePage(i, i == startPage + 1 || i == startPage - 1);
+      _cachePage(page, false);
     }
   }
 
   void _cachePage(int page, bool shouldPreCache) {
     if (isChapterCommentsPage(page)) return;
     var (startIndex, endIndex) = getPageImagesRange(page);
+    var hasSmbImage = false;
     for (int i = startIndex; i < endIndex; i++) {
       final key = reader.images!.elementAtOrNull(i);
       final isSmb = key?.startsWith('smb://') ?? false;
@@ -530,8 +597,12 @@ class _GalleryModeState extends State<_GalleryMode>
         _preDownloadImage(i + 1, context);
       }
       if (isSmb) {
-        _diskWindowPages.add(page);
+        hasSmbImage = true;
       }
+    }
+    // ⭐ 2026-10-25：按**页**记账一次 ✓（不再在按图循环里重复 add ✓，见 `_diskWindowPages` 注释 ✓）。
+    if (hasSmbImage) {
+      _diskWindowPages.add(page);
     }
   }
 
@@ -563,10 +634,13 @@ class _GalleryModeState extends State<_GalleryMode>
       },
       onPointerMove: (event) {
         if (isLongPressing) {
-          var controller = photoViewControllers[reader.page]!;
-          Offset value = event.delta;
-          if (isLongPressing) {
-            controller.updateMultiple(position: controller.position + value);
+          // ⭐ 修复（2026-10-25，P1）：**判空** ✗→✓ —— 长按期间刚切页/进入评论页时
+          // 该页的 controller 已不在 map 里 ✓，原先 `!` 强解包会空指针崩溃 ✗。
+          final controller = photoViewControllers[reader.page];
+          if (controller != null) {
+            controller.updateMultiple(
+              position: controller.position + event.delta,
+            );
           }
         }
       },
@@ -616,6 +690,8 @@ class _GalleryModeState extends State<_GalleryMode>
                   pageImages[0],
                   context,
                   startIndex + 1,
+                  // ⭐ 2026-10-25：显式传"页面列表失效"回调 ✓（原先靠 ancestor 反查、恒失效 ✗）。
+                  onLoadFailed: imagesState?._onPagesCacheInvalid,
                 ),
                 fit: BoxFit.contain,
                 errorBuilder: (_, error, s, retry) {
@@ -684,12 +760,17 @@ class _GalleryModeState extends State<_GalleryMode>
               context.readerScaffold.openOrClose();
             }
           }
-          // Remove other pages' controllers to reset their state.
-          var keys = photoViewControllers.keys.toList();
-          for (var key in keys) {
-            if (key != i) {
-              photoViewControllers.remove(key)?.dispose();
-            }
+          // ⭐ 修复（2026-10-25，P2）：**相邻页 controller 不在这里 dispose** ✗→✓ ——
+          // 同帧 `PhotoViewGallery` 仍可能持有并使用它们 ✓，`dispose()` 之后再被
+          // `updateMultiple` / `reset` 调用就会往**已关闭的 StreamController** 写 ⇒ 抛异常 ✓
+          //（use-after-dispose ✓）。现在：只从 map 里摘下 ✓ + `reset()` 收掉缩放/位置状态 ✓，
+          // 真正的 `dispose()` 留到本 State 的 `dispose` 统一处理 ✓。
+          for (var key in photoViewControllers.keys.toList()) {
+            if (key == i) continue;
+            final oldController = photoViewControllers.remove(key);
+            if (oldController == null) continue;
+            oldController.reset();
+            _retiredControllers.add(oldController);
           }
         },
       ),
@@ -718,6 +799,8 @@ class _GalleryModeState extends State<_GalleryMode>
               images[0],
               context,
               startIndex + 1,
+              // ⭐ 2026-10-25：显式传回调 ✓（见 `_createImageProviderFromKey` 注释 ✓）。
+              onLoadFailed: imagesState?._onPagesCacheInvalid,
             ),
             fit: BoxFit.contain,
             alignment: axis == Axis.vertical
@@ -735,6 +818,7 @@ class _GalleryModeState extends State<_GalleryMode>
               images[1],
               context,
               startIndex + 2,
+              onLoadFailed: imagesState?._onPagesCacheInvalid,
             ),
             fit: BoxFit.contain,
             alignment: axis == Axis.vertical
@@ -752,6 +836,7 @@ class _GalleryModeState extends State<_GalleryMode>
           imageKey,
           context,
           startIndex,
+          onLoadFailed: imagesState?._onPagesCacheInvalid,
         );
         return Expanded(
           child: ComicImage(
@@ -797,7 +882,12 @@ class _GalleryModeState extends State<_GalleryMode>
       context.readerScaffold.addImageFavorite();
       return;
     }
-    var controller = photoViewControllers[reader.page]!;
+    // ⭐ 修复（2026-10-25，P1）：**三个入口都必须先判空** ✗→✓ ——
+    // 评论页没有图片 controller ✓；切页/切章瞬间该页 controller 也可能已从 map 摘下 ✓
+    // ⇒ 原先的 `photoViewControllers[reader.page]!` 会空指针崩溃 ✗。
+    if (reader.isOnChapterCommentsPage) return;
+    final controller = photoViewControllers[reader.page];
+    if (controller == null) return;
     controller.onDoubleClick?.call();
   }
 
@@ -811,8 +901,14 @@ class _GalleryModeState extends State<_GalleryMode>
         fingers != 1) {
       return;
     }
-    var photoViewController = photoViewControllers[reader.page]!;
-    double target = photoViewController.getInitialScale!.call()! * 1.75;
+    // 判空（评论页 / 切页瞬间无 controller ✓）+ `getInitialScale` 为空则放弃缩放 ✓：
+    // `getInitialScale` 由页面首次 build 时注入 ✓，未注入时 `!` 强解包必崩 ✗。
+    if (reader.isOnChapterCommentsPage) return;
+    var photoViewController = photoViewControllers[reader.page];
+    if (photoViewController == null) return;
+    var initialScale = photoViewController.getInitialScale?.call();
+    if (initialScale == null) return;
+    double target = initialScale * 1.75;
     var size = reader.size;
     Offset zoomPosition;
     if (appdata.settings.getReaderSetting(
@@ -842,9 +938,16 @@ class _GalleryModeState extends State<_GalleryMode>
         !isLongPressing) {
       return;
     }
-    var photoViewController = photoViewControllers[reader.page]!;
-    double target = photoViewController.getInitialScale!.call()!;
-    photoViewController.animateScale?.call(target);
+    // 同 `handleLongPressDown`：判空 + 初始缩放为空则直接收尾 ✓（不崩 ✓）。
+    if (reader.isOnChapterCommentsPage) return;
+    var photoViewController = photoViewControllers[reader.page];
+    if (photoViewController == null) return;
+    var initialScale = photoViewController.getInitialScale?.call();
+    if (initialScale == null) {
+      isLongPressing = false;
+      return;
+    }
+    photoViewController.animateScale?.call(initialScale);
     isLongPressing = false;
   }
 
@@ -927,8 +1030,10 @@ class _GalleryModeState extends State<_GalleryMode>
       // ⭐ 修复（2026-10-09）：**去掉硬 `!` 强解包** —— 缓存被清理/过期时 findCache 返回 null，
       // 原写法会空指针崩溃。现改为显式抛错，交由 ImageProvider 的失败路径处理（显示失败/按需重试）；
       // **正常命中缓存的路径行为完全不变**（同一 key、同一 readAsBytes）。
+      // ⭐ 修复（2026-10-25，P1）：键改走 `_smbPageCacheKey` ✓ —— 原先用 `type.sourceKey`
+      // 拼键 ✗，对 SMB 会得到 `@smb@` 而真实键是 `@null@` ⇒ 收藏/保存恒报 cache missing ✓。
       final cached = await CacheManager().findCache(
-        "$imageKey@${context.reader.type.sourceKey}@${context.reader.cid}@${context.reader.eid}",
+        _smbPageCacheKey(reader, imageKey),
       );
       if (cached == null || !cached.existsSync()) {
         throw Exception("Reader image cache missing: $imageKey");
@@ -989,6 +1094,10 @@ class _ContinuousModeState extends State<_ContinuousMode>
     implements _ImageViewController {
   late _ReaderState reader;
 
+  /// ⭐ 修复（2026-10-25，P2）：显式持有上级 `_ReaderImagesState` ✓，
+  /// 用于把"页面列表失效"回调显式传给 `ImageProvider` ✓（原先 ancestor 反查恒失效 ✗）。
+  _ReaderImagesState? imagesState;
+
   var itemScrollController = ItemScrollController();
   var itemPositionsListener = ItemPositionsListener.create();
   var photoViewController = PhotoViewController();
@@ -1044,6 +1153,7 @@ class _ContinuousModeState extends State<_ContinuousMode>
   @override
   void initState() {
     reader = context.reader;
+    imagesState = context.findAncestorStateOfType<_ReaderImagesState>();
     reader._imageViewController = this;
     itemPositionsListener.itemPositions.addListener(onPositionChanged);
     cached = List.filled(reader.maxPage + 2, false);
@@ -1056,7 +1166,19 @@ class _ContinuousModeState extends State<_ContinuousMode>
 
   @override
   void dispose() {
+    // ⭐ 修复（2026-10-25，P2）：**补全释放** ✗→✓ —— 原先只移除一个监听 ✓，
+    // `photoViewController` / 滚动监听 / reader 上的引用全部漏释放 ✗
+    // ⇒ 切章后仍常驻 + `_imageViewController` 指向已 dispose 的 State ✓（同 gallery ✓）。
+    // ⚠️ `itemPositions` 在接口上是 `ValueListenable`（没有 `dispose` ✓），
+    // 随列表一起回收 ✓ ⇒ 这里只摘监听 ✓。
     itemPositionsListener.itemPositions.removeListener(onPositionChanged);
+    _scrollController?.removeListener(onScroll);
+    _scrollController = null;
+    photoViewController.dispose();
+    // 只清"自己挂上的那个" ✓（新模式可能已先挂上 ✓）。
+    if (identical(reader._imageViewController, this)) {
+      reader._imageViewController = null;
+    }
     super.dispose();
   }
 
@@ -1207,7 +1329,12 @@ class _ContinuousModeState extends State<_ContinuousMode>
           width = double.infinity;
         }
 
-        ImageProvider image = _createImageProvider(index, context);
+        // ⭐ 2026-10-25：显式传"页面列表失效"回调 ✓（原先 ancestor 反查恒失效 ✗）。
+        ImageProvider image = _createImageProvider(
+          index,
+          context,
+          onLoadFailed: imagesState?._onPagesCacheInvalid,
+        );
 
         return ColoredBox(
           color: readerImageBackgroundColor(
@@ -1574,8 +1701,10 @@ class _ContinuousModeState extends State<_ContinuousMode>
       // ⭐ 修复（2026-10-09）：**去掉硬 `!` 强解包** —— 缓存被清理/过期时 findCache 返回 null，
       // 原写法会空指针崩溃。现改为显式抛错，交由 ImageProvider 的失败路径处理（显示失败/按需重试）；
       // **正常命中缓存的路径行为完全不变**（同一 key、同一 readAsBytes）。
+      // ⭐ 修复（2026-10-25，P1）：键改走 `_smbPageCacheKey` ✓ —— 原先用 `type.sourceKey`
+      // 拼键 ✗，对 SMB 会得到 `@smb@` 而真实键是 `@null@` ⇒ 收藏/保存恒报 cache missing ✓。
       final cached = await CacheManager().findCache(
-        "$imageKey@${context.reader.type.sourceKey}@${context.reader.cid}@${context.reader.eid}",
+        _smbPageCacheKey(reader, imageKey),
       );
       if (cached == null || !cached.existsSync()) {
         throw Exception("Reader image cache missing: $imageKey");
@@ -1601,17 +1730,16 @@ ImageProvider _createImageProviderFromKey(
   BuildContext context,
   int page, {
   bool forPrefetch = false,
+
+  /// ⭐ 修复（2026-10-25，P2）：**显式传入"页面列表失效"回调** ✗→✓ ——
+  /// 原先在这里用 `context.visitAncestorElements` 反查 `_ReaderImagesState` ✗：
+  /// `visitAncestorElements` 是从**当前元素往上**遍历 ✓，而对每个祖先再调
+  /// `findAncestorStateOfType` 只会找到**该祖先的更上层** ✓ ⇒ 在 builder 的 context 里
+  /// `imagesState` **恒为 null** ✗ ⇒ `onLoadFailed` 恒失效 ✓（图片加载失败不再触发整章重载 ✓）。
+  /// 现在由调用方（`_GalleryModeState` / `_ContinuousModeState` 在 initState 里取一次 ✓）显式传入 ✓。
+  VoidCallback? onLoadFailed,
 }) {
   var reader = context.reader;
-  // Find the _ReaderImagesState ancestor to get the callback
-  _ReaderImagesState? imagesState;
-  context.visitAncestorElements((element) {
-    if (element.findAncestorStateOfType<_ReaderImagesState>() != null) {
-      imagesState = element.findAncestorStateOfType<_ReaderImagesState>();
-      return false;
-    }
-    return true;
-  });
   return ReaderImageProvider(
     imageKey,
     reader.type.comicSource?.key,
@@ -1635,7 +1763,7 @@ ImageProvider _createImageProviderFromKey(
     // ⇒ 后台预取失败会把整章重载 ✗（用户看到"停一会后转大圈"✓）。
     onLoadFailed: (forPrefetch || imageKey.startsWith('smb://'))
         ? null
-        : imagesState?._onPagesCacheInvalid,
+        : onLoadFailed,
   );
 }
 
@@ -1643,6 +1771,9 @@ ImageProvider _createImageProvider(
   int page,
   BuildContext context, {
   bool forPrefetch = false,
+
+  /// 透传"页面列表失效"回调 ✓（见 `_createImageProviderFromKey` 注释 ✓）。
+  VoidCallback? onLoadFailed,
 }) {
   var reader = context.reader;
   var imageKey = reader.images![page - 1];
@@ -1651,6 +1782,7 @@ ImageProvider _createImageProvider(
     context,
     page,
     forPrefetch: forPrefetch,
+    onLoadFailed: onLoadFailed,
   );
 }
 

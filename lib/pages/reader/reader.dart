@@ -893,9 +893,16 @@ abstract mixin class _ReaderLocation {
         type.sourceKey,
         'autoPageTurningInterval',
       );
-      autoPageTurningTimer = Timer.periodic(Duration(seconds: interval), (_) {
+      autoPageTurningTimer = Timer.periodic(Duration(seconds: interval), (
+        timer,
+      ) {
         if (page == maxPage) {
-          autoPageTurningTimer!.cancel();
+          // ⭐ 修复（2026-10-25）：**取消后必须置空** ✗→✓ ——
+          // 原先只 `cancel()` 不置 null ✗ ⇒ 字段恒非空 ✓ ⇒ 再次点"自动翻页"时
+          // 走的是"取消"分支而不是重新计时 ✗（对末页之后永远开不起来 ✓）。
+          // 另外改用回调自带的 `timer` ✓，避免对可能已置空的字段做 `!` 强解包 ✓。
+          timer.cancel();
+          autoPageTurningTimer = null;
         }
         toNextPage();
       });

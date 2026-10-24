@@ -42,7 +42,9 @@ class AppearanceBackgroundPage extends StatelessWidget {
             onChanged: (v) async {
               appdata.settings['readerBackgroundEnabled'] = v;
               await appdata.saveData();
-              App.forceRebuild();
+              // ⭐ 2026-10-24：`appdata.settings[...] = v` 已 `notifyListeners()` ✓，
+              // 本页又通过 `AppSettingsScope.of(context)` 建了依赖 ✓ ⇒
+              // 再调 `App.forceRebuild()` 只会**重复通知**、白刷一遍 ✗，故删除 ✓。
             },
           ).toSliver(),
           ColorSettingTile(
@@ -55,7 +57,7 @@ class AppearanceBackgroundPage extends StatelessWidget {
             onPicked: (value) async {
               appdata.settings['readerBackgroundColor'] = value;
               await appdata.saveData();
-              App.forceRebuild();
+              // ⭐ 2026-10-24：设置写入已触发 notifier 通知 ✓ ⇒ 不再重复 `forceRebuild` ✓（同上一行开关 ✓）。
             },
           ).toSliver(),
           ColorSettingTile(

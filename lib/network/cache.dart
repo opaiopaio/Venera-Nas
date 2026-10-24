@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:venera_nas/foundation/log.dart';
 import 'package:venera_nas/network/app_dio.dart';
 
 class NetworkCache {
@@ -74,6 +75,20 @@ class NetworkCacheManager implements Interceptor {
     return handler.next(err);
   }
 
+  /// 从缓存构造成功响应（统一入口 ✓：`venera-cache: true` 标记只在 `onResponse` 里被识别 ✓）。
+  static Response<dynamic> _cachedResponse(
+    RequestOptions options,
+    NetworkCache cache,
+  ) {
+    return Response(
+      requestOptions: options,
+      data: cache.data,
+      headers: Headers.fromMap(cache.responseHeaders)
+        ..set('venera-cache', 'true'),
+      statusCode: 200,
+    );
+  }
+
   @override
   void onRequest(
     RequestOptions options,
@@ -96,48 +111,43 @@ class NetworkCacheManager implements Interceptor {
         return handler.next(options);
       }
     }
-    var time = DateTime.now();
-    var diff = time.difference(cache.time);
-    if (options.headers['cache-time'] == 'long' &&
-        diff < const Duration(hours: 6)) {
-      return handler.resolve(
-        Response(
-          requestOptions: options,
-          data: cache.data,
-          headers: Headers.fromMap(cache.responseHeaders)
-            ..set('venera-cache', 'true'),
-          statusCode: 200,
-        ),
-      );
-    } else if (diff < const Duration(seconds: 5)) {
-      return handler.resolve(
-        Response(
-          requestOptions: options,
-          data: cache.data,
-          headers: Headers.fromMap(cache.responseHeaders)
-            ..set('venera-cache', 'true'),
-          statusCode: 200,
-        ),
-      );
-    } else if (diff < const Duration(hours: 2)) {
-      var o = options.copyWith(method: "HEAD");
-      var dio = AppDio();
-      var response = await dio.fetch(o);
-      if (response.statusCode == 200 &&
-          compareHeaders(cache.responseHeaders, response.headers.map)) {
-        return handler.resolve(
-          Response(
-            requestOptions: options,
-            data: cache.data,
-            headers: Headers.fromMap(cache.responseHeaders)
-              ..set('venera-cache', 'true'),
-            statusCode: 200,
-          ),
-        );
+    // ⭐ 修复（2026-10-24）：本方法虽是 `async void`（dio 的接口签名如此 ✓），
+    // 但**任何异常都必须交还一次控制权** ✗ —— 原先 HEAD 校验没有 try/catch，
+    // 断网 / 超时 / 服务端不支持 HEAD 时异常逃逸 ⇒ `handler` 永不回调 ⇒ **请求永久挂起** ✗。
+    final cached = cache;
+    try {
+      var time = DateTime.now();
+      var diff = time.difference(cached.time);
+      if (options.headers['cache-time'] == 'long' &&
+          diff < const Duration(hours: 6)) {
+        return handler.resolve(_cachedResponse(options, cached));
+      } else if (diff < const Duration(seconds: 5)) {
+        return handler.resolve(_cachedResponse(options, cached));
+      } else if (diff < const Duration(hours: 2)) {
+        var o = options.copyWith(method: "HEAD");
+        var dio = AppDio();
+        Response response;
+        try {
+          response = await dio.fetch(o);
+        } catch (e, s) {
+          // 校验请求失败（断网 / 超时 / 服务端不支持 HEAD ✓）⇒ **回退缓存** ✓：
+          // 可用性优先 —— 有缓存就先用缓存 ✓；缓存保留，下次请求再重新校验 ✓。
+          Log.error("NetworkCache", "HEAD validation failed, use cache: $e", s);
+          return handler.resolve(_cachedResponse(options, cached));
+        }
+        if (response.statusCode == 200 &&
+            compareHeaders(cached.responseHeaders, response.headers.map)) {
+          return handler.resolve(_cachedResponse(options, cached));
+        }
       }
+      removeCache(options.uri);
+      return handler.next(options);
+    } catch (e, s) {
+      // 兜底 ✓：任何未预料异常（含 `compareHeaders` 结构异常 ✓）都不能让请求挂死 ✗。
+      Log.error("NetworkCache", "Cache handling failed: $e", s);
+      removeCache(options.uri);
+      return handler.next(options);
     }
-    removeCache(options.uri);
-    handler.next(options);
   }
 
   static bool compareHeaders(Map<String, dynamic> a, Map<String, dynamic> b) {

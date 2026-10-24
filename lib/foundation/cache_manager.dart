@@ -13,6 +13,10 @@ class CacheManager {
 
   static CacheManager? instance;
 
+  /// ⭐ 2026-10-25：**默认缓存时长（毫秒，7 天）** ✓ —— 抽成常量后
+  /// `writeCache` 的默认值、老库（无 `duration` 列 ✓）的续期口径共用同一个数 ✓。
+  static const _defaultDuration = 7 * 24 * 60 * 60 * 1000;
+
   late Database _db;
 
   int? _currentSize;
@@ -81,9 +85,21 @@ class CacheManager {
         dir TEXT NOT NULL,
         name TEXT NOT NULL,
         expires INTEGER NOT NULL,
+        duration INTEGER NOT NULL DEFAULT 0,
         type TEXT
       )
     ''');
+    // ⭐ 修复（2026-10-25）：**老库补 `duration` 列** ✗→✓ ——
+    // `CREATE TABLE IF NOT EXISTS` 对已存在的表不生效 ✓ ⇒ 旧安装的 cache.db 里没有该列 ✓，
+    // 直接按列名读写会抛 `no such column: duration` ✗。
+    // SQLite 不支持 `ADD COLUMN IF NOT EXISTS` ⇒ 先查 `PRAGMA table_info` 再补 ✓。
+    // 补列后旧记录的 duration = 0 ✓ ⇒ 续期回退到默认 7 天 ✓（与旧行为一致 ✓）。
+    final columns = _db.select('PRAGMA table_info(cache)');
+    if (!columns.any((row) => row['name'] == 'duration')) {
+      _db.execute(
+        'ALTER TABLE cache ADD COLUMN duration INTEGER NOT NULL DEFAULT 0',
+      );
+    }
     _scanDir(_db.handle, cachePath).then((value) {
       _currentSize = value;
       checkCache();
@@ -99,10 +115,13 @@ class CacheManager {
   }
 
   /// Write cache to disk.
+  ///
+  /// [duration] 是**本次写入的存活时长（毫秒）** ✓ —— 会随记录一起落库 ✓，
+  /// `findCache` 命中时**按它续期** ✓（不再写死 7 天 ✓）。
   Future<void> writeCache(
     String key,
     List<int> data, [
-    int duration = 7 * 24 * 60 * 60 * 1000,
+    int duration = _defaultDuration,
   ]) async {
     await delete(key);
     this.dir++;
@@ -115,9 +134,9 @@ class CacheManager {
     var expires = DateTime.now().millisecondsSinceEpoch + duration;
     _db.execute(
       '''
-      INSERT OR REPLACE INTO cache (key, dir, name, expires) VALUES (?, ?, ?, ?)
+      INSERT OR REPLACE INTO cache (key, dir, name, expires, duration) VALUES (?, ?, ?, ?, ?)
     ''',
-      [key, dir.toString(), name, expires],
+      [key, dir.toString(), name, expires, duration],
     );
     if (_currentSize != null) {
       _currentSize = _currentSize! + data.length;
@@ -129,6 +148,12 @@ class CacheManager {
   /// If cache is expired, it will be deleted and return null.
   /// If cache is not found, it will return null.
   /// If cache is found, it will return the file, and update the expires time.
+  ///
+  /// ⭐ 修复（2026-10-25）：续期改为**按写入时的 `duration`** ✓ ——
+  /// 原先命中后写死续 7 天 ✗ ⇒ 自定义 TTL 完全失效 ✓：
+  /// 典型是 SMB 单页图的 24 小时缓存（`reader_image.dart` 的 `_smbPageCacheDuration` ✓）
+  /// 命中一次就被延长到 7 天 ✗ ⇒ 过期策略名存实亡 ✓、磁盘占用失控 ✓。
+  /// 老库/旧记录 `duration == 0` ⇒ 回退默认 7 天 ✓（保持旧行为 ✓）。
   Future<File?> findCache(String key) async {
     var res = _db.select(
       '''
@@ -144,6 +169,7 @@ class CacheManager {
     var dir = row['dir'] as String;
     var name = row['name'] as String;
     var expires = row['expires'] as int;
+    var duration = (row['duration'] as int?) ?? 0;
     var file = File('$cachePath/$dir/$name');
     var now = DateTime.now().millisecondsSinceEpoch;
     if (expires < now) {
@@ -162,14 +188,14 @@ class CacheManager {
     }
     if (await file.exists()) {
       // update time
-      var expires = now + 7 * 24 * 60 * 60 * 1000;
+      var refreshed = now + (duration > 0 ? duration : _defaultDuration);
       _db.execute(
         '''
         UPDATE cache
         SET expires = ?
         WHERE key = ?
       ''',
-        [expires, key],
+        [refreshed, key],
       );
       return file;
     } else {

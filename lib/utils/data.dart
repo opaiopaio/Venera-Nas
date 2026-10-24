@@ -71,50 +71,72 @@ Future<File> exportAppData([bool sync = true]) async {
     // ⇒ 导出包里带着只是**白白泄漏** ✗，没有任何用处 ✓。上行同步快照已在 `saveData()` 里剔除 ✓，
     // 这里补上本地导出（`sync == false` ⇒ 完整 `appdata.json`）这条出口 ✓。
     String? strippedAppData;
-    if (!sync) {
-      try {
-        final file = File(appdata);
-        if (file.existsSync()) {
-          final content = jsonDecode(file.readAsStringSync());
-          if (content is Map && content["settings"] is Map) {
-            (content["settings"] as Map).remove("smbServers");
-            (content["settings"] as Map).remove("smbDownloadPath");
-            strippedAppData = FilePath.join(
-              App.cachePath,
-              'appdata_export_${DateTime.now().millisecondsSinceEpoch}.json',
-            );
-            File(strippedAppData).writeAsStringSync(jsonEncode(content));
-            appdata = strippedAppData;
+    // 脱敏失败 ⇒ **fail-closed**：宁可不把 appdata.json 放进包里，也绝不导出明文凭据 ✓。
+    //（原实现失败时退回原文件 ⇒ 异常 / 文件缺失 / 结构异常都会把 `smbServers` 明文打进包 ✗。）
+    var includeAppData = true;
+    try {
+      // ⭐ 安全（2026-10-24）：脱敏临时文件的清理放进 `finally` ✓ ——
+      // 原实现放在 `zipFile.close()` 之后 ⇒ 中途抛异常就直接残留一份含明文凭据的副本 ✗。
+      if (!sync) {
+        try {
+          final file = File(appdata);
+          if (!file.existsSync()) {
+            // 缺失同样按失败处理 ⇒ 不再把不存在的路径交给 zip（那会直接抛异常）✓
+            throw StateError("appdata.json not found");
           }
+          final content = jsonDecode(file.readAsStringSync());
+          if (content is! Map || content["settings"] is! Map) {
+            throw FormatException("appdata.json has unexpected structure");
+          }
+          // 复制一层再改 ✓：不改动已解析出的原对象，避免误用未脱敏数据 ✗
+          final sanitized = Map<String, dynamic>.from(content);
+          final settings = Map<String, dynamic>.from(
+            content["settings"] as Map,
+          );
+          settings.remove("smbServers");
+          settings.remove("smbDownloadPath");
+          sanitized["settings"] = settings;
+          strippedAppData = FilePath.join(
+            App.cachePath,
+            'appdata_export_${DateTime.now().millisecondsSinceEpoch}.json',
+          );
+          File(strippedAppData).writeAsStringSync(jsonEncode(sanitized));
+          appdata = strippedAppData;
+        } catch (e, s) {
+          Log.error(
+            "Export",
+            "Failed to sanitize appdata, appdata.json is excluded: $e",
+            s,
+          );
+          includeAppData = false;
         }
-      } catch (_) {
-        // 脱敏失败 ⇒ 退回原文件（宁可导出成功，也不能让整个导出流程失败）
-        strippedAppData = null;
       }
-    }
-    var cookies = FilePath.join(dataPath, "cookie.db");
-    zipFile.addFile("history.db", historyFile);
-    zipFile.addFile("local_favorite.db", localFavoriteFile);
-    zipFile.addFile("appdata.json", appdata);
-    zipFile.addFile("cookie.db", cookies);
-    var readLaterFile = FilePath.join(dataPath, "read_later.db");
-    zipFile.addFile("read_later.db", readLaterFile);
-    for (var file in Directory(
-      FilePath.join(dataPath, "comic_source"),
-    ).listSync()) {
-      if (file is File) {
-        zipFile.addFile("comic_source/${file.name}", file.path);
+      var cookies = FilePath.join(dataPath, "cookie.db");
+      zipFile.addFile("history.db", historyFile);
+      zipFile.addFile("local_favorite.db", localFavoriteFile);
+      if (includeAppData) {
+        zipFile.addFile("appdata.json", appdata);
       }
-    }
-    // 说明：背景图 / 自定义字体**不进备份**。
-    // 原因：手机竖屏、电脑横屏，图片与字体在多设备间不通用，且会造成同步冲突；
-    // 备份只保留"设置"本身（appdata.json 等）。缺失的资源由对应的"失效引用自动清理"兜底。
-    zipFile.close();
-    // ⭐ 安全（2026-10-24）：清理上面的脱敏临时文件 ✓（只用于打进 zip 一次 ✓）。
-    if (strippedAppData != null) {
-      try {
-        File(strippedAppData).deleteSync();
-      } catch (_) {}
+      zipFile.addFile("cookie.db", cookies);
+      var readLaterFile = FilePath.join(dataPath, "read_later.db");
+      zipFile.addFile("read_later.db", readLaterFile);
+      for (var file in Directory(
+        FilePath.join(dataPath, "comic_source"),
+      ).listSync()) {
+        if (file is File) {
+          zipFile.addFile("comic_source/${file.name}", file.path);
+        }
+      }
+      // 说明：背景图 / 自定义字体**不进备份**。
+      // 原因：手机竖屏、电脑横屏，图片与字体在多设备间不通用，且会造成同步冲突；
+      // 备份只保留"设置"本身（appdata.json 等）。缺失的资源由对应的"失效引用自动清理"兜底。
+    } finally {
+      if (strippedAppData != null) {
+        try {
+          File(strippedAppData).deleteSync();
+        } catch (_) {}
+      }
+      zipFile.close();
     }
   });
   return cacheFile;

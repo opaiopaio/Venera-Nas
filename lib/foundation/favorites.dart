@@ -225,6 +225,19 @@ class LocalFavoritesManager with ChangeNotifier {
 
   var _hashedIds = <int, int>{};
 
+  /// ⭐ 修复（2026-10-24）：`_hashedIds` 是否已经由**异步**扫描填充完成 ✓。
+  ///
+  /// 扫描在 isolate 里跑 ✓，启动窗口内内存表恒为空 ⇒ 原 [isExist] 恒返回 false ✗，
+  /// 会把「已收藏」误判成「未收藏」✓（历史清理 `clearUnfavoritedHistory` 甚至据此误删 ✓）。
+  bool _hashedIdsReady = false;
+
+  /// 扫描代次 ✓：并发的重扫只允许**最新一次**写回结果 ✓，
+  /// 否则先发起的旧快照可能晚到并把新结果（含刚删的条目）覆盖回去 ✗。
+  int _hashedIdsScan = 0;
+
+  /// 供 [HistoryManager.clearUnfavoritedHistory] 之类**破坏性**调用点做守卫 ✓。
+  bool get isHashedIdsReady => _hashedIdsReady;
+
   bool isInitialized = false;
 
   int get totalComics {
@@ -295,15 +308,31 @@ class LocalFavoritesManager with ChangeNotifier {
     for (var folder in folderNames) {
       counts[folder] = count(folder);
     }
+    // 重扫期间：先置未就绪 ✓ ⇒ `isExist` 回退 DB ✓，不再信任半空的哈希表 ✓。
+    _hashedIdsReady = false;
+    _hashedIds = {};
+    final scan = ++_hashedIdsScan;
     _initHashedIds(folderNames, _dbPath).then((value) {
-      _hashedIds = value;
+      // 已有更新的扫描在跑 ⇒ 本次结果作废 ✓
+      if (scan != _hashedIdsScan) return;
+      // ⭐ 合并而不是整体覆盖 ✓：扫描期间新增的收藏不能被快照抹掉 ✗
+      //（原实现 `_hashedIds = value` ⇒ 启动窗口内 `addComic` 的增量会丢 ✓）
+      _hashedIds.addAll(value);
+      _hashedIdsReady = true;
       notifyListeners();
     });
   }
 
   void refreshHashedIds() {
+    _hashedIdsReady = false;
+    // 重扫：以 DB 快照为准 ✓ —— 先清空避免已删条目残留 ✓；
+    // 扫描期间新增的项会由下面的 `addAll` 合并保留 ✓。
+    _hashedIds = {};
+    final scan = ++_hashedIdsScan;
     _initHashedIds(folderNames, _dbPath).then((value) {
-      _hashedIds = value;
+      if (scan != _hashedIdsScan) return;
+      _hashedIds.addAll(value);
+      _hashedIdsReady = true;
       notifyListeners();
     });
   }
@@ -1222,6 +1251,24 @@ class LocalFavoritesManager with ChangeNotifier {
   }
 
   bool isExist(String id, ComicType type) {
+    if (!_hashedIdsReady) {
+      // ⭐ 修复（2026-10-24）：启动 / 重扫窗口内内存表尚未就绪 ⇒ **回退 DB** ✓ ——
+      // 原实现直接查空表 ⇒ 恒 false ✗（"已收藏"显示成未收藏 ✗）。
+      for (final folder in folderNames) {
+        final rows = _db.select(
+          """
+          select 1 from "$folder"
+          where id == ? and type == ?
+          limit 1;
+        """,
+          [id, type.value],
+        );
+        if (rows.isNotEmpty) {
+          return true;
+        }
+      }
+      return false;
+    }
     var hash = id.hashCode ^ type.value;
     return _hashedIds.containsKey(hash);
   }
@@ -1435,6 +1482,10 @@ class LocalFavoritesManager with ChangeNotifier {
   void close() {
     if (!isInitialized) return;
     isInitialized = false;
+    // 关闭后哈希表不可再信任 ✓（下次 init 会异步重建 ✓；并让在途扫描结果失效 ✓）
+    _hashedIdsReady = false;
+    _hashedIdsScan++;
+    _hashedIds = {};
     _db.dispose();
   }
 

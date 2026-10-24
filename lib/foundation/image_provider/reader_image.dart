@@ -263,10 +263,21 @@ class ReaderImageProvider
   static final _smbGate = _SmbGate(max: 2);
 
   /// 在途的 SMB **原生读**计数 ✓ —— 只有为 0 才允许 disconnect ✓（防 use-after-free ✓）。
+  ///
+  /// ⭐ 2026-10-25：**重置时不再清零** ✓ —— 清零会让"重置"误以为没有读在跑 ✗，
+  /// 随后 force disconnect 会撞上仍在执行的同步 FFI ✗（`0xc0000005` ✓）。
   static int _activeReads = 0;
 
-  /// "稍后断开"标记 ✓ —— 等最后一个在途读结束后再断开 ✓。
-  static bool _closeSharedRequested = false;
+  /// 等待安全时机再断开的旧连接 ✓（可能是换配置 / 读失败 / 重置产生的 ✓）。
+  ///
+  /// ⭐ 2026-10-25：不再用单个 bool 标记 ✗ —— 重连时标记会落到**新连接**上，
+  /// 等旧读结束反而把刚建好的连接断掉 ✗。这里按对象排队 ✓，只断指定的旧池 ✓。
+  static final List<SmbClient> _clientsPendingClose = [];
+
+  /// ⭐ 2026-10-25：**_obtainClient 单飞** ✓（见 [_obtainClient] ✓）。
+  static Future<SmbClient>? _clientOpening;
+
+  static String? _clientOpeningKey;
 
   /// 前台读图最近一次开始的毫秒时间戳 ✓ —— 预取据此判断"用户正在翻页 ⇒ 丢弃预取" ✓。
   static int _lastForegroundReadAt = 0;
@@ -301,35 +312,78 @@ class ReaderImageProvider
   /// 取得（必要时建立）复用的 SMB 连接 ✓。
   ///
   /// [high] = true 表示"用户在等"（当前页 ✓）—— 会优先于后台任务拿到全局 SMB 闸门 ✓。
+  ///
+  /// ⭐ 2026-10-25（P1 ✓）：**单飞 Future 初始化** ✓ —— 阅读器并发 2 时，
+  /// 原实现是 check-then-act ✗：两条路径同时看到"没有可用连接" ⇒ 各建一个池 ✓，
+  /// 后完成的覆盖前一个 ⇒ 泄漏 4 个 isolate ✓。现在所有同配置调用共享同一个
+  /// Future ✓；不同配置则排队等前一个结束后再重试 ✓（不并发建池 ✓）。
   static Future<SmbClient> _obtainClient(
     SmbConfig config, {
     bool high = false,
-  }) async {
+  }) {
     final key =
         '${config.host}|${config.port}|${config.share}|'
         '${config.username}|${config.password.hashCode}|${config.domain}';
+
+    final opening = _clientOpening;
+    if (opening != null) {
+      if (_clientOpeningKey == key) {
+        return opening;
+      }
+      // 不同配置（例如切漫画）不能并行建池 ✓：等前一个收尾后重试 ✓。
+      return opening.then(
+        (_) => _obtainClient(config, high: high),
+        onError: (_) => _obtainClient(config, high: high),
+      );
+    }
+
     final existing = _sharedClient;
     if (existing != null && _sharedClientKey == key && existing.isConnected) {
       final last = _sharedClientLastUsed;
       if (last == null ||
           DateTime.now().difference(last) < _smbIdleDisconnect) {
         _sharedClientLastUsed = DateTime.now();
-        // ⭐ 复查修复（2026-10-24）：复用健康连接时**清掉"稍后断开"标记** ✗→✓ ——
-        // 否则读完后会把**刚复用好的连接**又断掉 ⇒ 下一张图白重连一次 ✓。
-        _closeSharedRequested = false;
-        return existing;
+        return Future.value(existing);
       }
     }
-    // 闸门已持有（串行 ✓）⇒ 此刻没有别的原生操作 ✓，可以安全断开 ✓。
-    await closeSharedSmbClient(force: true);
+
+    final future = _openSharedClient(config, key, high: high);
+    _clientOpening = future;
+    _clientOpeningKey = key;
+    future.whenComplete(() {
+      if (identical(_clientOpening, future)) {
+        _clientOpening = null;
+        _clientOpeningKey = null;
+      }
+    }).ignore();
+    return future;
+  }
+
+  /// 真正建立连接的路径 ✓（只会由 [_obtainClient] 的单飞 Future 调用 ✓）。
+  static Future<SmbClient> _openSharedClient(
+    SmbConfig config,
+    String key, {
+    required bool high,
+  }) async {
+    // ⚠️ 不在这里 `closeSharedSmbClient(force: true)` ✗ ——
+    // 另一个并发读可能正用着旧池 ✓，force 会把它从 FFI 底下抽走 ✗。
+    // 旧池只摘引用并**排队等安全时机**再断 ✓。
+    final stale = _sharedClient;
+    if (stale != null) {
+      _detachSharedClient(stale);
+      _scheduleClientClose(stale);
+    }
+
     final client = SmbClient(config: config);
     try {
-      // ⭐ 不加 Dart 层 timeout ✓（见 `readFile` 处的说明 ✓）：原生超时由 `timeoutSeconds: 30` 负责 ✓。
+      // ⭐ 不加 Dart 层 timeout ✓（见 `readFile` 处的说明 ✓）：原生 connect 超时 30s，
+      // Dart 层给到 40s 兜底 ✓。
       // ⭐ 2026-10-24：连接也走全局闸门 ✓（`SmbClient` 内部串行 ✓）⇒ 与封面/下载/切章列目录**互斥** ✓。
       await client.connect(high: high);
     } catch (e) {
+      // 新建的池不会与阅读器共享 ✓，失败时直接安全断开（内部也会先 drain ✓）。
       try {
-        await client.disconnect().timeout(const Duration(seconds: 5));
+        await client.disconnect();
       } catch (_) {}
       rethrow;
     }
@@ -339,13 +393,33 @@ class ReaderImageProvider
     return client;
   }
 
+  /// 摘掉共享引用 ✓（只清仍指向 [client] 的字段 ✓，避免误清新连接 ✗）。
+  static void _detachSharedClient(SmbClient client) {
+    if (!identical(_sharedClient, client)) return;
+    _sharedClient = null;
+    _sharedClientKey = null;
+    _sharedClientLastUsed = null;
+  }
+
+  /// 排队等待安全时机断开 [client] ✓（相同对象只排一次 ✓）。
+  static void _scheduleClientClose(SmbClient client) {
+    if (_clientsPendingClose.any((c) => identical(c, client))) return;
+    _clientsPendingClose.add(client);
+  }
+
   /// ⭐ 2026-10-25：**重置 SMB 运行时** ✓ —— 供设置页「重置 SMB 连接」按钮用 ✓。
-  /// 断开复用的连接 ✓ + 强制释放全局闸门 ✓（SMB 操作卡住时的恢复手段 ✓，不必重启 App ✓）。
+  ///
+  /// ⭐ P0 相关：**不清 [_activeReads]、不 force 断在途读** ✗ ——
+  /// 强制断开正在同步 FFI 的连接就是 `0xc0000005` 的成因 ✓。
+  /// 这里只把闸门放掉（让卡死的等待者失败 ✓），连接交给 [_maybeCloseSharedClients]
+  /// 在最后一个读结束后再断 ✓。用户看到的"已重置"= 等待队列已清空 ✓。
   static Future<void> resetSmbRuntime() async {
     SmbSerial.forceReset();
-    _activeReads = 0;
-    _closeSharedRequested = false;
-    await closeSharedSmbClient(force: true);
+    // ⭐ 必须一起复位阅读器自己的闸门 ✓：否则 SmbSerial 放掉了、_smbGate 还锁着，
+    // 新的读仍然会排队到超时 ✗。
+    _smbGate.reset();
+    // 安全时立即断，否则排队 ✓（不修改 _activeReads ✓）。
+    await closeSharedSmbClient(force: _activeReads == 0);
     // ⭐ 2026-10-25：把封面/历史/导入用的**共享客户端**也一起断开 ✓ ——
     // 否则"重置"后它们仍持有旧连接（可能已失效 ✓），用户会以为重置没生效 ✗。
     await SmbClient.closeAllShared();
@@ -353,32 +427,30 @@ class ReaderImageProvider
 
   /// ⭐ 断开复用的 SMB 连接 ✓（阅读器退出 / 切换章节 / 前台读失败重连时调用 ✓）。
   static Future<void> closeSharedSmbClient({bool force = false}) async {
-    if (!force && (_activeReads > 0 || _smbGate.locked)) {
+    final client = _sharedClient;
+    if (client == null) return;
+    // 先摘引用 ✓：即使稍后才真正断，新读也不会再拿到这条待断连接 ✓。
+    _detachSharedClient(client);
+
+    if (_activeReads > 0 || (!force && _smbGate.locked)) {
       // ⚠️ **绝不在原生操作进行中断开** ✗ —— libsmb2 会访问冲突崩溃 ✓（已实证 ✓）
-      // ⇒ 标记"稍后断开" ✓，等最后一个在途读结束后由 [_maybeCloseSharedClient] 执行 ✓。
-      _closeSharedRequested = true;
+      // ⇒ 排队 ✓，等最后一个在途读结束后由 [_maybeCloseSharedClients] 执行 ✓。
+      _scheduleClientClose(client);
       return;
     }
-    final client = _sharedClient;
-    _sharedClient = null;
-    _sharedClientKey = null;
-    _sharedClientLastUsed = null;
-    if (client != null) {
-      try {
-        // ⭐ 同样不加 Dart 层 timeout ✓（它不会取消原生 disconnect ✓，反而可能在 kill isolate 时崩 ✗）。
-        await client.disconnect();
-      } catch (_) {
-        // 断开失败不影响后续重连 ✓。
-      }
+    try {
+      await client.disconnect();
+    } catch (_) {
+      // 断开失败不影响后续重连 ✓。
     }
   }
 
-  /// ⭐ 在途读结束、且无人持有闸门时，执行"稍后断开" ✓。
+  /// ⭐ 在途读结束、且无人持有闸门时，执行排队中的断开 ✓。
   ///
   /// ⭐ 复查修复（2026-10-24）：**断开必须在闸门内 await 完成** ✓ ——
   /// 原先 fire-and-forget 且在 `release()` 之后 ✗ ⇒ 下一个持有者可能同时在 connect ✗（原生层并发 ✗）。
-  static Future<void> _maybeCloseSharedClient() async {
-    if (!_closeSharedRequested) return;
+  static Future<void> _maybeCloseSharedClients() async {
+    if (_clientsPendingClose.isEmpty) return;
     if (_activeReads > 0) return;
     if (!await _smbGate.acquire(
       high: false,
@@ -388,8 +460,14 @@ class ReaderImageProvider
     }
     try {
       if (_activeReads > 0) return;
-      _closeSharedRequested = false;
-      await closeSharedSmbClient(force: true);
+      while (_clientsPendingClose.isNotEmpty) {
+        final client = _clientsPendingClose.removeAt(0);
+        try {
+          await client.disconnect();
+        } catch (_) {
+          // 单条失败不影响其它排队连接 ✓。
+        }
+      }
     } finally {
       _smbGate.release();
     }
@@ -404,6 +482,7 @@ class ReaderImageProvider
     String cacheKey,
     void Function()? checkStop, {
     bool foreground = true,
+    int? prefetchQueuedAt,
   }) async {
     final cached = await CacheManager().findCache(cacheKey);
     if (cached != null) {
@@ -439,6 +518,7 @@ class ReaderImageProvider
       cacheKey,
       checkStop,
       foreground,
+      prefetchQueuedAt: prefetchQueuedAt,
     );
     _inflightReads[cacheKey] = future;
     try {
@@ -452,8 +532,9 @@ class ReaderImageProvider
     String imageKey,
     String cacheKey,
     void Function()? checkStop,
-    bool foreground,
-  ) async {
+    bool foreground, {
+    int? prefetchQueuedAt,
+  }) async {
     final config = parseSmbConfigFromUrl(imageKey);
     final remotePath = smbPathFromUrl(imageKey);
 
@@ -497,14 +578,16 @@ class ReaderImageProvider
       }
       late final Uint8List data;
       var readStarted = false;
+      SmbClient? readClient;
       try {
         final client = await _obtainClient(config, high: foreground);
+        readClient = client;
         _activeReads++;
         readStarted = true;
         // ⭐ 复查修复（2026-10-24）：**不要给原生读加 Dart 层 timeout** ✗ ——
         // `.timeout()` **不会取消** libsmb2 的原生读 ✓；超时后我们若立刻断开 ✗，
         // 就会在 FFI 仍在运行时强杀 isolate ⇒ **0xc0000005 访问冲突** ✓（事件日志实证 ✓）。
-        // 原生层自己的超时来自 `SmbClient.connect(timeoutSeconds: 30)` ✓；
+        // 原生 connect 超时 30s（Dart 层 40s 兜底），且原生读本身没有 Dart 层超时 ✓；
         // 真卡死时靠 [_smbGate] 的**看门狗复位**兜底 ✓（见下面前台等待循环 ✓）。
         // ⭐ 2026-10-24：`high: foreground` ⇒ 前台读图优先，后台读（预取）让路 ✓。
         data = await client.readFile(remotePath, high: foreground);
@@ -513,8 +596,11 @@ class ReaderImageProvider
         }
       } catch (e) {
         // ⚠️ **绝不在读到一半时断开原生连接** ✗（正是 libsmb2 访问冲突的成因 ✓）
-        // ⇒ 只标记"稍后断开" ✓，下次读由 [_obtainClient] 自动重连 ✓。
-        _closeSharedRequested = true;
+        // ⇒ 只把这条连接**排队**等安全时机断 ✓，下次读由 [_obtainClient] 自动重连 ✓。
+        if (readClient != null && identical(_sharedClient, readClient)) {
+          _detachSharedClient(readClient);
+          _scheduleClientClose(readClient);
+        }
         Log.error('SMB Reader', e);
         rethrow;
       } finally {
@@ -522,10 +608,15 @@ class ReaderImageProvider
           _activeReads--;
         }
       }
-      // ⭐ 2026-10-25（用户反馈 ✓）：**只把"前台真正显示过的页"写盘** ✓ ——
-      // 原先连预取（后台 ✓）也写盘 ✗ ⇒ 一本 1000+ 页的漫画能吃掉 **5 GB** 磁盘 ✗；
-      // 用户要的是**云端流式阅读** ✓，不是把整本缓存到本地 ✗。
-      if (foreground) {
+      // ⭐ 2026-10-25：**预取也写盘** ✓ —— 但仅在"用户没有在排队后又翻页"的窗口内 ✓。
+      // 原实现 foreground:false 一律不写 ✗ ⇒ 预取读到的字节读完就丢，下一次翻到还要重读 ✗。
+      // 现在用 [prefetchQueuedAt] 判断：排队后若又发生了前台读（[_lastForegroundReadAt] 前进 ✓），
+      // 说明预取已经过时 ⇒ 不写盘 ✓（既保留流式体验，又不让整本漫画堆满磁盘 ✓）。
+      final prefetchStillInWindow =
+          foreground ||
+          (prefetchQueuedAt != null &&
+              _lastForegroundReadAt <= prefetchQueuedAt);
+      if (prefetchStillInWindow) {
         await CacheManager().writeCache(cacheKey, data, _smbPageCacheDuration);
       }
       _sharedClientLastUsed = DateTime.now();
@@ -536,7 +627,7 @@ class ReaderImageProvider
     } finally {
       _smbGate.release();
       // ⭐ 复查修复：**await** 断开（在闸门内完成 ✓），避免与下一个 connect 并发 ✗。
-      await _maybeCloseSharedClient();
+      await _maybeCloseSharedClients();
     }
   }
 
@@ -568,7 +659,14 @@ class ReaderImageProvider
       if (_lastForegroundReadAt > queuedAt) {
         return;
       }
-      await _readSmbPage(imageKey, cacheKey, null, foreground: false);
+      await _readSmbPage(
+        imageKey,
+        cacheKey,
+        null,
+        foreground: false,
+        // ⭐ 带上排队时间 ✓：读完后若用户已经翻走，这一页就不写盘 ✓（限窗口 ✓）。
+        prefetchQueuedAt: queuedAt,
+      );
     } catch (_) {
       // 静默：目标页可能不在、或 NAS 暂时不可达、或排队超时被丢弃 ✓ —— 都正常。
     }

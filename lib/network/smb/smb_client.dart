@@ -37,7 +37,28 @@ class SmbClient {
   /// ⭐ 2026-10-25：上次"连接失败"的时间 ✓ —— 用于**失败冷却** ✓（见 [connect] ✓）。
   DateTime? _lastConnectFailureAt;
 
+  /// ⭐ 2026-10-25：**连接单飞** ✓ —— 并发首连只允许一个 `Smb2Pool.connect` ✓。
+  ///
+  /// 成因：阅读器并发 2 时两条路径会同时走到 "`_pool == null` ⇒ 建池" ✗；
+  /// 先完成的池被后完成的覆盖 ⇒ 另一条连接池泄漏 ✓（每条 4 个 isolate ✓），
+  /// NAT/路由器侧也会多占一批 SMB 会话 ✓。现在所有调用者共享同一个 Future ✓。
+  Future<void>? _connecting;
+
   static const _connectCooldown = Duration(seconds: 15);
+
+  /// ⭐ 2026-10-25：**连接单独用 40s 预算** ✓ ——
+  /// 原先生效的是 [_opTimeout]（25s）✗，比底层 `Smb2Pool.connect(timeoutSeconds: 30)`
+  /// 还短 ⇒ 原生连接仍在跑时 Dart 层先超时、丢引用 ✗（每次超时泄漏一池 ✓）。
+  /// 现在给 connect 留出比原生 30s 更宽的 40s ✓，让它自己先返回失败 ✓。
+  static const _connectTimeout = Duration(seconds: 40);
+
+  /// ⭐ 2026-10-25：断开前等待在途原生操作的**上限** ✓（3~5s ✓）。
+  /// 底层 `Smb2Pool.disconnect()` 会给每个 worker 5s 后直接 `Isolate.kill` ✗；
+  /// 若同步 FFI 读还在跑就会被强杀 ⇒ `0xc0000005` ✓。先 drain 可以覆盖绝大多数读 ✓。
+  static const _disconnectDrainTimeout = Duration(seconds: 4);
+
+  /// ⭐ 2026-10-25：下载是长操作 ✓（大文件可能几分钟 ✓），不能套 25s 的普通操作预算 ✗。
+  static const _downloadTimeout = Duration(minutes: 10);
 
   /// ⭐ 2026-10-25：**单客户端内并发上限** ✓（连接池 4 个 worker ✓，留 1 个余量 ✓）。
   /// 只限制"同一客户端"✓ —— 阅读器与封面各用不同客户端 ✓ ⇒ 互不阻塞 ✓（流式阅读的关键 ✓）。
@@ -71,16 +92,22 @@ class SmbClient {
   }
 
   /// 断开并清空所有共享客户端 ✓（阅读器"重置 SMB 连接" / 退出时用 ✓）。
+  ///
+  /// ⭐ 2026-10-25：**并行 drain 再断** ✓ —— 每个 [disconnect] 内部都会先等在途
+  /// 原生操作（最多 [_disconnectDrainTimeout] ✓）；这里并行等待，避免 N 个客户端
+  /// 串行各等 4s ⇒ 重置按钮最多卡十几秒 ✗。
   static Future<void> closeAllShared() async {
     final list = _sharedClients.values.toList();
     _sharedClients.clear();
-    for (final client in list) {
-      try {
-        await client.disconnect();
-      } catch (_) {
-        // 单条失败不影响其它 ✓。
-      }
-    }
+    await Future.wait(
+      list.map((client) async {
+        try {
+          await client.disconnect();
+        } catch (_) {
+          // 单条失败不影响其它 ✓。
+        }
+      }),
+    );
   }
 
   /// Whether the client is currently connected.
@@ -92,7 +119,24 @@ class SmbClient {
   /// Connect to the SMB share.
   ///
   /// [high] = true 表示"用户在等" ✓（阅读器当前页 ✓）；后台任务用 false ✓。
-  Future<void> connect({bool high = false}) async {
+  Future<void> connect({bool high = false}) {
+    // ⭐ 2026-10-25：**单飞** ✓ —— 并发首连共享同一个 Future ✓（见 [_connecting] ✓）。
+    final pending = _connecting;
+    if (pending != null) {
+      return pending;
+    }
+    final future = _connect(high: high);
+    _connecting = future;
+    // 无论成功/失败都只清自己 ✓（防止旧 Future 的收尾把新连接标记清掉 ✗）。
+    future.whenComplete(() {
+      if (identical(_connecting, future)) {
+        _connecting = null;
+      }
+    }).ignore();
+    return future;
+  }
+
+  Future<void> _connect({required bool high}) async {
     // ⚠️ 2026-10-24：底层库（`dart_smb2` → libsmb2）**没有端口参数** ✗ ⇒ 非 445 端口
     // 原来会**静默连到 445** ✗（用户只看到"连不上"、查不出原因 ✓）⇒ 这里改为**明确报错** ✓。
     if (config.port != 445) {
@@ -107,26 +151,39 @@ class SmbClient {
         DateTime.now().difference(lastFailure) < _connectCooldown) {
       throw "SMB 连接失败（刚失败过，请稍后重试；或点「设置 → 网络 → SMB 服务器 → 重置 SMB 连接」）。";
     }
-    if (_pool != null) return;
+    if (_pool != null) {
+      // 已连着也算一次成功 ✓：清掉冷却与 dead 标记 ✓，避免复用连接却继续快速失败 ✗。
+      _lastConnectFailureAt = null;
+      _dead = false;
+      return;
+    }
     try {
-      await _guard(() async {
-        // ⭐ 已连接就直接复用 ✓（共享客户端会被频繁 `connect()` ✓）。
-        if (_pool != null) return;
-        _pool = await Smb2Pool.connect(
-          host: config.host,
-          share: config.share,
-          user: config.username,
-          password: config.password,
-          domain: config.domain,
-          timeoutSeconds: 30,
-          workers: 4,
-          // ⭐ 2026-10-24：协议选项透传 ✓（服务器"强制签名/加密"或需指定方言时用得上 ✓）。
-          signing: config.signing,
-          seal: config.seal,
-          version: config.version,
-        );
-        _dead = false;
-      }, high: high);
+      await _guard(
+        () async {
+          // ⭐ 已连接就直接复用 ✓（共享客户端会被频繁 `connect()` ✓）。
+          if (_pool != null) return;
+          _pool = await Smb2Pool.connect(
+            host: config.host,
+            share: config.share,
+            user: config.username,
+            password: config.password,
+            domain: config.domain,
+            // 原生 30s 先返回 ✓，Dart 层 [_connectTimeout] 40s 兜底 ✓ ——
+            // 原先 Dart 层只有 25s，反而比原生 30s 先超时 ✗（连接还在跑就丢引用 ✓）。
+            timeoutSeconds: 30,
+            workers: 4,
+            // ⭐ 2026-10-24：协议选项透传 ✓（服务器"强制签名/加密"或需指定方言时用得上 ✓）。
+            signing: config.signing,
+            seal: config.seal,
+            version: config.version,
+          );
+          _dead = false;
+        },
+        high: high,
+        timeout: _connectTimeout,
+      );
+      _lastConnectFailureAt = null;
+      _dead = false;
     } catch (e) {
       _lastConnectFailureAt = DateTime.now();
       rethrow;
@@ -134,10 +191,16 @@ class SmbClient {
   }
 
   /// Disconnect from the SMB share and release resources.
+  ///
+  /// ⭐ 2026-10-25（P0 ✓）：**先等在途原生操作跑完，再 disconnect** ✓ ——
+  /// `dart_smb2` 的 worker 在 `close` 5s 后直接 `Isolate.kill` ✓；而读文件是同步 FFI ✓，
+  /// 读到一半被 kill 就是 `0xc0000005` ✓。所以先 [_ops.drain]（最多 4s ✓）再断 ✓。
   Future<void> disconnect() async {
     final pool = _pool;
     if (pool == null) return;
+    // 先摘引用 ✓：排队中的操作醒来会因 `_p` 为空快速失败 ✓，不会在断开后又发原生调用 ✗。
     _pool = null;
+    await _ops.drain(timeout: _disconnectDrainTimeout);
     await SmbSerial.run(() async {
       await pool.disconnect();
     });
@@ -164,6 +227,8 @@ class SmbClient {
   /// 此时断开会造成 `0xc0000005` 访问冲突 ✓（事件日志实证 ✓）。
   /// 做法是**丢弃引用** ✓：旧连接自生自灭（泄漏一条 ✓），后续操作**新建连接** ✓
   /// ⇒ 用户看到"超时，请重试"✓，而不是永远转圈 ✗。
+  /// ⭐ 2026-10-25：**只在 connection / timeout 时作废连接** ✓ ——
+  /// `unknown` 可能只是文件/权限/协议层的普通错误 ✓，把它也当断线会无谓丢池 ✗。
   ///
   /// ⭐ 2026-10-25（第二轮，用户反馈 ✓）：**数据操作改为"单客户端内并发 ≤3"** ✓ ——
   /// 之前走**全局串行闸门** ✗ ⇒ 所有读图/封面/扫描排成一条队 ✗ ⇒ 表现为
@@ -171,22 +236,34 @@ class SmbClient {
   /// `dart_smb2` 的连接池本身有 4 个 worker ✓（就是为并发准备的 ✓），
   /// 只要**不在读的过程中断开连接** ✓ 就是安全的 ✓（崩溃真因是断开 ✓，已规避 ✓）。
   /// 全局闸门现在只保留给 **connect / disconnect** 这类状态切换 ✓。
-  Future<T> _guard<T>(Future<T> Function() op, {bool high = false}) async {
-    await _ops.acquire();
+  Future<T> _guard<T>(
+    Future<T> Function() op, {
+    bool high = false,
+    Duration timeout = _opTimeout,
+  }) async {
+    // ⭐ high 现在**真的生效** ✓：由 [_OpLimiter] 分成 high / low 两条等待队列 ✓，
+    // 前台读图不会排在一堆封面/预取后面 ✗。
+    await _ops.acquire(high: high);
     try {
-      return await op().timeout(_opTimeout);
+      final operation = op();
+      // ⭐ 记录"原生 Future 尚未结束" ✓ —— 即使 Dart 层 timeout 先返回，
+      // disconnect 也要等它真正结束再断 ✓（`timeout` 不会取消原生读 ✓）。
+      _ops.nativeStarted();
+      operation.whenComplete(_ops.nativeFinished).ignore();
+      return await operation.timeout(timeout);
     } on TimeoutException {
       _invalidate();
       throw "SMB 操作超时（服务器无响应）。可在「设置 → 网络 → SMB 服务器」"
           "点「重置 SMB 连接」后重试。";
     } on Smb2Exception catch (e) {
       if (e.type == Smb2ErrorType.connection ||
-          e.type == Smb2ErrorType.timeout ||
-          e.type == Smb2ErrorType.unknown) {
+          e.type == Smb2ErrorType.timeout) {
         _invalidate();
       }
       rethrow;
     } finally {
+      // 信号量名额在 Dart 层结束时归还 ✓；[nativeStarted]/[nativeFinished] 单独统计
+      // "原生是否真的跑完" ✓，供 disconnect 的 drain 使用 ✓。
       _ops.release();
     }
   }
@@ -292,6 +369,8 @@ class SmbClient {
         onProgress: onProgress,
         isCanceled: isCanceled,
       ),
+      // 下载是长任务 ✓：大文件不能用 25s 的普通操作预算 ✗（否则每次都会误超时 ✓）。
+      timeout: _downloadTimeout,
     );
   }
 
@@ -351,28 +430,72 @@ class SmbClient {
 /// 表现为"像顺序加载、最后一页要等前面全加载完" ✗ —— 完全不是流式阅读 ✓。
 /// `dart_smb2` 的连接池有 4 个 worker ✓（本就支持并发 ✓），崩溃真因是"读中途断开"✗，
 /// 已规避 ✓ ⇒ 这里只在**单个客户端内**限并发 ✓，不同客户端（阅读器 / 封面）互不阻塞 ✓。
+///
+/// ⭐ 2026-10-25（P0/P1 ✓）：
+/// - **high / low 双队列** ✓：原 `high` 进入 `_guard` 后是死参数 ✗（只有一条 FIFO ✓），
+///   前台读图会被后台预取/封面堵住 ✗。现在 release 先唤醒 high ✓。
+/// - **inflight + drain()** ✓：记录"原生 Future 真正结束"的数量 ✓（不是 Dart timeout ✓），
+///   断开前先等它归零 ✓，避免 `Smb2Pool.disconnect` 5s 后 kill isolate 撞上同步 FFI ✗。
 class _OpLimiter {
   _OpLimiter(this.max);
 
   final int max;
-  int _current = 0;
-  final List<Completer<void>> _waiters = [];
 
-  Future<void> acquire() {
+  /// 已发放的信号量名额 ✓（含正在排队等待移交的 ✓）。
+  int _current = 0;
+
+  /// 原生 Future **尚未结束** 的数量 ✓（Dart timeout 先返回时仍保持 >0 ✓）。
+  int _inflight = 0;
+
+  /// drain 的等待者 ✓（多个 disconnect 共享同一个 Completer ✓）。
+  Completer<void>? _drained;
+
+  final List<Completer<void>> _high = [];
+  final List<Completer<void>> _low = [];
+
+  Future<void> acquire({required bool high}) {
     if (_current < max) {
       _current++;
       return Future.value();
     }
     final c = Completer<void>();
-    _waiters.add(c);
+    (high ? _high : _low).add(c);
     return c.future;
   }
 
   void release() {
-    if (_waiters.isNotEmpty) {
-      _waiters.removeAt(0).complete();
+    final queue = _high.isNotEmpty ? _high : _low;
+    if (queue.isNotEmpty) {
+      // 名额直接移交给等待者 ✓：_current 不变 ✓。
+      queue.removeAt(0).complete();
     } else if (_current > 0) {
       _current--;
     }
+  }
+
+  /// 标记一个原生操作开始 ✓（在 `op()` 返回 Future 之后同步调用 ✓）。
+  void nativeStarted() {
+    _inflight++;
+  }
+
+  /// 标记一个原生操作真正结束 ✓（成功/失败/超时后原生 Future 完成 ✓）。
+  void nativeFinished() {
+    if (_inflight > 0) {
+      _inflight--;
+    }
+    if (_inflight == 0) {
+      final c = _drained;
+      _drained = null;
+      if (c != null && !c.isCompleted) {
+        c.complete();
+      }
+    }
+  }
+
+  /// 等在途原生操作归零 ✓，最多 [timeout] ✓（3~5s，由调用方给 ✓）。
+  Future<void> drain({required Duration timeout}) async {
+    if (_inflight == 0) return;
+    final c = _drained ??= Completer<void>();
+    await c.future.timeout(timeout, onTimeout: () {});
   }
 }

@@ -181,6 +181,18 @@ class LocalComic with HistoryMixin implements Comic {
 }
 
 class LocalManager with ChangeNotifier {
+  /// ⭐ 修复（2026-10-24）：本地目录与 SMB 目录**共用同一份图片扩展名白名单** ✓ ——
+  /// 原先只有 SMB 分支过滤 ✗，本地分支会把 `pdf/cbz/zip` 等当图片交给阅读器 ✓。
+  static const imageExtensions = [
+    'jpg',
+    'jpeg',
+    'png',
+    'webp',
+    'gif',
+    'jpe',
+    'bmp',
+  ];
+
   /// 供外部（如 SMB 导入流程）触发监听者刷新。
   void notifyChanges() => notifyListeners();
   static LocalManager? _instance;
@@ -499,6 +511,11 @@ class LocalManager with ChangeNotifier {
         if (entity.name.startsWith('.')) {
           continue;
         }
+        // ⭐ 修复（2026-10-24）：本地分支同样按图片白名单过滤 ✓ ——
+        // 否则 `pdf/cbz/zip` 会被当成页面交给阅读器 ✗（SMB 分支已过滤 ✓）。
+        if (!imageExtensions.contains(entity.extension.toLowerCase())) {
+          continue;
+        }
         files.add(entity);
       }
     }
@@ -553,16 +570,7 @@ class LocalManager with ChangeNotifier {
       // `pdf/cbz/zip/rar/cbr/cb7`，而本函数的消费方是**阅读器取图**与**图片收藏**，
       // 拿到压缩包/PDF 会让阅读器把它们当图片渲染（页面错乱）。对照本地扫描的
       // `utils/import_comic.dart` 只列图片扩展名，这里保持一致。
-      const imageExtensions = [
-        'jpg',
-        'jpeg',
-        'png',
-        'webp',
-        'gif',
-        'jpe',
-        'bmp',
-      ];
-
+      // ⭐ 2026-10-24：白名单上移到类常量 ✓，本地分支与 SMB 分支共用 ✓。
       var imageEntries = entries.where((e) {
         if (!e.isFile) return false;
         if (e.name.startsWith('cover.')) return false;

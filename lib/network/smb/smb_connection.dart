@@ -50,8 +50,19 @@ class SmbConnection {
   ///
   /// 本方法：先按**当前配置**试 ✓；失败就**逐项降级**再试 ✓（不改用户已保存的配置 ✗），
   /// 并把"哪一套参数能连"直接告诉用户 ✓ ⇒ 用户照提示改即可 ✓。
+  /// ⭐ 2026-10-25：**诊断总预算 30s** ✓ —— 最多 1 次原配置 + 若干降级，
+  /// 原先每项都 10s 且可能重复试同一套参数 ✗ ⇒ 用户能等 1 分钟以上 ✗。
+  static const _diagnosisBudget = Duration(seconds: 30);
+
+  /// 单次探测上限 ✓（与 [_diagnosisBudget] 共同约束总时长 ✓）。
+  static const _probeTimeout = Duration(seconds: 10);
+
   Future<String?> testConnectionWithDiagnosis() async {
-    final originalError = await _testWith(config);
+    final deadline = DateTime.now().add(_diagnosisBudget);
+    final originalError = await _testWith(
+      config,
+      timeout: _timeoutWithin(deadline),
+    );
     if (originalError == null) return null;
 
     final hint = _hintFor(originalError);
@@ -73,29 +84,50 @@ class SmbConnection {
 
     // ⭐ 降级顺序（2026-10-25 按真实设备调整 ✓）：
     // 先把用户**只打开的那一项**单独关掉 ✓（最可能就是它 ✓），再逐级降版本 ✓。
-    final fallbacks = <String, SmbConfig>{
-      if (config.signing) '关闭「要求消息签名」（其它保持不变）': config.copyWith(signing: false),
-      if (config.seal) '关闭「SMB3 加密」（其它保持不变）': config.copyWith(seal: false),
-      '签名与加密都关闭（其它保持不变）': config.copyWith(signing: false, seal: false),
-      '签名与加密都关闭，协商版本 = 自动': config.copyWith(
-        signing: false,
-        seal: false,
-        version: Smb2Version.any,
-      ),
-      '签名与加密都关闭，协商版本 = SMB 3.0.2': config.copyWith(
-        signing: false,
-        seal: false,
-        version: Smb2Version.v302,
-      ),
-      '签名与加密都关闭，协商版本 = SMB 2.1': config.copyWith(
-        signing: false,
-        seal: false,
-        version: Smb2Version.v210,
-      ),
-    };
+    // ⭐ 2026-10-25：**按实际配置去重** ✓ —— 例如本来 signing 就是 false 时，
+    // "关签名"与"签名加密都关闭"是同一套参数 ✗，重复试只会白等 10s ✓。
+    final fallbacks = <MapEntry<String, SmbConfig>>[];
+    final seen = <String>{_configKey(config)};
+    void addFallback(String label, SmbConfig target) {
+      if (seen.add(_configKey(target))) {
+        fallbacks.add(MapEntry(label, target));
+      }
+    }
 
-    for (final entry in fallbacks.entries) {
-      final err = await _testWith(entry.value);
+    if (config.signing) {
+      addFallback('关闭「要求消息签名」（其它保持不变）', config.copyWith(signing: false));
+    }
+    if (config.seal) {
+      addFallback('关闭「SMB3 加密」（其它保持不变）', config.copyWith(seal: false));
+    }
+    addFallback(
+      '签名与加密都关闭（其它保持不变）',
+      config.copyWith(signing: false, seal: false),
+    );
+    addFallback(
+      '签名与加密都关闭，协商版本 = 自动',
+      config.copyWith(signing: false, seal: false, version: Smb2Version.any),
+    );
+    addFallback(
+      '签名与加密都关闭，协商版本 = SMB 3.0.2',
+      config.copyWith(signing: false, seal: false, version: Smb2Version.v302),
+    );
+    addFallback(
+      '签名与加密都关闭，协商版本 = SMB 2.1',
+      config.copyWith(signing: false, seal: false, version: Smb2Version.v210),
+    );
+
+    var budgetExhausted = false;
+    for (final entry in fallbacks) {
+      final remaining = deadline.difference(DateTime.now());
+      if (remaining <= Duration.zero) {
+        budgetExhausted = true;
+        break;
+      }
+      final err = await _testWith(
+        entry.value,
+        timeout: _timeoutWithin(deadline),
+      );
       if (err == null) {
         return '$originalError$hint\n\n'
             '✅ 诊断：用「${entry.key}」可以连接 ✓\n'
@@ -103,11 +135,30 @@ class SmbConnection {
       }
     }
 
+    final budgetNote = budgetExhausted
+        ? '\n\n⏱ 诊断总时长已达 ${_diagnosisBudget.inSeconds} 秒，剩余降级项未再尝试 ✓'
+              '（可先按上面的单项提示手动调整 ✓）。'
+        : '';
     return '$originalError$hint\n\n'
-        '❌ 自动降级（关签名 / 关加密 / 自动版本 / 3.0.2 / 2.1）也连不上 ✗\n'
+        '❌ 自动降级（关签名 / 关加密 / 自动版本 / 3.0.2 / 2.1）也连不上 ✗$budgetNote\n'
         '请检查：① 服务器是否**只启用了 SMB1**（本应用不支持 SMB1 ✗）\n'
         '② 共享名与账号密码 ✓ ③ 端口是否为 445 ✓';
   }
+
+  /// 在总预算内给单次探测分配时长 ✓（至少 1s，避免 0 时长造成假超时 ✓）。
+  static Duration _timeoutWithin(DateTime deadline) {
+    final remaining = deadline.difference(DateTime.now());
+    if (remaining <= Duration.zero) {
+      return const Duration(seconds: 1);
+    }
+    return remaining < _probeTimeout ? remaining : _probeTimeout;
+  }
+
+  /// 参数指纹 ✓（[SmbConfig] 的 `==` 只比较 host/port/share/user ✓，
+  /// 不足以判断"降级项是否重复" ✗，所以这里显式带上协议选项 ✓）。
+  static String _configKey(SmbConfig c) =>
+      '${c.host}|${c.port}|${c.share}|${c.username}|${c.password}|'
+      '${c.domain}|${c.signing}|${c.seal}|${c.version.name}';
 
   /// 常见 SMB 错误码/错误文本 → 中文提示 ✓（只做提示 ✓，不改变连接行为 ✓）。
   ///
@@ -141,31 +192,36 @@ class SmbConnection {
 
   static String _hintFor(String message) => hintFor(message);
 
-  Future<String?> _testWith(SmbConfig target) async {
+  Future<String?> _testWith(
+    SmbConfig target, {
+    Duration timeout = _probeTimeout,
+  }) async {
     // ⚠️ 2026-10-24：底层库无端口参数 ⇒ 非 445 端口无法测试，直接给出明确原因 ✓（不再静默失败 ✗）。
     if (target.port != 445) {
       return '端口 ${target.port} 暂不支持：底层库仅支持 445 端口。';
     }
+    // 原生 connect 超时只接受秒 ✓；严格限制在 1~10s ✓（预算更短时按预算走 ✓）。
+    final seconds = timeout.inSeconds < 1
+        ? 1
+        : (timeout.inSeconds > 10 ? 10 : timeout.inSeconds);
+    Smb2Pool? pool;
     try {
-      final pool = await Smb2Pool.connect(
+      pool = await Smb2Pool.connect(
         host: target.host,
         share: target.share,
         user: target.username,
         password: target.password,
         domain: target.domain,
-        timeoutSeconds: 10,
+        timeoutSeconds: seconds,
         workers: 1,
         // ⭐ 2026-10-24：协议选项透传 ✓（与正式连接保持一致 ✓，避免"测试通过但实际连不上" ✗）。
         signing: target.signing,
         seal: target.seal,
         version: target.version,
       );
-      try {
-        await pool.listDirectory('');
-        return null;
-      } finally {
-        await pool.disconnect();
-      }
+      // 列表操作也要受本次探测预算约束 ✓（服务器可能接受连接却不回目录 ✓）。
+      await pool.listDirectory('').timeout(timeout);
+      return null;
     } on Smb2Exception catch (e) {
       final type = e.type;
       if (type == Smb2ErrorType.auth) {
@@ -180,8 +236,20 @@ class SmbConnection {
       } else {
         return 'SMB error: ${e.message}';
       }
-    } catch (e) {
+    } on Exception catch (e) {
+      // ⭐ 只兜 Exception ✓：Error（断言/类型错误等）应继续上抛 ✓，
+      // 否则会把程序缺陷伪装成"连接失败" ✗。
       return e.toString();
+    } finally {
+      if (pool != null) {
+        try {
+          // ⚠️ disconnect 失败不能覆盖上面的连接结论 ✗ ——
+          // 原先 finally 里直接 await，断开异常会盖掉 "连接成功/具体失败原因" ✗。
+          await pool.disconnect();
+        } catch (_) {
+          // 探测已经结束，断开失败只影响资源回收 ✓。
+        }
+      }
     }
   }
 }

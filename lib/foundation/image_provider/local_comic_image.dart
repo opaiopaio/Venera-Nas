@@ -43,6 +43,30 @@ class Semaphore {
   }
 }
 
+/// SMB 封面加载的**共用**并发闸门与「已知缺失」缓存 ✓。
+///
+/// ⭐ 修复（2026-10-24）：原先 `LocalComicImageProvider` 与 `HistoryImageProvider`
+/// **各持一套** `Semaphore(2)` 与失败集合 ✗ —— 同一张封面在两个入口下会各记一次、
+/// 并发上限实际翻倍（4 ✓），坏盘封面也会被重复重试 ✓。
+/// 现在统一走这里 ✓；清理入口见 [clearFailures] ✓。
+class SmbCoverLoader {
+  SmbCoverLoader._();
+
+  /// SMB 封面并发 2（实测：并发再高会拖慢阅读器读图 ✓）。
+  static final Semaphore semaphore = Semaphore(2);
+
+  static final Set<String> _failed = {};
+
+  static String cacheKey(String comicId) => 'smb_cover:$comicId';
+
+  static bool isFailed(String cacheKey) => _failed.contains(cacheKey);
+
+  static void markFailed(String cacheKey) => _failed.add(cacheKey);
+
+  /// ⭐ 清理入口 ✓：SMB 服务器配置变更 / 换盘 / 手动清缓存后调用 ⇒ 允许重新尝试 ✓。
+  static void clearFailures() => _failed.clear();
+}
+
 class LocalComicImageProvider
     extends BaseImageProvider<image_provider.LocalComicImageProvider> {
   /// Image provider for normal image.
@@ -100,16 +124,13 @@ class LocalComicImageProvider
     return data;
   }
 
-  static final _smbSemaphore = Semaphore(2);
-
-  /// ⭐ 2026-10-25：**已知缺失封面**缓存 ✓ —— 坏盘/被删的漫画会反复加载失败 ✓，
-  /// 每次重试都要占用 SMB 连接与全局闸门 ✗ ⇒ 扫描/读图排队超时 ✓（实测日志 ✓）。
-  static final Set<String> _failedSmbCovers = {};
+  /// ⭐ 2026-10-25：**已知缺失封面**缓存已上移到 [SmbCoverLoader] ✓ ——
+  /// 与历史封面共用同一份 ✓（原先各持一套 ⇒ 失败记录不共享 ✗）。
 
   Future<Uint8List> _loadSmbCover() async {
     // Check disk cache first
-    final cacheKey = 'smb_cover:${comic.id}';
-    if (_failedSmbCovers.contains(cacheKey)) {
+    final cacheKey = SmbCoverLoader.cacheKey(comic.id);
+    if (SmbCoverLoader.isFailed(cacheKey)) {
       throw "Invalid Status Code: 404 (SMB cover missing, cached failure)";
     }
     final cached = await CacheManager().findCache(cacheKey);
@@ -135,7 +156,7 @@ class LocalComicImageProvider
     final remoteCoverPath = smbPathFromUrl(coverUrl);
 
     final client = SmbClient.shared(config);
-    await _smbSemaphore.acquire();
+    await SmbCoverLoader.semaphore.acquire();
     try {
       await client.connect();
       try {
@@ -192,14 +213,14 @@ class LocalComicImageProvider
       }
     } finally {
       // ⭐ 共享客户端：**不在此断开** ✓（统一由 SmbClient.closeAllShared / 重置入口管理 ✓）。
-      _smbSemaphore.release();
+      SmbCoverLoader.semaphore.release();
     }
   }
 
   /// ⭐ 2026-10-25：封面**确定缺失** ⇒ 记住并抛"404" ✓ ——
   /// 上层图片加载看到 `Invalid Status Code: 404` 就**不再重试** ✓（避免反复占用 SMB 连接 ✗）。
   static Never _failSmbCover(String cacheKey) {
-    _failedSmbCovers.add(cacheKey);
+    SmbCoverLoader.markFailed(cacheKey);
     throw "Invalid Status Code: 404 (SMB cover missing)";
   }
 
@@ -215,8 +236,11 @@ class LocalComicImageProvider
         if (decoded == null) return bytes.toList();
 
         // Resize to max 512px width, keeping aspect ratio via auto-computed height.
+        // ⭐ 修复（2026-10-24）：**仅当宽度超限才缩** ✓ ——
+        // 原条件含 `height > maxSide` ✗ ⇒ 竖版小图（如 100x1000）会被 `copyResize(width: 512)`
+        // **放大** ✗（缓存更大、还糊 ✓）；只按宽度限制也符合 width-only 不变量 ✓。
         final maxSide = 512;
-        if (decoded.width > maxSide || decoded.height > maxSide) {
+        if (decoded.width > maxSide) {
           final resized = img.copyResize(decoded, width: maxSide);
           return img.encodeJpg(resized, quality: 85);
         }
@@ -239,5 +263,5 @@ class LocalComicImageProvider
   /// 与本类 `key` 不同 ⇒ 原 `delete(key)` 清不掉坏封面缓存（会永久残留、导致坏封面一直加载失败）。
   /// 覆写后解码失败的清理即可命中该缓存文件。
   @override
-  String get cacheKey => 'smb_cover:${comic.id}';
+  String get cacheKey => SmbCoverLoader.cacheKey(comic.id);
 }

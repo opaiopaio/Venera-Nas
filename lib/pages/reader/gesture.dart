@@ -212,7 +212,17 @@ class _ReaderGestureDetectorState
   );
 
   void onTap(Offset location) {
-    if (reader._imageViewController!.handleOnTap(location)) {
+    final controller = reader._imageViewController;
+    // ⭐ 修复（2026-10-25，P0）：**判空后再用** ✗→✓ ——
+    // 章节加载期 `images.dart` 只返回 loading、从不设置 controller ✓，
+    // 切章期旧模式的 controller 释放后也可能为空 ✓ ⇒ 原先 `reader._imageViewController!`
+    // 强解包会直接空指针崩溃 ✗（进入阅读器后第一下点击即可触发 ✓）。
+    // 为空时**退化为开关工具栏** ✓（与 `reader.dart` 里 `toPage` 的兜底思路一致 ✓）。
+    if (controller == null) {
+      context.readerScaffold.openOrClose();
+      return;
+    }
+    if (controller.handleOnTap(location)) {
       return;
     } else if (context.readerScaffold.isOpen) {
       context.readerScaffold.openOrClose();

@@ -44,6 +44,28 @@ class _ChapterCommentsPageState extends State<ChapterCommentsPage> {
   var controller = TextEditingController();
   bool sending = false;
 
+  /// ⭐ 修复（2026-10-25，P2）：**请求守卫** ✗→✓ ——
+  /// 首次加载原先在 `build` 里裸调 `firstLoad()` ✗ ⇒ 加载期间的任何一次重建
+  /// （主题/父级 `setState`/键盘弹出 ✓）都会**再发一遍请求** ✓，`await` 后还可能
+  /// 在已 dispose 的 State 上 `setState` ✗。现在用标志位收口：一次"加载中"只发一次 ✓。
+  bool _firstLoadStarted = false;
+
+  /// 翻页加载同样在 `build` 里触发 ✓，加守卫避免同一页被重复请求 / 重复追加评论 ✓。
+  bool _loadingMore = false;
+
+  @override
+  void dispose() {
+    // ⭐ 修复（2026-10-25，P2）：**controller 必须释放** ✗→✓（原先从未 dispose ✓）。
+    controller.dispose();
+    super.dispose();
+  }
+
+  void _ensureFirstLoad() {
+    if (_firstLoadStarted) return;
+    _firstLoadStarted = true;
+    firstLoad();
+  }
+
   void firstLoad() async {
     var res = await widget.source.chapterCommentsLoader!(
       widget.comicId,
@@ -51,12 +73,14 @@ class _ChapterCommentsPageState extends State<ChapterCommentsPage> {
       1,
       widget.replyComment?.id,
     );
+    // ⭐ 修复（2026-10-25）：`await` 之后先查存活 ✓（原先错误分支直接 setState ✗）。
+    if (!mounted) return;
     if (res.error) {
       setState(() {
         _error = res.errorMessage;
         _loading = false;
       });
-    } else if (mounted) {
+    } else {
       var filteredComments = res.data
           .where((c) => !_shouldBlockComment(c))
           .toList();
@@ -64,19 +88,26 @@ class _ChapterCommentsPageState extends State<ChapterCommentsPage> {
         _comments = filteredComments;
         _loading = false;
         maxPage = res.subData;
+        // 重试成功后必须清掉旧错误 ✓，否则仍显示错误页 ✗。
+        _error = null;
       });
     }
+    // 允许"重试"再次发起 ✓（成功后 `_loading == false`，build 不会再调 ✓）。
+    _firstLoadStarted = false;
   }
 
   void loadMore() async {
+    if (_loadingMore) return;
+    _loadingMore = true;
     var res = await widget.source.chapterCommentsLoader!(
       widget.comicId,
       widget.epId,
       _page + 1,
       widget.replyComment?.id,
     );
+    if (!mounted) return;
     if (res.error) {
-      if (!mounted) return;
+      _loadingMore = false;
       context.showMessage(message: res.errorMessage ?? "Unknown Error");
     } else {
       var filteredComments = res.data
@@ -89,6 +120,7 @@ class _ChapterCommentsPageState extends State<ChapterCommentsPage> {
           maxPage = _page;
         }
       });
+      _loadingMore = false;
     }
   }
 
@@ -113,7 +145,8 @@ class _ChapterCommentsPageState extends State<ChapterCommentsPage> {
 
   Widget buildBody(BuildContext context) {
     if (_loading) {
-      firstLoad();
+      // ⭐ 修复（2026-10-25）：**不在 build 里直接发请求** ✓ —— 走带守卫的入口 ✓。
+      _ensureFirstLoad();
       return const Center(child: CircularProgressIndicator());
     } else if (_error != null) {
       return NetworkError(
@@ -595,10 +628,22 @@ class _EmbeddedChapterCommentsPageState
   var textController = TextEditingController();
   bool sending = false;
 
+  /// ⭐ 修复（2026-10-25，P2）：**请求守卫** ✓ —— 与独立页同源问题：
+  /// 首次加载原先在 `build`/`_buildBody` 里裸调 `firstLoad()` ✗ ⇒ 加载期间每次重建
+  /// 都重复发请求 ✓；翻页加载同理 ✓。见 `_ChapterCommentsPageState` 的同类注释 ✓。
+  bool _firstLoadStarted = false;
+  bool _loadingMore = false;
+
   @override
   void dispose() {
     textController.dispose();
     super.dispose();
+  }
+
+  void _ensureFirstLoad() {
+    if (_firstLoadStarted) return;
+    _firstLoadStarted = true;
+    firstLoad();
   }
 
   void firstLoad() async {
@@ -623,22 +668,26 @@ class _EmbeddedChapterCommentsPageState
         _comments = filteredComments;
         _loading = false;
         maxPage = res.subData;
+        _error = null;
       });
     }
+    _firstLoadStarted = false;
   }
 
   void loadMore() async {
+    if (_loadingMore) return;
+    _loadingMore = true;
     var res = await widget.source.chapterCommentsLoader!(
       widget.comicId,
       widget.epId,
       _page + 1,
       null,
     );
+    if (!mounted) return;
     if (res.error) {
-      if (mounted) {
-        context.showMessage(message: res.errorMessage ?? "Unknown Error");
-      }
-    } else if (mounted) {
+      _loadingMore = false;
+      context.showMessage(message: res.errorMessage ?? "Unknown Error");
+    } else {
       var filteredComments = res.data
           .where((c) => !_shouldBlockComment(c))
           .toList();
@@ -649,6 +698,7 @@ class _EmbeddedChapterCommentsPageState
           maxPage = _page;
         }
       });
+      _loadingMore = false;
     }
   }
 
@@ -719,7 +769,8 @@ class _EmbeddedChapterCommentsPageState
 
   Widget _buildBody() {
     if (_loading) {
-      firstLoad();
+      // ⭐ 修复（2026-10-25）：走带守卫的入口 ✓（不在 build 里直接发请求 ✓）。
+      _ensureFirstLoad();
       return const Center(child: CircularProgressIndicator());
     } else if (_error != null) {
       return NetworkError(
