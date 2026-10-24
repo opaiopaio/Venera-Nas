@@ -47,9 +47,9 @@ void main(List<String> args) {
         // ⭐ 2026-10-10（用户要求 ✓）：**首帧背景图预热** ✓ ——
         // 只把图**填进 Flutter 自己的 `ImageCache`** ✓（不自建缓存 ✗、不改 widget 的解析路径 ✗），
         // 这样首帧的 `BackgroundSlice` 能直接命中缓存 ⇒ 第一帧就有图 ✓（消除"白一下" ✓）。
-        // ⚠️ 仅 **Android** ✓（该白闪是 Android 冷启动特有 ✓，桌面路径**保持原样** ✗ 不动 ✓）；
-        // 内部自带**令牌超时 + 静默回退** ✓ ⇒ 绝不会拖慢启动、也不会抛异常 ✓。
-        if (App.isAndroid) {
+        // ⭐ 2026-10-25（用户实测 ✓）：原先**只对 Android** 生效 ✗ ⇒ Windows 冷启动仍会
+        // "UI+白底 → 背景闪出来" ✗。现在 **Android + Windows 都预热** ✓（内部仍有令牌超时 + 静默回退 ✓）。
+        if (App.isAndroid || App.isWindows) {
           await preloadBackgroundImageIntoCache();
         }
         runApp(const MyApp());
