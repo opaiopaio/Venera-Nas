@@ -1,5 +1,31 @@
 part of 'reader.dart';
 
+/// ⭐ 2026-10-25（用户要求 ✓）：**阅读器图片区的底色** ✓
+///
+/// 背景（用户原话 ✓）：图片背后原先是一层**白底**（主题 surface ✓）⇒
+/// 翻页/加载时"像闪光弹一样" ✗。现在可配置 ✓：
+/// - `readerBackgroundEnabled == false` ⇒ **透明** ✓ ⇒ 直接露出 App 背景图 ✓
+/// - `readerBackgroundColor`：
+///   - `system`（默认 ✓）⇒ 跟随主题（浅色白 / 深色黑 ✓，**保持现状观感** ✓）
+///   - `transparent` ⇒ 透明 ✓
+///   - `#RRGGBB` ⇒ 自定义 ✓
+///
+/// ⚠️ 注意 ✓：只影响**图片画布**这一层 ✓；加载中的**图标/错误报告仍有遮罩** ✓
+///（它们用 `windowOverlayColor()` / `surfaceContainer*` ✓，用户自定义遮罩时自动跟随 ✓）。
+Color readerImageBackgroundColor(BuildContext context) {
+  final enabled = appdata.settings['readerBackgroundEnabled'] != false;
+  if (!enabled) return Colors.transparent;
+  final raw = (appdata.settings['readerBackgroundColor'] ?? 'system')
+      .toString();
+  if (raw == 'transparent') return Colors.transparent;
+  if (raw.startsWith('#') && raw.length == 7) {
+    final value = int.tryParse(raw.substring(1), radix: 16);
+    if (value != null) return Color(0xFF000000 | value);
+  }
+  // system ⇒ 跟随主题 ✓（原本就是这个行为 ✓）
+  return Theme.of(context).colorScheme.surface;
+}
+
 class _ReaderImages extends StatefulWidget {
   const _ReaderImages({super.key});
 
@@ -530,7 +556,9 @@ class _GalleryModeState extends State<_GalleryMode>
         }
       },
       child: PhotoViewGallery.builder(
-        backgroundDecoration: BoxDecoration(color: context.colorScheme.surface),
+        backgroundDecoration: BoxDecoration(
+          color: readerImageBackgroundColor(context),
+        ),
         reverse: reader.mode == ReaderMode.galleryRightToLeft,
         scrollDirection: reader.mode == ReaderMode.galleryTopToBottom
             ? Axis.vertical
@@ -595,7 +623,7 @@ class _GalleryModeState extends State<_GalleryMode>
             minScale: PhotoViewComputedScale.contained * 1.0,
             maxScale: PhotoViewComputedScale.covered * 10.0,
             backgroundDecoration: BoxDecoration(
-              color: context.colorScheme.surface,
+              color: readerImageBackgroundColor(context),
             ),
             child: Center(
               child: SizedBox(
@@ -1159,7 +1187,7 @@ class _ContinuousModeState extends State<_ContinuousMode>
         ImageProvider image = _createImageProvider(index, context);
 
         return ColoredBox(
-          color: context.colorScheme.surface,
+          color: readerImageBackgroundColor(context),
           child: ComicImage(
             filterQuality: FilterQuality.medium,
             image: image,
@@ -1323,7 +1351,9 @@ class _ContinuousModeState extends State<_ContinuousMode>
     }
 
     return PhotoView.customChild(
-      backgroundDecoration: BoxDecoration(color: context.colorScheme.surface),
+      backgroundDecoration: BoxDecoration(
+        color: readerImageBackgroundColor(context),
+      ),
       childSize: Size(width, height),
       minScale: 1.0,
       maxScale: 2.5,

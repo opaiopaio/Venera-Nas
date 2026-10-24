@@ -356,6 +356,11 @@ class Settings with ChangeNotifier {
     'autoAddLanguageFilter': 'none', // none, chinese, english, japanese
     'comicSourceListUrl': _defaultSourceListUrl,
     'preloadImageCount': 4,
+    // ⭐ 2026-10-25（用户要求 ✓）：**阅读器图片区底色** ✓
+    // `readerBackgroundEnabled=false` ⇒ 透明（露出背景图 ✓）；
+    // `readerBackgroundColor`：`system`（默认 ✓ 跟随主题）/ `transparent` / `#RRGGBB` ✓
+    'readerBackgroundEnabled': true,
+    'readerBackgroundColor': 'system',
     'followUpdatesFolder': null,
     'initialPage': '0',
     'comicListDisplayMode': 'paging', // paging, continuous
