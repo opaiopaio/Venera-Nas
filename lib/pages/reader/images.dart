@@ -10,13 +10,28 @@ part of 'reader.dart';
 ///   - `transparent` ⇒ 透明 ✓
 ///   - `#RRGGBB` ⇒ 自定义 ✓
 ///
-/// ⚠️ 注意 ✓：只影响**图片画布**这一层 ✓；加载中的**图标/错误报告仍有遮罩** ✓
-///（它们用 `windowOverlayColor()` / `surfaceContainer*` ✓，用户自定义遮罩时自动跟随 ✓）。
-Color readerImageBackgroundColor(BuildContext context) {
-  final enabled = appdata.settings['readerBackgroundEnabled'] != false;
+/// ⭐ 2026-10-25（用户实测反馈 ✓）：必须**按作用域读**（`readSettingValue` ✓）——
+/// 之前直接读全局 `appdata.settings[...]` ✗ ⇒ 开了「漫画特定设置」后，
+/// 侧滑里关掉底色**只写了漫画作用域** ✓ 而渲染仍读全局 ✗ ⇒ 表现为"开关动了、画面不变" ✗。
+Color readerImageBackgroundColor(
+  BuildContext context, {
+  String? comicId,
+  String? sourceKey,
+}) {
+  final settings = appdata.settings;
+  final useDevice = settings.isDeviceSpecificSettingsEnabled();
+  Object? read(String key) =>
+      settings.readSettingValue(
+        key: key,
+        comicId: comicId,
+        comicSource: sourceKey,
+        useDeviceSettings: useDevice,
+      ) ??
+      settings[key];
+
+  final enabled = read('readerBackgroundEnabled') != false;
   if (!enabled) return Colors.transparent;
-  final raw = (appdata.settings['readerBackgroundColor'] ?? 'system')
-      .toString();
+  final raw = (read('readerBackgroundColor') ?? 'system').toString();
   if (raw == 'transparent') return Colors.transparent;
   if (raw.startsWith('#') && raw.length == 7) {
     final value = int.tryParse(raw.substring(1), radix: 16);
@@ -557,7 +572,11 @@ class _GalleryModeState extends State<_GalleryMode>
       },
       child: PhotoViewGallery.builder(
         backgroundDecoration: BoxDecoration(
-          color: readerImageBackgroundColor(context),
+          color: readerImageBackgroundColor(
+            context,
+            comicId: reader.cid,
+            sourceKey: reader.type.sourceKey,
+          ),
         ),
         reverse: reader.mode == ReaderMode.galleryRightToLeft,
         scrollDirection: reader.mode == ReaderMode.galleryTopToBottom
@@ -623,7 +642,11 @@ class _GalleryModeState extends State<_GalleryMode>
             minScale: PhotoViewComputedScale.contained * 1.0,
             maxScale: PhotoViewComputedScale.covered * 10.0,
             backgroundDecoration: BoxDecoration(
-              color: readerImageBackgroundColor(context),
+              color: readerImageBackgroundColor(
+                context,
+                comicId: reader.cid,
+                sourceKey: reader.type.sourceKey,
+              ),
             ),
             child: Center(
               child: SizedBox(
@@ -1187,7 +1210,11 @@ class _ContinuousModeState extends State<_ContinuousMode>
         ImageProvider image = _createImageProvider(index, context);
 
         return ColoredBox(
-          color: readerImageBackgroundColor(context),
+          color: readerImageBackgroundColor(
+            context,
+            comicId: reader.cid,
+            sourceKey: reader.type.sourceKey,
+          ),
           child: ComicImage(
             filterQuality: FilterQuality.medium,
             image: image,
@@ -1352,7 +1379,11 @@ class _ContinuousModeState extends State<_ContinuousMode>
 
     return PhotoView.customChild(
       backgroundDecoration: BoxDecoration(
-        color: readerImageBackgroundColor(context),
+        color: readerImageBackgroundColor(
+          context,
+          comicId: reader.cid,
+          sourceKey: reader.type.sourceKey,
+        ),
       ),
       childSize: Size(width, height),
       minScale: 1.0,
