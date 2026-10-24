@@ -651,7 +651,9 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
       return;
     }
     setState(() => _isTesting = true);
-    final error = await _buildConnection().testConnection();
+    // ⭐ 2026-10-25：用**带诊断**的测试 ✓ —— 失败时自动降级试出"哪套参数能连" ✓，
+    // 直接告诉用户该把协商版本/加密改成什么 ✓（错误码 0xc00000bb 之类用户看不懂 ✗）。
+    final error = await _buildConnection().testConnectionWithDiagnosis();
     if (!mounted) return;
     setState(() => _isTesting = false);
     if (error == null) {

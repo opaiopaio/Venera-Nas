@@ -93,6 +93,30 @@ class SmbConfig {
     return Smb2Version.any;
   }
 
+  /// ⭐ 2026-10-25：**复制并覆盖部分字段** ✓ —— 供"测试连接自动诊断"逐项降级试用 ✓
+  ///（如：自动版本 / 关闭加密 / 关闭签名 ✓）。
+  SmbConfig copyWith({
+    String? host,
+    int? port,
+    String? share,
+    String? username,
+    String? password,
+    String? domain,
+    bool? signing,
+    bool? seal,
+    Smb2Version? version,
+  }) => SmbConfig(
+    host: host ?? this.host,
+    port: port ?? this.port,
+    share: share ?? this.share,
+    username: username ?? this.username,
+    password: password ?? this.password,
+    domain: domain ?? this.domain,
+    signing: signing ?? this.signing,
+    seal: seal ?? this.seal,
+    version: version ?? this.version,
+  );
+
   @override
   bool operator ==(Object other) =>
       other is SmbConfig &&
