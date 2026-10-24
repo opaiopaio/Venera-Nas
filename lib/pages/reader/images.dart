@@ -373,24 +373,75 @@ class _GalleryModeState extends State<_GalleryMode>
     });
   }
 
-  /// ⭐ 相邻页预取 ✓：上一页 / 下一页**先落盘** ✓，其中**"下一页 + 下下页"预解码** ✓。
+  /// ⭐ 相邻页预取（**2026-10-25 按用户设想重写 ✓**：滑动窗口 ✓）
   ///
-  /// 为什么预解码 2 页（2026-10-24 用户实测 ✓）：
-  /// - 只解码 1 页 ⇒ "预加载开到 10 也只有下一页不闪，连翻两页就闪" ✗
-  /// - 解码全部预取页 ⇒ 解码图把当前页挤出 ImageCache ⇒ 转圈 ✗
-  /// ⇒ 折中 = **预解码 2 页** ✓（覆盖"连翻两页"✓，缓存占用仍很小 ✓）。
+  /// 用户设想（原文含义 ✓）：
+  /// - 永远**优先当前页** ✓（不被其它任务挤占 ✓）
+  /// - 设置 10 ⇒ **前 5 页直接解码** ✓（翻到就显示 ✓ 不闪 ✗）
+  /// - **后 5 页只落盘** ✓（不解码 ✓，省内存 ✓）
+  /// - 往后翻一页 ⇒ **落盘的下一页开始解码** ✓（始终维持 5 页"已解码"✓），
+  ///   同时**再往后补一页落盘** ✓ ⇒ 窗口整体前移 ✓
+  /// - ⭐ **限制窗口总量** ✓：超出后就**清掉更早的页**（先清解码/落盘的那些 ✓）
+  ///
+  /// 说明：`preCacheCount` 对 SMB 已**减半** ✓（见 getter ✓）⇒ 设置 10 ⇒ 这里 =
+  /// `decodeAhead = 5` ✓、`diskAhead = 5` ✓，合计正好 10 页窗口 ✓。
   void _cacheNeighborsNow(int startPage) {
-    for (final page in [startPage + 1, startPage + 2, startPage - 1]) {
+    final decodeAhead = preCacheCount; // 5（设置 10 的一半 ✓）
+    final diskAhead = preCacheCount; // 再往后 5 页只落盘 ✓
+
+    // ① 已解码窗口：上一页 ~ 当前页 + decodeAhead ✓
+    for (int offset = -1; offset <= decodeAhead; offset++) {
+      final page = startPage + offset;
+      if (page <= 0 ||
+          page > totalPages ||
+          page == startPage ||
+          isChapterCommentsPage(page)) {
+        continue;
+      }
+      _cachePage(page, true); // 落盘 + 解码 ✓
+    }
+
+    // ② 只落盘窗口：decodeAhead+1 ~ decodeAhead+diskAhead ✓
+    for (
+      int offset = decodeAhead + 1;
+      offset <= decodeAhead + diskAhead;
+      offset++
+    ) {
+      final page = startPage + offset;
       if (page <= 0 || page > totalPages || isChapterCommentsPage(page)) {
         continue;
       }
-      var (startIndex, endIndex) = getPageImagesRange(page);
-      for (int i = startIndex; i < endIndex; i++) {
-        _preDownloadImage(i + 1, context);
-        if (page == startPage + 1 || page == startPage + 2) {
-          _precacheImage(i + 1, context);
-        }
-      }
+      _cachePage(page, false); // 只落盘 ✓
+    }
+
+    // ③ 窗口总量上限：把**更早的页**从磁盘缓存里清掉 ✓（用户要的"最大缓存" ✓）
+    _trimDiskCacheWindow(startPage, decodeAhead + diskAhead);
+  }
+
+  /// 记录"最近落过盘的页码"✓ —— 用于按窗口上限淘汰更早的页 ✓。
+  final List<int> _diskWindowPages = [];
+
+  /// ⭐ 清掉窗口外的旧页磁盘缓存 ✓（解码内存由 `ImageCache` 的容量上限兜底 ✓）。
+  void _trimDiskCacheWindow(int startPage, int windowSize) {
+    final keepFrom = startPage - 2; // 往回留 2 页余量 ✓（来回翻不重读 ✓）
+    _diskWindowPages.removeWhere((p) => p < keepFrom);
+    final maxPages = windowSize + 4;
+    while (_diskWindowPages.length > maxPages) {
+      final oldPage = _diskWindowPages.removeAt(0);
+      _deletePageDiskCache(oldPage);
+    }
+  }
+
+  /// 删除某一页的**磁盘缓存** ✓（只清 SMB 页 ✓，本地页走系统缓存 ✓）。
+  void _deletePageDiskCache(int page) {
+    if (page <= 0 || page > totalPages) return;
+    var (startIndex, endIndex) = getPageImagesRange(page);
+    for (int i = startIndex; i < endIndex; i++) {
+      final key = reader.images!.elementAtOrNull(i);
+      if (key == null || !key.startsWith('smb://')) continue;
+      final cacheKey =
+          '$key@${reader.type.sourceKey}@${reader.cid}@${reader.eid}';
+      CacheManager().delete(cacheKey);
     }
   }
 
@@ -411,14 +462,18 @@ class _GalleryModeState extends State<_GalleryMode>
     var (startIndex, endIndex) = getPageImagesRange(page);
     for (int i = startIndex; i < endIndex; i++) {
       final key = reader.images!.elementAtOrNull(i);
-      // ⭐ 2026-10-24：**SMB 页一律只落盘、不解码** ✓ —— 解码只在"真正显示该页"时发生 ✓
-      //（原先相邻页 `precacheImage` 会提前占用解码内存 vs `ImageCache` ✓，
-      // 快速翻页后立刻预解码一堆页 ⇒ 当前页被挤出缓存 ⇒ 又转一次圈 ✗，即用户看到的"闪两下" ✓）。
-      final decodePrefetch =
-          shouldPreCache && !(key?.startsWith('smb://') ?? false);
-      decodePrefetch
-          ? _precacheImage(i + 1, context)
-          : _preDownloadImage(i + 1, context);
+      final isSmb = key?.startsWith('smb://') ?? false;
+      // ⭐ 2026-10-25（用户设想 ✓）：SMB 页**也按窗口解码** ✓ ——
+      // 之前一律"只落盘不解码" ✗ ⇒ 翻页仍要等解码 ⇒ 闪 ✗；
+      // 现在窗口内前 N 页直接解码 ✓（翻到即显示 ✓），窗口外只落盘 ✓。
+      if (shouldPreCache) {
+        _precacheImage(i + 1, context);
+      } else {
+        _preDownloadImage(i + 1, context);
+      }
+      if (isSmb) {
+        _diskWindowPages.add(page);
+      }
     }
   }
 
