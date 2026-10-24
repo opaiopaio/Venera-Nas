@@ -355,9 +355,16 @@ class SmbClient {
     // 先摘引用 ✓：排队中的操作醒来会因 `_p` 为空快速失败 ✓，不会在断开后又发原生调用 ✗。
     _pool = null;
     await _ops.drain(timeout: _disconnectDrainTimeout);
-    await SmbSerial.run(() async {
+    // ⭐ 2026-10-25（实测日志 ✓：重启后点漫画要等 ~18s 才列目录 ✗）：**断开不再占建连闸门** ✓
+    // 原因 ✓：`pool.disconnect()` 要给每个 worker 各自 5s 收尾 ✓ ⇒ 可达十几秒 ✓；
+    // 它占着 `SmbSerial` 时新连接只能排队 ✗ ⇒ 用户看到"页面加载转 10 多秒"✓。
+    // 现在 ✓：闸门只保"建连（创建原生 context ✓）"✓；断开在 drain 后直接断 ✓，
+    // 不再阻塞别的客户端建连 ✓（引用已摘除 ✓，排队操作会快速失败 ✓ 不会误用旧池 ✓）。
+    try {
       await pool.disconnect();
-    });
+    } catch (_) {
+      // 断开失败不影响后续 ✓：引用已摘除 ⇒ 下次会重建 ✓。
+    }
   }
 
   Smb2Pool get _p {
