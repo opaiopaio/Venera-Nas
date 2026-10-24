@@ -42,6 +42,8 @@ class _CommentsPartState extends State<_CommentsPart> {
                     );
                   },
                 ),
+                // ⭐ UI（2026-10-24）：相邻 `IconButton` 的遮罩会贴成一片 ✗（全局 `iconButtonTheme` 自带底色 ✓）。
+                const SizedBox(width: AppSpace.sm),
                 IconButton(
                   icon: const Icon(Icons.chevron_right),
                   onPressed: () {

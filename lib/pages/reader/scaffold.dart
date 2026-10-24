@@ -290,6 +290,8 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
                       onPressed: openChapterComments,
                     ),
                   ),
+                // ⭐ UI（2026-10-24）：相邻 `IconButton` 的遮罩会贴成一片 ✗（全局 `iconButtonTheme` 自带底色 ✓）。
+                const SizedBox(width: AppSpace.sm),
                 Tooltip(
                   message: "Settings".tl,
                   child: IconButton(

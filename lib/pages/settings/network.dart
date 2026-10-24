@@ -517,11 +517,16 @@ class _SmbServerManagerState extends State<_SmbServerManager> {
                           tooltip: "Test Connection".tl,
                           onPressed: () => _testServer(index),
                         ),
+                        // ⭐ UI（2026-10-24）：全局 `iconButtonTheme` 会给每个 `IconButton` 注入填充底色 ✓
+                        // ⇒ 相邻无间距时会**贴成一片** ✗（用户实测：三个按钮的遮罩连在一起 ✓）。
+                        // 惯例同 `components/select_toolbar.dart:55-61` 与 `comic_source_page.dart:1000` ✓。
+                        const SizedBox(width: AppSpace.sm),
                         IconButton(
                           icon: const Icon(Icons.edit),
                           tooltip: "Edit".tl,
                           onPressed: () => _editServer(index),
                         ),
+                        const SizedBox(width: AppSpace.sm),
                         IconButton(
                           icon: const Icon(Icons.delete_outline),
                           tooltip: "Delete".tl,
