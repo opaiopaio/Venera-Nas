@@ -544,7 +544,7 @@ class LocalManager with ChangeNotifier {
     );
     final client = SmbClient.shared(config);
     try {
-      await client.connect();
+      await client.connect(high: true);
 
       var remoteDir = smbPathFromUrl(comic.baseDir);
       if (comic.hasChapters) {
