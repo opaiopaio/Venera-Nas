@@ -42,4 +42,26 @@ class ComicType {
       return ComicType(key.hashCode);
     }
   }
+
+  /// ⭐ 2026-10-24：**从历史/收藏条目里的 `sourceKey` 反推 ComicType** ✓
+  ///
+  /// 为什么单独抽出来 ✓：这段逻辑原先写在 `pages/history_page.dart` 的 `_removeHistory` 里 ✓，
+  /// 是"**删不掉 SMB 历史**"这类 bug 的唯一判定点 ✓ ⇒ 抽成纯函数后可直接单测 ✓
+  ///（`test/comic_type_smb_test.dart` ✓ 守护"smb 必须映射到 [smb]（value -1）"✓，防止再被改成 `'smb'.hashCode` ✗）。
+  ///
+  /// - `Unknown:<value>` ⇒ 未知源（历史里存的兜底格式 ✓）
+  /// - `local` / `smb` ⇒ 对应内置类型 ✓
+  /// - 其它 ⇒ 网络漫画源 key ✓
+  static ComicType fromHistorySourceKey(String sourceKey) {
+    if (sourceKey.startsWith("Unknown:")) {
+      final parts = sourceKey.split(':');
+      if (parts.length > 1) {
+        final value = int.tryParse(parts[1]);
+        if (value != null) {
+          return ComicType(value);
+        }
+      }
+    }
+    return ComicType.fromKey(sourceKey);
+  }
 }

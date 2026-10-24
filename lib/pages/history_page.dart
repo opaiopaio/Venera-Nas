@@ -83,16 +83,14 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   void _removeHistory(History comic) {
-    if (comic.sourceKey.startsWith("Unknown")) {
-      HistoryManager().remove(
-        comic.id,
-        ComicType(int.parse(comic.sourceKey.split(':')[1])),
-      );
-    } else if (comic.sourceKey == 'local') {
-      HistoryManager().remove(comic.id, ComicType.local);
-    } else {
-      HistoryManager().remove(comic.id, ComicType.fromKey(comic.sourceKey));
-    }
+    // ⭐ 2026-10-24：判定逻辑抽到 `ComicType.fromHistorySourceKey` ✓（可单测 ✓）。
+    // 背景：这里曾用 `ComicType('smb'.hashCode)` 当 SMB 类型 ✗ ⇒ 删 SMB 历史时 type 对不上
+    // ⇒ **删不掉** ✗。现在统一走 `fromKey('smb') == ComicType.smb(-1)` ✓，
+    // 并新增回归测试 `test/comic_type_smb_test.dart` 守护 ✓。
+    HistoryManager().remove(
+      comic.id,
+      ComicType.fromHistorySourceKey(comic.sourceKey),
+    );
   }
 
   void _refreshHistory(History comic) async {
