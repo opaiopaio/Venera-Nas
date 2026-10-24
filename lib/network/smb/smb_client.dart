@@ -346,32 +346,9 @@ class SmbClient {
         'connected in ${DateTime.now().difference(connectStart).inMilliseconds}ms',
       );
     } catch (e) {
-      // ⭐ 2026-10-25（实测反馈 ✓）：**失败时先尝试"降级重试"一次** ✓ ——
-      // 签名 / 加密 / 方言这些都是"可选加严" ✓，个别服务器（路由器内置 SMB 服务 ✓）
-      // 对它们处理不一致 ✗ ⇒ 退回默认（全关 + 自动协商）往往就能连上 ✓。
-      final hasExplicitOptions =
-          config.signing || config.seal || config.version != Smb2Version.any;
-      if (hasExplicitOptions) {
-        try {
-          final fallback = SmbClient(
-            config: config.copyWith(
-              signing: false,
-              seal: false,
-              version: Smb2Version.any,
-            ),
-          );
-          await fallback.connect(high: high);
-          // 所有权转移 ✓：把池交给本实例，避免 fallback 被回收时误断 ✓。
-          _pool = fallback._pool;
-          fallback._pool = null;
-          _lastConnectFailureAt = null;
-          _dead = false;
-          return;
-        } catch (_) {
-          // 降级也失败 ⇒ 走原来的报错路径 ✓（保留**原始错误** ✓，不再被"冷却"文案盖掉 ✗）。
-        }
-      }
-      // ⚠️ 冷却窗口缩短到 3s ✓：原来 15s 会让用户"重置过一次还这样" ✗（真实原因被藏住 ✓）。
+      // ⭐ 2026-10-25（用户要求 ✓）：**不在每次访问时自动试协议** ✗ ——
+      // 协议组合应在「保存服务器」时**探测一次并写进配置** ✓（见 `findWorkingConfig` ✓），
+      // 之后每次连接**直接用保存好的配置** ✓（这里只做失败冷却 + 报错 ✓）。
       _lastConnectFailureAt = DateTime.now();
       rethrow;
     }

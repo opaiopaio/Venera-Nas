@@ -35,6 +35,36 @@ class SmbConnection {
         .toList();
   }
 
+  /// ⭐ 2026-10-25（用户要求 ✓）：**一次性探路** ✓ —— 返回**第一套能连通的配置**（含原配置 ✓），
+  /// 全失败返回 null ✓。**只应在"保存时"调用一次** ✓，不要放在每次访问的连接路径上 ✗。
+  Future<SmbConfig?> findWorkingConfig() async {
+    if (await _testWith(config) == null) return config;
+    final candidates = <SmbConfig>[];
+    void add(SmbConfig c) {
+      for (final e in candidates) {
+        if (e.signing == c.signing &&
+            e.seal == c.seal &&
+            e.version == c.version) {
+          return;
+        }
+      }
+      candidates.add(c);
+    }
+
+    add(config.copyWith(signing: false, seal: false));
+    add(config.copyWith(signing: false, seal: false, version: Smb2Version.any));
+    add(
+      config.copyWith(signing: false, seal: false, version: Smb2Version.v302),
+    );
+    add(
+      config.copyWith(signing: false, seal: false, version: Smb2Version.v210),
+    );
+    for (final c in candidates) {
+      if (await _testWith(c) == null) return c;
+    }
+    return null;
+  }
+
   /// Try to connect to the SMB share and list the root directory.
   ///
   /// Returns null on success, or an error message string on failure.

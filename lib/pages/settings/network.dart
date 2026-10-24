@@ -703,17 +703,17 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
     }
   }
 
-  void _save() {
-    final connection = _buildConnection();
-    if (connection.name.isEmpty) {
+  Future<void> _save() async {
+    final connection0 = _buildConnection();
+    if (connection0.name.isEmpty) {
       showDialogMessage(context, "Error".tl, "Name is required".tl);
       return;
     }
-    if (connection.config.host.isEmpty) {
+    if (connection0.config.host.isEmpty) {
       showDialogMessage(context, "Error".tl, "Host is required".tl);
       return;
     }
-    if (connection.config.share.isEmpty) {
+    if (connection0.config.share.isEmpty) {
       showDialogMessage(context, "Error".tl, "Share is required".tl);
       return;
     }
@@ -721,6 +721,35 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
     if (protocolError != null) {
       showDialogMessage(context, "Error".tl, protocolError);
       return;
+    }
+
+    // ⭐⭐ 2026-10-25（用户要求 ✓）：**选「自动」保存时，只探测一次并落成固定配置** ✓
+    // 之后每次访问都用这套固定配置直连 ✓（不再每次自动试探 ✗）。
+    var connection = connection0;
+    if (connection.config.version == Smb2Version.any) {
+      if (!mounted) return;
+      final loading = showLoadingDialog(
+        App.rootContext,
+        barrierDismissible: false,
+        allowCancel: false,
+      );
+      final found = await SmbConnection(
+        name: connection.name,
+        config: connection.config,
+      ).findWorkingConfig();
+      if (mounted) loading.close();
+      if (!mounted) return;
+      if (found == null) {
+        showDialogMessage(
+          context,
+          "Test Connection".tl,
+          "协议自动探测失败 ✓：请检查地址 / 共享名 / 账号，"
+                  "或手动选择一个协商版本后再保存 ✓。"
+              .tl,
+        );
+        return;
+      }
+      connection = SmbConnection(name: connection.name, config: found);
     }
 
     // Read existing servers, replace or append
