@@ -210,6 +210,11 @@ class _GalleryModeState extends State<_GalleryMode>
     implements _ImageViewController {
   late PageController controller;
 
+  /// ⭐ 2026-10-24：预取**防抖计时器** ✓ —— 快速滚动/滚轮翻页时**一律不预取** ✓，
+  /// 停下（`AppMotion.medium` = 300ms ✓，令牌值，不写裸时长 ✗）后才开始 ✓
+  /// （把全部 SMB 带宽让给当前页 ✓；机械硬盘 + SMB 的顺序带宽才 200MB/s 左右 ✓，并行随机读反而更慢 ✗）。
+  Timer? _prefetchDebounce;
+
   int get preCacheCount =>
       appdata.settings.getReaderSetting(
         reader.cid,
@@ -281,6 +286,8 @@ class _GalleryModeState extends State<_GalleryMode>
   //（那之后同帧仍会使用该 controller ✓ → 会 use-after-dispose ✓）。
   @override
   void dispose() {
+    _prefetchDebounce?.cancel();
+    _prefetchDebounce = null;
     controller.dispose();
     for (final c in photoViewControllers.values) {
       c.dispose();
@@ -329,7 +336,20 @@ class _GalleryModeState extends State<_GalleryMode>
     return (startIndex, endIndex);
   }
 
+  /// ⭐ 2026-10-24：**防抖预取** ✓ —— `cache()` 在每次页面构建时都会被调用 ✓，
+  /// 快速滚轮翻页时若立刻预取，会把当前页正在等的 SMB 带宽/连接占满 ✗
+  /// （用户实测：快速滑百来页会转圈 ✓；停下后还会因后台预取解码而"闪两下" ✗）。
+  /// 现在：**每次调用都把预取推迟一个令牌时长** ✓ —— 连续翻页会不断重置计时器 ✓
+  /// ⇒ 只有"停下来"才真正预取 ✓。
   void cache(int startPage) {
+    _prefetchDebounce?.cancel();
+    _prefetchDebounce = Timer(AppMotion.medium, () {
+      if (!mounted) return;
+      _cacheNow(startPage);
+    });
+  }
+
+  void _cacheNow(int startPage) {
     for (int i = startPage - 1; i <= startPage + preCacheCount; i++) {
       if (i == startPage ||
           i <= 0 ||
@@ -345,7 +365,13 @@ class _GalleryModeState extends State<_GalleryMode>
     if (isChapterCommentsPage(page)) return;
     var (startIndex, endIndex) = getPageImagesRange(page);
     for (int i = startIndex; i < endIndex; i++) {
-      shouldPreCache
+      final key = reader.images!.elementAtOrNull(i);
+      // ⭐ 2026-10-24：**SMB 页一律只落盘、不解码** ✓ —— 解码只在"真正显示该页"时发生 ✓
+      //（原先相邻页 `precacheImage` 会提前占用解码内存 vs `ImageCache` ✓，
+      // 快速翻页后立刻预解码一堆页 ⇒ 当前页被挤出缓存 ⇒ 又转一次圈 ✗，即用户看到的"闪两下" ✓）。
+      final decodePrefetch =
+          shouldPreCache && !(key?.startsWith('smb://') ?? false);
+      decodePrefetch
           ? _precacheImage(i + 1, context)
           : _preDownloadImage(i + 1, context);
     }
