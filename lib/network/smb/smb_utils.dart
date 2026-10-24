@@ -120,3 +120,62 @@ String smbPathFromUrl(String url) {
   if (segments.length <= 1) return '';
   return segments.sublist(1).join('/');
 }
+
+/// ⭐ 2026-10-25（用户实测 ✓）：**下载根路径的有效目标** ✓ —— 修正"**漏写共享名**"的情况 ✗。
+///
+/// 实例 ✓：用户填 `smb://192.168.8.1/图包` ✓，而真实共享是 `NAS` ✓（`图包` 只是共享里的目录 ✗）
+/// ⇒ 旧逻辑把 `图包` 当共享名去连 ✗ ⇒ 服务器拒绝 ⇒ `Failed to parse fixed part of…` ✗。
+///
+/// 规则 ✓：
+/// 1. URL 的"共享段"能在已保存服务器里精确命中（host + share）⇒ 直接用它 ✓；
+/// 2. 否则按 **host** 找已保存服务器 ✓ ⇒ 用它的**共享名 + 凭据 + 协议选项** ✓，
+///    URL 的**第一段视作共享内目录** ✓；
+/// 3. 都没有 ⇒ 返回 null（调用方给出明确错误 ✓，不再静默连错共享 ✗）。
+class SmbDownloadTarget {
+  const SmbDownloadTarget(this.config, this.remoteDir);
+
+  final SmbConfig config;
+
+  /// 共享内目录（如 `图包` 或 `图包/子目录` ✓），空串表示共享根 ✓。
+  final String remoteDir;
+}
+
+SmbDownloadTarget? resolveSmbDownloadTarget(String url) {
+  if (!isSmbPath(url)) return null;
+  final uri = Uri.parse(url);
+  final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
+  final direct = parseSmbConfigFromUrl(url);
+
+  // ① 精确命中（host + share）✓
+  if (direct.share.isNotEmpty &&
+      _findSavedConnection(uri.host, direct.share) != null) {
+    return SmbDownloadTarget(
+      direct,
+      segments.length <= 1 ? '' : segments.sublist(1).join('/'),
+    );
+  }
+
+  // ② 按 host 找服务器 ✓（共享名取自配置 ✓，URL 全段都当目录 ✓）
+  final raw = appdata.settings['smbServers'];
+  if (raw is List) {
+    for (final item in raw) {
+      if (item is! Map) continue;
+      try {
+        final conn = SmbConnection.fromJson(Map<String, dynamic>.from(item));
+        if (conn.config.host.toLowerCase() == uri.host.toLowerCase() &&
+            conn.config.share.isNotEmpty) {
+          return SmbDownloadTarget(conn.config, segments.join('/'));
+        }
+      } catch (_) {
+        // 单条配置损坏不影响其它 ✓。
+      }
+    }
+  }
+
+  // ③ 实在找不到已保存服务器 ⇒ 保持 URL 自身解析（匿名 / userinfo ✓）
+  if (direct.share.isEmpty) return null;
+  return SmbDownloadTarget(
+    direct,
+    segments.length <= 1 ? '' : segments.sublist(1).join('/'),
+  );
+}

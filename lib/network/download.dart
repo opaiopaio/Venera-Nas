@@ -239,8 +239,15 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
         // 原来这里有一份私有 `_parseSmbConfig` ✓ 只从 URL 的 userinfo 读凭据 ✗ ——
         // 而 `smbDownloadPath` 保存时已**剥离账号密码** ✓ ⇒ 需要认证的共享会拿到空凭据 ⇒ 下载必失败 ✗
         //（同一任务的封面却走 `parseSmbConfigFromUrl` 能成功 ✓，行为自相矛盾 ✓）。
-        smbCfg = parseSmbConfigFromUrl(path!);
-        smbD = _smbDirFromPath(path!);
+        // ⭐ 2026-10-25：**用"有效下载目标"解析** ✓ ——
+        // 兼容用户把共享名漏写的情况 ✓（如 `smb://host/图包` ⇒ 共享其实是 `NAS` ✓）。
+        final target = resolveSmbDownloadTarget(path!);
+        if (target == null) {
+          throw "SMB 下载路径无效 ✗：应为 「smb://主机/共享名/目录」"
+              "（当前：$path ✗）。请在 设置 → 应用 → NAS 下载路径 中修正 ✓。";
+        }
+        smbCfg = target.config;
+        smbD = target.remoteDir;
         if (comic!.chapters != null) {
           smbD =
               '$smbD/${LocalManager.getChapterDirectoryName(_images!.keys.elementAt(_chapter))}';
@@ -1004,11 +1011,4 @@ class ArchiveDownloadTask extends DownloadTask {
       createdAt: DateTime.now(),
     );
   }
-}
-
-String _smbDirFromPath(String url) {
-  final uri = Uri.parse(url);
-  final segments = uri.pathSegments;
-  if (segments.length <= 1) return '';
-  return segments.sublist(1).join('/');
 }
