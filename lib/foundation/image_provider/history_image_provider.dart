@@ -66,9 +66,16 @@ class HistoryImageProvider
     throw "Error: Empty response body.";
   }
 
+  /// ⭐ 2026-10-25：**已知缺失封面**缓存 ✓ —— 坏盘/被删的漫画会反复加载失败 ✓，
+  /// 每次重试都占用 SMB 连接与全局闸门 ✗ ⇒ 扫描/读图排队超时 ✓（实测日志 ✓）。
+  static final Set<String> _failedSmbCovers = {};
+
   Future<Uint8List> _loadSmbCover(LocalComic comic) async {
     // Check disk cache first (reuse same cache key strategy as LocalComicImageProvider)
     final cacheKey = 'smb_cover:${comic.id}';
+    if (_failedSmbCovers.contains(cacheKey)) {
+      throw "Invalid Status Code: 404 (SMB cover missing, cached failure)";
+    }
     final cached = await CacheManager().findCache(cacheKey);
     if (cached != null) {
       final bytes = await cached.readAsBytes();
@@ -105,7 +112,13 @@ class HistoryImageProvider
         if (e.type != Smb2ErrorType.fileNotFound) rethrow;
         // Cover not found at expected path — search the directory.
         final smbDir = smbPathFromUrl(baseDir);
-        final entries = await client.listDirectory(smbDir);
+        final List<SmbEntry> entries;
+        try {
+          entries = await client.listDirectory(smbDir, high: true);
+        } on Smb2Exception catch (e) {
+          if (e.type == Smb2ErrorType.fileNotFound) _failSmbCover(cacheKey);
+          rethrow;
+        }
         const exts = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'jpe'];
         SmbEntry? found;
         for (final e in entries) {
@@ -131,7 +144,7 @@ class HistoryImageProvider
             if (found != null) break;
           }
         }
-        if (found == null) rethrow;
+        if (found == null) _failSmbCover(cacheKey);
         final data = await client.readFile(found.path);
         final compressed = await LocalComicImageProvider.compressCoverImage(
           data,
@@ -142,6 +155,12 @@ class HistoryImageProvider
     } finally {
       // ⭐ 共享客户端：**不在此断开** ✓（统一由 SmbClient.closeAllShared / 重置入口管理 ✓）。
     }
+  }
+
+  /// ⭐ 2026-10-25：封面**确定缺失** ⇒ 记住并抛"404" ✓（上层不再重试 ✓）。
+  static Never _failSmbCover(String cacheKey) {
+    _failedSmbCovers.add(cacheKey);
+    throw "Invalid Status Code: 404 (SMB cover missing)";
   }
 
   @override

@@ -99,9 +99,16 @@ class LocalComicImageProvider
 
   static final _smbSemaphore = _Semaphore(2);
 
+  /// ⭐ 2026-10-25：**已知缺失封面**缓存 ✓ —— 坏盘/被删的漫画会反复加载失败 ✓，
+  /// 每次重试都要占用 SMB 连接与全局闸门 ✗ ⇒ 扫描/读图排队超时 ✓（实测日志 ✓）。
+  static final Set<String> _failedSmbCovers = {};
+
   Future<Uint8List> _loadSmbCover() async {
     // Check disk cache first
     final cacheKey = 'smb_cover:${comic.id}';
+    if (_failedSmbCovers.contains(cacheKey)) {
+      throw "Invalid Status Code: 404 (SMB cover missing, cached failure)";
+    }
     final cached = await CacheManager().findCache(cacheKey);
     if (cached != null) {
       final bytes = await cached.readAsBytes();
@@ -140,7 +147,14 @@ class LocalComicImageProvider
         if (e.type != Smb2ErrorType.fileNotFound) rethrow;
         // Cover not found at expected path — search the directory.
         final smbDir = smbPathFromUrl(baseDir);
-        final entries = await client.listDirectory(smbDir);
+        final List<SmbEntry> entries;
+        try {
+          entries = await client.listDirectory(smbDir, high: true);
+        } on Smb2Exception catch (e) {
+          // 目录都不存在（如坏盘漫画 ✓）⇒ 直接判定"封面缺失" ✓，不再重试 ✗。
+          if (e.type == Smb2ErrorType.fileNotFound) _failSmbCover(cacheKey);
+          rethrow;
+        }
         // Try cover.* first, then any image
         const exts = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'jpe'];
         SmbEntry? found;
@@ -167,7 +181,7 @@ class LocalComicImageProvider
             if (found != null) break;
           }
         }
-        if (found == null) rethrow;
+        if (found == null) _failSmbCover(cacheKey);
         final data = await client.readFile(found.path);
         final compressed = await compressCoverImage(data);
         await CacheManager().writeCache(cacheKey, compressed);
@@ -177,6 +191,13 @@ class LocalComicImageProvider
       // ⭐ 共享客户端：**不在此断开** ✓（统一由 SmbClient.closeAllShared / 重置入口管理 ✓）。
       _smbSemaphore.release();
     }
+  }
+
+  /// ⭐ 2026-10-25：封面**确定缺失** ⇒ 记住并抛"404" ✓ ——
+  /// 上层图片加载看到 `Invalid Status Code: 404` 就**不再重试** ✓（避免反复占用 SMB 连接 ✗）。
+  static Never _failSmbCover(String cacheKey) {
+    _failedSmbCovers.add(cacheKey);
+    throw "Invalid Status Code: 404 (SMB cover missing)";
   }
 
   /// Compress cover image for cache storage.

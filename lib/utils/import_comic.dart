@@ -321,9 +321,11 @@ class ImportComic {
   }) async {
     final client = SmbClient.shared(config);
     try {
-      await client.connect();
+      // ⭐ 2026-10-25：扫描是**用户主动操作** ✓ ⇒ 用高优先级 ✓
+      //（否则后台封面加载等低优先级任务会先占住全局 SMB 闸门 ⇒ 扫描排队超时 ✗）。
+      await client.connect(high: true);
 
-      final entries = await client.listDirectory(rootPath);
+      final entries = await client.listDirectory(rootPath, high: true);
       final subDirs = entries.where((e) => e.isDirectory).toList();
 
       final comics = <LocalComic>[];
@@ -404,7 +406,7 @@ class ImportComic {
       return null;
     }
 
-    final entries = await client.listDirectory(directoryPath);
+    final entries = await client.listDirectory(directoryPath, high: true);
 
     bool hasChapters = false;
     var chapterEntries = <SmbEntry>[];
@@ -443,7 +445,10 @@ class ImportComic {
       // Use the first image in the first chapter as the cover
       // (matching local _checkSingleComic: string sort, unfiltered)
       final firstChapterPath = chapterEntries.first.path;
-      final chapterEntries2 = await client.listDirectory(firstChapterPath);
+      final chapterEntries2 = await client.listDirectory(
+        firstChapterPath,
+        high: true,
+      );
       final files = chapterEntries2.where((e) => e.isFile).toList();
       files.sort((a, b) => a.name.compareTo(b.name));
       if (files.isEmpty) {
