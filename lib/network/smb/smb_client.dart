@@ -177,7 +177,11 @@ class SmbClient {
               // 原生 30s 先返回 ✓，Dart 层 [_connectTimeout] 40s 兜底 ✓ ——
               // 原先 Dart 层只有 25s，反而比原生 30s 先超时 ✗（连接还在跑就丢引用 ✓）。
               timeoutSeconds: 30,
-              workers: 4,
+              // ⭐ 2026-10-25（实测 ✓）：**单 worker** ✓ —— 有些服务器（路由器内置 SMB 服务 ✓）
+              // 对**同一会话的多个 worker 并发握手**处理不稳 ✗ ⇒ 报
+              // Failed to parse fixed part of command payload ✗；先降为 1 ✓
+              //（libsmb2 池内部仍会排队 ✓，数据读的并发由我们自己的 limiter 控制 ✓）。
+              workers: 1,
               // ⭐ 2026-10-24：协议选项透传 ✓（服务器"强制签名/加密"或需指定方言时用得上 ✓）。
               signing: config.signing,
               seal: config.seal,
