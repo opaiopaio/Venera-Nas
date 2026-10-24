@@ -1399,7 +1399,10 @@ ImageProvider _createImageProviderFromKey(
     reader.cid,
     reader.eid,
     reader.page,
-    enableResize: reader.mode.isContinuous,
+    // ⭐ 修复（2026-10-24）：SMB 页同样启用解码降采样。
+    // 原因：几百页长章节里每页都按原分辨率解码，是 OOM 闪退的主因之一；
+    // 降采样只在像素数超过上限（且宽高比正常）的图上生效，不影响小图清晰度。
+    enableResize: reader.mode.isContinuous || imageKey.startsWith('smb://'),
     onLoadFailed: imagesState?._onPagesCacheInvalid,
   );
 }
@@ -1428,15 +1431,21 @@ void _preDownloadImage(int page, BuildContext context) {
   }
   var reader = context.reader;
   var imageKey = reader.images![page - 1];
-  // 修复（2026-10-09）：**SMB 图片也要跳过预下载** —— 原先只跳过 file://，
-  // 而 SMB 的 imageKey 形如 smb://…，且下面 sourceKey = reader.type.comicSource?.key
-  // 对 SMB 恒为 null ⇒ 网络预下载注定失败、白耗请求。
-  if (imageKey.startsWith("file://") || imageKey.startsWith("smb://")) {
-    return;
-  }
   var cid = reader.cid;
   var eid = reader.eid;
   var sourceKey = reader.type.comicSource?.key;
+  // file:// 就是本机磁盘上的文件，本来就在盘上 ⇒ 无需预取。
+  if (imageKey.startsWith("file://")) {
+    return;
+  }
+  // ⭐ 修复（2026-10-24）：SMB 页改为「落盘预取」（只读字节写盘，**不解码**）。
+  // 原先一律跳过 SMB ⇒ 预加载数量对 NAS 完全失效，翻页只能现读现解码（闪烁且无缓冲）。
+  // 现在由 ReaderImageProvider.prefetchSmbPage 后台读并写入磁盘缓存，
+  // 并发上限由那边的信号量兜住；预取失败静默，不影响阅读。
+  if (imageKey.startsWith("smb://")) {
+    ReaderImageProvider.prefetchSmbPage(imageKey, sourceKey, cid, eid);
+    return;
+  }
   ImageDownloader.loadComicImage(imageKey, sourceKey, cid, eid);
 }
 

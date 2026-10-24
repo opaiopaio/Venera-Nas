@@ -51,6 +51,11 @@ class Appdata with Init {
         }
         syncSettings.remove("deviceId");
         syncSettings.remove("deviceSpecificSettings");
+        // ⭐ 2026-10-24（安全 ✓）：**`smbServers` 含明文用户名 + 密码** ⇒ **绝不上行** ✗ ——
+        // 本文件是 `syncdata.json` 的**唯一**产出点 ✓，而 WebDAV 同步上传的正是它（`exportAppData(true)` ✓）
+        // ⇒ 只在入方向排除（`_disableSync` ✓）挡不住"凭据被传到云端" ✗，故在此一并剔除 ✓。
+        // ⚠️ 有意为之 ✓：出方向其余设置仍保持完整快照 ✓，只此一个键例外 ✓。
+        syncSettings.remove("smbServers");
         for (final field in _deviceSwitchFlagKeys) {
           syncSettings.remove(field);
         }
@@ -110,6 +115,11 @@ class Appdata with Init {
     "disableSyncFields",
     "authorizationRequired",
     "smbDownloadPath",
+    // ⭐ 2026-10-24（安全 ✓）：**`smbServers` 含明文用户名 + 密码** ⇒ **永不出本机** ✗ ——
+    // 本地备份包里即便带着它，恢复时也一律**不应用** ✓（不同步、不备份、不参与恢复 ✓）。
+    // ⚠️ 有意为之 ✓：老用户升级后 SMB 服务器配置**不再随备份还原** ✓ —— 需在设置页重新添加 ✓；
+    // 这是安全换来的代价 ✓（明文凭据不该跟着文件走 ✗）。
+    "smbServers",
     // ⭐ 2026-10-10（用户要求 + 回归审查 P1-6 ✓）：**背景图片相关**（文件名 + 本机选取路径）任何情况下都不应用 ✗ ——
     // 图**文件**不随同步/备份传输 ✓（只传文件名/路径 ✓）⇒ 应用了也只会指向本机不存在的图 ✗、
     // 设置页还会显示对端的选取路径 ✗ ⇒ 两者一起排除 ✓（`backgroundImage` 与 `backgroundImageSource` 必须同时 ✗）。
@@ -178,6 +188,10 @@ class Appdata with Init {
     "imageFavoritesDisplayType",
     "commentFontSize",
     "smbDownloadPath",
+    // ⭐ 2026-10-24（安全 ✓）：**`smbServers` 含明文用户名 + 密码** ⇒ **永不出本机** ✗ ——
+    // 既不同步、也不参与恢复 ✓（入方向：对端值一律不应用 ✓，本地凭据不会被云端覆盖 ✗）。
+    // ⚠️ 有意为之 ✓：老用户升级后 SMB 服务器配置**不再随备份/同步还原** ✓（本机 `appdata.json` 照旧保留 ✓）。
+    "smbServers",
     ..._deviceSwitchFlagKeys,
     "deviceSpecificSettings",
   ];

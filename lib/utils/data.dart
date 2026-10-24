@@ -65,6 +65,33 @@ Future<File> exportAppData([bool sync = true]) async {
       dataPath,
       sync ? "syncdata.json" : "appdata.json",
     );
+    // ⭐ 安全（2026-10-24）：**含明文凭据的键不得进入任何导出包** ✗ ——
+    // `smbServers`（SMB 用户名 + 密码 ✓）与 `smbDownloadPath`（下载根路径可能内嵌 `user:pass@` ✓）
+    // 都属敏感信息；而恢复侧本来就不会应用它们（`foundation/appdata.dart` 的 `_disableRestore` ✓）
+    // ⇒ 导出包里带着只是**白白泄漏** ✗，没有任何用处 ✓。上行同步快照已在 `saveData()` 里剔除 ✓，
+    // 这里补上本地导出（`sync == false` ⇒ 完整 `appdata.json`）这条出口 ✓。
+    String? strippedAppData;
+    if (!sync) {
+      try {
+        final file = File(appdata);
+        if (file.existsSync()) {
+          final content = jsonDecode(file.readAsStringSync());
+          if (content is Map && content["settings"] is Map) {
+            (content["settings"] as Map).remove("smbServers");
+            (content["settings"] as Map).remove("smbDownloadPath");
+            strippedAppData = FilePath.join(
+              App.cachePath,
+              'appdata_export_${DateTime.now().millisecondsSinceEpoch}.json',
+            );
+            File(strippedAppData).writeAsStringSync(jsonEncode(content));
+            appdata = strippedAppData;
+          }
+        }
+      } catch (_) {
+        // 脱敏失败 ⇒ 退回原文件（宁可导出成功，也不能让整个导出流程失败）
+        strippedAppData = null;
+      }
+    }
     var cookies = FilePath.join(dataPath, "cookie.db");
     zipFile.addFile("history.db", historyFile);
     zipFile.addFile("local_favorite.db", localFavoriteFile);
@@ -83,6 +110,12 @@ Future<File> exportAppData([bool sync = true]) async {
     // 原因：手机竖屏、电脑横屏，图片与字体在多设备间不通用，且会造成同步冲突；
     // 备份只保留"设置"本身（appdata.json 等）。缺失的资源由对应的"失效引用自动清理"兜底。
     zipFile.close();
+    // ⭐ 安全（2026-10-24）：清理上面的脱敏临时文件 ✓（只用于打进 zip 一次 ✓）。
+    if (strippedAppData != null) {
+      try {
+        File(strippedAppData).deleteSync();
+      } catch (_) {}
+    }
   });
   return cacheFile;
 }

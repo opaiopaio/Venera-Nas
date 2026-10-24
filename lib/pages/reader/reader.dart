@@ -252,6 +252,18 @@ class _ReaderState extends State<Reader>
     initReaderWindow();
   }
 
+  // ⭐ 2026-10-24（OOM 实测反馈 ✓）：**移动端解码缓存上限（字节）** = 256MB ✓。
+  // 原因：原分档在移动端会取到 300 / 500MB ✓，长章节（几百页 ✓）连续翻页时
+  // 500MB 解码缓存 **加上在途字节** 对移动端可用内存风险过高 ⇒ 实测 OOM 闪退 ✗。
+  // 规则 = **只降不升** ✓：移动端 300 / 500 档统一封顶到本值 ✓，100 / 200 档保持 ✓；
+  // 桌面端（Windows / Linux / macOS）**保持原分档不变** ✓（不动桌面体验 ✓）。
+  static const _mobileMaxCacheBytes = 256 << 20;
+
+  // ⭐ 2026-10-24（同上 ✓）：**移动端缓存张数上限** = 60 张 —— 原先未设置张数（Flutter 默认 1000 ✓）。
+  // 理由：按 **256MB / 单张几 MB** 估算 ✓，60 张 ≈ 一个可翻页窗口的量 ✓；
+  // 只卡字节数时，小图（单张几百 KB ✓）能把 256MB 塞进上千张 ⇒ 几百页连续翻页时缓存堆满 ✗。
+  static const _mobileMaxCacheCount = 60;
+
   void setImageCacheSize() async {
     var availableRAM = await MemoryInfo.getFreePhysicalMemorySize();
     if (availableRAM == null) return;
@@ -265,11 +277,21 @@ class _ReaderState extends State<Reader>
     } else {
       maxImageCacheSize = 500 << 20;
     }
+    // ⭐ 2026-10-24（OOM 实测反馈 ✓，见上方 `_mobileMaxCacheBytes`）：移动端**封顶 256MB** ✓。
+    final isMobile = App.isAndroid || App.isIOS;
+    if (isMobile) {
+      maxImageCacheSize = math.min(maxImageCacheSize, _mobileMaxCacheBytes);
+    }
     Log.info(
       "Reader",
       "Detect available RAM: $availableRAM, set image cache size to $maxImageCacheSize",
     );
     PaintingBinding.instance.imageCache.maximumSizeBytes = maxImageCacheSize;
+    if (isMobile) {
+      // ⭐ 2026-10-24（见上方 `_mobileMaxCacheCount` ✓）：仅移动端限制张数 ✓；
+      // 桌面端不设置张数上限 ⇒ 维持 Flutter 默认 ✓（不动桌面体验 ✓）。
+      PaintingBinding.instance.imageCache.maximumSize = _mobileMaxCacheCount;
+    }
   }
 
   @override
@@ -300,6 +322,10 @@ class _ReaderState extends State<Reader>
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     stopVolumeEvent();
     PaintingBinding.instance.imageCache.maximumSizeBytes = 100 << 20;
+    // ⭐ 2026-10-24：**张数上限也要复位** ✗→✓ —— 移动端进入阅读器时把 `maximumSize` 设为 60 张
+    //（见 `_mobileMaxCacheCount` ✓），若退出时不复位，书架 / 收藏 / 详情页的封面图会被过早淘汰 ⇒
+    // 表现为"退出阅读器后封面反复重新加载" ✗。Flutter 默认张数为 1000 ✓，此处复位到默认值 ✓。
+    PaintingBinding.instance.imageCache.maximumSize = 1000;
     disposeReaderWindow();
     super.dispose();
   }
