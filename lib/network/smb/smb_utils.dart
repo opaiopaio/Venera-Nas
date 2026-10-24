@@ -242,3 +242,49 @@ SmbDownloadTarget? resolveSmbDownloadTarget(String url) {
     segments.length <= 1 ? '' : segments.sublist(1).join('/'),
   );
 }
+
+/// ⭐ 2026-10-25（用户要求 ✓）：**把"实际可用的协议组合"写回服务器配置** ✓ ——
+///
+/// 背景 ✓：连接失败时我们会逐级降级（关签名/关加密 → 自动 → 3.0.2 → 2.1 ✓），
+/// 但用户希望 **"试一次就记住"** ✓，不要每次启动都顺序试一遍 ✗。
+///
+/// 规则 ✓：找到 host + share 匹配的服务器条目 ⇒ 把 signing / seal / version
+/// 改成 [working] 里那套 ✓ 并保存 ✓（换掉整个列表对象 ⇒ 让解析缓存自动失效 ✓）。
+/// 找不到匹配（例如路径里的共享没配服务器 ✓）⇒ 静默不动 ✓。
+Future<void> persistSmbProtocolOptions(SmbConfig working) async {
+  final raw = appdata.settings['smbServers'];
+  if (raw is! List) return;
+  var changed = false;
+  final next = <dynamic>[];
+  for (final item in raw) {
+    if (item is! Map) {
+      next.add(item);
+      continue;
+    }
+    try {
+      final map = Map<String, dynamic>.from(item);
+      final conn = SmbConnection.fromJson(map);
+      final cfg = conn.config;
+      if (cfg.host.toLowerCase() == working.host.toLowerCase() &&
+          cfg.share == working.share &&
+          (working.username.isEmpty || cfg.username == working.username)) {
+        // 只改协议选项 ✓：账号/密码/端口不动 ✓。
+        map['config'] = {
+          ...(map['config'] as Map? ?? const {}),
+          'signing': working.signing,
+          'seal': working.seal,
+          'version': working.version.name,
+        };
+        changed = true;
+        next.add(map);
+        continue;
+      }
+      next.add(item);
+    } catch (_) {
+      next.add(item);
+    }
+  }
+  if (!changed) return;
+  appdata.settings['smbServers'] = next;
+  await appdata.saveData();
+}
