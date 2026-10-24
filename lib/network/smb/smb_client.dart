@@ -31,6 +31,12 @@ class SmbClient {
 
   /// Connect to the SMB share.
   Future<void> connect() async {
+    // ⚠️ 2026-10-24：底层库（`dart_smb2` → libsmb2）**没有端口参数** ✗ ⇒ 非 445 端口
+    // 原来会**静默连到 445** ✗（用户只看到"连不上"、查不出原因 ✓）⇒ 这里改为**明确报错** ✓。
+    if (config.port != 445) {
+      throw "SMB 端口 ${config.port} 暂不支持：当前底层库仅支持 445 端口，"
+          "请在 NAS/路由器上使用标准 SMB 端口（445）。";
+    }
     if (_pool != null) {
       await _pool!.disconnect();
     }
@@ -42,6 +48,10 @@ class SmbClient {
       domain: config.domain,
       timeoutSeconds: 30,
       workers: 4,
+      // ⭐ 2026-10-24：协议选项透传 ✓（服务器"强制签名/加密"或需指定方言时用得上 ✓）。
+      signing: config.signing,
+      seal: config.seal,
+      version: config.version,
     );
   }
 

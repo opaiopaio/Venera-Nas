@@ -37,6 +37,10 @@ class SmbConnection {
   ///
   /// Returns null on success, or an error message string on failure.
   Future<String?> testConnection() async {
+    // ⚠️ 2026-10-24：底层库无端口参数 ⇒ 非 445 端口无法测试，直接给出明确原因 ✓（不再静默失败 ✗）。
+    if (config.port != 445) {
+      return '端口 ${config.port} 暂不支持：底层库仅支持 445 端口。';
+    }
     try {
       final pool = await Smb2Pool.connect(
         host: config.host,
@@ -46,6 +50,10 @@ class SmbConnection {
         domain: config.domain,
         timeoutSeconds: 10,
         workers: 1,
+        // ⭐ 2026-10-24：协议选项透传 ✓（与正式连接保持一致 ✓，避免"测试通过但实际连不上" ✗）。
+        signing: config.signing,
+        seal: config.seal,
+        version: config.version,
       );
       try {
         await pool.listDirectory('');

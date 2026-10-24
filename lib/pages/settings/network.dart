@@ -605,6 +605,7 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
   }
 
   SmbConnection _buildConnection() {
+    final old = widget.connection?.config;
     final port = int.tryParse(_portController.text.trim()) ?? 445;
     return SmbConnection(
       name: _nameController.text.trim(),
@@ -615,6 +616,12 @@ class _SmbServerEditDialogState extends State<_SmbServerEditDialog> {
         username: _usernameController.text.trim(),
         password: _passwordController.text,
         domain: _domainController.text.trim(),
+        // ⭐ 2026-10-24：编辑时**保留**已有的协议选项 ✓ ——
+        // 否则用户每编辑一次，签名/加密/方言都会被悄悄重置为默认 ✗。
+        //（这些选项的 UI 在下一轮补 ✓；当前改动不改变既有行为 ✓。）
+        signing: old?.signing ?? false,
+        seal: old?.seal ?? false,
+        version: old?.version ?? Smb2Version.any,
       ),
     );
   }

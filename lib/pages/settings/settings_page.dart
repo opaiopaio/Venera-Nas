@@ -23,6 +23,8 @@ import 'package:venera_nas/foundation/log.dart';
 import 'package:venera_nas/network/app_dio.dart';
 import 'package:venera_nas/network/smb/smb_config.dart';
 import 'package:venera_nas/network/smb/smb_connection.dart';
+// ⭐ 2026-10-24：SMB 协议选项（签名 / 加密 / 协商方言）需要 `Smb2Version` ✓。
+import 'package:dart_smb2/dart_smb2.dart' show Smb2Version;
 import 'package:venera_nas/utils/auth_storage.dart';
 import 'package:venera_nas/utils/data.dart';
 import 'package:venera_nas/utils/data_sync.dart';

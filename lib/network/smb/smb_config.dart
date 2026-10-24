@@ -1,3 +1,5 @@
+import 'package:dart_smb2/dart_smb2.dart';
+
 /// Configuration for connecting to an SMB share.
 ///
 /// Stores the host, port, share name, and optional credentials
@@ -21,6 +23,16 @@ class SmbConfig {
   /// Windows domain for authentication (default: empty string).
   final String domain;
 
+  /// ⭐ 2026-10-24：**要求消息签名** ✓（服务器"强制签名"时必须开 ✓，否则协商失败 ✗）。
+  final bool signing;
+
+  /// ⭐ 2026-10-24：**SMB3 加密（seal）** ✓（服务器要求加密时必须开 ✓；要求至少 SMB3 ✓）。
+  final bool seal;
+
+  /// ⭐ 2026-10-24：**协商方言** ✓（默认 `any` = 让服务器挑最高 ✓；
+  /// 老设备可强制 `v210`/`v300` 等 ✓；`seal` 必须 ≥ `any3` ✓）。
+  final Smb2Version version;
+
   const SmbConfig({
     required this.host,
     this.port = 445,
@@ -28,6 +40,9 @@ class SmbConfig {
     this.username = '',
     this.password = '',
     this.domain = '',
+    this.signing = false,
+    this.seal = false,
+    this.version = Smb2Version.any,
   });
 
   /// Builds an SMB URL from this config: smb://host:port/share/path
@@ -52,6 +67,10 @@ class SmbConfig {
     'username': username,
     'password': password,
     'domain': domain,
+    // ⭐ 2026-10-24：新增协议选项 ✓（老数据没有这些键 ⇒ 取默认值 ✓ 向后兼容 ✓）。
+    'signing': signing,
+    'seal': seal,
+    'version': version.name,
   };
 
   factory SmbConfig.fromJson(Map<String, dynamic> json) => SmbConfig(
@@ -61,7 +80,18 @@ class SmbConfig {
     username: json['username'] as String? ?? '',
     password: json['password'] as String? ?? '',
     domain: json['domain'] as String? ?? '',
+    signing: json['signing'] as bool? ?? false,
+    seal: json['seal'] as bool? ?? false,
+    version: _versionFromName(json['version'] as String?),
   );
+
+  static Smb2Version _versionFromName(String? name) {
+    if (name == null || name.isEmpty) return Smb2Version.any;
+    for (final v in Smb2Version.values) {
+      if (v.name == name) return v;
+    }
+    return Smb2Version.any;
+  }
 
   @override
   bool operator ==(Object other) =>
