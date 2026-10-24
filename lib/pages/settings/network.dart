@@ -484,10 +484,7 @@ class _SmbServerManagerState extends State<_SmbServerManager> {
   Future<void> _testServer(int index) async {
     final connection = servers[index];
     setState(() {}); // trigger rebuild for loading indicator if needed
-    // ⭐ 2026-10-25（用户实测追问 ✓）：**列表页的"快速测试"也要走降级链** ✓ ——
-    // 原来这里只按**当前保存的配置**试一次 ✗ ⇒ 用户开着签名/加密时会看到原始报错 ✗，
-    // 但实际读图/下载会自动降级（关签名 → 自动 → 3.0.2 → 2.1 ✓）⇒ 两处结论不一致 ✗。
-    final error = await connection.testConnectionWithDiagnosis();
+    final error = await connection.testConnection();
     if (!mounted) return;
     if (error == null) {
       showDialogMessage(
@@ -495,9 +492,6 @@ class _SmbServerManagerState extends State<_SmbServerManager> {
         "Test Connection".tl,
         "Connection successful".tl,
       );
-    } else if (error.startsWith('✅')) {
-      // 降级后可用 ✓：不按"失败"展示 ✗（方法内部已给出"已自动降级为…"的说明 ✓）。
-      showDialogMessage(context, "Test Connection".tl, error);
     } else {
       showDialogMessage(context, "Test Connection".tl, error);
     }
