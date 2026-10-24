@@ -471,7 +471,7 @@ class ReaderImageProvider
         high: false,
         timeout: _smbPrefetchWaitTimeout,
       )) {
-        throw "Error: SMB prefetch skipped (busy).";
+        throw "Invalid Status Code: 404 (SMB prefetch skipped, busy)";
       }
     }
 

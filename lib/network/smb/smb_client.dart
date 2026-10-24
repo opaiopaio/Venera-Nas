@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -28,6 +29,10 @@ class SmbClient {
   final SmbConfig config;
 
   Smb2Pool? _pool;
+
+  /// ⭐ 2026-10-25：连接被判定为**不可再用** ✓（超时 / 连接类错误后置位 ✓）——
+  /// 此时直接新建连接 ✓（旧连接引用已丢弃 ✓，不 disconnect ✓，见 [_guard] ✓）。
+  bool _dead = false;
 
   SmbClient({required this.config});
 
@@ -72,7 +77,7 @@ class SmbClient {
   ///
   /// ⚠️ 只表示"池对象非空" ✓（复查记录 ✓）—— 连接可能已被服务器断开 ✓；
   /// 真正的失败会在下一次原生调用上暴露 ✓。
-  bool get isConnected => _pool != null;
+  bool get isConnected => _pool != null && !_dead;
 
   /// Connect to the SMB share.
   ///
@@ -101,6 +106,7 @@ class SmbClient {
         seal: config.seal,
         version: config.version,
       );
+      _dead = false;
     }, high: high);
   }
 
@@ -122,15 +128,50 @@ class SmbClient {
     return pool;
   }
 
+  /// ⭐ 2026-10-25：**单个原生操作的超时** ✓
+  ///
+  /// 为什么必须加（实测日志 ✓）：服务器偶发不响应（ksmbd 上出现过 ✓）⇒ 原生读
+  /// **永远不返回** ✗ ⇒ 全局闸门被占死 ✗ ⇒ 后面列目录 / 读图全部排队 ⇒
+  /// "扫描转圈 / 打开漫画无限转圈"、取消也很慢 ✓（日志里同一页每 7~10 秒重试一次 ✓）。
+  static const _opTimeout = Duration(seconds: 25);
+
+  /// 带超时 + 出错自动"弃用连接"的原生操作包装 ✓。
+  ///
+  /// ⚠️ 超时/连接类错误后**故意不 disconnect** ✗ —— 原生调用可能仍在跑 ✓，
+  /// 此时断开会造成 `0xc0000005` 访问冲突 ✓（事件日志实证 ✓）。
+  /// 做法是**丢弃引用** ✓：旧连接自生自灭（泄漏一条 ✓），后续操作**新建连接** ✓，
+  /// 闸门也能立刻释放 ✓ ⇒ 用户看到"超时，请重试"✓，而不是永远转圈 ✗。
+  Future<T> _guard<T>(Future<T> Function() op, {bool high = false}) {
+    return SmbSerial.run(() async {
+      try {
+        return await op().timeout(_opTimeout);
+      } on TimeoutException {
+        _invalidate();
+        throw "SMB 操作超时（服务器无响应）。可在「设置 → 网络 → SMB 服务器」"
+            "点「重置 SMB 连接」后重试。";
+      } on Smb2Exception catch (e) {
+        if (e.type == Smb2ErrorType.connection ||
+            e.type == Smb2ErrorType.timeout ||
+            e.type == Smb2ErrorType.unknown) {
+          _invalidate();
+        }
+        rethrow;
+      }
+    }, high: high);
+  }
+
+  /// 丢弃当前连接引用（**不 disconnect** ✓，见 [_guard] 注释 ✓）。
+  void _invalidate() {
+    _pool = null;
+    _dead = true;
+  }
+
   /// List the contents of a directory on the SMB share.
   ///
   /// [path] is relative to the share root (e.g. `'Comics'` or `''`).
   /// Returns a list of [SmbEntry] objects with name, path, type and size.
   Future<List<SmbEntry>> listDirectory(String path, {bool high = false}) async {
-    final entries = await SmbSerial.run(
-      () => _p.listDirectory(path),
-      high: high,
-    );
+    final entries = await _guard(() => _p.listDirectory(path), high: high);
     return entries.map((e) {
       final entryPath = path.isEmpty ? e.name : '$path/${e.name}';
       return SmbEntry(
@@ -160,7 +201,7 @@ class SmbClient {
   ///
   /// ⭐ [high] = true 表示"用户在等"（阅读器当前页 ✓）—— 会优先于后台预取 ✓。
   Future<Uint8List> readFile(String path, {bool high = false}) async {
-    return SmbSerial.run(() => _p.readFile(path), high: high);
+    return _guard(() => _p.readFile(path), high: high);
   }
 
   /// Read a byte range from a file on the SMB share.
@@ -172,7 +213,7 @@ class SmbClient {
     required int length,
     bool high = false,
   }) async {
-    return SmbSerial.run(
+    return _guard(
       () => _p.readFileRange(path, offset: offset, length: length),
       high: high,
     );
@@ -180,7 +221,7 @@ class SmbClient {
 
   /// Get file metadata without reading its contents.
   Future<Smb2Stat> stat(String path, {bool high = false}) async {
-    return SmbSerial.run(() => _p.stat(path), high: high);
+    return _guard(() => _p.stat(path), high: high);
   }
 
   /// Stream a file from the SMB share in chunks.
@@ -213,7 +254,7 @@ class SmbClient {
     bool Function()? isCanceled,
   }) async {
     final localFile = File(localPath);
-    await SmbSerial.run(
+    await _guard(
       () => _p.downloadToFile(
         remotePath,
         localFile,
@@ -232,7 +273,7 @@ class SmbClient {
     Uint8List data, {
     void Function(int sent, int total)? onProgress,
   }) async {
-    await SmbSerial.run(() => _p.writeFile(remotePath, data));
+    await _guard(() => _p.writeFile(remotePath, data));
     onProgress?.call(data.length, data.length);
   }
 
@@ -256,7 +297,7 @@ class SmbClient {
       if (part.isEmpty) continue;
       current = current.isEmpty ? part : '$current/$part';
       try {
-        await SmbSerial.run(() => _p.mkdir(current));
+        await _guard(() => _p.mkdir(current));
       } on Smb2Exception catch (e) {
         // Silently ignore already-exists errors
         if (e.type != Smb2ErrorType.alreadyExists) {

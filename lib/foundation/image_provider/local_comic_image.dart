@@ -15,8 +15,11 @@ import 'base_image_provider.dart';
 import 'local_comic_image.dart' as image_provider;
 
 /// Simple semaphore to limit concurrent async operations.
-class _Semaphore {
-  _Semaphore(this._maxCount);
+///
+/// ⭐ 2026-10-25：改名为公开 `Semaphore` ✓ —— 历史封面加载也要限并发 ✓
+///（原先私有 `_Semaphore` 只在同文件可用 ✗）。
+class Semaphore {
+  Semaphore(this._maxCount);
   final int _maxCount;
   int _current = 0;
   final List<Completer<void>> _waiters = [];
@@ -97,7 +100,7 @@ class LocalComicImageProvider
     return data;
   }
 
-  static final _smbSemaphore = _Semaphore(2);
+  static final _smbSemaphore = Semaphore(2);
 
   /// ⭐ 2026-10-25：**已知缺失封面**缓存 ✓ —— 坏盘/被删的漫画会反复加载失败 ✓，
   /// 每次重试都要占用 SMB 连接与全局闸门 ✗ ⇒ 扫描/读图排队超时 ✓（实测日志 ✓）。
@@ -149,7 +152,7 @@ class LocalComicImageProvider
         final smbDir = smbPathFromUrl(baseDir);
         final List<SmbEntry> entries;
         try {
-          entries = await client.listDirectory(smbDir, high: true);
+          entries = await client.listDirectory(smbDir);
         } on Smb2Exception catch (e) {
           // 目录都不存在（如坏盘漫画 ✓）⇒ 直接判定"封面缺失" ✓，不再重试 ✗。
           if (e.type == Smb2ErrorType.fileNotFound) _failSmbCover(cacheKey);

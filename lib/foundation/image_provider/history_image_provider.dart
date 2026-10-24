@@ -70,6 +70,10 @@ class HistoryImageProvider
   /// 每次重试都占用 SMB 连接与全局闸门 ✗ ⇒ 扫描/读图排队超时 ✓（实测日志 ✓）。
   static final Set<String> _failedSmbCovers = {};
 
+  /// ⭐ 2026-10-25：封面加载**限并发 2** ✓ —— 历史有几十条时别一拥而上抢 SMB 闸门 ✗
+  ///（阅读器读图是高优先级 ✓，封面是次要的 ✓）。
+  static final _smbSemaphore = Semaphore(2);
+
   Future<Uint8List> _loadSmbCover(LocalComic comic) async {
     // Check disk cache first (reuse same cache key strategy as LocalComicImageProvider)
     final cacheKey = 'smb_cover:${comic.id}';
@@ -96,6 +100,7 @@ class HistoryImageProvider
     final remoteCoverPath = smbPathFromUrl(coverUrl);
 
     final client = SmbClient.shared(config);
+    await _smbSemaphore.acquire();
     try {
       await client.connect();
       try {
@@ -114,7 +119,7 @@ class HistoryImageProvider
         final smbDir = smbPathFromUrl(baseDir);
         final List<SmbEntry> entries;
         try {
-          entries = await client.listDirectory(smbDir, high: true);
+          entries = await client.listDirectory(smbDir);
         } on Smb2Exception catch (e) {
           if (e.type == Smb2ErrorType.fileNotFound) _failSmbCover(cacheKey);
           rethrow;
@@ -154,6 +159,7 @@ class HistoryImageProvider
       }
     } finally {
       // ⭐ 共享客户端：**不在此断开** ✓（统一由 SmbClient.closeAllShared / 重置入口管理 ✓）。
+      _smbSemaphore.release();
     }
   }
 
