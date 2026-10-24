@@ -44,7 +44,7 @@ class SmbClient {
   /// NAT/路由器侧也会多占一批 SMB 会话 ✓。现在所有调用者共享同一个 Future ✓。
   Future<void>? _connecting;
 
-  static const _connectCooldown = Duration(seconds: 15);
+  static const _connectCooldown = Duration(seconds: 3);
 
   /// ⭐ 2026-10-25：**连接单独用 40s 预算** ✓ ——
   /// 原先生效的是 [_opTimeout]（25s）✗，比底层 `Smb2Pool.connect(timeoutSeconds: 30)`
@@ -193,6 +193,32 @@ class SmbClient {
       _lastConnectFailureAt = null;
       _dead = false;
     } catch (e) {
+      // ⭐ 2026-10-25（实测反馈 ✓）：**失败时先尝试"降级重试"一次** ✓ ——
+      // 签名 / 加密 / 方言这些都是"可选加严" ✓，个别服务器（路由器内置 SMB 服务 ✓）
+      // 对它们处理不一致 ✗ ⇒ 退回默认（全关 + 自动协商）往往就能连上 ✓。
+      final hasExplicitOptions =
+          config.signing || config.seal || config.version != Smb2Version.any;
+      if (hasExplicitOptions) {
+        try {
+          final fallback = SmbClient(
+            config: config.copyWith(
+              signing: false,
+              seal: false,
+              version: Smb2Version.any,
+            ),
+          );
+          await fallback.connect(high: high);
+          // 所有权转移 ✓：把池交给本实例，避免 fallback 被回收时误断 ✓。
+          _pool = fallback._pool;
+          fallback._pool = null;
+          _lastConnectFailureAt = null;
+          _dead = false;
+          return;
+        } catch (_) {
+          // 降级也失败 ⇒ 走原来的报错路径 ✓（保留**原始错误** ✓，不再被"冷却"文案盖掉 ✗）。
+        }
+      }
+      // ⚠️ 冷却窗口缩短到 3s ✓：原来 15s 会让用户"重置过一次还这样" ✗（真实原因被藏住 ✓）。
       _lastConnectFailureAt = DateTime.now();
       rethrow;
     }
