@@ -259,6 +259,41 @@ class ImportComic {
     return registerComics(imported, false);
   }
 
+  /// ⭐ 2026-10-24：**可单测的导入扫描循环** ✓
+  ///
+  /// 把「进度上报 + 用户取消」这段纯逻辑从 [smb] 里抽出来 ✓ ——
+  /// 不依赖真实 SMB / 文件系统 ✓ ⇒ 可在 `test/smb_import_scan_test.dart` 里直接断言 ✓。
+  ///
+  /// [checkOne] 返回 `null` 表示"这个目录不是有效漫画" ✓（会被跳过 ✓）。
+  /// 返回 `true` = 全部跑完 ✓；`false` = **被用户取消** ✓（调用方必须**不要落库** ✗）。
+  @visibleForTesting
+  static Future<bool> scanSmbDirectories<T>({
+    required List<String> directoryPaths,
+    required Future<T?> Function(String path) checkOne,
+    required List<T> results,
+    void Function(int current, int total)? onProgress,
+    bool Function()? isCancelled,
+  }) async {
+    final total = directoryPaths.length;
+    onProgress?.call(0, total);
+    var index = 0;
+    for (final path in directoryPaths) {
+      // ⭐ 取消**逐个目录**检查 ✓（目录内部不做细粒度中断 ✓，避免半成品记录 ✓）。
+      if (isCancelled?.call() ?? false) {
+        Log.info("Import Comic (SMB)", "cancelled by user at $index/$total");
+        return false;
+      }
+      index++;
+      final result = await checkOne(path);
+      if (result != null) {
+        results.add(result);
+      }
+      onProgress?.call(index, total);
+    }
+    // ⭐ 跑完再判一次 ✓：最后一步刚结束就被取消 ⇒ 也按"取消"处理 ✓（不落库 ✓）。
+    return !(isCancelled?.call() ?? false);
+  }
+
   /// Scan an SMB share for comics.
   ///
   /// [config] is the connection configuration.
@@ -290,29 +325,24 @@ class ImportComic {
 
       final entries = await client.listDirectory(rootPath);
       final subDirs = entries.where((e) => e.isDirectory).toList();
-      final total = subDirs.length;
-      onProgress?.call(0, total);
 
       final comics = <LocalComic>[];
-      var index = 0;
-      for (final subDir in subDirs) {
-        index++;
-        // ⭐ 取消要**逐个目录**检查 ✓（单个目录内部不做细粒度中断 ✓，避免半成品记录 ✓）。
-        if (isCancelled?.call() ?? false) {
-          Log.info("Import Comic (SMB)", "cancelled by user at $index/$total");
-          return [];
-        }
-        final comic = await _checkSingleSmbComic(
+      // ⭐ 2026-10-24：进度 / 取消 / 结果收集统一走 [scanSmbDirectories] ✓（可单测 ✓）。
+      final completed = await scanSmbDirectories<LocalComic>(
+        directoryPaths: subDirs.map((e) => e.path).toList(),
+        checkOne: (path) => _checkSingleSmbComic(
           client,
-          subDir.path,
+          path,
           config: config,
           tags: tags,
           subtitle: subtitle,
-        );
-        if (comic != null) {
-          comics.add(comic);
-        }
-        onProgress?.call(index, total);
+        ),
+        results: comics,
+        onProgress: onProgress,
+        isCancelled: isCancelled,
+      );
+      if (!completed) {
+        return [];
       }
 
       // ⭐ 落库前再判一次 ✓：取消时**不写入**任何记录 ✓（避免"取消了一半"✗）。
