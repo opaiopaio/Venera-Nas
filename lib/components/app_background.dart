@@ -6,11 +6,7 @@ part of 'components.dart';
 /// （用户实测："有的地方白一块"；与 `background_slice.dart` 的首帧缓存配合，双保险）。
 Color backgroundPlaceholderColor(ColorScheme scheme) {
   final v = appdata.settings['backgroundColor'] as String? ?? 'transparent';
-  final resolved = resolveColorSettingValue(v);
-  if (resolved != null) return resolved;
-  // ⭐ 2026-10-25（用户实测 ✓）：**配了背景图但没配底色**时，兜底不能是白色 ✗
-  //（否则首帧"UI + 白底"一起出现 ✓，随后背景图才闪出来 ✗）。
-  return currentBackgroundImageFile() != null ? Colors.black : scheme.surface;
+  return resolveColorSettingValue(v) ?? scheme.surface;
 }
 
 /// 全局自定义背景层：底色（可配置）+ 可选图片（透明度 / 显示方式）。
@@ -31,12 +27,7 @@ class AppBackground extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final bgColorValue =
         appdata.settings['backgroundColor'] as String? ?? 'transparent';
-    final hasBackgroundImage = currentBackgroundImageFile() != null;
-    // ⭐ 2026-10-25（用户实测 ✓）：**有背景图且底色透明 ⇒ 用深色兜底** ✓
-    // 原来兜底是 `scheme.surface`（浅色=白 ✓）⇒ 首帧"UI+白底" ✓，图片解码完才闪出来 ✗。
-    final base =
-        resolveColorSettingValue(bgColorValue) ??
-        (hasBackgroundImage ? Colors.black : scheme.surface);
+    final base = resolveColorSettingValue(bgColorValue) ?? scheme.surface;
 
     Widget layer = ColoredBox(color: base);
 
