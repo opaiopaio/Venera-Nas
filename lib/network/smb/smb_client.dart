@@ -313,53 +313,20 @@ class SmbClient {
       _lastConnectFailureAt = null;
       _dead = false;
     } catch (e) {
-      // ⭐⭐ 2026-10-25（用户实测追问 ✓）：**「自动」要真的会动态降级** ✓
-      //
-      // 说明 ✓：`version: any` 只是"客户端在协商里**列出**所有方言" ✓，
-      // **由服务器挑最高公共版本** ✓ —— 若某台服务器的最高版本（如 3.1.1 / 3.0 ✓）
-      // 自身有问题 ✗，协商就会**一直选中那个坏版本** ⇒ 表现为"自动也连不上" ✗
-      //（用户截图 ✓：只有显式 `SMB 3.0.2` + 关签名能连 ✓）。
-      //
-      // 所以这里补上**自动降级链** ✓：按"关签名/关加密 → 3.0.2 → 2.1"逐级试 ✓，
-      // 任何一套成功就采用 ✓（用户不需要手动一项项改 ✓）。
-      final candidates = <SmbConfig>[];
-      void addCandidate(SmbConfig c) {
-        // 去重 ✓（同样的参数不要重复试 ✓）。
-        for (final existing in candidates) {
-          if (existing.host == c.host &&
-              existing.share == c.share &&
-              existing.username == c.username &&
-              existing.password == c.password &&
-              existing.domain == c.domain &&
-              existing.signing == c.signing &&
-              existing.seal == c.seal &&
-              existing.version == c.version) {
-            return;
-          }
-        }
-        candidates.add(c);
-      }
-
-      // ① 只关签名/加密（保留用户指定版本或自动 ✓）
-      if (config.signing || config.seal) {
-        addCandidate(config.copyWith(signing: false, seal: false));
-      }
-      // ② 全关 + 自动
-      addCandidate(
-        config.copyWith(signing: false, seal: false, version: Smb2Version.any),
-      );
-      // ③ 全关 + 3.0.2（老 Samba / ksmbd 常见可用 ✓）
-      addCandidate(
-        config.copyWith(signing: false, seal: false, version: Smb2Version.v302),
-      );
-      // ④ 全关 + 2.1（最保守 ✓）
-      addCandidate(
-        config.copyWith(signing: false, seal: false, version: Smb2Version.v210),
-      );
-
-      for (final candidate in candidates) {
+      // ⭐ 2026-10-25（实测反馈 ✓）：**失败时先尝试"降级重试"一次** ✓ ——
+      // 签名 / 加密 / 方言这些都是"可选加严" ✓，个别服务器（路由器内置 SMB 服务 ✓）
+      // 对它们处理不一致 ✗ ⇒ 退回默认（全关 + 自动协商）往往就能连上 ✓。
+      final hasExplicitOptions =
+          config.signing || config.seal || config.version != Smb2Version.any;
+      if (hasExplicitOptions) {
         try {
-          final fallback = SmbClient(config: candidate);
+          final fallback = SmbClient(
+            config: config.copyWith(
+              signing: false,
+              seal: false,
+              version: Smb2Version.any,
+            ),
+          );
           await fallback.connect(high: high);
           // 所有权转移 ✓：把池交给本实例，避免 fallback 被回收时误断 ✓。
           _pool = fallback._pool;
@@ -368,10 +335,10 @@ class SmbClient {
           _dead = false;
           return;
         } catch (_) {
-          // 这一套不行 ⇒ 试下一套 ✓。
+          // 降级也失败 ⇒ 走原来的报错路径 ✓（保留**原始错误** ✓，不再被"冷却"文案盖掉 ✗）。
         }
       }
-      // ⚠️ 冷却窗口 3s ✓：不长时间藏住真实错误 ✓。
+      // ⚠️ 冷却窗口缩短到 3s ✓：原来 15s 会让用户"重置过一次还这样" ✗（真实原因被藏住 ✓）。
       _lastConnectFailureAt = DateTime.now();
       rethrow;
     }
