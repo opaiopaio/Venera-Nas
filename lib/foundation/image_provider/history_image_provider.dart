@@ -26,19 +26,22 @@ class HistoryImageProvider
   @override
   Future<Uint8List> load(chunkEvents, checkStop) async {
     var url = history.cover;
-    if (!url.contains('/')) {
-      // Try finding by ComicType.smb — history may reference a network
-      // source but the comic was imported as SMB local.
-      final localComic =
-          LocalManager().find(history.id, history.type) ??
-          LocalManager().find(history.id, ComicType.smb);
-      if (localComic != null) {
-        if (localComic.comicType == ComicType.smb ||
-            localComic.baseDir.startsWith('smb://')) {
-          return _loadSmbCover(localComic);
-        }
-        return localComic.coverFile.readAsBytes();
+    // ⭐ 2026-10-25（用户实测 ✓）：**先查本地库，再按封面形态分派** ✓ ——
+    // 旧逻辑用 `url.contains('/')` 判断"是否网络缩略图" ✗：
+    // SMB 漫画走「首图做封面」且**有章节**时，cover 是 `章节目录/首图.png`（**含 /** ✗）
+    // ⇒ 被误判成网络 URL ⇒ 历史页永远拿不到封面 ✗（用户实例：Alpha91 两章、图很多 ✓）。
+    final localComic =
+        LocalManager().find(history.id, history.type) ??
+        LocalManager().find(history.id, ComicType.smb);
+    if (localComic != null) {
+      if (localComic.comicType == ComicType.smb ||
+          localComic.baseDir.startsWith('smb://')) {
+        return _loadSmbCover(localComic);
       }
+      // 本地漫画：cover 可能是 `cover.jpg` 或 `章节/图.jpg` ✓ —— 都交给 coverFile 解析 ✓。
+      return localComic.coverFile.readAsBytes();
+    }
+    if (!url.contains('/')) {
       // ⭐ 2026-10-25：SMB 历史条目在本地库里找不到（坏盘/已删除 ✓）⇒ **快速失败不重试** ✓
       //（原来会走到下面的 `comicSource` 分支抛 "Comic source not found" ✗ ⇒ 图片层反复重试 ✗）。
       if (history.type == ComicType.smb) {
