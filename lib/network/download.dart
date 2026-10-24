@@ -235,7 +235,11 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
       SmbConfig? smbCfg;
       String? smbD;
       if (isSmb) {
-        smbCfg = _parseSmbConfig(path!);
+        // ⭐ 2026-10-25（审查 P0 修复 ✓）：**统一用 `parseSmbConfigFromUrl`** ✓
+        // 原来这里有一份私有 `_parseSmbConfig` ✓ 只从 URL 的 userinfo 读凭据 ✗ ——
+        // 而 `smbDownloadPath` 保存时已**剥离账号密码** ✓ ⇒ 需要认证的共享会拿到空凭据 ⇒ 下载必失败 ✗
+        //（同一任务的封面却走 `parseSmbConfigFromUrl` 能成功 ✓，行为自相矛盾 ✓）。
+        smbCfg = parseSmbConfigFromUrl(path!);
         smbD = _smbDirFromPath(path!);
         if (comic!.chapters != null) {
           smbD =
@@ -1000,20 +1004,6 @@ class ArchiveDownloadTask extends DownloadTask {
       createdAt: DateTime.now(),
     );
   }
-}
-
-SmbConfig _parseSmbConfig(String url) {
-  final uri = Uri.parse(url);
-  final parts = uri.pathSegments;
-  final share = parts.isNotEmpty ? parts.first : '';
-  final userInfo = uri.userInfo.split(':');
-  return SmbConfig(
-    host: uri.host,
-    port: uri.hasPort ? uri.port : 445,
-    share: share,
-    username: userInfo.isNotEmpty ? Uri.decodeComponent(userInfo[0]) : '',
-    password: userInfo.length > 1 ? Uri.decodeComponent(userInfo[1]) : '',
-  );
 }
 
 String _smbDirFromPath(String url) {
