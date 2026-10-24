@@ -33,6 +33,19 @@ class BackgroundSlice extends StatefulWidget {
 ui.Image? _sliceCachedImage;
 String? _sliceCachedPath;
 
+/// ⭐ 2026-10-25（用户实测 ✓：冷启动"UI+白底 → 背景闪出来"✗）：
+/// **由启动预热把"已解码的当前背景图"交给切片首帧缓存** ✓ ⇒ **首帧就有背景** ✓。
+///
+/// ⚠️ 解码**不放在本文件** ✗（守卫 `background_preload_cache_test` 的 T-BP2 明确禁止
+/// `instantiateImageCodec` 出现在切片里 ✓ —— 历史事故教训 ✓）；解码在 `main.dart` 启动时做 ✓。
+///
+/// 安全 ✓：只写模块缓存 ✓，仍由 `FileImage` 流照常解析/覆盖 ✓（不提前 return ✓）；
+/// **按路径**存储 ✓ ⇒ 换背景图后路径不同 ⇒ 下次启动会重新预置 ✓（换图也不会闪 ✓）。
+void seedBackgroundSliceFirstFrame(ui.Image image, String path) {
+  _sliceCachedImage = image;
+  _sliceCachedPath = path;
+}
+
 class _BackgroundSliceState extends State<BackgroundSlice> {
   /// 本组件左上角在窗口坐标里的位置。
   Offset? _offsetInWindow;

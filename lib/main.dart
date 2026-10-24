@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:desktop_webview_window/desktop_webview_window.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flex_seed_scheme/flex_seed_scheme.dart';
@@ -51,6 +52,21 @@ void main(List<String> args) {
         // "UI+白底 → 背景闪出来" ✗。现在 **Android + Windows 都预热** ✓（内部仍有令牌超时 + 静默回退 ✓）。
         if (App.isAndroid || App.isWindows) {
           await preloadBackgroundImageIntoCache();
+          // ⭐ 2026-10-25：**把当前背景图预解码并交给 BackgroundSlice 首帧缓存** ✓
+          //（只预热 ImageCache 不够 ✗：切片第一帧仍要等异步解析回调 ⇒ 露白 ✓）
+          try {
+            final bgFile = currentBackgroundImageFile();
+            if (bgFile != null) {
+              final bgBytes = await bgFile.readAsBytes();
+              final bgCodec = await ui.instantiateImageCodec(bgBytes);
+              final bgFrame = await bgCodec.getNextFrame();
+              seedBackgroundSliceFirstFrame(bgFrame.image, bgFile.path);
+            }
+          } catch (_) {
+            // 静默回退 ✓：图不存在/损坏 ⇒ 首帧退回原行为 ✓。
+          }
+          // ⇒ 首帧就有背景图 ✓（只预热 ImageCache 不够 ✗：第一帧仍要等异步解析回调 ✓）。
+          // 按**路径**失效 ✓ ⇒ 换背景图后走同一路径重新预置 ✓（换图也不会闪 ✓）。
         }
         runApp(const MyApp());
         if (App.isDesktop) {
