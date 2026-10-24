@@ -209,6 +209,15 @@ class LocalComicImageProvider
         }
         final compressed = await compressCoverImage(data);
         await CacheManager().writeCache(cacheKey, compressed);
+        // ⭐ 2026-10-25（用户要求 ✓：**有缓存就直接读 ✓**）：**双写兼容键** ✓
+        // 历史页读封面时用的仍是旧键 smb_cover:<id> ✗ ⇒ 永远读不中 ⇒ 每次重启都重下 ✗。
+        // 这里额外写一份旧键 ✓ ⇒ 读写一致 ✓（新键优先 ✓）。
+        if (cacheKey != SmbCoverLoader.cacheKey(comic.id)) {
+          await CacheManager().writeCache(
+            SmbCoverLoader.cacheKey(comic.id),
+            compressed,
+          );
+        }
         return Uint8List.fromList(compressed);
       } on Smb2Exception catch (e) {
         if (e.type != Smb2ErrorType.fileNotFound) rethrow;
@@ -252,6 +261,15 @@ class LocalComicImageProvider
         final data = await client.readFile(found.path);
         final compressed = await compressCoverImage(data);
         await CacheManager().writeCache(cacheKey, compressed);
+        // ⭐ 2026-10-25（用户要求 ✓：**有缓存就直接读 ✓**）：**双写兼容键** ✓
+        // 历史页读封面时用的仍是旧键 smb_cover:<id> ✗ ⇒ 永远读不中 ⇒ 每次重启都重下 ✗。
+        // 这里额外写一份旧键 ✓ ⇒ 读写一致 ✓（新键优先 ✓）。
+        if (cacheKey != SmbCoverLoader.cacheKey(comic.id)) {
+          await CacheManager().writeCache(
+            SmbCoverLoader.cacheKey(comic.id),
+            compressed,
+          );
+        }
         return Uint8List.fromList(compressed);
       }
     } finally {
