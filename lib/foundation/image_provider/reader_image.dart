@@ -1,4 +1,4 @@
-import 'dart:async' show Completer, Future, Timer;
+import 'dart:async' show Completer, Future;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
@@ -15,54 +15,48 @@ import 'package:venera_nas/utils/io.dart';
 import 'base_image_provider.dart';
 import 'reader_image.dart' as image_provider;
 
-/// 简易信号量，用于限制并发异步操作。
+/// ⭐ 2026-10-24：**SMB 原生操作的全局串行闸门** ✓
 ///
-/// 说明（2026-10-24）：`local_comic_image.dart` 里已有同名实现，但它是**文件私有**的（`_` 前缀
-/// 只在所属库内可见），跨文件无法复用 ⇒ 这里单独写一份等价实现。
-class _Semaphore {
-  _Semaphore(this._maxCount);
+/// 崩溃实证（Windows 事件日志 ✓）：`libsmb2.dll` 报 **0xc0000005 访问冲突** ✗ ——
+/// 原生库不能被"同一连接并发使用"或"读到一半被 disconnect" ✗。
+/// 所以所有 SMB 操作必须**一次只做一件** ✓；本闸门让**前台请求优先** ✓、预取等不到就丢 ✓。
+class _SmbGate {
+  bool _locked = false;
 
-  final int _maxCount;
+  final List<Completer<bool>> _high = [];
 
-  int _current = 0;
+  final List<Completer<bool>> _low = [];
 
-  final List<Completer<bool>> _waiters = [];
+  bool get locked => _locked;
 
-  Future<void> acquire() async {
-    await tryAcquire(null);
-  }
-
-  /// ⭐ 2026-10-24（修订 ✓）：支持**有超时的排队** —— 预取任务等不到名额就**放弃** ✓，
-  /// 而不是像 `acquire()` 一样无限等下去（等待中的任务同样占着内存与调用栈 ✓）。
-  /// 返回 `true` = 拿到名额（调用方必须 `release()` ✓）；`false` = 超时放弃 ✓。
-  Future<bool> tryAcquire(Duration? timeout) async {
-    if (_current < _maxCount) {
-      _current++;
+  Future<bool> acquire({required bool high, Duration? timeout}) async {
+    if (!_locked) {
+      _locked = true;
       return true;
     }
     final c = Completer<bool>();
-    _waiters.add(c);
-    Timer? timer;
-    if (timeout != null) {
-      timer = Timer(timeout, () {
-        if (!c.isCompleted) {
-          _waiters.remove(c);
-          c.complete(false);
-        }
-      });
+    final queue = high ? _high : _low;
+    queue.add(c);
+    if (timeout == null) {
+      return c.future;
     }
-    final granted = await c.future;
-    timer?.cancel();
+    final granted = await c.future.timeout(timeout, onTimeout: () => false);
+    if (!granted) {
+      queue.remove(c);
+    }
     return granted;
   }
 
   void release() {
-    if (_waiters.isNotEmpty) {
-      // 名额**直接移交**给下一个等待者 ✓（`_current` 不变 ✓）。
-      _waiters.removeAt(0).complete(true);
-    } else {
-      _current--;
+    if (_high.isNotEmpty) {
+      _high.removeAt(0).complete(true);
+      return;
     }
+    if (_low.isNotEmpty) {
+      _low.removeAt(0).complete(true);
+      return;
+    }
+    _locked = false;
   }
 }
 
@@ -195,31 +189,24 @@ class ReaderImageProvider
     return imageBytes!;
   }
 
-  /// ⭐ 2026-10-24（第三次修订 ✗→✓）：**当前页最高优先 + 只保留最新请求 + SMB 连接复用**
+  /// ⭐ 2026-10-24（第四次修订 ✗→✓）：**SMB 操作全局串行化 + 绝不在读到一半时断开连接** ✓
   ///
-  /// 前两版的教训（均为用户实测 ✓）：
-  /// 1. 前台与预取**共用**名额池 ⇒ 预取把前台堵住 ⇒ **一直转圈** ✗
-  /// 2. 前台 2 个名额 + FIFO 排队 ⇒ 滚轮连续切页时**旧页的读取还占着名额** ✗，
-  ///    当前页要等旧页读完 ⇒ **仍然转圈** ✗（用户原话："应该优先加载当前页" ✓）
-  ///
-  /// 现在 ✓：
-  /// - 前台**只 1 个名额** ✓ 且等待队列**只保留最新请求** ✓（新页到达 ⇒ 旧等待者立即作废 ✓）
-  ///   ⇒ 当前页永远排最前 ✓
-  /// - 预取**只在"前台完全空闲"时**才启动 ✓（名额 1 ✓、等不到就丢 ✓）⇒ 不抢前台 ✓
-  /// - ⭐ **SMB 连接复用** ✓：整段阅读共用一条连接 ✓（原先每页新建 = 4 isolate + TCP + 认证 ✗，
-  ///   单页几百毫秒 ⇒ 快速翻页必然转圈 ✓）
-  static final _smbPrefetchSemaphore = _Semaphore(1);
+  /// 崩溃实证 ✓：`libsmb2.dll` 抛 **0xc0000005 访问冲突** ✗（原生层 ✓，非 Dart 异常 ✓）——
+  /// 原生库在**并发使用同一连接** / **读到一半被 disconnect** 时会崩 ✓。
+  /// 对策 = ⭐ 所有 connect / readFile / disconnect **串行** ✓（[_smbGate] ✓），
+  /// 且**只有 `_activeReads == 0` 时才真正断开** ✓（否则标记稍后断开 ✓）。
+  static final _smbGate = _SmbGate();
+
+  /// 在途的 SMB **原生读**计数 ✓ —— 只有为 0 才允许 disconnect ✓（防 use-after-free ✓）。
+  static int _activeReads = 0;
+
+  /// "稍后断开"标记 ✓ —— 等最后一个在途读结束后再断开 ✓。
+  static bool _closeSharedRequested = false;
 
   /// 前台读图最近一次开始的毫秒时间戳 ✓ —— 预取据此判断"用户正在翻页 ⇒ 丢弃预取" ✓。
   static int _lastForegroundReadAt = 0;
 
-  /// 前台是否正在读（单名额 ✓：SMB 读是 IO 密集 ✓，串行反而更快更省 ✓）。
-  static bool _foregroundBusy = false;
-
-  /// 前台等待者（**最多 1 个 ✓**；新请求到达时旧的立即作废 ✓）。
-  static Completer<bool>? _foregroundWaiter;
-
-  /// 前台等待超时 ✓：超时视为被顶掉 ⇒ 抛可重试错误 ✓（不会无限转圈 ✗）。
+  /// 前台等待上限 ✓（超过才报可重试错误 ✓，不无限转圈 ✓）。
   static const _smbForegroundWaitTimeout = Duration(seconds: 15);
 
   /// SMB IO 超时 ✓（connect / readFile / disconnect ✓）。
@@ -258,7 +245,8 @@ class ReaderImageProvider
         return existing;
       }
     }
-    await closeSharedSmbClient();
+    // 闸门已持有（串行 ✓）⇒ 此刻没有别的原生操作 ✓，可以安全断开 ✓。
+    await closeSharedSmbClient(force: true);
     final client = SmbClient(config: config);
     try {
       await client.connect().timeout(_smbIoTimeout);
@@ -275,7 +263,13 @@ class ReaderImageProvider
   }
 
   /// ⭐ 断开复用的 SMB 连接 ✓（阅读器退出 / 切换章节 / 前台读失败重连时调用 ✓）。
-  static Future<void> closeSharedSmbClient() async {
+  static Future<void> closeSharedSmbClient({bool force = false}) async {
+    if (!force && (_activeReads > 0 || _smbGate.locked)) {
+      // ⚠️ **绝不在原生操作进行中断开** ✗ —— libsmb2 会访问冲突崩溃 ✓（已实证 ✓）
+      // ⇒ 标记"稍后断开" ✓，等最后一个在途读结束后由 [_maybeCloseSharedClient] 执行 ✓。
+      _closeSharedRequested = true;
+      return;
+    }
     final client = _sharedClient;
     _sharedClient = null;
     _sharedClientKey = null;
@@ -289,59 +283,13 @@ class ReaderImageProvider
     }
   }
 
-  static bool get _foregroundIdle =>
-      !_foregroundBusy && _foregroundWaiter == null;
-
-  /// 前台抢名额 ✓：只有 1 个 ✓，**最新请求顶掉旧等待者** ✓，且**被顶掉时安静重试** ✓。
-  ///
-  /// ⚠️ 为什么不能"抛错丢弃"（2026-10-24 用户实测 ✓）：抛错会让 provider 走失败重试 →
-  /// `onLoadError` →（原先）"页面列表失效" → **整页弹大圈重载** ✗。
-  /// 现在：一直被顶掉就重试 ✓；该页真的被取消（用户翻走 ✓）时 `checkStop` 会抛"停止" ✓ ⇒ 干净退出 ✓。
-  static Future<void> _acquireForeground(void Function()? checkStop) async {
-    if (!_foregroundBusy) {
-      _foregroundBusy = true;
-      return;
-    }
-    final deadline = DateTime.now().add(_smbForegroundWaitTimeout);
-    while (true) {
-      final old = _foregroundWaiter;
-      if (old != null && !old.isCompleted) {
-        // 旧等待者作废 ✓：它对应的页已经不是用户要看的那页 ✓。
-        old.complete(false);
-      }
-      final c = Completer<bool>();
-      _foregroundWaiter = c;
-      var granted = false;
-      try {
-        granted = await c.future.timeout(
-          AppMotion.short,
-          onTimeout: () => false,
-        );
-      } finally {
-        if (identical(_foregroundWaiter, c)) {
-          _foregroundWaiter = null;
-        }
-      }
-      if (granted) {
-        return;
-      }
-      // 该页若已被取消 ⇒ 这里会抛"停止"异常 ⇒ 上游按取消处理 ✓（不写失败日志、不重载 ✓）。
-      checkStop?.call();
-      if (DateTime.now().isAfter(deadline)) {
-        throw "Error: SMB read busy.";
-      }
-    }
-  }
-
-  static void _releaseForeground() {
-    final waiter = _foregroundWaiter;
-    if (waiter != null && !waiter.isCompleted) {
-      // 名额直接移交给最新等待者 ✓（`_foregroundBusy` 保持 true ✓）。
-      _foregroundWaiter = null;
-      waiter.complete(true);
-    } else {
-      _foregroundBusy = false;
-    }
+  /// ⭐ 在途读结束、且无人持有闸门时，执行"稍后断开" ✓。
+  static void _maybeCloseSharedClient() {
+    if (!_closeSharedRequested) return;
+    if (_activeReads > 0 || _smbGate.locked) return;
+    _closeSharedRequested = false;
+    // 此刻没有任何在途 SMB 原生操作 ✓ ⇒ 断开安全 ✓（fire-and-forget ✓）。
+    closeSharedSmbClient(force: true);
   }
 
   /// 读取一页 SMB 图片的字节（**只取字节，不解码**）。
@@ -396,21 +344,27 @@ class ReaderImageProvider
     final config = parseSmbConfigFromUrl(imageKey);
     final remotePath = smbPathFromUrl(imageKey);
 
+    // ① 抢**全局 SMB 闸门** ✓（同一时刻只允许一个原生操作 ✓，否则 libsmb2 会崩 ✗）
     if (foreground) {
-      await _acquireForeground(checkStop);
+      final deadline = DateTime.now().add(_smbForegroundWaitTimeout);
+      while (true) {
+        final granted = await _smbGate.acquire(
+          high: true,
+          timeout: AppMotion.short,
+        );
+        if (granted) break;
+        // 该页若已被取消 ⇒ 这里抛"停止" ✓ ⇒ 上游按取消处理 ✓（不报错、不重载 ✓）。
+        checkStop?.call();
+        if (DateTime.now().isAfter(deadline)) {
+          throw "Error: SMB read busy.";
+        }
+      }
     } else {
-      // ⭐ 预取只在"前台完全空闲"时进行 ✓ —— 用户还在翻页就**立刻放弃** ✓，绝不抢前台 ✓。
-      if (!_foregroundIdle) {
-        throw "Error: SMB prefetch skipped (busy).";
-      }
-      final granted = await _smbPrefetchSemaphore.tryAcquire(
-        _smbPrefetchWaitTimeout,
-      );
-      if (!granted) {
-        throw "Error: SMB prefetch skipped (busy).";
-      }
-      if (!_foregroundIdle) {
-        _smbPrefetchSemaphore.release();
+      // 预取：等不到就让路 ✓（前台永远优先 ✓）
+      if (!await _smbGate.acquire(
+        high: false,
+        timeout: _smbPrefetchWaitTimeout,
+      )) {
         throw "Error: SMB prefetch skipped (busy).";
       }
     }
@@ -421,20 +375,25 @@ class ReaderImageProvider
         checkStop?.call();
       }
       late final Uint8List data;
+      var readStarted = false;
       try {
         final client = await _obtainClient(config);
+        _activeReads++;
+        readStarted = true;
         data = await client.readFile(remotePath).timeout(_smbIoTimeout);
         if (data.isEmpty) {
           throw "Error: Empty response body.";
         }
       } catch (e) {
-        // ⭐ 前台读失败 ⇒ 丢掉复用连接（可能已失效 ✓），下次自动重连 ✓；
-        // 预取失败不动共享连接 ✓（否则会把正在使用的前台连接一起关掉 ✗）。
-        if (foreground) {
-          await closeSharedSmbClient();
-        }
+        // ⚠️ **绝不在读到一半时断开原生连接** ✗（正是 libsmb2 访问冲突的成因 ✓）
+        // ⇒ 只标记"稍后断开" ✓，下次读由 [_obtainClient] 自动重连 ✓。
+        _closeSharedRequested = true;
         Log.error('SMB Reader', e);
         rethrow;
+      } finally {
+        if (readStarted) {
+          _activeReads--;
+        }
       }
       // ⭐ 先落盘再判停：即便本页已被判停，字节也进了缓存，
       // 下次进入该页直接命中 ⇒ 正是本次修复要的"不再闪烁"。
@@ -445,11 +404,8 @@ class ReaderImageProvider
       }
       return data;
     } finally {
-      if (foreground) {
-        _releaseForeground();
-      } else {
-        _smbPrefetchSemaphore.release();
-      }
+      _smbGate.release();
+      _maybeCloseSharedClient();
     }
   }
 
