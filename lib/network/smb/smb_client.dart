@@ -76,27 +76,73 @@ class SmbClient {
   ///
   /// 现在：按 主机+共享 缓存一个客户端 ✓ ⇒ 封面 / 历史 / 导入 / 切章列表**共用**连接 ✓，
   /// 只保留一条会话 ✓（阅读器另有自己的复用逻辑 ✓）。
+  ///
+  /// ⭐ 2026-10-25：池**有进有出** ✓ —— 60s 空闲回收 ✓ + 数量上限 8 ✓（见 [_sweepIdleShared]
+  /// / [_enforceSharedLimit] ✓），避免长时间运行后把 NAS 会话占满 ✓。
   static final Map<String, SmbClient> _sharedClients = {};
 
-  static String _keyOf(SmbConfig config) =>
-      '${config.host}|${config.port}|${config.share}|'
-      '${config.username}|${config.password.hashCode}|${config.domain}';
+  /// ⭐ 2026-10-25：**统一会话键** ✓ —— 客户端池与阅读器（`ReaderImageProvider`）共用这一份 ✓。
+  ///
+  /// 与 [SmbConfig.cacheKey]（资源键 `host|port|share` ✓）的区别 ✓：会话键额外带上
+  /// **凭据 + 协议选项** ✓ —— 换账号、改签名/加密/方言都必须**新建连接** ✗，
+  /// 否则会把上一个账号协商好的会话错误复用 ✓。
+  /// 密码只取 hashCode ✓（键可能被调试输出 / 日志打印 ✓，不落明文 ✓）。
+  static String cacheKey(SmbConfig config) =>
+      '${config.cacheKey}|${config.username}|${config.password.hashCode}|'
+      '${config.domain}|${config.signing}|${config.seal}|${config.version.name}';
+
+  /// 共享客户端的**最后使用时间** ✓（成功操作 / 重新取用都会刷新 ✓）。
+  ///
+  /// ⭐ 2026-10-25：用于**空闲回收** ✓ —— 旧实现只增不减 ✗ ⇒ 给每个 `host+share`
+  /// 都留一条长期空闲会话 ✓，NAS / 路由器侧会话与句柄会被慢慢吃光 ✗。
+  DateTime? _lastSharedUse;
+
+  /// 空闲回收阈值 ✓：60s 无操作即断开 ✓（再用时 [shared] 会按需重建 ✓）。
+  static const _sharedIdleTimeout = Duration(seconds: 60);
+
+  /// 共享客户端数量上限 ✓：每条连接池内部已有 worker ✓，8 条已足够覆盖
+  /// 阅读器 + 封面 + 历史 + 导入 ✓（再多只会把 NAS 连接数打满 ✓）。
+  static const _maxSharedClients = 8;
+
+  /// 空闲巡检周期 ✓（比回收阈值短 ⇒ 最迟约 80s 内断开 ✓）。
+  static const _idleSweepInterval = Duration(seconds: 20);
+
+  /// 空闲巡检定时器 ✓（只在池非空时存在 ✓，池空即取消 ✓）。
+  static Timer? _idleReaper;
 
   /// 取得（必要时创建）**共享**客户端 ✓ —— ⚠️ 调用方**不要** `disconnect()` ✗
   ///（共享连接被断开会影响其它调用方 ✓；需要断开时用 [closeAllShared] ✓）。
+  ///
+  /// ⭐ 2026-10-25：取用前**先回收空闲连接并守住数量上限** ✓（见 [_sweepIdleShared] /
+  /// [_enforceSharedLimit] ✓）—— 共享池不能"只进不出"✗。
   static SmbClient shared(SmbConfig config) {
-    return _sharedClients.putIfAbsent(
-      _keyOf(config),
+    final key = cacheKey(config);
+    _sweepIdleShared(exceptKey: key);
+    final client = _sharedClients.putIfAbsent(
+      key,
       () => SmbClient(config: config),
     );
+    client._lastSharedUse = DateTime.now();
+    _ensureIdleReaper();
+    _enforceSharedLimit(exceptKey: key);
+    return client;
   }
+
+  /// 当前共享客户端数量 ✓（自检 / 排查连接数异常时用 ✓）。
+  static int get sharedClientCount => _sharedClients.length;
 
   /// 断开并清空所有共享客户端 ✓（阅读器"重置 SMB 连接" / 退出时用 ✓）。
   ///
   /// ⭐ 2026-10-25：**并行 drain 再断** ✓ —— 每个 [disconnect] 内部都会先等在途
   /// 原生操作（最多 [_disconnectDrainTimeout] ✓）；这里并行等待，避免 N 个客户端
   /// 串行各等 4s ⇒ 重置按钮最多卡十几秒 ✗。
+  ///
+  /// ⭐ 2026-10-25：**重置必须真正清空** ✓ —— 除了断开连接，还要
+  /// ① 取消空闲巡检定时器 ✓（否则池空后还挂着一个周期任务 ✗）；
+  /// ② 清掉 [_sharedClients]（先清再断 ✓，断的过程中新请求不会拿到待断连接 ✓）。
   static Future<void> closeAllShared() async {
+    _idleReaper?.cancel();
+    _idleReaper = null;
     final list = _sharedClients.values.toList();
     _sharedClients.clear();
     await Future.wait(
@@ -108,6 +154,76 @@ class SmbClient {
         }
       }),
     );
+  }
+
+  /// 回收**空闲**共享连接 ✓：超过 [_sharedIdleTimeout] 无操作 ⇒ 移除并异步断开 ✓。
+  ///
+  /// ⚠️ **只回收不忙的** ✓ —— 正在读 / 正在建连 / 有排队等待者的连接绝不能断 ✗
+  ///（libsmb2 读到一半被 disconnect 会 `0xc0000005` 崩溃 ✓，已有事件日志实证 ✓）。
+  /// [exceptKey] = 本次要取用的键 ✓（刚被取用的那条不走回收 ✓）。
+  static void _sweepIdleShared({String? exceptKey}) {
+    if (_sharedClients.isEmpty) return;
+    final now = DateTime.now();
+    final stale = <String>[];
+    _sharedClients.forEach((key, client) {
+      if (key == exceptKey) return;
+      final last = client._lastSharedUse;
+      if (last == null) return;
+      if (now.difference(last) < _sharedIdleTimeout) return;
+      if (client._isBusy) return;
+      stale.add(key);
+    });
+    for (final key in stale) {
+      final client = _sharedClients.remove(key);
+      if (client != null) unawaited(client._closeQuietly());
+    }
+  }
+
+  /// 守住共享池数量上限 ✓：超限时淘汰**最久未用**且**不忙**的客户端 ✓。
+  ///
+  /// ⚠️ 若所有客户端都在忙 ⇒ **暂不淘汰** ✓（宁可短时超限，也不硬断在途连接 ✗）。
+  static void _enforceSharedLimit({String? exceptKey}) {
+    while (_sharedClients.length > _maxSharedClients) {
+      String? oldestKey;
+      DateTime? oldestAt;
+      _sharedClients.forEach((key, client) {
+        if (key == exceptKey) return;
+        if (client._isBusy) return;
+        final at = client._lastSharedUse;
+        if (at == null) return;
+        if (oldestAt == null || at.isBefore(oldestAt!)) {
+          oldestAt = at;
+          oldestKey = key;
+        }
+      });
+      if (oldestKey == null) return;
+      final client = _sharedClients.remove(oldestKey);
+      if (client != null) unawaited(client._closeQuietly());
+    }
+  }
+
+  /// 起一个空闲巡检定时器 ✓（池空了就自己取消 ✓，避免空转 ✗）。
+  static void _ensureIdleReaper() {
+    if (_idleReaper != null) return;
+    _idleReaper = Timer.periodic(_idleSweepInterval, (_) {
+      _sweepIdleShared();
+      if (_sharedClients.isEmpty) {
+        _idleReaper?.cancel();
+        _idleReaper = null;
+      }
+    });
+  }
+
+  /// 是否还有在途 / 排队的操作 ✓（连接池不是"空闲"就返回 true ✓）。
+  bool get _isBusy => _connecting != null || _ops.isBusy;
+
+  /// 静默断开 ✓（回收路径用：失败只意味着"下次重建"✓，不必上报 ✓）。
+  Future<void> _closeQuietly() async {
+    try {
+      await disconnect();
+    } catch (_) {
+      // 忽略：客户端已从池里摘除 ✓，下次 shared() 会新建 ✓。
+    }
   }
 
   /// Whether the client is currently connected.
@@ -303,6 +419,10 @@ class SmbClient {
       // 信号量名额在 Dart 层结束时归还 ✓；[nativeStarted]/[nativeFinished] 单独统计
       // "原生是否真的跑完" ✓，供 disconnect 的 drain 使用 ✓。
       _ops.release();
+      // ⭐ 2026-10-25：每次原生操作结束都刷新"最后使用时间" ✓ ——
+      // 空闲回收据此判断"60s 无操作" ✓（否则只按 `shared()` 取用时间算 ✗，
+      // 一次长时间连续阅读会被误判为空闲而断开 ✓）。
+      _lastSharedUse = DateTime.now();
     }
   }
 
@@ -490,6 +610,10 @@ class _OpLimiter {
 
   final List<Completer<void>> _high = [];
   final List<Completer<void>> _low = [];
+
+  /// 是否还有名额在用 / 有等待者 / 原生操作未结束 ✓（共享池空闲回收判断用 ✓）。
+  bool get isBusy =>
+      _current > 0 || _inflight > 0 || _high.isNotEmpty || _low.isNotEmpty;
 
   Future<void> acquire({required bool high}) {
     if (_current < max) {

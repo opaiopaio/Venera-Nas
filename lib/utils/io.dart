@@ -236,28 +236,48 @@ String sanitizeFileNameWithSuffix(
   return '$title$cleanMiddle$cleanExtension';
 }
 
+/// 流式复制单个文件的内容。
+///
+/// 原实现 `readAsBytesSync()` + `writeAsBytesSync()` 会把**整个文件**读进内存，
+/// 复制含大图的漫画目录时内存峰值 = 最大单文件大小，容易 OOM。改为
+/// `openRead().pipe(openWrite())`，按块读写、内存占用与文件大小无关。
+///
+/// ⚠️ Android SAF（`flutter_saf` 的 `AndroidFile`）没有实现 `openRead` / `openWrite`
+/// （见 `copyMem` 的注释），此时退回整文件读写 —— 这是平台能力限制，不是本函数
+/// 的常规路径；其余平台一律走流式。
+Future<void> _copyFileStreaming(File source, File destination) async {
+  if (source is AndroidFile || destination is AndroidFile) {
+    await destination.writeAsBytes(await source.readAsBytes());
+    return;
+  }
+  await source.openRead().pipe(destination.openWrite());
+}
+
 /// Copy the **contents** of the source directory to the destination directory.
+///
+/// 文件内容按流复制（不再整文件进内存）；递归结构、覆盖已有文件、异常向上抛
+/// 的语义与原实现一致。
+/// 大目录请优先调用 [copyDirectoryIsolate]，它在独立 isolate 中执行本函数。
 Future<void> copyDirectory(Directory source, Directory destination) async {
   if (source.path.startsWith('smb://') ||
       destination.path.startsWith('smb://')) {
     return;
   }
   if (!destination.existsSync()) {
-    destination.createSync();
+    await destination.create(recursive: true);
   }
-  List<FileSystemEntity> contents = source.listSync();
+  List<FileSystemEntity> contents = await source.list().toList();
   for (FileSystemEntity content in contents) {
     String newPath = FilePath.join(destination.path, content.name);
 
     if (content is File) {
       var resultFile = File(newPath);
-      resultFile.createSync();
-      var data = content.readAsBytesSync();
-      resultFile.writeAsBytesSync(data);
+      await resultFile.create();
+      await _copyFileStreaming(content, resultFile);
     } else if (content is Directory) {
       Directory newDirectory = Directory(newPath);
-      newDirectory.createSync();
-      copyDirectory(content.absolute, newDirectory.absolute);
+      await newDirectory.create(recursive: true);
+      await copyDirectory(content.absolute, newDirectory.absolute);
     }
   }
 }

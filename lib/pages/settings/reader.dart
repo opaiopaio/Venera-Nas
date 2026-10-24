@@ -52,6 +52,10 @@ class _ReaderSettingsState extends State<ReaderSettings> {
   void _onShowChapterCommentsChanged() {
     // When showChapterComments is turned off, also turn off showChapterCommentsAtEnd
     bool? showChapterComments;
+    // ⚠️ 级联写入后必须补一次 `saveData()` ✗→✓：本回调由 `_SwitchSetting` 在
+    // 它自己的保存**之后**调用 ✓，而级联写的 `showChapterCommentsAtEnd` 是在那次
+    // 快照**之后**才落进内存的 ✗ ⇒ 不补保存 = 只改了内存、重启后被旧值覆盖（用户实测回弹 ✓）。
+    var cascaded = false;
 
     if (widget.comicId != null &&
         widget.comicSource != null &&
@@ -71,14 +75,19 @@ class _ReaderSettingsState extends State<ReaderSettings> {
           'showChapterCommentsAtEnd',
           false,
         );
+        cascaded = true;
       }
     } else {
       showChapterComments = appdata.settings['showChapterComments'] as bool?;
       if (showChapterComments != true) {
         appdata.settings['showChapterCommentsAtEnd'] = false;
+        cascaded = true;
       }
     }
 
+    if (cascaded) {
+      appdata.saveData();
+    }
     setState(() {});
     widget.onChanged?.call("showChapterComments");
   }

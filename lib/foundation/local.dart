@@ -1,3 +1,4 @@
+import 'dart:async' show unawaited;
 import 'dart:convert';
 import 'dart:isolate';
 
@@ -843,7 +844,9 @@ class LocalManager with ChangeNotifier {
       }
     }
     if (shouldRemovedDirs.isNotEmpty) {
-      _deleteDirectories(shouldRemovedDirs);
+      // ⭐ 2026-10-25：显式 unawaited ✓ —— 删除仍在后台跑 ✓，但调用点表明"有意不等" ✓
+      //（异常已由 [_deleteDirectories] 内部捕获并记日志 ✓）。
+      unawaited(_deleteDirectories(shouldRemovedDirs));
     }
     notifyListeners();
   }
@@ -889,24 +892,38 @@ class LocalManager with ChangeNotifier {
     notifyListeners();
 
     if (removeFileOnDisk) {
-      _deleteDirectories(shouldRemovedDirs);
+      // ⭐ 2026-10-25：同 [deleteComicChapters] ✓ —— 后台删除 + 内部记日志 ✓。
+      unawaited(_deleteDirectories(shouldRemovedDirs));
     }
   }
 
   /// Deletes the directories in a separate isolate to avoid blocking the UI thread.
-  static void _deleteDirectories(List<Directory> directories) {
-    Isolate.run(() async {
-      await SAFTaskWorker().init();
-      for (var dir in directories) {
-        try {
-          if (dir.existsSync()) {
-            await dir.delete(recursive: true);
+  ///
+  /// ⭐ 2026-10-25：**把丢弃的 Future 收回来** ✓ —— 原实现 `Isolate.run(...)` 直接松手 ✗
+  /// ⇒ 删除失败时（外置盘拔出 ✓ / 权限不足 ✓ / SAF 未就绪 ✓ / isolate 启动失败 ✓）
+  /// 异常**无人接收** ✓ ⇒ 变成未处理异步错误（进 zone / 只打一行框架日志 ✓），
+  /// 用户只看到"删了但还占空间"却查不到原因 ✗。现在统一 catch 并 [Log.error] ✓。
+  ///
+  /// 保持"不等它" ✓：批量删除可能很慢 ✓，UI 不必等；但**错误必须留痕** ✓。
+  static Future<void> _deleteDirectories(List<Directory> directories) async {
+    if (directories.isEmpty) return;
+    try {
+      await Isolate.run(() async {
+        await SAFTaskWorker().init();
+        for (var dir in directories) {
+          try {
+            if (dir.existsSync()) {
+              await dir.delete(recursive: true);
+            }
+          } catch (_) {
+            // 单个目录失败（被占用 / 已不存在 ✓）继续删下一个 ✓。
+            continue;
           }
-        } catch (e) {
-          continue;
         }
-      }
-    });
+      });
+    } catch (e, s) {
+      Log.error("LocalManager", "Failed to delete directories: $e", s);
+    }
   }
 
   static String getChapterDirectoryName(String name) {

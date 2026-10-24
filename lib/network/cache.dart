@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'dart:typed_data';
+
+import 'package:crypto/crypto.dart';
 import 'package:venera_nas/foundation/log.dart';
 import 'package:venera_nas/network/app_dio.dart';
 
@@ -11,18 +14,26 @@ class NetworkCache {
 
   final Object? data;
 
+  /// 响应时间（用于判断缓存是否新鲜，语义不变）。
   final DateTime time;
+
+  /// 最近一次被命中的时间（LRU 淘汰依据）。
+  ///
+  /// 与 [time] 分开：`time` 判断"内容是否过期"，`lastAccess` 判断"该淘汰谁"。
+  /// 淘汰必须按最近访问时间，不能按插入顺序（FIFO 会把仍在反复使用的热数据踢掉）。
+  DateTime lastAccess;
 
   final int size;
 
-  const NetworkCache({
+  NetworkCache({
     required this.uri,
     required this.requestHeaders,
     required this.responseHeaders,
     required this.data,
     required this.time,
     required this.size,
-  });
+    DateTime? lastAccess,
+  }) : lastAccess = lastAccess ?? DateTime.now();
 }
 
 class NetworkCacheManager implements Interceptor {
@@ -32,34 +43,101 @@ class NetworkCacheManager implements Interceptor {
 
   factory NetworkCacheManager() => instance;
 
-  final Map<Uri, NetworkCache> _cache = {};
+  /// 缓存键 = 完整 URI + **身份指纹**。
+  ///
+  /// 原实现只用 URI 当键，而 `compareHeaders` 又把 `authorization` / `token` /
+  /// `cookie` 等身份头列入忽略表 ⇒ 同一 URL 在**多账号**下会互相命中对方的响应
+  /// （账号 A 的私有数据被账号 B 读到）。现在把身份头做稳定 hash 拼进键，
+  /// 不同身份天然落到不同槽位，忽略表只影响"同身份内是否算同一请求"。
+  final Map<String, NetworkCache> _cache = {};
 
   int size = 0;
 
-  NetworkCache? getCache(Uri uri) {
-    return _cache[uri];
+  /// 参与身份指纹的请求头（大小写不敏感）。
+  static const _identityHeaders = <String>{
+    'authorization',
+    'proxy-authorization',
+    'cookie',
+    'token',
+    'x-token',
+    'x-auth-token',
+    'x-access-token',
+    'x-api-key',
+    'api-key',
+  };
+
+  /// 对身份相关请求头做**稳定** hash（用 `sha256` 而不是 `Object.hashCode`：
+  /// Dart 的 `hashCode` 不保证跨进程/跨启动稳定，不能用作跨会话身份凭据）。
+  static String identityFingerprint(Map<String, dynamic> headers) {
+    final parts = <String>[];
+    headers.forEach((key, value) {
+      final lower = key.toLowerCase();
+      if (_identityHeaders.contains(lower)) {
+        parts.add('$lower=$value');
+      }
+    });
+    // 排序保证 header 顺序不同但内容相同时得到同一个指纹。
+    parts.sort();
+    return sha256
+        .convert(utf8.encode(parts.join('\n')))
+        .toString()
+        .substring(0, 16);
+  }
+
+  /// 把 URI 与身份指纹拼成内部缓存键（`\u0000` 分隔，避免拼接歧义）。
+  static String _cacheKey(Uri uri, Map<String, dynamic> headers) {
+    return '${uri.toString()}\u0000${identityFingerprint(headers)}';
+  }
+
+  NetworkCache? getCache(Uri uri, {Map<String, dynamic>? requestHeaders}) {
+    final cache = _cache[_cacheKey(uri, requestHeaders ?? const {})];
+    if (cache == null) {
+      return null;
+    }
+    // 命中即刷新最近访问时间 ⇒ 淘汰按"最近最少使用"而不是"最早写入"。
+    cache.lastAccess = DateTime.now();
+    return cache;
   }
 
   static const _maxCacheSize = 10 * 1024 * 1024;
 
   void setCache(NetworkCache cache) {
-    if (_cache.containsKey(cache.uri)) {
-      size -= _cache[cache.uri]!.size;
+    final key = _cacheKey(cache.uri, cache.requestHeaders);
+    final replaced = _cache.remove(key);
+    if (replaced != null) {
+      size -= replaced.size;
     }
-    while (size > _maxCacheSize) {
-      size -= _cache.values.first.size;
-      _cache.remove(_cache.keys.first);
+    // 先按最近访问时间腾出空间再写入（原实现是"先while后写"，且用插入顺序
+    // 取 `_cache.values.first` ⇒ FIFO，且缓存为空时会抛 StateError）。
+    while (_cache.isNotEmpty && size + cache.size > _maxCacheSize) {
+      _evictLeastRecentlyUsed();
     }
-    _cache[cache.uri] = cache;
+    _cache[key] = cache;
     size += cache.size;
   }
 
-  void removeCache(Uri uri) {
-    var cache = _cache[uri];
+  /// 淘汰最近最少使用的条目。
+  void _evictLeastRecentlyUsed() {
+    MapEntry<String, NetworkCache>? oldest;
+    for (final entry in _cache.entries) {
+      if (oldest == null ||
+          entry.value.lastAccess.isBefore(oldest.value.lastAccess)) {
+        oldest = entry;
+      }
+    }
+    if (oldest != null) {
+      size -= oldest.value.size;
+      _cache.remove(oldest.key);
+    }
+  }
+
+  void removeCache(Uri uri, {Map<String, dynamic>? requestHeaders}) {
+    final key = _cacheKey(uri, requestHeaders ?? const {});
+    var cache = _cache[key];
     if (cache != null) {
       size -= cache.size;
     }
-    _cache.remove(uri);
+    _cache.remove(key);
   }
 
   void clear() {
@@ -97,7 +175,7 @@ class NetworkCacheManager implements Interceptor {
     if (options.method != "GET") {
       return handler.next(options);
     }
-    var cache = getCache(options.uri);
+    var cache = getCache(options.uri, requestHeaders: options.headers);
     if (cache == null ||
         !compareHeaders(options.headers, cache.requestHeaders)) {
       if (options.headers['cache-time'] != null) {
@@ -107,7 +185,7 @@ class NetworkCacheManager implements Interceptor {
     } else {
       if (options.headers['cache-time'] == 'no') {
         options.headers.remove('cache-time');
-        removeCache(options.uri);
+        removeCache(options.uri, requestHeaders: options.headers);
         return handler.next(options);
       }
     }
@@ -140,12 +218,12 @@ class NetworkCacheManager implements Interceptor {
           return handler.resolve(_cachedResponse(options, cached));
         }
       }
-      removeCache(options.uri);
+      removeCache(options.uri, requestHeaders: options.headers);
       return handler.next(options);
     } catch (e, s) {
       // 兜底 ✓：任何未预料异常（含 `compareHeaders` 结构异常 ✓）都不能让请求挂死 ✗。
       Log.error("NetworkCache", "Cache handling failed: $e", s);
-      removeCache(options.uri);
+      removeCache(options.uri, requestHeaders: options.headers);
       return handler.next(options);
     }
   }

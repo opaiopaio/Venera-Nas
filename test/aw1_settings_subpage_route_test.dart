@@ -21,11 +21,12 @@ import 'package:flutter_test/flutter_test.dart';
 /// （入口 `showPopUpWidget(context, …)` + `PopUpWidgetScaffold(popupStyle: true)`）✓ ——
 /// 用户原话「**同化成探索页面那种形式，省的纠结横切和动画 bug**」✗⇒✓。
 /// 因此 ③ 的判据已从"必须推在右栏内层 Navigator"（AO1 时期 ✓）改为"必须是弹窗形态" ✓；
-/// `SettingsSubPageRoute`（AW1/BA1/AY1/AV1 的成果 ✓）**保留但已不再被这四个入口使用** ✗（死代码，留作回溯 ✓）。
+/// `SettingsSubPageRoute`（AW1/BA1/AY1/AV1 的成果 ✓）已于 **2026-10-25 删除** ✗ ——
+/// 四个入口改弹窗后它**全仓零引用**（死代码 ✓），① 也由"必须用它"改为断言"已不存在" ✓。
 ///
-/// 本文件锁死三条：① 转场复用 App 自己那一份；② 不得再改 `opaque => false`
-/// （曾造成两层页面重合，提交 `f689cee` 回退过）；③ 必须仍推在**右栏内层 Navigator**
-/// 且内层 Navigator 仍带 `ValueKey(currentPage)`（AO1 的"点左侧栏立即刷新"就靠这两条）。
+/// 本文件锁死三条：① 不得再引入专用子页路由（死代码）；② 不得再改 `opaque => false`
+/// （曾造成两层页面重合，提交 `f689cee` 回退过）；③ 必须仍走**弹窗形态**
+/// 且内层 Navigator 仍带 `ValueKey(currentPage)`（AO1 的"点左侧栏立即刷新"就靠后一条）。
 void main() {
   String stripComments(String text) => text
       .split('\n')
@@ -36,19 +37,21 @@ void main() {
       .join('\n');
 
   group('AW1 设置外观子页路由', () {
-    test('① 转场复用 App 自己的 SlidePageTransitionBuilder', () {
+    test('① 不再保留专用子页路由 SettingsSubPageRoute（死代码已删除）', () {
       final file = File('lib/pages/settings/appearance.dart');
       expect(file.existsSync(), isTrue);
       final text = stripComments(file.readAsStringSync());
       expect(
-        text.contains('SlidePageTransitionBuilder'),
-        isTrue,
-        reason: '外观子页未复用 App 自己的转场实现 → 会与"设置页原本的设计"不一致（AW1）',
+        text.contains('SettingsSubPageRoute'),
+        isFalse,
+        reason:
+            '四个子页已统一为弹窗形态（showPopUpWidget），专用 PageRouteBuilder 属死代码，'
+            '不得重新引入（原 AT1/BA1 的横切与无障碍补丁已随删除作废）',
       );
       expect(
         text.contains('buildTransitions'),
-        isTrue,
-        reason: '缺少 buildTransitions 覆写 → 又会退回主题默认转场（曾导致白闪）',
+        isFalse,
+        reason: '外观页不再持有路由转场实现 → 转场由 PopUpWidget 统一负责',
       );
     });
 

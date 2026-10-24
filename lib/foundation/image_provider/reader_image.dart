@@ -14,6 +14,7 @@ import 'package:venera_nas/network/smb/smb_serial.dart';
 import 'package:venera_nas/network/smb/smb_utils.dart';
 import 'package:venera_nas/utils/io.dart';
 import 'base_image_provider.dart';
+import 'local_comic_image.dart' show SmbCoverLoader;
 import 'reader_image.dart' as image_provider;
 
 /// ⭐ 2026-10-24：**SMB 原生操作的全局串行闸门** ✓
@@ -321,9 +322,10 @@ class ReaderImageProvider
     SmbConfig config, {
     bool high = false,
   }) {
-    final key =
-        '${config.host}|${config.port}|${config.share}|'
-        '${config.username}|${config.password.hashCode}|${config.domain}';
+    // ⭐ 2026-10-25：连接复用键统一走 `SmbClient.cacheKey` ✓ ——
+    // 原先这里与 `SmbClient._keyOf` 各拼一份 ✗ ⇒ 两边一旦有一边加了字段（如协议选项 ✓），
+    // 同一个共享就会被判成两个会话 ✗（池被重复建 ✓）。
+    final key = SmbClient.cacheKey(config);
 
     final opening = _clientOpening;
     if (opening != null) {
@@ -422,7 +424,13 @@ class ReaderImageProvider
     await closeSharedSmbClient(force: _activeReads == 0);
     // ⭐ 2026-10-25：把封面/历史/导入用的**共享客户端**也一起断开 ✓ ——
     // 否则"重置"后它们仍持有旧连接（可能已失效 ✓），用户会以为重置没生效 ✗。
+    // （[SmbClient.closeAllShared] 会清空池 + 取消空闲巡检定时器 ✓）
     await SmbClient.closeAllShared();
+    // ⭐ 2026-10-25：重置意味着"服务器配置/网络环境可能已经变了" ✓ ⇒ 一并清掉
+    // ①URL ⇒ SmbConfig 解析缓存 ✓（否则还按旧凭据/端口建连 ✗）；
+    // ②封面"已知缺失"记录 ✓（否则服务器修好后封面仍会一直 404 ✗）。
+    invalidateSmbConfigCache();
+    SmbCoverLoader.clearFailures();
   }
 
   /// ⭐ 断开复用的 SMB 连接 ✓（阅读器退出 / 切换章节 / 前台读失败重连时调用 ✓）。
@@ -645,7 +653,9 @@ class ReaderImageProvider
     if (!imageKey.startsWith('smb://')) {
       return;
     }
-    final cacheKey = "$imageKey@$sourceKey@$cid@$eid";
+    // ⭐ 2026-10-25：统一走 [pageCacheKey] ✓ —— 与前台读 / `cacheKey` 逐字一致 ✓
+    //（预取写盘、前台读盘、窗口淘汰必须命中同一个键 ✓）。
+    final cacheKey = pageCacheKey(imageKey, sourceKey, cid, eid);
     final queuedAt = DateTime.now().millisecondsSinceEpoch;
     try {
       // 已有缓存 / 已有在途读取 ⇒ 不必再排队 ✓。
@@ -672,6 +682,23 @@ class ReaderImageProvider
     }
   }
 
+  /// ⭐ 2026-10-25：**单页图片磁盘缓存键的唯一出口** ✓ —— `$imageKey@$sourceKey@$cid@$eid` ✓。
+  ///
+  /// 为什么提取 ✓：同一串键原先在 `ReaderImageProvider.cacheKey`、SMB 预取
+  /// （[prefetchSmbPage]）与 `pages/reader/images.dart` 里**各写一遍** ✗
+  /// ⇒ 任一处漏改就会"写进去的和查出来的不是同一个文件" ✗（历史上已经踩过
+  /// `@smb@` / `@null@` 不一致的坑 ✓）。
+  ///
+  /// ⚠️ 格式必须与 `network/images.dart` 的 `loadComicImage` **逐字一致** ✗ ——
+  /// 那边的磁盘读写键仍是行内拼接（不属本次可改范围 ✓），改动这里等于改缓存协议 ✓。
+  /// `sourceKey` 为 null 时会插值成字符串 `null` ✓（与既有缓存文件兼容 ✓）。
+  static String pageCacheKey(
+    String imageKey,
+    String? sourceKey,
+    String cid,
+    String eid,
+  ) => "$imageKey@$sourceKey@$cid@$eid";
+
   @override
   Future<ReaderImageProvider> obtainKey(ImageConfiguration configuration) {
     return SynchronousFuture(this);
@@ -683,7 +710,7 @@ class ReaderImageProvider
   /// ⭐ 修复（2026-10-09）：磁盘写入键**不含** `@enableResize`（见 `network/images.dart` 的 writeCache），
   /// 覆写后解码失败的清理才能命中真实缓存文件。
   @override
-  String get cacheKey => "$imageKey@$sourceKey@$cid@$eid";
+  String get cacheKey => pageCacheKey(imageKey, sourceKey, cid, eid);
 
   @override
   void onLoadError() {

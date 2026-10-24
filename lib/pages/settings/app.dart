@@ -284,6 +284,18 @@ class LogsPage extends StatefulWidget {
 class _LogsPageState extends State<LogsPage> {
   String logLevelToShow = "all";
 
+  /// ⭐ 2026-10-25：滚动控制器**提为 State 字段** ✗→✓ ——
+  /// 原先在 `build` 里直接 `ScrollController()` ✗ ⇒ 切日志等级 / 清空 / 复制等任一 `setState`
+  /// 都新建一个控制器 ✓，旧控制器**从不 dispose**（监听与 attach 泄漏 ✓），
+  /// 且新控制器没有旧位置 ⇒ 列表**滚动位置被重置** ✓。现在整个页面生命周期共用一个 ✓。
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     var logToShow = logLevelToShow == "all"
@@ -363,7 +375,7 @@ class _LogsPageState extends State<LogsPage> {
       ],
       body: ListView.builder(
         reverse: true,
-        controller: ScrollController(),
+        controller: _scrollController,
         itemCount: logToShow.length,
         itemBuilder: (context, index) {
           index = logToShow.length - index - 1;

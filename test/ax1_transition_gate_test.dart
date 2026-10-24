@@ -40,20 +40,15 @@ void main() {
           '转场判据不是 backgroundFeatureActive → 无背景时也会走淡入（用户实测反馈过：'
           '"删掉图片背景+底色透明后仍然淡入"）',
     );
-    // ⭐ AY1（用户要求 ✓）：四个外观子页要"任何情况都横切" → builder 需有 forceSlide 开关 ✓
-    //（默认 false = App 全局原样 ✓；子页传 true ✓），且「设置 → 外观」必须用上它 ✓。
+    // ⭐ AY1（用户要求 ✓）：builder 仍保留 forceSlide 开关 ✓（默认 false = App 全局原样 ✓）。
+    // ⚠️ 2026-10-25 更正：外观四个子页自 2026-10-09 起已改为**弹窗形态**
+    //（`showPopUpWidget` + `PopUpWidgetScaffold` ✓），专用子页路由 `SettingsSubPageRoute`
+    // 已按死代码删除 ✗ ⇒ 原先"`appearance.dart` 必须含 `forceSlide: true`"的断言**失去意义**
+    //（弹层转场由 `PopUpWidget` 的 FadeTransition 负责 ✓），故删除该断言 ✓。
     expect(
       text.contains('forceSlide'),
       isTrue,
-      reason: '缺少 forceSlide 开关 → 有背景时无法为指定页面强制横切（用户 AY1 要求）',
-    );
-    final appearance = stripComments(
-      File('lib/pages/settings/appearance.dart').readAsStringSync(),
-    );
-    expect(
-      appearance.contains('forceSlide: true'),
-      isTrue,
-      reason: '外观四个子页未启用 forceSlide → 有背景时仍会淡入（不是"任何情况都横切"）',
+      reason: '缺少 forceSlide 开关 → SlidePageTransitionBuilder 的强制横切能力被删',
     );
     expect(
       text.contains('customBackgroundActive'),

@@ -241,9 +241,10 @@ class _DoubleLineSelectSettingsState extends State<_DoubleLineSelectSettings> {
         var rect = offset & size;
         showMenu(
           elevation: 3,
-          color: context.brightness == Brightness.light
-              ? const Color(0xFFF6F6F6)
-              : const Color(0xFF1E1E1E),
+          // ⚠️ 原先按亮/暗主题写死 `0xFFF6F6F6` / `0xFF1E1E1E` ✗ ⇒ 移动端下拉**不跟随**
+          // 主题色 / 自定义外观（深色主题或换主题色后仍是另一套灰 ✓）。现取主题表面色 ✓
+          //（与菜单表面同一语义 ✓；自定义二级页面体系请走 `secondarySurfaceColorFor()` ✓）。
+          color: context.colorScheme.surface,
           context: context,
           position: RelativeRect.fromRect(
             rect,
@@ -438,6 +439,14 @@ class _SliderSetting extends StatefulWidget {
 }
 
 class _SliderSettingState extends State<_SliderSetting> {
+  /// 拖动过程中的**本地显示值**（null = 未在拖动）。
+  ///
+  /// ⚠️ 拖动中**只**改这个字段走 setState ✓，**不写设置、不通知** ✗ ——
+  /// 原先每个拖动事件都 `writeSettingValue`（notifyListeners）再 `widget.onChanged`
+  /// （外观页在回调里调 `App.forceRebuild()` ⇒ 又一次全量通知）⇒ 拖动一次全树重建几十轮 ✓。
+  /// 现在只在 `onChangeEnd` 落盘 + 通知一次 ✓（拖动手感不变、重启后值正确 ✓）。
+  double? _dragValue;
+
   double _normalizeValue(double value) {
     final steps = ((value - widget.min) / widget.interval).round();
     final normalized = widget.min + steps * widget.interval;
@@ -480,34 +489,51 @@ class _SliderSettingState extends State<_SliderSetting> {
     // 建立设置依赖：外观/设置变化时由框架**精准重建**本控件
     // （取代 App.forceRebuild() 的整树 markNeedsBuild 遍历，后者会导致鬼影）。
     AppSettingsScope.of(context);
-    var value = (appdata.settings.readSettingValue(
+    final rawValue = appdata.settings.readSettingValue(
       key: widget.settingsIndex,
       comicId: widget.comicId,
       comicSource: widget.comicSource,
       useDeviceSettings: widget.useDeviceSettings,
-    )).toDouble();
-    value = _normalizeValue(value);
+    );
+    // ⚠️ 空安全兜底（同 `_SwitchSetting` 的 `raw is bool` 约定 ✓）：
+    // 新增设置 key 初始**并不存在** ✗（`readSettingValue` 返回 null ✓），原先直接
+    // `.toDouble()` ✗ ⇒ release 下抛 `NoSuchMethodError` / `type 'Null' is not a subtype of double`
+    // ⇒ 整块设置行红屏 ✓。现按 **num 判型 + 有限值校验** ✓，非法值回退到 `min`
+    //（= 该滑条的合法最小值 ✓），新 key 不需要预先写默认值 ✓。
+    final initialValue = rawValue is num && rawValue.isFinite
+        ? rawValue.toDouble()
+        : widget.min;
+    final value = _normalizeValue(initialValue);
+    // 拖动中显示本地值（保证滑块与右侧数值跟手 ✓）；松手后 `_dragValue` 清空 ⇒ 回到设置值 ✓。
+    final displayValue = _dragValue ?? value;
     final content = ListTile(
       title: Text(widget.title, softWrap: true, maxLines: 2),
-      trailing: Text(_displayValue(value), style: ts.s12),
+      trailing: Text(_displayValue(displayValue), style: ts.s12),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (widget.subtitle != null) Text(widget.subtitle!, style: ts.s12),
           Slider(
-            value: value,
+            value: displayValue,
             onChanged: (value) {
+              // 拖动中只更新本地显示值 ✓（不写设置 / 不通知，见 `_dragValue` 注释 ✓）。
               setState(() {
-                _setValue(value);
+                _dragValue = value;
               });
-              widget.onChanged?.call();
             },
             onChangeStart: (value) {
               widget.onChangeStart?.call(value);
             },
             onChangeEnd: (value) {
+              // 松手才**一次性**落盘 + 通知 ✓：写设置 → 保存 → `onChanged`（可能触发
+              // 外观页的 `App.forceRebuild`）→ `onChangeEnd`（历史清理等依赖新值的回调 ✓）。
+              // ⚠️ 顺序不可换 ✗：`onChangeEnd` 的调用方会**回读设置值** ✓（如自动清理历史 ✓）。
+              setState(() {
+                _dragValue = null;
+              });
               _setValue(value);
               appdata.saveData();
+              widget.onChanged?.call();
               widget.onChangeEnd?.call();
             },
             divisions: ((widget.max - widget.min) / widget.interval).toInt(),

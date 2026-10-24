@@ -7,9 +7,9 @@ import 'package:url_launcher/url_launcher_string.dart';
 import 'package:venera_nas/components/components.dart';
 import 'package:venera_nas/components/pin_pad.dart';
 import 'package:venera_nas/foundation/app.dart';
-// ⭐ AV1（2026-10-09）：外观四个子页要复用 App 自己的**横向切入**转场
-//（`SlidePageTransitionBuilder` ✓，见 `foundation/app_page_route.dart` ✓）→ 补本导入 ✓。
-import 'package:venera_nas/foundation/app_page_route.dart';
+// ⚠️ 2026-10-25：`foundation/app_page_route.dart` 的导入**已删除** ✗ ——
+// 它只为历史 `SettingsSubPageRoute`（`SlidePageTransitionBuilder` ✓）而加 ✓，
+// 该类已按死代码清理 ✓（外观四子页统一走 `showPopUpWidget` ✓）⇒ 不再需要 ✓。
 import 'package:venera_nas/foundation/appdata.dart';
 import 'package:venera_nas/foundation/app_settings_scope.dart';
 import 'package:venera_nas/foundation/text_style_settings.dart';

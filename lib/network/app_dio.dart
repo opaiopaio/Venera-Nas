@@ -129,7 +129,25 @@ class MyLogInterceptor implements Interceptor {
 }
 
 class AppDio with DioMixin {
-  AppDio([BaseOptions? options]) {
+  /// 无自定义 [BaseOptions] 时复用同一个默认客户端。
+  ///
+  /// 原因：默认配置的客户端没有实例级可变状态（拦截器都是单例 / 共享 cookie jar，
+  /// adapter 也只读全局设置），但每次构造都会重建一份拦截器链与 rhttp adapter；
+  /// 缓存 HEAD 校验、漫画源更新检查等高频路径会反复 `new`。
+  ///
+  /// ⚠️ 只在 `App.isInitialized` 之后缓存：初始化前构造的实例拿不到
+  /// cookie / 缓存 / Cloudflare 拦截器，若被后续复用会造成这些能力永久缺失。
+  ///
+  /// ⚠️ 拿到的是共享实例：**不要修改它的 `options`**（baseUrl / 默认 headers 等），
+  /// 需要自定义配置时请显式传入 `BaseOptions`，这样会得到独立实例。
+  factory AppDio([BaseOptions? options]) {
+    if (options == null && App.isInitialized) {
+      return _shared ??= AppDio._(null);
+    }
+    return AppDio._(options);
+  }
+
+  AppDio._(BaseOptions? options) {
     this.options = options ?? BaseOptions();
     httpClientAdapter = RHttpAdapter();
     if (App.isInitialized) {
@@ -139,6 +157,9 @@ class AppDio with DioMixin {
       interceptors.add(MyLogInterceptor());
     }
   }
+
+  /// 默认客户端单例（仅 [App.isInitialized] 后才会被创建）。
+  static AppDio? _shared;
 
   /// `prevent-parallel` 锁 ✓：key = path，value = **持有者 token** ✓。
   ///

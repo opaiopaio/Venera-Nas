@@ -385,7 +385,13 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
       child: Column(
         children: [
           Container(
-            height: 56 + context.padding.top,
+            // ⭐ 2026-10-25：固定高度 → **最小高度** ✓（项目规范：含文字/图标的容器一律
+            // `minHeight`，禁止写死固定高度 ✗）—— 原先"数字 + 运算符"的写法**逃过了守卫正则** ✗
+            //（本轮已放宽正则 ✓）；语义不变 ✓（`kToolbarHeight` = 56 = 弹层标题栏内容高 ✓，
+            // padding.top 由下方 padding 让位 ✓，两者相加 ✓），大字号下允许自然撑高 ✓。
+            constraints: BoxConstraints(
+              minHeight: kToolbarHeight + context.padding.top,
+            ),
             padding: EdgeInsets.only(top: context.padding.top),
             width: double.infinity,
             decoration: BoxDecoration(color: top ? null : topBarTint),

@@ -34,9 +34,13 @@ void main(List<String> args) {
     // 实测 147 处 ✓，旧正则只覆盖其中带尾逗号的一小部分 ✓）。
     // 现把终止符放宽为 `[,);}]` ✓ ⇒ 单行 `SizedBox(height: 16)` 与多行 `height: 16,`
     // 两种形态都能命中 ✓，并把新增覆盖**显式记账**进基线 ✓（棘轮仍"只许降不许升" ✓）。
+    // ⭐ 2026-10-25 补漏洞 ✓：只认 `[,);}]` 仍会漏掉**数字后接运算符**的写法 ✗ ——
+    // 例如弹层标题栏的"固定高度 + padding.top" ✓ 与代码编辑器的"行高 × 系数" ✓
+    // （这两处此前都逃逸 ✓，本轮因此把**运算符**也加进终止符 ✓；数字后接运算符
+    // 说明它仍是**计算出来的固定高度** ✓，应计入棘轮 ✓）。
     // ⚠️ `TextStyle(height: 1.5)` 的 `height` 是**字体行高**、不是控件高度 ✗ ⇒
     // 统计前先用 `_removeBalancedCall` 整段剔除 `TextStyle(...)`（见 `_sanitizers` ✓）。
-    '固定高度': RegExp(r'(?<!\w)height:\s*[0-9]+(\.[0-9]+)?\s*[,);}]'),
+    '固定高度': RegExp(r'(?<!\w)height:\s*[0-9]+(\.[0-9]+)?\s*(?:[,);}]|[+\-*/%])'),
     '表面色字面量': RegExp(r'color:\s*Colors\.(white|black|grey|gray)'),
     '硬编码图标尺寸': RegExp(r'(?<!\w)(size|iconSize):\s*[0-9]'),
     '裸间距数值': RegExp(r'EdgeInsets\.(all|symmetric|only|fromLTRB)\([^)]*[0-9]'),

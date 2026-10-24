@@ -45,6 +45,16 @@ class SmbConfig {
     this.version = Smb2Version.any,
   });
 
+  /// ⭐ 2026-10-25：**SMB 资源的统一缓存键** ✓ —— `host|port|share`（host 统一小写 ✓）。
+  ///
+  /// 为什么要有 ✓：客户端池、页面/封面缓存、失败记录都要按"**同一台服务器的同一个共享**"
+  /// 归并 ✓；此前各处各自拼字符串 ✗ ⇒ 主机名大小写、端口默认值写法一旦不一致，
+  /// 同一共享就会**重复建连接 / 重复缓存** ✗（实测连接数被刷爆 ✓）。
+  ///
+  /// ⚠️ 本键**不含凭据** ✓ —— 它要能安全地出现在键名 / 日志里 ✓；需要区分账号与协议选项时
+  /// 用 `SmbClient.cacheKey`（会话键 ✓，见 `network/smb/smb_client.dart` ✓）。
+  String get cacheKey => '${host.toLowerCase()}|$port|$share';
+
   /// Builds an SMB URL from this config: smb://host:port/share/path
   String buildUrl([String path = '']) {
     final buffer = StringBuffer('smb://');

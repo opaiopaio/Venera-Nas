@@ -66,6 +66,43 @@ SmbConnection? _findSavedConnection(
   return null;
 }
 
+/// ⭐ 2026-10-25：**URL ⇒ [SmbConfig] 解析结果的内存缓存** ✓（配置变更自动失效 ✓）。
+///
+/// 为什么要有 ✓：读一页图 / 加载一张封面都要走 [parseSmbConfigFromUrl] ✓，
+/// 而它每次都得遍历 `appdata.settings['smbServers']` 并逐条 `SmbConnection.fromJson` ✓ ——
+/// 翻页（并发 2 ✓）+ 25 张封面 + 预取同时进行时，这是完全重复的劳动 ✗。
+///
+/// 失效策略 ✓：
+/// 1. **设置里的 `smbServers` 列表对象换新** ⇒ 视为配置变更 ✓
+///    （设置页保存 / 备份恢复都是**整体替换列表** ✓，identity 一变即失效 ✓）；
+/// 2. 显式调用 [invalidateSmbConfigCache] ✓（"重置 SMB 连接"、测试清理 ✓）。
+///
+/// ⚠️ 缓存里含**明文凭据** ✗ —— 与 `appdata.settings['smbServers']` 同等敏感 ✓；
+/// 它只存在于内存 ✓，不写盘、不进备份 ✓（`appdata` / `utils/data.dart` 已剔除该键 ✓）。
+final Map<String, SmbConfig> _configCache = {};
+
+/// 上次缓存对应的 `smbServers` 列表对象 ✓（identity 比较 ✓）。
+Object? _configCacheSource;
+
+/// 缓存条目上限 ✓（防止各种 URL 写法把内存顶大 ✓）。
+const int _configCacheLimit = 128;
+
+/// ⭐ 清空解析缓存 ✓（配置变更 / 重置连接 / 测试隔离时调用 ✓）。
+void invalidateSmbConfigCache() {
+  _configCache.clear();
+  _configCacheSource = null;
+}
+
+/// 解析缓存的键 ✓：同一共享的不同文件共用一条配置 ✓ ⇒ 只按
+/// `host|port|share|URL 内凭据` 归并 ✓（路径不参与 ✓）。
+String _configCacheKeyOfUrl(String url) {
+  final uri = Uri.parse(url);
+  final parts = uri.pathSegments;
+  final share = parts.isNotEmpty ? parts.first : '';
+  return '${uri.host.toLowerCase()}|${uri.hasPort ? uri.port : 445}|'
+      '$share|${uri.userInfo}';
+}
+
 /// Parse [SmbConfig] from an `smb://` URL.
 ///
 /// Credentials embedded in the URL's userinfo are decoded.
@@ -74,7 +111,33 @@ SmbConnection? _findSavedConnection(
 ///
 /// ⭐ 2026-10-24：URL 不带凭据时**回退到已保存的服务器配置** ✓，
 /// 并把 domain / 签名 / 加密 / 方言一起带上 ✓（这些无法编码进 URL ✓）。
+///
+/// ⭐ 2026-10-25：结果按 `host|port|share|凭据` 做**内存缓存** ✓（见文件顶部说明 ✓）；
+/// 配置变更（`smbServers` 列表换新 ✓）或 [invalidateSmbConfigCache] 后自动重新解析 ✓。
+/// ⚠️ 测试注入 [savedServers] 时**完全绕过缓存** ✗ —— 用例之间互不污染 ✓。
 SmbConfig parseSmbConfigFromUrl(String url, {List<dynamic>? savedServers}) {
+  if (savedServers != null) {
+    return _parseSmbConfigFromUrl(url, savedServers);
+  }
+  final raw = appdata.settings['smbServers'];
+  if (!identical(raw, _configCacheSource)) {
+    // 配置变更 ⇒ 旧解析结果（旧凭据 / 旧协议选项）一律作废 ✓。
+    _configCache.clear();
+    _configCacheSource = raw;
+  }
+  final cacheKey = _configCacheKeyOfUrl(url);
+  final cached = _configCache[cacheKey];
+  if (cached != null) return cached;
+  final config = _parseSmbConfigFromUrl(url, raw is List ? raw : null);
+  if (_configCache.length >= _configCacheLimit) {
+    _configCache.clear();
+  }
+  _configCache[cacheKey] = config;
+  return config;
+}
+
+/// 实际的解析过程 ✓（不碰缓存 ✓）。
+SmbConfig _parseSmbConfigFromUrl(String url, List<dynamic>? savedServers) {
   final uri = Uri.parse(url);
   final parts = uri.pathSegments;
   final share = parts.isNotEmpty ? parts.first : '';

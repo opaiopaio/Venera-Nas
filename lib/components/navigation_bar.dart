@@ -431,8 +431,12 @@ class _PaneEntryShell extends StatelessWidget {
         decoration: BoxDecoration(color: fill, borderRadius: borderRadius),
         // ⭐ 对比度（2026-10-11）：自绘底色 ⇒ 行文字/图标取与填充成对的前景色 ✓
         //（原先无颜色 ⇒ 继承全局文字色 ✗ ⇒ 浅底浅字/深底深字看不见 ✗）
+        // ⭐ 2026-10-25：选中态填充是**主题成对色** `primaryContainer` ✓（选中一眼可辨靠它 ✓）
+        // ⇒ 必须传 `userColorWins: false` ✗，否则用户设了「全局文字颜色」会把成对色截胡 ✓
+        //（未选中态填充是用户可配的 `windowOverlayColor()` ✓ ⇒ 保持默认 true ✓）。
         child: FilledForeground(
           fill: fill,
+          userColorWins: !selected,
           child: showTitle
               ? Row(children: [icon, const SizedBox(width: 12), Text(label)])
               : Align(alignment: Alignment.centerLeft, child: icon),

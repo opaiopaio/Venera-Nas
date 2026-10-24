@@ -3,6 +3,7 @@ import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
+import 'package:venera_nas/foundation/appdata.dart';
 import 'package:venera_nas/foundation/cache_manager.dart';
 import 'package:venera_nas/foundation/comic_type.dart';
 import 'package:venera_nas/foundation/local.dart';
@@ -55,16 +56,52 @@ class SmbCoverLoader {
   /// SMB 封面并发 2（实测：并发再高会拖慢阅读器读图 ✓）。
   static final Semaphore semaphore = Semaphore(2);
 
-  static final Set<String> _failed = {};
+  /// ⭐ 2026-10-25：失败记录改成「键 ⇒ 失败时间」✓ —— 旧实现是纯 `Set` ✗
+  /// ⇒ 一次失败会**永久生效** ✗：用户改好 NAS 配置、插回硬盘、或服务器重启后，
+  /// 封面仍然一直被判定为 404 且不再重试 ✓（只能重启 App ✗）。
+  /// 现在超过 [failureTtl] 自动重试 ✓；配置变更 / 重置连接也会清空 ✓。
+  static final Map<String, DateTime> _failedAt = {};
+
+  /// 失败记录的有效期 ✓（10 分钟 ✓：既不让坏封面反复占用连接 ✓，
+  /// 又不会让"刚修好的盘"长时间看不到封面 ✓）。
+  static const Duration failureTtl = Duration(minutes: 10);
+
+  /// 上次看到的 `smbServers` 列表对象 ✓ —— 换新（= 设置页保存 / 备份恢复 ✓）即视为
+  /// **配置变更** ✓ ⇒ 清空失败记录，允许重新尝试 ✓。
+  static Object? _serversSignature;
 
   static String cacheKey(String comicId) => 'smb_cover:$comicId';
 
-  static bool isFailed(String cacheKey) => _failed.contains(cacheKey);
+  static bool isFailed(String cacheKey) {
+    _syncConfigChange();
+    final failedAt = _failedAt[cacheKey];
+    if (failedAt == null) return false;
+    if (DateTime.now().difference(failedAt) >= failureTtl) {
+      _failedAt.remove(cacheKey);
+      return false;
+    }
+    return true;
+  }
 
-  static void markFailed(String cacheKey) => _failed.add(cacheKey);
+  static void markFailed(String cacheKey) {
+    _syncConfigChange();
+    _failedAt[cacheKey] = DateTime.now();
+  }
 
   /// ⭐ 清理入口 ✓：SMB 服务器配置变更 / 换盘 / 手动清缓存后调用 ⇒ 允许重新尝试 ✓。
-  static void clearFailures() => _failed.clear();
+  ///
+  /// 调用点 ✓：设置页「重置 SMB 连接」经 `ReaderImageProvider.resetSmbRuntime()` 调用 ✓
+  ///（`reader_image.dart` ✓）；配置变更则由 [_syncConfigChange] 自动兜住 ✓。
+  static void clearFailures() => _failedAt.clear();
+
+  /// 配置变更检测 ✓（identity 比较 ✓：设置写入是整体替换列表 ✓）。
+  static void _syncConfigChange() {
+    final raw = appdata.settings['smbServers'];
+    if (!identical(raw, _serversSignature)) {
+      _serversSignature = raw;
+      _failedAt.clear();
+    }
+  }
 }
 
 class LocalComicImageProvider
