@@ -1444,8 +1444,9 @@ class _ContinuousModeState extends State<_ContinuousMode>
 ImageProvider _createImageProviderFromKey(
   String imageKey,
   BuildContext context,
-  int page,
-) {
+  int page, {
+  bool forPrefetch = false,
+}) {
   var reader = context.reader;
   // Find the _ReaderImagesState ancestor to get the callback
   _ReaderImagesState? imagesState;
@@ -1466,21 +1467,36 @@ ImageProvider _createImageProviderFromKey(
     // 原因：几百页长章节里每页都按原分辨率解码，是 OOM 闪退的主因之一；
     // 降采样只在像素数超过上限（且宽高比正常）的图上生效，不影响小图清晰度。
     enableResize: reader.mode.isContinuous || imageKey.startsWith('smb://'),
+    // ⭐ 复查修复（2026-10-24）：预解码用**低优先级** ✓ ——
+    // 否则相邻页预解码会去抢前台名额 ⇒ 当前页反而被判 "SMB read busy." ✗。
+    lowPriority: forPrefetch,
     // ⭐ 2026-10-24：**SMB 页不接"页面列表失效"回调** ✗ ——
     // 该回调会把 `reader.isLoading` 置 true ⇒ **整个阅读器弹大圈重载页面列表** ✗
     // （用户实测症状：待一会后 / 连翻两页时"闪一下大圈转半秒再回到画面" ✓）。
     // SMB 单页读取失败多是瞬时问题（NAS 忙、请求被更新的页顶掉 ✓）⇒ 交给该页自己的
     // 错误+重试界面即可 ✓，不该连累整章 ✓。
-    onLoadFailed: imageKey.startsWith('smb://')
+    // ⭐ 复查修复（2026-10-24）：**预取/预解码也不接** ✓ ——
+    // `precacheImage` 的 `onError` 只能吃掉"未来" ✓，挡不住 provider 内部 `onLoadError()` ✗
+    // ⇒ 后台预取失败会把整章重载 ✗（用户看到"停一会后转大圈"✓）。
+    onLoadFailed: (forPrefetch || imageKey.startsWith('smb://'))
         ? null
         : imagesState?._onPagesCacheInvalid,
   );
 }
 
-ImageProvider _createImageProvider(int page, BuildContext context) {
+ImageProvider _createImageProvider(
+  int page,
+  BuildContext context, {
+  bool forPrefetch = false,
+}) {
   var reader = context.reader;
   var imageKey = reader.images![page - 1];
-  return _createImageProviderFromKey(imageKey, context, page);
+  return _createImageProviderFromKey(
+    imageKey,
+    context,
+    page,
+    forPrefetch: forPrefetch,
+  );
 }
 
 /// [_precacheImage] is used to precache the image for the given page.
@@ -1490,11 +1506,11 @@ void _precacheImage(int page, BuildContext context) {
   if (page <= 0 || page > context.reader.images!.length) {
     return;
   }
-  // ⭐ 2026-10-24：预取失败**必须静默** ✓（它只是优化 ✓）——
-  // 不传 onError 时，失败会冒泡到全局错误处理 ✓；更重要的是会让 provider 走 `onLoadError` ✓
-  // ⇒ 触发"页面列表失效" ⇒ 整页重载 ✗（见 `_createImageProviderFromKey` 的注释 ✓）。
+  // ⭐ 2026-10-24：预解码**低优先级 + 不接整页重载回调** ✓（见 `_createImageProviderFromKey` 注释 ✓）。
+  // ⚠️ 复查纠正：`precacheImage` 的 `onError` **挡不住** provider 内部的 `onLoadError()` ✗
+  //（后者在 `base_image_provider.dart` 里独立调用 ✓）⇒ 必须从 provider 侧（`onLoadFailed: null`）解决 ✓。
   precacheImage(
-    _createImageProvider(page, context),
+    _createImageProvider(page, context, forPrefetch: true),
     context,
     onError: (_, _) {},
   );

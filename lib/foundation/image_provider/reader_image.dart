@@ -1,4 +1,4 @@
-import 'dart:async' show Completer, Future;
+import 'dart:async' show Completer, Future, Timer;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
@@ -23,40 +23,79 @@ import 'reader_image.dart' as image_provider;
 class _SmbGate {
   bool _locked = false;
 
+  /// 当前持锁方的开始时间 ✓ —— 用于**看门狗**：异常情况下锁被卡死时强制复位 ✓（否则用户只能重启 App ✗）。
+  DateTime? _lockedAt;
+
   final List<Completer<bool>> _high = [];
 
   final List<Completer<bool>> _low = [];
 
   bool get locked => _locked;
 
+  /// 持锁超过 [limit] ⇒ 判定卡死 ✓（由调用方决定是否 [reset] ✓）。
+  bool hasBeenLockedFor(Duration limit) {
+    final at = _lockedAt;
+    return _locked && at != null && DateTime.now().difference(at) > limit;
+  }
+
+  /// ⚠️ 强制复位 ✓：把锁与所有等待者都放掉 ✓（等待者按"失败"返回 ⇒ 走可重试错误 ✓）。
+  ///
+  /// 只在看门狗判定卡死时调用 ✓ —— 这是"不重启 App 也能恢复"的唯一兜底 ✓。
+  void reset() {
+    _locked = false;
+    _lockedAt = null;
+    final waiters = [..._high, ..._low];
+    _high.clear();
+    _low.clear();
+    for (final w in waiters) {
+      if (!w.isCompleted) {
+        w.complete(false);
+      }
+    }
+  }
+
+  /// ⭐ 2026-10-24（复查修复 ✓）：**超时判定必须用 Timer + `isCompleted` 互斥** ✓。
+  ///
+  /// 原先用 `c.future.timeout(...)` ✗ ⇒ 存在竞态：超时返回 false 的同时 `release()` 刚好把名额
+  /// 给了我们 ✓ ⇒ 我们按"超时"走了 ✓ 但名额已被"移交" ✓ ⇒ **锁永久 locked** ✗（复查报告最担心的一条 ✓）。
+  /// 现在：超时由 Timer 在 `isCompleted == false` 时**先移出队列再 complete(false)** ✓，
+  /// 与 `release()` 在**同一事件循环**里互斥 ✓ ⇒ 名额不会丢 ✓。
   Future<bool> acquire({required bool high, Duration? timeout}) async {
     if (!_locked) {
       _locked = true;
+      _lockedAt = DateTime.now();
       return true;
     }
     final c = Completer<bool>();
     final queue = high ? _high : _low;
     queue.add(c);
-    if (timeout == null) {
-      return c.future;
+    Timer? timer;
+    if (timeout != null) {
+      timer = Timer(timeout, () {
+        if (!c.isCompleted) {
+          queue.remove(c);
+          c.complete(false);
+        }
+      });
     }
-    final granted = await c.future.timeout(timeout, onTimeout: () => false);
-    if (!granted) {
-      queue.remove(c);
-    }
+    final granted = await c.future;
+    timer?.cancel();
     return granted;
   }
 
   void release() {
     if (_high.isNotEmpty) {
       _high.removeAt(0).complete(true);
+      _lockedAt = DateTime.now();
       return;
     }
     if (_low.isNotEmpty) {
       _low.removeAt(0).complete(true);
+      _lockedAt = DateTime.now();
       return;
     }
     _locked = false;
+    _lockedAt = null;
   }
 }
 
@@ -71,6 +110,7 @@ class ReaderImageProvider
     this.page, {
     this.enableResize = false,
     this.onLoadFailed,
+    this.lowPriority = false,
   });
 
   final String imageKey;
@@ -84,6 +124,11 @@ class ReaderImageProvider
   final int page;
 
   final void Function()? onLoadFailed;
+
+  /// ⭐ 复查修复（2026-10-24）：**低优先级** ✓（预解码/预取用 ✓）——
+  /// 让这类 SMB 读取去抢**预取名額**（low ✓）而不是前台名额（high ✗），
+  /// 否则 3 个预解码请求就能把前台的 15s 预算吃光 ⇒ 当前页反而报 "SMB read busy." ✗。
+  final bool lowPriority;
 
   @override
   final bool enableResize;
@@ -104,7 +149,12 @@ class ReaderImageProvider
       // 夜间网络慢时表现为持续闪烁。落盘后同一页只拉一次。
       // 失败日志由 _readSmbPage 内部打（判停异常不打，避免快速翻页时刷屏）。
       Log.info('SMB Reader', 'loading: $imageKey');
-      imageBytes = await _readSmbPage(imageKey, cacheKey, checkStop);
+      imageBytes = await _readSmbPage(
+        imageKey,
+        cacheKey,
+        checkStop,
+        foreground: !lowPriority,
+      );
     } else {
       await for (var event in ImageDownloader.loadComicImage(
         imageKey,
@@ -209,14 +259,15 @@ class ReaderImageProvider
   /// 前台等待上限 ✓（超过才报可重试错误 ✓，不无限转圈 ✓）。
   static const _smbForegroundWaitTimeout = Duration(seconds: 15);
 
-  /// SMB IO 超时 ✓（connect / readFile / disconnect ✓）。
-  static const _smbIoTimeout = Duration(seconds: 20);
-
   /// 预取排队超时 ✓。
   static const _smbPrefetchWaitTimeout = Duration(seconds: 3);
 
   /// 复用连接的**空闲断开**时长 ✓（避免在 NAS 上挂长期空闲会话 ✓）。
   static const _smbIdleDisconnect = Duration(seconds: 60);
+
+  /// ⭐ 闸门看门狗时长 ✓（复查修复 2026-10-24）：锁被异常卡死超过此时长 ⇒ **强制复位** ✓，
+  /// 避免"每页转圈 ~59s 后报错、只能重启 App" ✗。
+  static const _smbGateWatchdog = Duration(seconds: 90);
 
   /// 同一页**在途读取去重** ✓：`load` 与预取可能同时触发同一页 ✗ ⇒ 共用一个 Future ✓。
   static final Map<String, Future<Uint8List>> _inflightReads = {};
@@ -242,6 +293,9 @@ class ReaderImageProvider
       if (last == null ||
           DateTime.now().difference(last) < _smbIdleDisconnect) {
         _sharedClientLastUsed = DateTime.now();
+        // ⭐ 复查修复（2026-10-24）：复用健康连接时**清掉"稍后断开"标记** ✗→✓ ——
+        // 否则读完后会把**刚复用好的连接**又断掉 ⇒ 下一张图白重连一次 ✓。
+        _closeSharedRequested = false;
         return existing;
       }
     }
@@ -249,7 +303,8 @@ class ReaderImageProvider
     await closeSharedSmbClient(force: true);
     final client = SmbClient(config: config);
     try {
-      await client.connect().timeout(_smbIoTimeout);
+      // ⭐ 不加 Dart 层 timeout ✓（见 `readFile` 处的说明 ✓）：原生超时由 `timeoutSeconds: 30` 负责 ✓。
+      await client.connect();
     } catch (e) {
       try {
         await client.disconnect().timeout(const Duration(seconds: 5));
@@ -276,7 +331,8 @@ class ReaderImageProvider
     _sharedClientLastUsed = null;
     if (client != null) {
       try {
-        await client.disconnect().timeout(const Duration(seconds: 5));
+        // ⭐ 同样不加 Dart 层 timeout ✓（它不会取消原生 disconnect ✓，反而可能在 kill isolate 时崩 ✗）。
+        await client.disconnect();
       } catch (_) {
         // 断开失败不影响后续重连 ✓。
       }
@@ -284,12 +340,25 @@ class ReaderImageProvider
   }
 
   /// ⭐ 在途读结束、且无人持有闸门时，执行"稍后断开" ✓。
-  static void _maybeCloseSharedClient() {
+  ///
+  /// ⭐ 复查修复（2026-10-24）：**断开必须在闸门内 await 完成** ✓ ——
+  /// 原先 fire-and-forget 且在 `release()` 之后 ✗ ⇒ 下一个持有者可能同时在 connect ✗（原生层并发 ✗）。
+  static Future<void> _maybeCloseSharedClient() async {
     if (!_closeSharedRequested) return;
-    if (_activeReads > 0 || _smbGate.locked) return;
-    _closeSharedRequested = false;
-    // 此刻没有任何在途 SMB 原生操作 ✓ ⇒ 断开安全 ✓（fire-and-forget ✓）。
-    closeSharedSmbClient(force: true);
+    if (_activeReads > 0) return;
+    if (!await _smbGate.acquire(
+      high: false,
+      timeout: _smbPrefetchWaitTimeout,
+    )) {
+      return;
+    }
+    try {
+      if (_activeReads > 0) return;
+      _closeSharedRequested = false;
+      await closeSharedSmbClient(force: true);
+    } finally {
+      _smbGate.release();
+    }
   }
 
   /// 读取一页 SMB 图片的字节（**只取字节，不解码**）。
@@ -314,7 +383,17 @@ class ReaderImageProvider
 
     final existing = _inflightReads[cacheKey];
     if (existing != null) {
-      return existing;
+      if (!foreground) {
+        return existing;
+      }
+      try {
+        return await existing;
+      } catch (_) {
+        // ⭐ 复查修复（2026-10-24）：前台**不能**吃预取路径的"让路/被跳过"错误 ✗
+        //（原先会直接拿到 "SMB prefetch skipped (busy)" ⇒ 当前页报错 ✗）。
+        // 吞掉后继续走下面的**前台读** ✓；若该页已取消 ⇒ `checkStop` 会抛"停止" ✓。
+        checkStop?.call();
+      }
     }
 
     if (foreground) {
@@ -348,6 +427,14 @@ class ReaderImageProvider
     if (foreground) {
       final deadline = DateTime.now().add(_smbForegroundWaitTimeout);
       while (true) {
+        // ⭐ 看门狗（复查修复 ✓）：锁被异常卡死时**强制复位** ✓ —— 否则用户只能重启 App ✗。
+        if (_smbGate.hasBeenLockedFor(_smbGateWatchdog)) {
+          Log.error(
+            'SMB Gate',
+            'locked too long, force resetting to avoid deadlock',
+          );
+          _smbGate.reset();
+        }
         final granted = await _smbGate.acquire(
           high: true,
           timeout: AppMotion.short,
@@ -380,7 +467,12 @@ class ReaderImageProvider
         final client = await _obtainClient(config);
         _activeReads++;
         readStarted = true;
-        data = await client.readFile(remotePath).timeout(_smbIoTimeout);
+        // ⭐ 复查修复（2026-10-24）：**不要给原生读加 Dart 层 timeout** ✗ ——
+        // `.timeout()` **不会取消** libsmb2 的原生读 ✓；超时后我们若立刻断开 ✗，
+        // 就会在 FFI 仍在运行时强杀 isolate ⇒ **0xc0000005 访问冲突** ✓（事件日志实证 ✓）。
+        // 原生层自己的超时来自 `SmbClient.connect(timeoutSeconds: 30)` ✓；
+        // 真卡死时靠 [_smbGate] 的**看门狗复位**兜底 ✓（见下面前台等待循环 ✓）。
+        data = await client.readFile(remotePath);
         if (data.isEmpty) {
           throw "Error: Empty response body.";
         }
@@ -405,7 +497,8 @@ class ReaderImageProvider
       return data;
     } finally {
       _smbGate.release();
-      _maybeCloseSharedClient();
+      // ⭐ 复查修复：**await** 断开（在闸门内完成 ✓），避免与下一个 connect 并发 ✗。
+      await _maybeCloseSharedClient();
     }
   }
 
@@ -458,8 +551,14 @@ class ReaderImageProvider
 
   @override
   void onLoadError() {
-    var cacheKey = "loadComicPages@$sourceKey@$cid@$eid";
-    CacheManager().delete(cacheKey);
+    // ⭐ 复查修复（2026-10-24）：SMB 的**页列表缓存键对不上** ✗ ——
+    // 页列表写入用的是 `loadComicPages@${reader.type.sourceKey}@…`（SMB 为 `@smb@` ✓），
+    // 而这里构造的是 `loadComicPages@$sourceKey@…`，SMB 的 `sourceKey == null` ⇒ 得到 `@null@` ✓
+    // ⇒ 删不到真正的缓存 ✗，还可能误删别的源 ✓。SMB 不做这步 ✓（其它源行为不变 ✓）。
+    if (!imageKey.startsWith('smb://')) {
+      var cacheKey = "loadComicPages@$sourceKey@$cid@$eid";
+      CacheManager().delete(cacheKey);
+    }
     onLoadFailed?.call();
   }
 }
