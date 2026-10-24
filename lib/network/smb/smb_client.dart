@@ -4,6 +4,8 @@ import 'dart:typed_data';
 
 import 'package:dart_smb2/dart_smb2.dart';
 
+import 'package:venera_nas/foundation/log.dart';
+
 import 'smb_config.dart';
 import 'smb_serial.dart';
 
@@ -253,6 +255,8 @@ class SmbClient {
   }
 
   Future<void> _connect({required bool high}) async {
+    // ⭐ 2026-10-25（用户质问 ✓：要定位"到底卡在哪"✓）：**建连总耗时打点** ✓
+    final connectStart = DateTime.now();
     // ⚠️ 2026-10-24：底层库（`dart_smb2` → libsmb2）**没有端口参数** ✗ ⇒ 非 445 端口
     // 原来会**静默连到 445** ✗（用户只看到"连不上"、查不出原因 ✓）⇒ 这里改为**明确报错** ✓。
     if (config.port != 445) {
@@ -312,6 +316,10 @@ class SmbClient {
       );
       _lastConnectFailureAt = null;
       _dead = false;
+      Log.info(
+        'SMB Connect',
+        'connected in ${DateTime.now().difference(connectStart).inMilliseconds}ms',
+      );
     } catch (e) {
       // ⭐ 2026-10-25（实测反馈 ✓）：**失败时先尝试"降级重试"一次** ✓ ——
       // 签名 / 加密 / 方言这些都是"可选加严" ✓，个别服务器（路由器内置 SMB 服务 ✓）

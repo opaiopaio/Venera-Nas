@@ -1,3 +1,4 @@
+import 'package:venera_nas/foundation/log.dart';
 import 'dart:async';
 
 /// SMB 闸门的**持有凭证** ✓。
@@ -156,8 +157,16 @@ class SmbSerial {
     // **自动自愈** ✓ —— 闸门被卡住时，与其让用户等 20 秒再报错 ✗，
     // 不如**自己等 3 秒就强制复位一次** ✓（等价于用户点「重置 SMB 连接」✓），
     // 复位后重新排队 ✓；复位两次还拿不到才报错 ✓。
+    final gateWaitStart = DateTime.now();
     var ticket = await acquire(high: high, timeout: _selfHealWait);
     for (var attempt = 0; ticket == null && attempt < 2; attempt++) {
+      final holderAge = _lockedAt == null
+          ? -1
+          : DateTime.now().difference(_lockedAt!).inMilliseconds;
+      Log.error(
+        'SMB Gate',
+        "contended: reset #${attempt + 1}, holderAge=${holderAge}ms, waited=${DateTime.now().difference(gateWaitStart).inMilliseconds}ms",
+      );
       reset();
       ticket = await acquire(high: high, timeout: _selfHealWait);
     }
@@ -166,7 +175,20 @@ class SmbSerial {
           "可到「设置 → 网络 → SMB 服务器」点「重置 SMB 连接」后重试。";
     }
     try {
-      return await op();
+      final waited = DateTime.now().difference(gateWaitStart);
+      if (waited.inMilliseconds > 200) {
+        Log.info(
+          'SMB Gate',
+          'acquired after ${waited.inMilliseconds}ms (high=$high)',
+        );
+      }
+      final opStart = DateTime.now();
+      final result = await op();
+      final used = DateTime.now().difference(opStart);
+      if (used.inMilliseconds > 1000) {
+        Log.info('SMB Gate', 'op took ${used.inMilliseconds}ms');
+      }
+      return result;
     } finally {
       release(ticket);
     }
