@@ -50,6 +50,15 @@ class _FollowUpdatesWidgetState
   void initState() {
     super.initState();
     getCount();
+    // ⭐ 2026-11-14（同步上游 #142 ✓）：收藏数据变化时**刷新计数** ✓
+    //（原先只在进入页面时算一次 ✗，退出阅读器后数字不更新 ✗）。
+    LocalFavoritesManager().addListener(updateCount);
+  }
+
+  @override
+  void dispose() {
+    LocalFavoritesManager().removeListener(updateCount);
+    super.dispose();
   }
 
   @override
@@ -139,6 +148,14 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
       sortComics();
       updatedComics = allComics.where((c) => c.hasNewUpdate).toList();
     }
+    // ⭐ 同步上游 #142 ✓：检查完更新后**自动刷新列表** ✓（原先要手动退出重进 ✗）。
+    LocalFavoritesManager().addListener(updateComics);
+  }
+
+  @override
+  void dispose() {
+    LocalFavoritesManager().removeListener(updateComics);
+    super.dispose();
   }
 
   @override
@@ -222,10 +239,6 @@ class _FollowUpdatesPageState extends AutomaticGlobalState<FollowUpdatesPage> {
             ListTile(leading: Icon(Icons.stars_outlined), title: Text(folder!)),
             Text(
               "Automatic update checking enabled.".tl,
-              style: ts.s14,
-            ).paddingHorizontal(16),
-            Text(
-              "The app will check for updates at most once a day.".tl,
               style: ts.s14,
             ).paddingHorizontal(16),
             const SizedBox(height: 8),
@@ -589,7 +602,11 @@ abstract class FollowUpdatesService {
   static void initChecker() {
     if (_isInitialized) return;
     _isInitialized = true;
-    _check();
+    // ⭐ 2026-11-14（同步上游 #142 ✓）：启动时是否检查**由设置决定** ✓
+    //（原先前台定时器与启动无条件检查 ✗ ⇒ 关不掉 ✗）。
+    if (appdata.settings['comicUpdateCheckOnStart'] == true) {
+      _check();
+    }
     DataSync().addListener(updateFollowUpdatesUI);
     // A short interval will not affect the performance since every comic has a check time.
     Timer.periodic(const Duration(minutes: 10), (timer) {

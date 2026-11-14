@@ -473,6 +473,33 @@ class HistoryManager with ChangeNotifier {
     return History.fromRow(res.first);
   }
 
+  /// ⭐ 2026-11-14（同步上游 `1cf9e62` ✓）：取**内存里刚被修改过**的实例 ✓。
+  /// 阅读器每次翻页都会同步改它 ✓，DB 写入是 1s 防抖 ✗ ⇒ 详情页要立即显示新进度，
+  /// 必须优先用这个实例 ✓（否则会读到旧的 DB 行 ✗）。
+  History? findCached(String id, ComicType type) {
+    return cachedHistories['${id}_${type.value}'];
+  }
+
+  /// ⭐ 2026-11-14（同步上游 `1cf9e62` ✓）：返回**最新的**进度实例 ✓。
+  /// [current] 通常是详情页持有的那份 ✓（阅读器正在同步改它 ✓）—— 它比 DB 新时优先 ✓；
+  /// 但"空占位"（无章节无页码无已读章节）**不能**盖住之后加载/同步到的真实记录 ✗。
+  History? findLatest(History? current, String id, ComicType type) {
+    if (current != null &&
+        current.ep <= 0 &&
+        current.page <= 0 &&
+        current.readEpisode.isEmpty) {
+      current = null;
+    }
+    final found = find(id, type);
+    if (found == null) {
+      return current;
+    }
+    if (current == null) {
+      return found;
+    }
+    return found.time.isAfter(current.time) ? found : current;
+  }
+
   List<History> getAll() {
     var res = _db.select("""
       select * from history

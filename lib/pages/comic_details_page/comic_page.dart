@@ -86,6 +86,10 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
 
   @override
   void onReadEnd() {
+    isReading = false;
+    if (!mounted) return;
+    // `read()` 已把**同一实例**交给阅读器 ✓，它每次翻页都会改它 ✓；
+    // 这里的兜底只处理"本页加载期间历史被别处创建"的情况 ✓。
     history ??= HistoryManager().find(
       widget.id,
       ComicType.fromKey(widget.sourceKey),
@@ -134,15 +138,33 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
   void initState() {
     scrollController.addListener(onScroll);
     ReadLaterManager().addListener(update);
+    // ⭐ 2026-11-14（同步上游 `1cf9e62` ✓）：历史变化时刷新本页进度 ✓。
+    HistoryManager().addListener(_onHistoryChanged);
     super.initState();
   }
 
   @override
   void dispose() {
+    HistoryManager().removeListener(_onHistoryChanged);
     scrollController.removeListener(onScroll);
     ReadLaterManager().removeListener(update);
     scrollController.dispose();
     super.dispose();
+  }
+
+  /// ⭐ 同步上游 `1cf9e62` ✓：阅读器在栈上时**忽略**通知 ✓（不能让更旧的 DB 行覆盖阅读器实例 ✗）。
+  void _onHistoryChanged() {
+    if (!mounted || isReading) return;
+    final latest = HistoryManager().findLatest(
+      history,
+      widget.id,
+      ComicType.fromKey(widget.sourceKey),
+    );
+    if (latest == null || identical(latest, history)) {
+      return;
+    }
+    history = latest;
+    update();
   }
 
   @override
@@ -477,7 +499,9 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
                 ),
               ],
             ).paddingHorizontal(16).paddingVertical(8),
-          if (history != null)
+          // ⭐ 同步上游 `1cf9e62` ✓：**没有真实进度**（ep/page 都是 0）时不显示进度条 ✗，
+          // 否则会显示 "E0 / 第 0 页" 这类占位 ✗。
+          if (history != null && (history!.ep > 0 || history!.page > 0))
             Container(
               margin: const EdgeInsets.symmetric(
                 horizontal: AppSpace.lg,

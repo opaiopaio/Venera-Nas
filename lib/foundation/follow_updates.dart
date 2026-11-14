@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:venera_nas/foundation/appdata.dart';
 import 'package:venera_nas/foundation/favorites.dart';
 import 'package:venera_nas/foundation/log.dart';
 import 'package:venera_nas/utils/channel.dart';
@@ -110,12 +111,26 @@ void updateFolderBase(
   for (var comic in comics) {
     if (!ignoreCheckTime) {
       var lastCheckTime = comic.lastCheckTime;
+      // ⭐ 2026-11-14（同步上游 #142 ✓）：检查间隔**可配置** ✓（默认 24h ✓，原先是写死 1 天 ✗）。
+      final intervalHours =
+          int.tryParse(
+            appdata.settings['comicUpdateCheckInterval']?.toString() ?? '24',
+          ) ??
+          24;
       if (lastCheckTime != null &&
-          DateTime.now().difference(lastCheckTime).inDays < 1) {
+          DateTime.now().difference(lastCheckTime).inHours < intervalHours) {
         current++;
         stream.add(UpdateProgress(total, current, errors, updated));
         continue;
       }
+    }
+    // ⭐ 同步上游 #142 ✓：已有新更新时**跳过重复检查** ✓（省流量 ✓）；
+    // 手动"立即检查"（ignoreCheckTime）不受影响 ✓。
+    if (appdata.settings['skipCheckIfHasNewUpdate'] == true &&
+        comic.hasNewUpdate) {
+      current++;
+      stream.add(UpdateProgress(total, current, errors, updated));
+      continue;
     }
     comicsToUpdate.add(comic);
   }

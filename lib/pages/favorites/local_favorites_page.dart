@@ -45,7 +45,10 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
 
   bool multiSelectMode = false;
 
-  int? lastSelectedIndex;
+  /// ⭐ 2026-11-14（同步上游 #156 ✓）：范围选择的**锚点存条目本身** ✓
+  /// 原先存 `comics.indexOf(c)` ✗ —— 而网格显示的是"过滤/搜索/屏蔽后的列表" ✓，
+  /// 两套下标不同 ⇒ **批量删除会选错漫画** ✗。范围一律按**显示列表**解析 ✓。
+  FavoriteItem? lastSelectedComic;
 
   bool get isAllFolder => widget.folder == _localAllFolderLabel;
 
@@ -151,6 +154,15 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
     return filtered;
   }
 
+  /// ⭐ 2026-11-14（同步上游 #156 ✓）：**网格实际显示的列表** ✓。
+  /// 搜索模式 = 搜索结果 ✓；否则 = 当前文件夹 + 阅读状态过滤 + 排序 ✓；
+  /// 再剔除被屏蔽关键词的条目 ✓（`SliverGridComics` 内部也会过滤 ✓）。
+  /// 全选 / 反选 / 范围选择都必须按这个列表取下标 ✓，否则会选中用户没看到的条目 ✗。
+  List<FavoriteItem> buildDisplayComics() {
+    var list = searchMode ? searchResults : filterComics(comics);
+    return list.where((c) => isBlocked(c) == null).toList();
+  }
+
   bool matchKeyword(String keyword, FavoriteItem comic) {
     var list = keyword.split(" ");
     for (var k in list) {
@@ -240,31 +252,20 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
 
   void selectAll() {
     setState(() {
-      if (searchMode) {
-        selectedComics = searchResults.asMap().map((k, v) => MapEntry(v, true));
-      } else {
-        selectedComics = comics.asMap().map((k, v) => MapEntry(v, true));
-      }
+      // ⭐ 同步上游 #156 ✓：全选基于**显示列表** ✓（原按 comics/searchResults ✗）。
+      selectedComics = buildDisplayComics().asMap().map(
+        (k, v) => MapEntry(v, true),
+      );
     });
   }
 
   void invertSelection() {
     setState(() {
-      if (searchMode) {
-        for (var c in searchResults) {
-          if (selectedComics.containsKey(c)) {
-            selectedComics.remove(c);
-          } else {
-            selectedComics[c] = true;
-          }
-        }
-      } else {
-        for (var c in comics) {
-          if (selectedComics.containsKey(c)) {
-            selectedComics.remove(c);
-          } else {
-            selectedComics[c] = true;
-          }
+      for (var c in buildDisplayComics()) {
+        if (selectedComics.containsKey(c)) {
+          selectedComics.remove(c);
+        } else {
+          selectedComics[c] = true;
         }
       }
     });
@@ -307,6 +308,9 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
     if (title == _localAllFolderLabel) {
       title = "All".tl;
     }
+
+    // ⭐ 同步上游 #156 ✓：网格与选择逻辑共用**同一份显示列表** ✓。
+    var displayComics = buildDisplayComics();
 
     Widget body = SmoothCustomScrollView(
       controller: scrollController,
@@ -694,7 +698,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
           )
         else
           SliverGridComics(
-            comics: searchMode ? searchResults : filterComics(comics),
+            comics: displayComics,
             selections: selectedComics,
             menuBuilder: (c) {
               return [
@@ -744,7 +748,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                       } else {
                         selectedComics[c] = true;
                       }
-                      lastSelectedIndex = comics.indexOf(c);
+                      lastSelectedComic = c;
                     });
                   },
                 ),
@@ -778,7 +782,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                   } else {
                     selectedComics[c] = true;
                   }
-                  lastSelectedIndex = comics.indexOf(c);
+                  lastSelectedComic = c;
                 });
               } else if (appdata.settings["onClickFavorite"] == "viewDetail") {
                 App.mainNavigatorKey?.currentContext?.to(
@@ -803,21 +807,23 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                   if (!selectedComics.containsKey(c as FavoriteItem)) {
                     selectedComics[c] = true;
                   }
-                  lastSelectedIndex = comics.indexOf(c);
+                  lastSelectedComic = c;
                 } else {
-                  if (lastSelectedIndex != null) {
-                    int start = lastSelectedIndex!;
-                    int end = comics.indexOf(c as FavoriteItem);
+                  // ⭐ 同步上游 #156 ✓：范围一律在**显示列表**上解析 ✓
+                  // （原实现用 `comics` 的下标 ✗ ⇒ 搜索/过滤/屏蔽后**选错条目** ✗）。
+                  final anchor = lastSelectedComic;
+                  final target = c as FavoriteItem;
+                  int start = displayComics.indexOf(anchor ?? target);
+                  int end = displayComics.indexOf(target);
+                  if (start >= 0 && end >= 0) {
                     if (start > end) {
-                      int temp = start;
+                      final temp = start;
                       start = end;
                       end = temp;
                     }
-
                     for (int i = start; i <= end; i++) {
-                      if (i == lastSelectedIndex) continue;
-
-                      var comic = comics[i];
+                      final comic = displayComics[i];
+                      if (comic == anchor) continue;
                       if (selectedComics.containsKey(comic)) {
                         selectedComics.remove(comic);
                       } else {
@@ -825,7 +831,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                       }
                     }
                   }
-                  lastSelectedIndex = comics.indexOf(c as FavoriteItem);
+                  lastSelectedComic = target;
                 }
                 _checkExitSelectMode();
               });

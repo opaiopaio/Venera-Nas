@@ -9,6 +9,13 @@ abstract mixin class _ComicPageActions {
 
   History? get history;
 
+  set history(History? value);
+
+  /// ⭐ 2026-11-14（同步上游 `1cf9e62` ✓）：本页打开的阅读器是否还在栈上 ✓。
+  /// 阅读期间**忽略历史通知** ✓ —— 否则同步重载会清内存缓存 ✗，
+  /// 可能用一个更旧的 DB 行覆盖掉阅读器正在改的实例 ✗。
+  bool isReading = false;
+
   bool isLiking = false;
 
   bool isLiked = false;
@@ -104,6 +111,17 @@ abstract mixin class _ComicPageActions {
   ///
   /// [group] the chapter group number, start from 1
   void read([int? ep, int? page, int? group]) {
+    // ⭐ 2026-11-14（同步上游 `1cf9e62` ✓）：把**同一份 History 实例**交给阅读器 ✓，
+    // 阅读器翻页同步改它 ✓ ⇒ 返回本页时能立即显示新进度 ✓（不必等 1s 防抖落库 ✓）。
+    final latestHistory = HistoryManager().findLatest(
+      history,
+      comic.id,
+      comic.comicType,
+    );
+    final readerHistory =
+        latestHistory ?? History.fromModel(model: comic, ep: 0, page: 0);
+    history = readerHistory;
+    isReading = true;
     App.rootContext
         .to(
           () => Reader(
@@ -114,20 +132,27 @@ abstract mixin class _ComicPageActions {
             initialChapter: ep,
             initialPage: page,
             initialChapterGroup: group,
-            history: history ?? History.fromModel(model: comic, ep: 0, page: 0),
+            history: readerHistory,
             author: comic.findAuthor() ?? '',
             tags: comic.plainTags,
           ),
         )
         .then((_) {
+          isReading = false;
           onReadEnd();
         });
   }
 
   void continueRead() {
-    var ep = history?.ep ?? 1;
-    var page = history?.page ?? 1;
-    var group = history?.group ?? 1;
+    // ⭐ 同步上游 `1cf9e62` ✓：继续阅读也取**最新**进度 ✓（而不是可能过期的 history 字段 ✗）。
+    final latest = HistoryManager().findLatest(
+      history,
+      comic.id,
+      comic.comicType,
+    );
+    var ep = latest?.ep ?? 1;
+    var page = latest?.page ?? 1;
+    var group = latest?.group ?? 1;
     read(ep, page, group);
   }
 

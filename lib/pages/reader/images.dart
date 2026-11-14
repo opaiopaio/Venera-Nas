@@ -71,6 +71,12 @@ class _ReaderImagesState extends State<_ReaderImages> {
 
   bool inProgress = false;
 
+  /// ⭐ 2026-11-14（同步上游 #155 ✓）：当前页列表是否来自**磁盘缓存** ✓。
+  /// 缓存里的图片 URL 可能过期 ✓ ⇒ 坏图时允许**重载一次** ✓；
+  /// 而新拉取/本地列表里的坏图 = 真死图 ✗ ⇒ 不再整章重载（否则会**无限循环** ✗），
+  /// 交给单图错误 UI 处理 ✓。
+  bool _pagesFromCache = false;
+
   late _ReaderState reader;
 
   void _savePagesCache(String key, List<String> images) async {
@@ -99,7 +105,12 @@ class _ReaderImagesState extends State<_ReaderImages> {
   }
 
   void _onPagesCacheInvalid() {
-    if (!mounted || inProgress) return;
+    if (!mounted || inProgress || !_pagesFromCache) return;
+    _pagesFromCache = false;
+    // 先删掉可疑缓存 ✓，否则重载会再次读到同一批过期 URL ✗。
+    CacheManager().delete(
+      comicPagesListCacheKey(reader.type.sourceKey, reader.cid, reader.eid),
+    );
     setState(() {
       error = null;
       reader.isLoading = true;
@@ -135,6 +146,7 @@ class _ReaderImagesState extends State<_ReaderImages> {
         if (!mounted) return;
         setState(() {
           reader.images = images;
+          _pagesFromCache = false;
           reader.isLoading = false;
           inProgress = false;
           _handleJumpToLastPage();
@@ -169,6 +181,7 @@ class _ReaderImagesState extends State<_ReaderImages> {
           if (!mounted) return;
           setState(() {
             reader.images = cacheList;
+            _pagesFromCache = true;
             reader.isLoading = false;
             inProgress = false;
             _handleJumpToLastPage();
@@ -199,6 +212,7 @@ class _ReaderImagesState extends State<_ReaderImages> {
         _savePagesCache(cacheKey, res.data);
         setState(() {
           reader.images = res.data;
+          _pagesFromCache = false;
           reader.isLoading = false;
           inProgress = false;
           _handleJumpToLastPage();

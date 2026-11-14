@@ -10,6 +10,7 @@ import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart' as s;
 import 'package:file_selector/file_selector.dart' as file_selector;
 import 'package:venera_nas/utils/file_type.dart';
+import 'package:venera_nas/utils/translations.dart';
 
 export 'dart:io';
 export 'dart:typed_data';
@@ -548,7 +549,14 @@ class Share {
   }
 
   static void shareText(String text) {
-    s.SharePlus.instance.share(s.ShareParams(text: text));
+    // ⭐ 2026-11-14（同步上游 #152 ✓）：桌面端**没有可用的系统分享** ✗ —
+    // Windows 上 share_plus 会抛异常 / 无响应 ✓ ⇒ 改为**复制到剪贴板** + 提示 ✓。
+    if (App.isDesktop) {
+      Clipboard.setData(ClipboardData(text: text));
+      App.rootContext.showMessage(message: "Copied".tl);
+    } else {
+      s.SharePlus.instance.share(s.ShareParams(text: text));
+    }
   }
 }
 

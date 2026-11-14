@@ -162,7 +162,14 @@ abstract class LoadingState<T extends StatefulWidget, S extends Object>
   Future<Res<S>> loadDataWithRetry() async {
     int retry = 0;
     while (true) {
-      var res = await loadData();
+      // ⭐ 2026-11-14（同步上游 #157 ✓）：漫画源**抛异常**而不是返回 Res.error 时 ✗
+      // 页面会**永久转圈** ✗ ⇒ 这里兜底成 error 结果 ✓（走重试 / 错误态 ✓）。
+      Res<S> res;
+      try {
+        res = await loadData();
+      } catch (e) {
+        res = Res.error(e.toString());
+      }
       if (res.success) {
         return res;
       } else {
