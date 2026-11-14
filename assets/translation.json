@@ -1,5 +1,6 @@
 {
   "zh_CN": {
+    "Copy Share Link": "复制分享链接",
     "Check for comic updates on app start": "启动时检查漫画更新",
     "Update check interval": "更新检查间隔",
     "Minimum time between checks for the same comic.": "同一漫画两次检查之间的最小间隔。",
@@ -686,6 +687,7 @@
     "About PIN": "关于 PIN 码"
   },
   "zh_TW": {
+    "Copy Share Link": "複製分享連結",
     "Check for comic updates on app start": "啟動時檢查漫畫更新",
     "Update check interval": "更新檢查間隔",
     "Minimum time between checks for the same comic.": "同一漫畫兩次檢查之間的最小間隔。",

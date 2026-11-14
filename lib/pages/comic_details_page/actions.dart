@@ -94,13 +94,21 @@ abstract mixin class _ComicPageActions {
     App.rootContext.showMessage(message: "Added".tl);
   }
 
-  void share() {
+  /// ⭐ 2026-11-14（用户反馈 ✓）：把"标题 + App 深链"这一串单独抽出来 ✓，
+  /// 分享按钮与右上菜单（「复制分享链接」✓）共用同一份文本 ✓（避免两处格式漂移 ✗）。
+  String buildShareText() {
     final uri = Uri(
       scheme: 'venera',
       host: 'c',
       pathSegments: [comic.sourceKey, comic.id],
     );
-    Share.shareText('${comic.title}\n$uri');
+    return '${comic.title}\n$uri';
+  }
+
+  void share() {
+    // ⚠️ 2026-11-14（用户要求 ✓）：分享按钮**还原为系统分享** ✓；
+    // "复制分享文本"的功能已移到右上菜单 ✓（`showMoreActions` 里的「复制分享链接」✓）。
+    Share.shareText(buildShareText());
   }
 
   /// read the comic
@@ -421,6 +429,16 @@ abstract mixin class _ComicPageActions {
             launchUrlString(comic.url!);
           },
         ),
+      // ⭐ 2026-11-14（用户要求 ✓）：把原先分享按钮产出的一串（标题 + App 深链）
+      // 做成菜单里的**复制**动作 ✓（复制到剪贴板 ✓，不带出原站 URL ✓ 隐私友好 ✓）。
+      MenuEntry(
+        icon: Icons.share,
+        text: "Copy Share Link".tl,
+        onClick: () {
+          Clipboard.setData(ClipboardData(text: buildShareText()));
+          context.showMessage(message: "Copied".tl);
+        },
+      ),
     ]);
   }
 
